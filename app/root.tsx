@@ -19,7 +19,11 @@ export const links: Route.LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;900&display=swap",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
   },
 ];
 
@@ -41,8 +45,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { Navigation } from "./components/navigation";
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <div className="relative min-h-screen bg-background text-foreground">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border transition-all duration-300">
+        <header className="h-20 sm:h-24 md:h-40 flex items-center justify-center px-4">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
+            <span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
+              HIPPOS
+            </span>
+            <div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
+              <span className="text-sm sm:text-2xl md:text-3xl">Asukastoimikunta</span>
+              <span className="text-[9px] sm:text-xl md:text-2xl opacity-90 mt-0.5 md:mt-2">Tenant Committee</span>
+            </div>
+          </div>
+        </header>
+
+        <nav className="pb-2 sm:pb-3 md:pb-6">
+          <Navigation orientation="horizontal" />
+        </nav>
+      </div>
+
+      <div className="flex min-h-screen pt-36 sm:pt-40 md:pt-64">
+        {/* Main Content */}
+        <main className="flex-1 w-full">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
