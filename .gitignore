@@ -5,3 +5,5 @@
 # React Router
 /.react-router/
 /build/
+
+service_account_key.json
