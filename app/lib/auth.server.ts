@@ -4,14 +4,26 @@ import { createCookie } from "react-router";
 // CONFIGURATION
 // ============================================
 
+// Get the base URL for redirects - works with Vercel preview deployments
+function getBaseUrl(): string {
+    // Use explicit env var if set
+    if (process.env.APP_URL) {
+        return process.env.APP_URL;
+    }
+    // Vercel automatically sets VERCEL_URL for preview deployments
+    if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+    }
+    // Fallback for local development
+    return "http://localhost:5173";
+}
+
 const config = {
     oauthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID || "",
     oauthClientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || "",
     adminEmail: process.env.ADMIN_EMAIL || "",
     sessionSecret: process.env.SESSION_SECRET || "dev-secret-change-me",
-    redirectUri: process.env.NODE_ENV === "production"
-        ? "https://your-domain.com/auth/callback"  // TODO: Update for production
-        : "http://localhost:5173/auth/callback",
+    redirectUri: `${getBaseUrl()}/auth/callback`,
 };
 
 // Debug log

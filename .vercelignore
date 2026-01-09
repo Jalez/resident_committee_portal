@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build outputs (Vercel will build fresh)
+build/
+.vercel/
+
+# Development files
+*.log
+.DS_Store
+
+# Environment files (use Vercel env vars instead)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Service account keys (use Vercel env vars)
+service_account_key.json
