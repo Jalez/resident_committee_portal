@@ -1,6 +1,5 @@
 import type { Route } from "./+types/home";
 import { PageWrapper, SplitLayout, QRPanel } from "~/components/layout/page-layout";
-import { Badge } from "~/components/ui/badge";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -17,12 +16,11 @@ interface InvolvementOption {
 }
 
 export function loader({ }: Route.LoaderArgs) {
-  // Mock data - in a real app this could come from a CMS or DB
   return {
     options: [
       {
         id: "committee",
-        title: "Hae asukastoimikuntaan",
+        title: "Hae toimikuntaan",
         subtitle: "Apply for the Tenant Committee",
         icon: "diversity_3",
       },
@@ -51,6 +49,7 @@ export function loader({ }: Route.LoaderArgs) {
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { options } = loaderData;
 
+  // QR Panel only shown in info reel mode
   const RightContent = (
     <QRPanel
       qrPath="/contact"
@@ -99,3 +98,4 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     </PageWrapper>
   );
 }
+

@@ -171,3 +171,43 @@ body {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #334155;
 }
+
+/* Info Reel Mode Animations */
+@keyframes reel-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reel-fade-in {
+  animation: reel-fade-in 0.6s ease-out forwards;
+}
+
+/* Active social channel - underline that grows from left to right */
+@keyframes active-channel-underline {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-active-channel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: var(--primary);
+  border-radius: 2px;
+  animation: active-channel-underline var(--channel-duration, 4s) linear forwards;
+}

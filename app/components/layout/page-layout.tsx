@@ -36,26 +36,62 @@ export function PageHeader({ finnish, english, className }: PageHeaderProps) {
 
 interface SplitLayoutProps {
     children: React.ReactNode;
-    right: React.ReactNode;
+    right?: React.ReactNode;
     header?: {
         finnish: string;
         english: string;
     };
     className?: string;
+    /** Optional footer content shown below main content (e.g., action buttons) */
+    footer?: React.ReactNode;
 }
 
-export function SplitLayout({ children, right, header, className }: SplitLayoutProps) {
+export function SplitLayout({ children, right, header, className, footer }: SplitLayoutProps) {
+    const { isInfoReel } = useInfoReel();
+
+    // Info Reel mode: split layout with QR panel
+    if (isInfoReel && right) {
+        return (
+            <div className={cn("w-full max-w-[1200px] overflow-hidden flex flex-col lg:flex-row h-auto", className)}>
+                <div className="lg:w-7/12 flex flex-col p-8 lg:p-12 relative">
+                    {header && (
+                        <div
+                            className="animate-reel-fade-in"
+                            style={{ animationDelay: "0ms" }}
+                        >
+                            <PageHeader finnish={header.finnish} english={header.english} />
+                        </div>
+                    )}
+                    <div
+                        className="animate-reel-fade-in"
+                        style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
+                    >
+                        {children}
+                    </div>
+                </div>
+
+                {/* Right Side / QR Panel Area */}
+                {right}
+            </div>
+        );
+    }
+
+    // Regular mode: centered, full-width content
     return (
-        <div className={cn("w-full max-w-[1200px] overflow-hidden flex flex-col lg:flex-row h-auto", className)}>
-            <div className="lg:w-7/12 flex flex-col p-8 lg:p-12 relative">
+        <div className={cn("w-full max-w-[800px] overflow-hidden flex flex-col h-auto", className)}>
+            <div className="flex flex-col p-8 lg:p-12 relative">
                 {header && (
                     <PageHeader finnish={header.finnish} english={header.english} />
                 )}
                 {children}
-            </div>
 
-            {/* Right Side / QR Panel Area */}
-            {right}
+                {/* Footer content (action buttons) */}
+                {footer && (
+                    <div className="mt-8">
+                        {footer}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -67,25 +103,92 @@ interface QRPanelProps {
     description?: React.ReactNode;
     children?: React.ReactNode;
     className?: string;
+    /** Button text for regular mode (Finnish / English) */
+    buttonLabel?: {
+        finnish: string;
+        english: string;
+    };
+    /** Material icon name for the button */
+    buttonIcon?: string;
+    /** Optional opacity for fade transitions (0-1) */
+    opacity?: number;
 }
 
-export function QRPanel({ qrPath, qrUrl, title, description, children, className }: QRPanelProps) {
+export function QRPanel({
+    qrPath,
+    qrUrl,
+    title,
+    description,
+    children,
+    className,
+    buttonLabel = { finnish: "Avaa linkki", english: "Open Link" },
+    buttonIcon = "open_in_new",
+    opacity = 1
+}: QRPanelProps) {
     const path = qrPath || qrUrl || "/";
     const isExternal = !!qrUrl;
     const { isInfoReel } = useInfoReel();
 
     return (
-        <div className={cn("lg:w-5/12 p-8 lg:p-12 flex flex-col items-center justify-start text-center", className)}>
+        <div
+            className={cn(
+                "lg:w-5/12 p-8 lg:p-12 flex flex-col items-center justify-start text-center",
+                isInfoReel && "animate-reel-fade-in",
+                className
+            )}
+            style={isInfoReel ? { animationDelay: "400ms", animationFillMode: "backwards", opacity } : undefined}
+        >
             <div className="flex flex-col items-center max-w-sm mx-auto w-full">
-                {title && (
+                {/* Title - Only visible in Info Reel mode with QR */}
+                {isInfoReel && title && (
                     <div className="mb-6">
                         {title}
                     </div>
                 )}
 
-                <div className="mb-0 p-4 bg-white rounded-3xl dark:bg-white/5 w-full max-w-full mx-auto aspect-square min-w-[100px]">
-                    <DynamicQR path={path} className="w-full h-full" />
-                </div>
+                {/* QR Code - Only visible in Info Reel mode */}
+                {isInfoReel && (
+                    <div className="mb-0 p-4 bg-white rounded-3xl dark:bg-white/5 w-full max-w-full mx-auto aspect-square min-w-[100px]">
+                        <DynamicQR path={path} className="w-full h-full" />
+                    </div>
+                )}
+
+                {/* Prominent Action Button - Only visible in regular mode */}
+                {!isInfoReel && (
+                    isExternal ? (
+                        <Link
+                            to={qrUrl}
+                            className="group flex flex-row items-center justify-center p-4  bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-3xl text-white shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300"
+                        >
+                            <span className="material-symbols-outlined text-6xl group-hover:scale-110 transition-transform">
+                                {buttonIcon}
+                            </span>
+                            <div className="flex flex-col items-start">
+                                <span className="text-2xl font-black tracking-tight">
+                                    {buttonLabel.finnish}
+                                </span>
+                                <span className="text-lg font-bold opacity-80">
+                                    {buttonLabel.english}
+                                </span>
+                            </div>
+                        </Link>
+                    ) : (
+                        <Link
+                            to={path}
+                            className="group flex flex-col items-center justify-center w-full px-8 py-10 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-3xl text-white shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300"
+                        >
+                            <span className="material-symbols-outlined text-5xl mb-3 group-hover:scale-110 transition-transform">
+                                {buttonIcon}
+                            </span>
+                            <span className="text-2xl font-black tracking-tight">
+                                {buttonLabel.finnish}
+                            </span>
+                            <span className="text-lg font-bold opacity-80">
+                                {buttonLabel.english}
+                            </span>
+                        </Link>
+                    )
+                )}
 
                 {description && (
                     <div className="mt-6 mb-4">
@@ -94,34 +197,59 @@ export function QRPanel({ qrPath, qrUrl, title, description, children, className
                 )}
 
                 {children}
-
-                {/* Hide Open Link button in info reel mode */}
-                {!isInfoReel && (
-                    isExternal ? (
-                        <a
-                            href={qrUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex mt-8 items-center gap-2 text-sm font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-5 py-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-lg">
-                                open_in_new
-                            </span>
-                            <span>Avaa linkki / Open Link</span>
-                        </a>
-                    ) : (
-                        <Link
-                            to={path}
-                            className="inline-flex mt-8 items-center gap-2 text-sm font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-5 py-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-lg">
-                                open_in_new
-                            </span>
-                            <span>Avaa linkki / Open Link</span>
-                        </Link>
-                    )
-                )}
             </div>
         </div>
+    );
+}
+
+// Reusable Action Button for page footers
+interface ActionButtonProps {
+    href: string;
+    icon: string;
+    labelFi: string;
+    labelEn: string;
+    external?: boolean;
+    className?: string;
+}
+
+export function ActionButton({ href, icon, labelFi, labelEn, external = true, className }: ActionButtonProps) {
+    const ButtonContent = (
+        <>
+            <span className="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">
+                {icon}
+            </span>
+            <div className="flex flex-col items-start">
+                <span className="text-xl font-black tracking-tight">
+                    {labelFi}
+                </span>
+                <span className="text-base font-bold opacity-80">
+                    {labelEn}
+                </span>
+            </div>
+        </>
+    );
+
+    const buttonClass = cn(
+        "group inline-flex items-center gap-4 px-6 py-4 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-2xl text-white shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300",
+        className
+    );
+
+    if (external) {
+        return (
+            <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClass}
+            >
+                {ButtonContent}
+            </a>
+        );
+    }
+
+    return (
+        <Link to={href} className={buttonClass}>
+            {ButtonContent}
+        </Link>
     );
 }
