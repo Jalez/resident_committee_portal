@@ -10,7 +10,7 @@ export function meta() {
     ];
 }
 
-import { getCalendarEvents } from "~/lib/google.server";
+import { getCalendarEvents, getCalendarUrl } from "~/lib/google.server";
 
 interface Event {
     id: number;
@@ -23,13 +23,17 @@ interface Event {
 }
 
 export async function loader({ }: Route.LoaderArgs) {
-    const calendarItems = await getCalendarEvents();
+    const [calendarItems, calendarUrl] = await Promise.all([
+        getCalendarEvents(),
+        getCalendarUrl()
+    ]);
 
     // Fallback if no data (keys missing or empty calendar) to keep UI working
     if (!calendarItems.length) {
         return {
             month: "Tulevat / Upcoming",
-            events: []
+            events: [],
+            calendarUrl
         };
     }
 
@@ -52,15 +56,16 @@ export async function loader({ }: Route.LoaderArgs) {
     return {
         month: "Tulevat / Upcoming",
         events: events,
+        calendarUrl
     };
 }
 
 export default function Events({ loaderData }: Route.ComponentProps) {
-    const { month, events } = loaderData;
+    const { month, events, calendarUrl } = loaderData;
 
     const RightContent = (
         <QRPanel
-            qrPath="/events"
+            qrUrl={calendarUrl || undefined}
             title={
                 <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                     Avaa kalenteri <br />
@@ -81,51 +86,49 @@ export default function Events({ loaderData }: Route.ComponentProps) {
                         <p className="text-xl font-bold leading-none uppercase tracking-widest">{month}</p>
                     </div>
 
-                    <div className="flex-1 overflow-hidden relative flex flex-col h-[500px]"> {/* Fixed height for consistency or adjust as needed */}
-                        <ScrollArea className="flex-1 h-full">
-                            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {events.slice(0, 3).map((event: Event) => (
-                                    <li
-                                        key={event.id}
-                                        className={`flex items-center p-6 hover:bg-white dark:hover:bg-gray-800/50 transition-colors ${event.type === "meeting" ? "bg-red-50/50 dark:bg-red-900/10" : ""} ${event.type === "private" ? "opacity-60" : ""}`}
+                    <div className="flex-1 relative flex flex-col">
+                        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {events.slice(0, 3).map((event: Event) => (
+                                <li
+                                    key={event.id}
+                                    className={`flex items-center p-6 hover:bg-white dark:hover:bg-gray-800/50 transition-colors ${event.type === "meeting" ? "bg-red-50/50 dark:bg-red-900/10" : ""} ${event.type === "private" ? "opacity-60" : ""}`}
+                                >
+                                    <div
+                                        className={`w-20 flex flex-col items-center justify-center shrink-0 leading-none mr-6 ${event.type === "meeting" ? "text-primary dark:text-red-400" : event.type === "private" ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
                                     >
-                                        <div
-                                            className={`w-20 flex flex-col items-center justify-center shrink-0 leading-none mr-6 ${event.type === "meeting" ? "text-primary dark:text-red-400" : event.type === "private" ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
+                                        <span className="text-4xl font-black tracking-tighter">{event.date}</span>
+                                        <span className="text-xs font-bold uppercase mt-1 tracking-wider">
+                                            {event.day}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3
+                                            className={`text-xl font-black uppercase tracking-tight truncate ${event.type === "private" ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-white"}`}
                                         >
-                                            <span className="text-4xl font-black tracking-tighter">{event.date}</span>
-                                            <span className="text-xs font-bold uppercase mt-1 tracking-wider">
-                                                {event.day}
+                                            {event.title}
+                                        </h3>
+                                        <div
+                                            className={`flex items-center gap-4 text-sm font-bold uppercase tracking-wide mt-1.5 ${event.type === "private" ? "text-gray-400 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"}`}
+                                        >
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[18px]">
+                                                    schedule
+                                                </span>{" "}
+                                                {event.time}
                                             </span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3
-                                                className={`text-xl font-black uppercase tracking-tight truncate ${event.type === "private" ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-white"}`}
-                                            >
-                                                {event.title}
-                                            </h3>
-                                            <div
-                                                className={`flex items-center gap-4 text-sm font-bold uppercase tracking-wide mt-1.5 ${event.type === "private" ? "text-gray-400 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"}`}
-                                            >
-                                                <span className="flex items-center gap-1.5">
+                                            {event.location && (
+                                                <span className="flex items-center gap-1.5 truncate">
                                                     <span className="material-symbols-outlined text-[18px]">
-                                                        schedule
+                                                        location_on
                                                     </span>{" "}
-                                                    {event.time}
+                                                    {event.location}
                                                 </span>
-                                                {event.location && (
-                                                    <span className="flex items-center gap-1.5 truncate">
-                                                        <span className="material-symbols-outlined text-[18px]">
-                                                            location_on
-                                                        </span>{" "}
-                                                        {event.location}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            )}
                                         </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </ScrollArea>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
             </SplitLayout>

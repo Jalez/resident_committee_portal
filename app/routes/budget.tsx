@@ -18,9 +18,7 @@ export async function loader({ }: Route.LoaderArgs) {
         remainingBudget: budgetData?.remaining || "--- €",
         totalBudget: budgetData?.total || "--- €",
         lastUpdated: budgetData?.lastUpdated || "",
-        detailsUrl: process.env.GOOGLE_BUDGET_SHEET_ID
-            ? `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_BUDGET_SHEET_ID}`
-            : "#"
+        detailsUrl: budgetData?.detailsUrl || "#"
     };
 }
 
