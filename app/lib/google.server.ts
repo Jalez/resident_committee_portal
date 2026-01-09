@@ -157,6 +157,110 @@ export async function getMinutesFiles() {
     }
 }
 
+// Minutes grouped by year
+export interface MinutesByYear {
+    year: string;
+    files: {
+        id: string;
+        name: string;
+        url: string;
+        createdTime: string;
+    }[];
+    folderUrl: string;
+}
+
+export async function getMinutesByYear(): Promise<MinutesByYear[]> {
+    // Check cache first
+    const cacheKey = "MINUTES_BY_YEAR";
+    const cached = getCached<MinutesByYear[]>(cacheKey, CACHE_TTL.MINUTES);
+    if (cached !== null && cached.length > 0) {
+        return cached;
+    }
+
+    if (!config.apiKey || !config.publicRootFolderId) {
+        console.log("[getMinutesByYear] Missing config");
+        return [];
+    }
+
+    // Step 1: List all year folders in the public root
+    const q = `'${config.publicRootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const foldersUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&key=${config.apiKey}&fields=files(id,name,webViewLink)&orderBy=name desc`;
+
+    try {
+        const foldersRes = await fetch(foldersUrl);
+        if (!foldersRes.ok) {
+            console.log(`[getMinutesByYear] Failed to list year folders: ${foldersRes.status}`);
+            return [];
+        }
+        const foldersData = await foldersRes.json();
+        const yearFolders = (foldersData.files || []).filter((f: any) => /^\d{4}$/.test(f.name));
+
+        console.log(`[getMinutesByYear] Found ${yearFolders.length} year folders`);
+
+        // Step 2: For each year folder, look for "minutes" subfolder and get its files
+        const results: MinutesByYear[] = [];
+        const currentYear = new Date().getFullYear().toString();
+
+        for (const yearFolder of yearFolders) {
+            const minutesFolder = await findChildByName(yearFolder.id, "minutes", "application/vnd.google-apps.folder");
+
+            if (!minutesFolder) {
+                // If this is the current year and no minutes folder, still include with empty files
+                if (yearFolder.name === currentYear) {
+                    results.push({
+                        year: yearFolder.name,
+                        files: [],
+                        folderUrl: "#"
+                    });
+                }
+                continue;
+            }
+
+            // List files in minutes folder
+            const filesQ = `'${minutesFolder.id}' in parents and trashed = false`;
+            const filesUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(filesQ)}&orderBy=name desc&key=${config.apiKey}&fields=files(id,name,webViewLink,createdTime)`;
+
+            const filesRes = await fetch(filesUrl);
+            if (!filesRes.ok) continue;
+
+            const filesData = await filesRes.json();
+
+            results.push({
+                year: yearFolder.name,
+                files: (filesData.files || []).map((f: any) => ({
+                    id: f.id,
+                    name: f.name?.replace(/\.(pdf|docx?)$/i, "") || "Untitled",
+                    url: f.webViewLink,
+                    createdTime: f.createdTime
+                })),
+                folderUrl: minutesFolder.webViewLink || "#"
+            });
+        }
+
+        // Ensure current year is always first (even if no minutes yet)
+        const hasCurrentYear = results.some(r => r.year === currentYear);
+        if (!hasCurrentYear) {
+            results.unshift({
+                year: currentYear,
+                files: [],
+                folderUrl: "#"
+            });
+        }
+
+        // Sort by year descending
+        results.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+
+        // Cache results
+        setCache(cacheKey, results);
+
+        console.log(`[getMinutesByYear] Returning ${results.length} years`);
+        return results;
+    } catch (error) {
+        console.error("[getMinutesByYear] Error:", error);
+        return [];
+    }
+}
+
 export async function getBudgetInfo() {
     // Check cache first
     const cached = getCached<{ remaining: string; total: string; lastUpdated: string; detailsUrl: string }>(CACHE_KEYS.BUDGET, CACHE_TTL.BUDGET);
