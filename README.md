@@ -11,7 +11,8 @@ The objective of this project is to provide a generic, easily deployable templat
 - **Resident Involvement**: Integrated forms for committee applications, event suggestions, and purchase requests.
 - **Event Management**: Up-to-date view of upcoming community events (integrated with Google Calendar).
 - **Transparency**: Easy access to meeting minutes, budgets, and public documents directly from Google Drive.
-- **Contact Channel**: A clear, centralized channel for resident questions and feedback.
+- **Social Integration**: Dynamic social media links managed via Google Sheets.
+- **Info Reel Mode**: Automated "kiosk" mode that cycles through all pages—perfect for public displays.
 - **Admin Dashboard**: A dedicated management interface for committee members to track and process submissions.
 
 ## Tech Stack
@@ -83,6 +84,7 @@ This project integrates with Google Calendar, Drive, and Sheets to display dynam
     
     - **Public Root Folder ID** (`GOOGLE_DRIVE_PUBLIC_ROOT_ID`): 
         - Create a root folder (e.g., "Committe Public Folder") in Google Drive.
+        - At the root level, create a Google Sheet named `some` (for social media links).
         - Inside it, create folders for each year (e.g., "2026").
         - Inside a year folder (e.g. "2026"), create:
              - A Google Sheet named `budget` (import the template).
@@ -118,6 +120,20 @@ This project integrates with Google Calendar, Drive, and Sheets to display dynam
     - Calendar: Make public (for event display)
     - Public folder: Share with "Anyone with the link" (Viewer)
     - Submissions sheet: Share with service account email (Editor)
+
+---
+ 
+## Display Modes
+
+### Info Reel (Kiosk Mode)
+
+The application includes an "Info Reel" mode designed for public displays or kiosks. In this mode:
+- The application automatically cycles through all main pages (`/`, `/events`, `/budget`, `/minutes`, `/social`) every 30 seconds.
+- A visual progress bar at the bottom indicates the time remaining before the next transition.
+- Decorative elements like "Open Link" buttons and the "Login" navigation item are hidden for a cleaner look.
+
+To activate Info Reel mode, append `?view=infoReel` to any URL:
+`http://localhost:5173/?view=infoReel`
 
 ---
 
