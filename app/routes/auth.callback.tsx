@@ -5,7 +5,7 @@ import {
     createSession,
     isAdmin
 } from "~/lib/auth.server";
-
+import { getDatabase } from "~/db";
 export async function loader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
@@ -34,23 +34,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return redirect("/?error=user_info_failed");
     }
 
-    // Check if user is admin
-    if (!isAdmin(userInfo.email)) {
-        console.log("[OAuth Callback] Non-admin login attempt:", userInfo.email);
-        return redirect("/?error=not_admin");
-    }
+    // Persist user to database (creates new or updates existing)
+    const db = getDatabase();
+    await db.upsertUser({
+        email: userInfo.email,
+        name: userInfo.name || userInfo.email.split("@")[0],
+    });
 
-    // Create session
+    // Create session for all authenticated users
     const sessionCookie = await createSession({
         email: userInfo.email,
         name: userInfo.name,
         picture: userInfo.picture,
     });
 
-    console.log("[OAuth Callback] Admin logged in:", userInfo.email);
+    // Redirect based on admin status
+    const isAdminUser = isAdmin(userInfo.email);
+    const redirectPath = isAdminUser ? "/admin/board" : "/";
 
-    // Redirect to admin board with session cookie
-    return redirect("/admin/board", {
+    console.log(`[OAuth Callback] User logged in: ${userInfo.email} (admin: ${isAdminUser})`);
+
+    return redirect(redirectPath, {
         headers: {
             "Set-Cookie": sessionCookie,
         },

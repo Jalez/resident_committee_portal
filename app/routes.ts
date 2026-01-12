@@ -12,6 +12,10 @@ export default [
 	route("auth/login", "routes/auth.login.tsx"),
 	route("auth/callback", "routes/auth.callback.tsx"),
 	route("auth/logout", "routes/auth.logout.tsx"),
+	// User routes
+	route("profile", "routes/profile.tsx"),
+	// Staff routes (admin + board_member)
+	route("submissions", "routes/submissions.tsx"),
 	// Admin routes
 	route("admin/board", "routes/admin.board.tsx"),
 	route("admin/users", "routes/admin.users.tsx"),

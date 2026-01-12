@@ -702,3 +702,74 @@ export async function updateSubmissionStatus(rowIndex: number, newStatus: string
         return false;
     }
 }
+
+// ============================================
+// ADMIN: DELETE SUBMISSION
+// ============================================
+
+export async function deleteSubmission(rowIndex: number): Promise<boolean> {
+    if (!config.submissionsSheetId) {
+        console.error("[deleteSubmission] No submissions sheet ID configured");
+        return false;
+    }
+
+    const accessToken = await getServiceAccountAccessToken();
+    if (!accessToken) {
+        console.error("[deleteSubmission] Could not get access token");
+        return false;
+    }
+
+    // First, get the sheet ID (gid) - we need it for the batchUpdate request
+    const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${config.submissionsSheetId}?fields=sheets.properties`;
+
+    try {
+        const metaRes = await fetch(metadataUrl, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (!metaRes.ok) {
+            console.error("[deleteSubmission] Failed to get sheet metadata");
+            return false;
+        }
+
+        const metaData = await metaRes.json();
+        const sheetId = metaData.sheets?.[0]?.properties?.sheetId || 0;
+
+        // Use batchUpdate to delete the row
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.submissionsSheetId}:batchUpdate`;
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                requests: [
+                    {
+                        deleteDimension: {
+                            range: {
+                                sheetId: sheetId,
+                                dimension: "ROWS",
+                                startIndex: rowIndex - 1, // 0-indexed
+                                endIndex: rowIndex,       // exclusive
+                            },
+                        },
+                    },
+                ],
+            }),
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("[deleteSubmission] API Error:", errorText);
+            return false;
+        }
+
+        console.log(`[deleteSubmission] Row ${rowIndex} deleted successfully`);
+        return true;
+    } catch (error) {
+        console.error("[deleteSubmission] Error:", error);
+        return false;
+    }
+}

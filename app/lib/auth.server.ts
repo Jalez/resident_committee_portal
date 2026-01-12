@@ -97,6 +97,36 @@ export async function requireAdmin(request: Request): Promise<SessionData> {
     return session;
 }
 
+/**
+ * Require user to be either admin or board_member
+ * Returns session data with role included
+ */
+export async function requireStaff(
+    request: Request,
+    getDatabase: () => { findUserByEmail: (email: string) => Promise<{ role: string } | null> }
+): Promise<SessionData & { role: string }> {
+    const session = await getSession(request);
+
+    if (!session) {
+        throw new Response("Unauthorized", { status: 401 });
+    }
+
+    // Check database for user role
+    const db = getDatabase();
+    const dbUser = await db.findUserByEmail(session.email);
+
+    if (!dbUser) {
+        throw new Response("User not found", { status: 403 });
+    }
+
+    const isStaff = dbUser.role === "admin" || dbUser.role === "board_member";
+    if (!isStaff) {
+        throw new Response("Forbidden - Staff access required", { status: 403 });
+    }
+
+    return { ...session, role: dbUser.role };
+}
+
 // ============================================
 // GOOGLE OAUTH 2.0
 // ============================================

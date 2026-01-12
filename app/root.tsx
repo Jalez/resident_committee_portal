@@ -12,16 +12,41 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { getSession, isAdmin } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getDatabase } from "~/db";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request);
+
+  let userRole: "resident" | "board_member" | "admin" | undefined;
+  if (session?.email) {
+    try {
+      const db = getDatabase();
+      const dbUser = await db.findUserByEmail(session.email);
+      userRole = dbUser?.role;
+    } catch {
+      // Database might not be available, fall back to isAdmin check
+    }
+  }
+
+  const userIsAdmin = session ? isAdmin(session.email) : false;
+  const isStaff = userRole === "admin" || userRole === "board_member";
+
   return {
     user: session ? {
       email: session.email,
       name: session.name,
-      isAdmin: isAdmin(session.email),
+      isAdmin: userIsAdmin,
+      role: userRole,
     } : null,
     siteConfig: SITE_CONFIG,
+    // Pre-compute nav visibility on server
+    navVisibility: {
+      showLogin: !session,
+      showLogout: !!session,
+      showProfile: !!session,
+      showSubmissions: isStaff,
+      showUsers: userIsAdmin,
+    },
   };
 }
 
@@ -64,7 +89,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client";
 import { Navigation } from "./components/navigation";
 import { InfoReelProvider } from "./contexts/info-reel-context";
-import { InfoReelProgressBar } from "./components/info-reel-progress";
 import { useInfoReel } from "./contexts/info-reel-context";
 
 function ContentFader({ children }: { children: React.ReactNode }) {
@@ -81,7 +105,7 @@ function ContentFader({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { user, siteConfig } = useLoaderData<typeof loader>();
+  const { user, siteConfig, navVisibility } = useLoaderData<typeof loader>();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -101,11 +125,9 @@ export default function App() {
             </header>
 
             <nav className="pb-1 sm:pb-2 md:pb-4">
-              <Navigation orientation="horizontal" user={user} />
+              <Navigation orientation="horizontal" user={user} navVisibility={navVisibility} />
             </nav>
 
-            {/* Info Reel Progress Bar - replaces border-bottom in info reel mode */}
-            <InfoReelProgressBar />
           </div>
 
           {/* Main Content Area - fades during info reel transitions */}
