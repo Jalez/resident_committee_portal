@@ -14,4 +14,5 @@ export const queryKeys = {
     budget: ["budget"] as const,
     minutes: ["minutes"] as const,
     social: ["social"] as const,
+    inventory: ["inventory"] as const,
 } as const;

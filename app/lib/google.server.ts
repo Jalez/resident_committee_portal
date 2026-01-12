@@ -311,6 +311,96 @@ export async function getBudgetInfo() {
 }
 
 // ============================================
+// INVENTORY (from "inventory" sheet in year folder)
+// ============================================
+
+export interface InventoryItem {
+    name: string;
+    quantity: number;
+    location: string;
+    category: string;
+    description: string;
+    value: number;
+}
+
+export interface InventoryInfo {
+    topItems: InventoryItem[];
+    detailsUrl: string;
+}
+
+export async function getInventory(): Promise<InventoryInfo | null> {
+    // Check cache first
+    const cached = getCached<InventoryInfo>(CACHE_KEYS.INVENTORY, CACHE_TTL.INVENTORY);
+    if (cached !== null && cached.detailsUrl) {
+        return cached;
+    }
+
+    const yearFolder = await getCurrentYearFolder();
+    if (!yearFolder) return null;
+
+    // Look for "inventory" spreadsheet
+    let inventoryFile = await findChildByName(yearFolder.id, "inventory", "application/vnd.google-apps.spreadsheet");
+
+    // If not found, maybe they named it "inventory.csv" but it IS a spreadsheet
+    if (!inventoryFile) {
+        inventoryFile = await findChildByName(yearFolder.id, "inventory.csv", "application/vnd.google-apps.spreadsheet");
+    }
+
+    if (!inventoryFile) return null;
+
+    // Fetch data starting from row 2 (skip header), columns A:F
+    const range = "A2:F";
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${inventoryFile.id}/values/${range}?key=${config.apiKey}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const rows = data.values;
+
+        if (!rows || rows.length === 0) {
+            console.log("[getInventory] No data rows found");
+            return {
+                topItems: [],
+                detailsUrl: inventoryFile.webViewLink || `https://docs.google.com/spreadsheets/d/${inventoryFile.id}`
+            };
+        }
+
+        // Parse rows into InventoryItem objects
+        const items: InventoryItem[] = rows
+            .filter((row: string[]) => row[0]) // Must have a name
+            .map((row: string[]) => ({
+                name: row[0] || "",
+                quantity: parseInt(row[1]) || 0,
+                location: row[2] || "",
+                category: row[3] || "",
+                description: row[4] || "",
+                value: parseFloat(row[5]) || 0,
+            }));
+
+        // Sort by value descending and take top 3
+        const topItems = items
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 3);
+
+        const result: InventoryInfo = {
+            topItems,
+            detailsUrl: inventoryFile.webViewLink || `https://docs.google.com/spreadsheets/d/${inventoryFile.id}`
+        };
+
+        console.log(`[getInventory] Discovered sheet URL: ${result.detailsUrl}, found ${items.length} items, returning top ${topItems.length}`);
+
+        // Cache the result
+        setCache(CACHE_KEYS.INVENTORY, result);
+
+        return result;
+    } catch (error) {
+        console.error("Inventory fetch error:", error);
+        return null;
+    }
+}
+
+// ============================================
 // SOCIAL CHANNELS (from "some" sheet in root)
 // ============================================
 

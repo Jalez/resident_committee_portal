@@ -9,6 +9,7 @@ export const CACHE_TTL = {
     BUDGET: 3 * 60 * 60 * 1000,            // 3 hours
     MINUTES: 3 * 60 * 60 * 1000,           // 3 hours
     SOCIAL_CHANNELS: 3 * 60 * 60 * 1000,   // 3 hours
+    INVENTORY: 3 * 60 * 60 * 1000,         // 3 hours
 };
 
 interface CacheEntry<T> {
@@ -69,4 +70,5 @@ export const CACHE_KEYS = {
     BUDGET: "budget",
     MINUTES: "minutes",
     SOCIAL_CHANNELS: "social_channels",
+    INVENTORY: "inventory",
 };
