@@ -20,6 +20,7 @@ The objective of this project is to provide a generic, easily deployable templat
 - **Framework**: [React Router 7](https://reactrouter.com/) (Vite)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **Components**: [shadcn/ui](https://ui.shadcn.com/) based components
+- **Database**: [Drizzle ORM](https://orm.drizzle.team/) with [Neon](https://neon.tech/) PostgreSQL
 - **Integrations**: Google Cloud API (Sheets, Drive, Calendar)
 - **Linting & Formatting**: [Biome](https://biomejs.dev/)
 - **Runtime**: [Bun](https://bun.sh/) (Recommended)
@@ -54,9 +55,47 @@ bun run build
 
 The application is container-ready and can be deployed using the included Dockerfile.
 
-## Styling
+## Database Setup
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+The portal uses PostgreSQL for storing user data. Two adapters are included:
+- **postgres**: Standard PostgreSQL (default for local development)
+- **neon**: [Neon](https://neon.tech/) serverless PostgreSQL (default for production/Vercel)
+
+### Local Development
+
+By default, the app uses standard PostgreSQL in development. If you have a local Postgres container:
+
+```bash
+# Default connection (customize in .env if needed)
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/portal
+```
+
+Push the schema to your local database:
+```bash
+bun run db:push
+```
+
+### Production (Neon + Vercel)
+
+1. In your Vercel project, go to **Storage** → **Create Database** → **Neon**
+2. Vercel automatically sets `DATABASE_URL` and the app detects production environment
+
+### Database Commands
+
+```bash
+bun run db:push      # Push schema to database (dev)
+bun run db:generate  # Generate migrations
+bun run db:migrate   # Run migrations (prod)
+bun run db:studio    # Open Drizzle Studio GUI
+```
+
+### Adding Other Database Providers
+
+The database layer uses an adapter pattern (`app/db/adapters/`). To add a new provider:
+
+1. Create a new adapter implementing `DatabaseAdapter` interface
+2. Add the provider to `createDatabaseAdapter()` in `app/db/index.ts`
+3. Set `DATABASE_PROVIDER` env var to your provider name
 
 ## Google Services Integration
 

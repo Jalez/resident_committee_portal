@@ -1,6 +1,6 @@
-# Hippos Portal Templates
+# Portal Templates
 
-This directory contains template files and instructions for maintaining the data used by the Hippos Portal application.
+This directory contains template files and instructions for maintaining the data used by the Resident Committee Portal application.
 
 ## Folder Structure
 
@@ -66,3 +66,21 @@ This file is a template for social media channels displayed on the "Social" page
 | Generic | `link` |
 
 > **Tip**: Browse all icons at [Material Symbols](https://fonts.google.com/icons)
+
+## 4. Inventory (`inventory.csv`)
+
+This file is a template for tracking committee inventory items displayed on the "Tavaraluettelo" page.
+
+### Instructions:
+1.  Inside the current year's folder (e.g., `2026`), create a **New Google Sheet** named `inventory`.
+2.  **Import** (`File > Import`) the `inventory.csv` file into this sheet.
+3.  **Fill in the values**:
+    *   **Column A (Item Name)**: Name of the item (e.g., "Projector", "Sound System")
+    *   **Column B (Quantity)**: Number of items
+    *   **Column C (Location)**: Where it's stored (e.g., "Storage Room", "Office")
+    *   **Column D (Category)**: Category (e.g., "Electronics", "Furniture", "Kitchen")
+    *   **Column E (Description)**: Brief description of the item
+    *   **Column F (Value)**: Estimated value in euros (used for sorting top items)
+4.  The application will automatically find this file (`inventory`) inside the year folder.
+
+> **Note**: The public page shows only the **3 most valuable items** (sorted by Column F). A QR code/link provides access to the full inventory spreadsheet.
