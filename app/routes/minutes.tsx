@@ -1,35 +1,39 @@
 import type { Route } from "./+types/minutes";
+import { useRouteLoaderData } from "react-router";
 import { PageWrapper, SplitLayout, QRPanel } from "~/components/layout/page-layout";
 import { getMinutesByYear, type MinutesByYear } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { loader as rootLoader } from "~/root";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Pöytäkirjat / Minutes` },
-		{ name: "description", content: "Toimikunnan kokouspöytäkirjat / Tenant Committee Meeting Minutes" },
-	];
+    return [
+        { title: `${data?.siteConfig?.name || "Portal"} - Pöytäkirjat / Minutes` },
+        { name: "description", content: "Toimikunnan kokouspöytäkirjat / Tenant Committee Meeting Minutes" },
+    ];
 }
 
-export async function loader({}: Route.LoaderArgs) {
-	const minutesByYear = await queryClient.ensureQueryData({
-		queryKey: queryKeys.minutes,
-		queryFn: getMinutesByYear,
-		staleTime: STALE_TIME,
-	});
+export async function loader({ }: Route.LoaderArgs) {
+    const minutesByYear = await queryClient.ensureQueryData({
+        queryKey: queryKeys.minutes,
+        queryFn: getMinutesByYear,
+        staleTime: STALE_TIME,
+    });
 
-	const archiveUrl = minutesByYear.find((y) => y.files.length > 0)?.folderUrl || "#";
+    const archiveUrl = minutesByYear.find((y) => y.files.length > 0)?.folderUrl || "#";
 
-	return {
-		siteConfig: SITE_CONFIG,
-		minutesByYear,
-		archiveUrl,
-	};
+    return {
+        siteConfig: SITE_CONFIG,
+        minutesByYear,
+        archiveUrl,
+    };
 }
 
 export default function Minutes({ loaderData }: Route.ComponentProps) {
     const { minutesByYear, archiveUrl } = loaderData;
+    const rootData = useRouteLoaderData<typeof rootLoader>("root");
+    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
 
     // QR Panel only shown in info reel mode
     const RightContent = (
@@ -53,6 +57,27 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
                 header={{ finnish: "Pöytäkirjat", english: "Minutes" }}
             >
                 <div className="space-y-8">
+                    {/* Staff instructions for naming convention */}
+                    {isStaff && (
+                        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-start gap-3">
+                                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 shrink-0">
+                                    info
+                                </span>
+                                <div className="text-sm text-blue-800 dark:text-blue-200">
+                                    <p className="font-bold mb-1">
+                                        Pöytäkirjojen nimeäminen / Naming Minutes
+                                    </p>
+                                    <p className="mb-2">
+                                        Käytä muotoa / Use format: <code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-800 rounded font-mono text-xs">YYYY-MM-DD_KuvausName.pdf</code>
+                                    </p>
+                                    <p className="text-xs opacity-80">
+                                        Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {minutesByYear.map((yearGroup: MinutesByYear) => (
                         <div key={yearGroup.year} className="relative">
                             {/* Year header - same style as month headers in events */}

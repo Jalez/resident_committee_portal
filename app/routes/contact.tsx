@@ -1,21 +1,43 @@
 import type { Route } from "./+types/contact";
-import { Form, useActionData, useSearchParams } from "react-router";
+import { Form, useActionData, useSearchParams, useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { useState, useEffect } from "react";
 import { saveFormSubmission } from "~/lib/google.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSession } from "~/lib/auth.server";
+import { getDatabase } from "~/db";
+import type { loader as rootLoader } from "~/root";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Ota yhteyttä / Contact` },
-		{ name: "description", content: "Ota yhteyttä asukastoimikuntaan / Contact the Tenant Committee" },
-	];
+    return [
+        { title: `${data?.siteConfig?.name || "Portal"} - Ota yhteyttä / Contact` },
+        { name: "description", content: "Ota yhteyttä asukastoimikuntaan / Contact the Tenant Committee" },
+    ];
 }
 
-export function loader() {
-	return { siteConfig: SITE_CONFIG };
+export async function loader({ request }: Route.LoaderArgs) {
+    const session = await getSession(request);
+    let userDetails: { name?: string; email?: string; apartmentNumber?: string | null } | null = null;
+
+    if (session?.email) {
+        try {
+            const db = getDatabase();
+            const dbUser = await db.findUserByEmail(session.email);
+            if (dbUser) {
+                userDetails = {
+                    name: dbUser.name,
+                    email: dbUser.email,
+                    apartmentNumber: dbUser.apartmentNumber,
+                };
+            }
+        } catch {
+            // Database might not be available
+        }
+    }
+
+    return { siteConfig: SITE_CONFIG, userDetails };
 }
 
 // Form types matching the home page options
@@ -55,24 +77,44 @@ export async function action({ request }: Route.ActionArgs) {
     const type = formData.get("type") as string;
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
+    const apartmentNumber = formData.get("apartmentNumber") as string;
     const message = formData.get("message") as string;
+    const updateApartment = formData.get("updateApartment") === "on";
 
-    console.log("[Contact Form] Received submission:", { type, name, email });
+    console.log("[Contact Form] Received submission:", { type, name, email, apartmentNumber, updateApartment });
 
-    const saved = await saveFormSubmission({ type, name, email, message });
+    const saved = await saveFormSubmission({ type, name, email, apartmentNumber, message });
 
     if (!saved) {
         console.error("[Contact Form] Failed to save submission to Google Sheets");
         // Still return success to user (graceful degradation) but log the error
     }
 
+    // If user is logged in and wants to update their apartment number
+    if (updateApartment && apartmentNumber) {
+        try {
+            const session = await getSession(request);
+            if (session?.email) {
+                const db = getDatabase();
+                const dbUser = await db.findUserByEmail(session.email);
+                if (dbUser) {
+                    await db.updateUser(dbUser.id, { apartmentNumber });
+                    console.log(`[Contact Form] Updated apartment number for ${session.email} to ${apartmentNumber}`);
+                }
+            }
+        } catch (error) {
+            console.error("[Contact Form] Failed to update apartment number:", error);
+        }
+    }
+
     return { success: true };
 }
 
-export default function Contact({ actionData }: Route.ComponentProps) {
+export default function Contact({ loaderData, actionData }: Route.ComponentProps) {
     const submitted = actionData?.success;
     const [searchParams] = useSearchParams();
     const preselectedType = searchParams.get("type");
+    const { userDetails } = loaderData;
 
     const [selectedType, setSelectedType] = useState<string | null>(preselectedType);
 
@@ -163,7 +205,7 @@ export default function Contact({ actionData }: Route.ComponentProps) {
                     <Form method="post" className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <input type="hidden" name="type" value={selectedType} />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1">
                                     Nimi / Name
@@ -173,6 +215,7 @@ export default function Contact({ actionData }: Route.ComponentProps) {
                                     name="name"
                                     id="name"
                                     required
+                                    defaultValue={userDetails?.name || ""}
                                     className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium"
                                 />
                             </div>
@@ -186,10 +229,41 @@ export default function Contact({ actionData }: Route.ComponentProps) {
                                     name="email"
                                     id="email"
                                     required
+                                    defaultValue={userDetails?.email || ""}
                                     className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium"
                                 />
                             </div>
+
+                            <div className="space-y-1.5">
+                                <label htmlFor="apartmentNumber" className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1">
+                                    Asunto / Apartment
+                                </label>
+                                <input
+                                    type="text"
+                                    name="apartmentNumber"
+                                    id="apartmentNumber"
+                                    required
+                                    placeholder="esim. A 123"
+                                    defaultValue={userDetails?.apartmentNumber || ""}
+                                    className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium placeholder:text-gray-400 placeholder:opacity-60"
+                                />
+                            </div>
                         </div>
+
+                        {/* Checkbox to update apartment number in profile - only for logged-in users */}
+                        {userDetails && (
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    name="updateApartment"
+                                    defaultChecked={!userDetails.apartmentNumber}
+                                    className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                                />
+                                <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+                                    Päivitä asuntonumero profiiliini / Update apartment number in my profile
+                                </span>
+                            </label>
+                        )}
 
                         <div className="space-y-1.5">
                             <label htmlFor="message" className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1">
