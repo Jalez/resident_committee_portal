@@ -90,6 +90,7 @@ import { queryClient } from "./lib/query-client";
 import { Navigation } from "./components/navigation";
 import { InfoReelProvider } from "./contexts/info-reel-context";
 import { useInfoReel } from "./contexts/info-reel-context";
+import { Toaster } from "~/components/ui/sonner";
 
 function ContentFader({ children }: { children: React.ReactNode }) {
   const { isInfoReel, opacity } = useInfoReel();
@@ -136,6 +137,7 @@ export default function App() {
           </ContentFader>
         </div>
       </InfoReelProvider>
+      <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );
 }
