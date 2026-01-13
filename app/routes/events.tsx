@@ -1,15 +1,16 @@
 import type { Route } from "./+types/events";
-import { PageWrapper, SplitLayout, QRPanel, ActionButton } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout, QRPanel, ActionButton, ContentArea } from "~/components/layout/page-layout";
+import { SearchMenu, type SearchField } from "~/components/search-menu";
 import { getCalendarEvents, getCalendarUrl } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import { SITE_CONFIG } from "~/lib/config.server";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Tapahtumat / Events` },
-		{ name: "description", content: "Tulevat tapahtumat / Upcoming events" },
-	];
+    return [
+        { title: `${data?.siteConfig?.name || "Portal"} - Tapahtumat / Events` },
+        { name: "description", content: "Tulevat tapahtumat / Upcoming events" },
+    ];
 }
 
 interface Event {
@@ -27,7 +28,9 @@ interface GroupedMonth {
     events: Event[];
 }
 
-export async function loader({ }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
+    const url = new URL(request.url);
+    const titleFilter = url.searchParams.get("title") || "";
     // Use ensureQueryData for client-side caching
     // Returns cached data if fresh, fetches if stale
     const [calendarItems, calendarUrl] = await Promise.all([
@@ -45,8 +48,11 @@ export async function loader({ }: Route.LoaderArgs) {
 
     if (!calendarItems.length) {
         return {
+            siteConfig: SITE_CONFIG,
             groupedMonths: [],
-            calendarUrl
+            calendarUrl,
+            filters: { title: titleFilter },
+            hasFilters: !!titleFilter,
         };
     }
 
@@ -93,7 +99,29 @@ export async function loader({ }: Route.LoaderArgs) {
 }
 
 export default function Events({ loaderData }: Route.ComponentProps) {
-    const { groupedMonths, calendarUrl } = loaderData;
+    const { groupedMonths, calendarUrl, filters, hasFilters } = loaderData;
+
+    // Configure search fields
+    const searchFields: SearchField[] = [
+        {
+            name: "title",
+            label: "Tapahtuma / Event",
+            type: "text",
+            placeholder: "Hae nimellä...",
+        },
+    ];
+
+    // Filter events client-side based on title filter
+    const filteredMonths: GroupedMonth[] = filters?.title
+        ? groupedMonths
+            .map((month: GroupedMonth) => ({
+                ...month,
+                events: month.events.filter((event: Event) =>
+                    event.title.toLowerCase().includes(filters.title.toLowerCase())
+                )
+            }))
+            .filter((month: GroupedMonth) => month.events.length > 0)
+        : groupedMonths;
 
     // QR Panel only shown in info reel mode
     const RightContent = (
@@ -108,16 +136,21 @@ export default function Events({ loaderData }: Route.ComponentProps) {
         />
     );
 
-    // Action button shown below content in regular mode
-    const FooterContent = calendarUrl ? (
-        <ActionButton
-            href={calendarUrl}
-            icon="calendar_month"
-            labelFi="Avaa kalenteri"
-            labelEn="Open Calendar"
-            external={true}
-        />
-    ) : null;
+    // Header actions: Search + Calendar button
+    const FooterContent = (
+        <div className="flex items-center gap-2">
+            <SearchMenu fields={searchFields} />
+            {calendarUrl && (
+                <ActionButton
+                    href={calendarUrl}
+                    icon="calendar_month"
+                    labelFi="Avaa kalenteri"
+                    labelEn="Open Calendar"
+                    external={true}
+                />
+            )}
+        </div>
+    );
 
     return (
         <PageWrapper>
@@ -126,19 +159,19 @@ export default function Events({ loaderData }: Route.ComponentProps) {
                 footer={FooterContent}
                 header={{ finnish: "Tapahtumat", english: "Events" }}
             >
-                <div>
-                    {!groupedMonths.length ? (
-                        <div className="bg-primary -mx-8 mb-8 px-8 py-4 lg:-mx-12 lg:mb-8 lg:px-12 flex items-center justify-end text-white">
+                <ContentArea>
+                    {!filteredMonths.length ? (
+                        <div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white">
                             <p className="text-xl font-bold leading-none uppercase tracking-widest">
-                                Tulevat / Upcoming
+                                {hasFilters ? "Ei tuloksia / No results" : "Tulevat / Upcoming"}
                             </p>
                         </div>
                     ) : null}
 
                     <div className="space-y-12">
-                        {groupedMonths.map((group) => (
+                        {filteredMonths.map((group: GroupedMonth) => (
                             <div key={group.monthName} className="relative">
-                                <div className="bg-primary -mx-8 mb-8 px-8 py-4 lg:-mx-12 lg:mb-8 lg:px-12 flex items-center justify-end text-white sticky top-0 z-10">
+                                <div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white sticky top-0 z-10">
                                     <p className="text-xl font-bold leading-none uppercase tracking-widest">
                                         {group.monthName}
                                     </p>
@@ -197,7 +230,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
                             Ei tulevia tapahtumia / No upcoming events
                         </div>
                     )}
-                </div>
+                </ContentArea>
             </SplitLayout>
         </PageWrapper>
     );

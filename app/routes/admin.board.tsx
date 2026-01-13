@@ -8,21 +8,21 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Hallintapaneeli / Admin` },
-		{ name: "robots", content: "noindex" },
-	];
+    return [
+        { title: `${data?.siteConfig?.name || "Portal"} - Hallintapaneeli / Admin` },
+        { name: "robots", content: "noindex" },
+    ];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	const session = await requireAdmin(request);
-	const submissions = await getSubmissions();
+    const session = await requireAdmin(request);
+    const submissions = await getSubmissions();
 
-	return {
-		siteConfig: SITE_CONFIG,
-		session,
-		submissions: submissions.reverse(),
-	};
+    return {
+        siteConfig: SITE_CONFIG,
+        session,
+        submissions: submissions.reverse(),
+    };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -72,20 +72,7 @@ export default function AdminBoard({ loaderData }: Route.ComponentProps) {
                             Admin Board
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {session.name || session.email}
-                            </p>
-                            <p className="text-xs text-gray-500">{session.email}</p>
-                        </div>
-                        <a
-                            href="/auth/logout"
-                            className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-                        >
-                            Kirjaudu ulos / Logout
-                        </a>
-                    </div>
+
                 </div>
 
                 {/* Navigation */}

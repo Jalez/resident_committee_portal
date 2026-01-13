@@ -76,20 +76,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 						</h1>
 						<p className="text-lg text-gray-500">User Management</p>
 					</div>
-					<div className="flex items-center gap-4">
-						<div className="text-right">
-							<p className="text-sm font-medium text-gray-900 dark:text-white">
-								{session.name || session.email}
-							</p>
-							<p className="text-xs text-gray-500">{session.email}</p>
-						</div>
-						<a
-							href="/auth/logout"
-							className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-						>
-							Kirjaudu ulos / Logout
-						</a>
-					</div>
+
 				</div>
 
 				{/* Navigation */}

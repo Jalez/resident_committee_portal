@@ -1,6 +1,6 @@
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/social";
-import { PageWrapper, SplitLayout, QRPanel } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/layout/page-layout";
 import { getSocialChannels, type SocialChannel } from "~/lib/google.server";
 import { useLocalReel } from "~/contexts/info-reel-context";
 import { queryClient } from "~/lib/query-client";
@@ -8,19 +8,19 @@ import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import { SITE_CONFIG } from "~/lib/config.server";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Some / Social` },
-		{ name: "description", content: "Seuraa meitä somessa / Follow us on social media" },
-	];
+    return [
+        { title: `${data?.siteConfig?.name || "Portal"} - Some / Social` },
+        { name: "description", content: "Seuraa meitä somessa / Follow us on social media" },
+    ];
 }
 
-export async function loader({}: Route.LoaderArgs) {
-	const channels = await queryClient.ensureQueryData({
-		queryKey: queryKeys.social,
-		queryFn: getSocialChannels,
-		staleTime: STALE_TIME,
-	});
-	return { siteConfig: SITE_CONFIG, channels };
+export async function loader({ }: Route.LoaderArgs) {
+    const channels = await queryClient.ensureQueryData({
+        queryKey: queryKeys.social,
+        queryFn: getSocialChannels,
+        staleTime: STALE_TIME,
+    });
+    return { siteConfig: SITE_CONFIG, channels };
 }
 
 export default function Social({ loaderData }: Route.ComponentProps) {
@@ -61,7 +61,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                 right={RightContent}
                 header={{ finnish: "Sosiaalinen Media", english: "Social Media" }}
             >
-                <div className="space-y-2">
+                <ContentArea className="space-y-2">
                     {channels.map((channel, index) => {
                         const isActive = isInfoReel && index === activeIndex;
 
@@ -125,7 +125,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                             </a>
                         );
                     })}
-                </div>
+                </ContentArea>
             </SplitLayout>
         </PageWrapper>
     );

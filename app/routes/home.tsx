@@ -1,34 +1,34 @@
 import type { Route } from "./+types/home";
-import { PageWrapper, SplitLayout, QRPanel } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/layout/page-layout";
 import { SITE_CONFIG } from "~/lib/config.server";
 
 export function meta({ data }: Route.MetaArgs) {
-	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Etusivu / Home` },
-		{ name: "description", content: data?.siteConfig?.description || "" },
-	];
+  return [
+    { title: `${data?.siteConfig?.name || "Portal"} - Etusivu / Home` },
+    { name: "description", content: data?.siteConfig?.description || "" },
+  ];
 }
 
 interface InvolvementOption {
-	id: string;
-	title: string;
-	subtitle: string;
-	icon: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
 }
 
-export function loader({}: Route.LoaderArgs) {
-	return {
-		siteConfig: SITE_CONFIG,
-		options: [
-			{
-				id: "committee",
-				title: "Hae toimikuntaan",
-				subtitle: "Apply for the Tenant Committee",
-				icon: "diversity_3",
-			},
-			{
-				id: "events",
-				title: "Ehdota tapahtumia",
+export function loader({ }: Route.LoaderArgs) {
+  return {
+    siteConfig: SITE_CONFIG,
+    options: [
+      {
+        id: "committee",
+        title: "Hae toimikuntaan",
+        subtitle: "Apply for the Tenant Committee",
+        icon: "diversity_3",
+      },
+      {
+        id: "events",
+        title: "Ehdota tapahtumia",
         subtitle: "Suggest Events",
         icon: "celebration",
       },
@@ -70,7 +70,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         right={RightContent}
         header={{ finnish: "Osallistu", english: "Get Involved" }}
       >
-        <div className="space-y-4">
+        <ContentArea className="space-y-4">
           {options.map((option) => (
             <a
               key={option.id}
@@ -95,7 +95,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               </span>
             </a>
           ))}
-        </div>
+        </ContentArea>
       </SplitLayout>
     </PageWrapper>
   );

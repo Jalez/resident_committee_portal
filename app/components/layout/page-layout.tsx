@@ -2,6 +2,28 @@ import { Link } from "react-router";
 import { DynamicQR } from "~/components/dynamic-qr";
 import { cn } from "~/lib/utils";
 import { useInfoReel } from "~/contexts/info-reel-context";
+import { CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH } from "~/lib/layout-constants";
+
+/**
+ * Wrapper for scrollable content/list areas with fixed height.
+ * Use this to ensure consistent dimensions across public routes.
+ * Only the list content should be wrapped - headers, nav buttons, and action buttons should be outside.
+ */
+interface ContentAreaProps {
+    children: React.ReactNode;
+    className?: string;
+}
+
+export function ContentArea({ children, className }: ContentAreaProps) {
+    return (
+        <div
+            className={cn("overflow-y-auto overflow-x-hidden", className)}
+            style={{ height: CONTENT_AREA_HEIGHT, width: CONTENT_AREA_WIDTH }}
+        >
+            {children}
+        </div>
+    );
+}
 
 interface PageWrapperProps {
     children: React.ReactNode;
@@ -80,17 +102,28 @@ export function SplitLayout({ children, right, header, className, footer }: Spli
     return (
         <div className={cn("w-full max-w-[800px] overflow-hidden flex flex-col h-auto", className)}>
             <div className="flex flex-col p-8 lg:p-12 relative">
+                {/* Header row with optional action button on right */}
                 {header && (
-                    <PageHeader finnish={header.finnish} english={header.english} />
+                    <div className="flex items-start justify-between gap-4 mb-8">
+                        <h1 className="text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+                            <span className="text-gray-900 dark:text-white">{header.finnish}</span>
+                            <br />
+                            <span className="text-primary">{header.english}</span>
+                        </h1>
+                        {footer && (
+                            <div className="shrink-0">
+                                {footer}
+                            </div>
+                        )}
+                    </div>
                 )}
-                {children}
-
-                {/* Footer content (action buttons) */}
-                {footer && (
-                    <div className="mt-8">
+                {/* If no header but has footer, show footer separately */}
+                {!header && footer && (
+                    <div className="mb-8">
                         {footer}
                     </div>
                 )}
+                {children}
             </div>
         </div>
     );
@@ -215,14 +248,14 @@ interface ActionButtonProps {
 export function ActionButton({ href, icon, labelFi, labelEn, external = true, className }: ActionButtonProps) {
     const ButtonContent = (
         <>
-            <span className="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">
+            <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">
                 {icon}
             </span>
             <div className="flex flex-col items-start">
-                <span className="text-xl font-black tracking-tight">
+                <span className="text-sm font-black tracking-tight leading-tight">
                     {labelFi}
                 </span>
-                <span className="text-base font-bold opacity-80">
+                <span className="text-xs font-bold opacity-80">
                     {labelEn}
                 </span>
             </div>
@@ -230,7 +263,7 @@ export function ActionButton({ href, icon, labelFi, labelEn, external = true, cl
     );
 
     const buttonClass = cn(
-        "group inline-flex items-center gap-4 px-6 py-4 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-2xl text-white shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300",
+        "group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300",
         className
     );
 
