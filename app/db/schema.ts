@@ -37,6 +37,7 @@ export const inventoryItems = pgTable("inventory_items", {
 	category: text("category"),
 	description: text("description"),
 	value: decimal("value", { precision: 10, scale: 2 }).default("0"),
+	showInInfoReel: boolean("show_in_info_reel").notNull().default(false),
 	purchasedAt: timestamp("purchased_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
