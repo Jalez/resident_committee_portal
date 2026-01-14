@@ -1,4 +1,4 @@
-import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Budget, NewBudget, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink } from "../schema";
+import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Budget, NewBudget, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink, InventoryItemTransaction, NewInventoryItemTransaction } from "../schema";
 
 /**
  * Database adapter interface
@@ -17,6 +17,7 @@ export interface DatabaseAdapter {
 	// ==================== Inventory Methods ====================
 	getInventoryItems(): Promise<InventoryItem[]>;
 	getInventoryItemById(id: string): Promise<InventoryItem | null>;
+	getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]>;
 	createInventoryItem(item: NewInventoryItem): Promise<InventoryItem>;
 	updateInventoryItem(id: string, data: Partial<Omit<NewInventoryItem, "id">>): Promise<InventoryItem | null>;
 	deleteInventoryItem(id: string): Promise<boolean>;
@@ -43,6 +44,12 @@ export interface DatabaseAdapter {
 	updateTransaction(id: string, data: Partial<Omit<NewTransaction, "id">>): Promise<Transaction | null>;
 	deleteTransaction(id: string): Promise<boolean>;
 
+	// ==================== Inventory-Transaction Junction Methods ====================
+	linkInventoryItemToTransaction(itemId: string, transactionId: string, quantity?: number): Promise<InventoryItemTransaction>;
+	unlinkInventoryItemFromTransaction(itemId: string, transactionId: string): Promise<boolean>;
+	getTransactionsForInventoryItem(itemId: string): Promise<Transaction[]>;
+	getInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]>;
+
 	// ==================== Submission Methods ====================
 	getSubmissions(): Promise<Submission[]>;
 	getSubmissionById(id: string): Promise<Submission | null>;
@@ -57,3 +64,4 @@ export interface DatabaseAdapter {
 	updateSocialLink(id: string, data: Partial<Omit<NewSocialLink, "id">>): Promise<SocialLink | null>;
 	deleteSocialLink(id: string): Promise<boolean>;
 }
+

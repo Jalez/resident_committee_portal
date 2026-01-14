@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq } from "drizzle-orm";
-import { users, inventoryItems, purchases, budgets, transactions, submissions, socialLinks, type User, type NewUser, type InventoryItem, type NewInventoryItem, type Purchase, type NewPurchase, type Budget, type NewBudget, type Transaction, type NewTransaction, type Submission, type NewSubmission, type SubmissionStatus, type SocialLink, type NewSocialLink } from "../schema";
+import { eq, and, notInArray } from "drizzle-orm";
+import { users, inventoryItems, purchases, budgets, transactions, submissions, socialLinks, inventoryItemTransactions, type User, type NewUser, type InventoryItem, type NewInventoryItem, type Purchase, type NewPurchase, type Budget, type NewBudget, type Transaction, type NewTransaction, type Submission, type NewSubmission, type SubmissionStatus, type SocialLink, type NewSocialLink, type InventoryItemTransaction } from "../schema";
 import type { DatabaseAdapter } from "./types";
 
 /**
@@ -75,6 +75,11 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async deleteInventoryItem(id: string): Promise<boolean> {
+		// First delete any transaction links
+		await this.db.delete(inventoryItemTransactions).where(eq(inventoryItemTransactions.inventoryItemId, id));
+		// Unlink from purchases (set inventoryItemId to null)
+		await this.db.update(purchases).set({ inventoryItemId: null }).where(eq(purchases.inventoryItemId, id));
+
 		const result = await this.db.delete(inventoryItems).where(eq(inventoryItems.id, id)).returning();
 		return result.length > 0;
 	}
@@ -82,6 +87,20 @@ export class NeonAdapter implements DatabaseAdapter {
 	async bulkCreateInventoryItems(items: NewInventoryItem[]): Promise<InventoryItem[]> {
 		if (items.length === 0) return [];
 		return this.db.insert(inventoryItems).values(items).returning();
+	}
+
+	async getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]> {
+		// Get all item IDs that have linked transactions
+		const linkedItems = await this.db.select({ id: inventoryItemTransactions.inventoryItemId }).from(inventoryItemTransactions);
+		const linkedIds = linkedItems.map(l => l.id);
+
+		if (linkedIds.length === 0) {
+			// No items are linked, return all
+			return this.db.select().from(inventoryItems);
+		}
+
+		// Return items not in the linked list
+		return this.db.select().from(inventoryItems).where(notInArray(inventoryItems.id, linkedIds));
 	}
 
 	// ==================== Purchase Methods ====================
@@ -109,6 +128,9 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async deletePurchase(id: string): Promise<boolean> {
+		// First unlink any transactions referencing this purchase
+		await this.db.update(transactions).set({ purchaseId: null }).where(eq(transactions.purchaseId, id));
+
 		const result = await this.db.delete(purchases).where(eq(purchases.id, id)).returning();
 		return result.length > 0;
 	}
@@ -155,6 +177,51 @@ export class NeonAdapter implements DatabaseAdapter {
 	async deleteTransaction(id: string): Promise<boolean> {
 		const result = await this.db.delete(transactions).where(eq(transactions.id, id)).returning();
 		return result.length > 0;
+	}
+
+	// ==================== Inventory-Transaction Junction Methods ====================
+	async linkInventoryItemToTransaction(itemId: string, transactionId: string, quantity = 1): Promise<InventoryItemTransaction> {
+		const result = await this.db.insert(inventoryItemTransactions).values({
+			inventoryItemId: itemId,
+			transactionId,
+			quantity,
+		}).returning();
+		return result[0];
+	}
+
+	async unlinkInventoryItemFromTransaction(itemId: string, transactionId: string): Promise<boolean> {
+		const result = await this.db.delete(inventoryItemTransactions)
+			.where(and(
+				eq(inventoryItemTransactions.inventoryItemId, itemId),
+				eq(inventoryItemTransactions.transactionId, transactionId)
+			))
+			.returning();
+		return result.length > 0;
+	}
+
+	async getTransactionsForInventoryItem(itemId: string): Promise<Transaction[]> {
+		const links = await this.db.select().from(inventoryItemTransactions)
+			.where(eq(inventoryItemTransactions.inventoryItemId, itemId));
+		if (links.length === 0) return [];
+		const transactionIds = links.map(l => l.transactionId);
+		const result: Transaction[] = [];
+		for (const tid of transactionIds) {
+			const t = await this.db.select().from(transactions).where(eq(transactions.id, tid)).limit(1);
+			if (t[0]) result.push(t[0]);
+		}
+		return result;
+	}
+
+	async getInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]> {
+		const links = await this.db.select().from(inventoryItemTransactions)
+			.where(eq(inventoryItemTransactions.transactionId, transactionId));
+		if (links.length === 0) return [];
+		const result: (InventoryItem & { quantity: number })[] = [];
+		for (const link of links) {
+			const item = await this.db.select().from(inventoryItems).where(eq(inventoryItems.id, link.inventoryItemId)).limit(1);
+			if (item[0]) result.push({ ...item[0], quantity: link.quantity });
+		}
+		return result;
 	}
 
 	// ==================== Submission Methods ====================

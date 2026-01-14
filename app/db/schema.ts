@@ -144,9 +144,8 @@ export const transactions = pgTable("transactions", {
 	// Status tracking
 	status: text("status").$type<TransactionStatus>().notNull().default("complete"),
 	reimbursementStatus: text("reimbursement_status").$type<ReimbursementStatus>().default("not_requested"),
-	// Links to other entities
+	// Links to other entities (inventoryItemId moved to junction table)
 	purchaseId: uuid("purchase_id").references(() => purchases.id),
-	inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id),
 	// Timestamps
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -154,6 +153,23 @@ export const transactions = pgTable("transactions", {
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
+
+/**
+ * Junction table for inventory items <-> transactions (many-to-many)
+ * Allows multiple items per transaction (bulk purchases) and
+ * items appearing in multiple transactions (restocking)
+ */
+export const inventoryItemTransactions = pgTable("inventory_item_transactions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id).notNull(),
+	transactionId: uuid("transaction_id").references(() => transactions.id).notNull(),
+	// Quantity of this item in this transaction (for bulk purchases)
+	quantity: integer("quantity").notNull().default(1),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type InventoryItemTransaction = typeof inventoryItemTransactions.$inferSelect;
+export type NewInventoryItemTransaction = typeof inventoryItemTransactions.$inferInsert;
 
 /**
  * Submission types matching contact form options
