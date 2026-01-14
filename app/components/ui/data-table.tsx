@@ -35,6 +35,8 @@ interface DataTableProps<TData, TValue> {
     getRowId?: (row: TData) => string
     actionsComponent?: React.ReactNode
     onSelectionChange?: (selectedIds: string[]) => void
+    prependedRow?: React.ReactNode
+    selectedIds?: string[]
 }
 
 export function DataTable<TData, TValue>({
@@ -51,8 +53,18 @@ export function DataTable<TData, TValue>({
     getRowId,
     actionsComponent,
     onSelectionChange,
+    prependedRow,
+    selectedIds: controlledSelectedIds,
 }: DataTableProps<TData, TValue>) {
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+
+    // Sync rowSelection when controlledSelectedIds changes
+    useEffect(() => {
+        if (controlledSelectedIds) {
+            const newSelection = controlledSelectedIds.reduce((acc, id) => ({ ...acc, [id]: true }), {} as RowSelectionState)
+            setRowSelection(newSelection)
+        }
+    }, [controlledSelectedIds])
 
     // Add selection column if enabled
     const columnsWithSelection: ColumnDef<TData, TValue>[] = enableRowSelection
@@ -177,6 +189,7 @@ export function DataTable<TData, TValue>({
                         ))}
                     </TableHeader>
                     <TableBody>
+                        {prependedRow}
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
