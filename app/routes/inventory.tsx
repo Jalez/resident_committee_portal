@@ -1,11 +1,12 @@
 import type { Route } from "./+types/inventory";
-import { Form, Link, useNavigation, useRouteLoaderData, useSearchParams, useFetcher } from "react-router";
-import { useState } from "react";
+import { Form, Link, useNavigation, useRouteLoaderData, useSearchParams, useFetcher, useNavigate } from "react-router";
+import { useState, useEffect } from "react";
 import { PageWrapper, SplitLayout, QRPanel, ActionButton, ContentArea } from "~/components/layout/page-layout";
-import { getDatabase, type InventoryItem } from "~/db";
+import { getDatabase, type InventoryItem, type NewInventoryItem } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import { DataTable } from "~/components/ui/data-table";
+import { TableRow, TableCell } from "~/components/ui/table";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
@@ -14,11 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { type ColumnDef } from "@tanstack/react-table";
 import { EditableCell } from "~/components/ui/editable-cell";
+import { SmartCombobox } from "~/components/ui/smart-combobox";
 
 const PAGE_SIZE = 20;
 
 // Column keys that can be toggled
-const COLUMN_KEYS = ["name", "quantity", "location", "category", "description", "unitValue", "totalValue", "showInInfoReel"] as const;
+const COLUMN_KEYS = ["name", "quantity", "location", "category", "description", "updatedAt", "unitValue", "totalValue", "showInInfoReel"] as const;
 type ColumnKey = typeof COLUMN_KEYS[number];
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
@@ -27,6 +29,7 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
     location: "Sijainti / Location",
     category: "Kategoria / Category",
     description: "Kuvaus / Description",
+    updatedAt: "Päivitetty / Updated",
     unitValue: "Kpl-arvo / Unit Value",
     totalValue: "Yht. arvo / Total Value",
     showInInfoReel: "Info Reel",
@@ -151,9 +154,27 @@ export async function action({ request }: Route.ActionArgs) {
     if (actionType === "updateField" && itemId) {
         const field = formData.get("field") as string;
         const value = formData.get("value") as string;
-        if (field && ["name", "category", "description"].includes(field)) {
-            await db.updateInventoryItem(itemId, { [field]: value || null });
+        if (field && ["name", "category", "description", "location", "quantity", "value"].includes(field)) {
+            if (field === "quantity") {
+                await db.updateInventoryItem(itemId, { quantity: parseInt(value) || 1 });
+            } else if (field === "value") {
+                await db.updateInventoryItem(itemId, { value: value || "0" });
+            } else {
+                await db.updateInventoryItem(itemId, { [field]: value || null });
+            }
         }
+    }
+
+    if (actionType === "createItem") {
+        const newItem: NewInventoryItem = {
+            name: formData.get("name") as string,
+            quantity: parseInt(formData.get("quantity") as string) || 1,
+            location: formData.get("location") as string,
+            category: (formData.get("category") as string) || null,
+            description: (formData.get("description") as string) || null,
+            value: formData.get("value") as string || "0",
+        };
+        await db.createInventoryItem(newItem);
     }
 
     if (actionType === "report") {
@@ -194,6 +215,19 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
     const [localItems, setLocalItems] = useState(items);
 
     const isLoading = navigation.state === "loading";
+    const navigate = useNavigate();
+
+    // State for inline add row
+    const [showAddRow, setShowAddRow] = useState(false);
+    const [newItem, setNewItem] = useState({ name: "", quantity: "1", location: "", category: "", description: "", value: "0" });
+
+    // Reset add row form when items change (indicating successful add)
+    useEffect(() => {
+        if (fetcher.state === "idle" && fetcher.data?.success) {
+            setNewItem({ name: "", quantity: "1", location: "", category: "", description: "", value: "0" });
+            setShowAddRow(false);
+        }
+    }, [fetcher.state, fetcher.data]);
 
     // Parse visible columns from URL (default: all visible except value and infoReel for non-staff)
     const getVisibleColumns = (): Set<ColumnKey> => {
@@ -203,9 +237,9 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
         }
         // Default visible columns
         if (isStaff) {
-            return new Set(["name", "quantity", "location", "category", "description", "unitValue", "totalValue", "showInInfoReel"] as ColumnKey[]);
+            return new Set(["name", "quantity", "location", "category", "description", "updatedAt", "unitValue", "totalValue", "showInInfoReel"] as ColumnKey[]);
         }
-        return new Set(["name", "quantity", "location", "category", "description"] as ColumnKey[]);
+        return new Set(["name", "quantity", "location", "category", "description", "updatedAt"] as ColumnKey[]);
     };
 
     const visibleColumns = getVisibleColumns();
@@ -259,7 +293,27 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
             accessorKey: "quantity",
             header: "Määrä / Qty",
             cell: ({ row }) => (
-                <span className="text-gray-600 dark:text-gray-400">{row.getValue("quantity")} kpl</span>
+                isStaff ? (
+                    <Input
+                        type="number"
+                        min="1"
+                        className="w-20 h-8 text-center"
+                        defaultValue={row.getValue("quantity")}
+                        onBlur={(e) => {
+                            const newVal = parseInt(e.target.value) || 1;
+                            if (newVal !== row.original.quantity) {
+                                handleInlineEdit(row.original.id, "quantity", newVal.toString());
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.currentTarget.blur();
+                            }
+                        }}
+                    />
+                ) : (
+                    <span className="text-gray-600 dark:text-gray-400">{row.getValue("quantity")} kpl</span>
+                )
             ),
         });
     }
@@ -303,6 +357,19 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                     disabled={!isStaff}
                 />
             ),
+        });
+    }
+
+    if (visibleColumns.has("updatedAt")) {
+        columns.push({
+            accessorKey: "updatedAt",
+            header: "Päivitetty / Updated",
+            cell: ({ row }) => {
+                const date = new Date(row.getValue("updatedAt"));
+                return <span className="text-gray-500 text-xs text-nowrap">
+                    {date.toLocaleDateString("fi-FI")}
+                </span>;
+            },
         });
     }
 
@@ -460,17 +527,191 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
         </div>
     );
 
+    // Handler for creating new item inline
+    const handleCreateItem = () => {
+        if (!newItem.name.trim() || !newItem.location.trim()) return;
+        const formData = new FormData();
+        formData.set("_action", "createItem");
+        formData.set("name", newItem.name);
+        formData.set("quantity", newItem.quantity);
+        formData.set("location", newItem.location);
+        formData.set("category", newItem.category);
+        formData.set("description", newItem.description);
+        formData.set("value", newItem.value);
+        fetcher.submit(formData, { method: "POST" });
+    };
+
+    // Handler for navigating to treasury with selected items
+    const handleAddTreasuryTransaction = () => {
+        if (selectedForReport.length === 0) return;
+        // Get selected items data
+        const selectedItems = items.filter(i => selectedForReport.includes(i.id));
+        const totalValue = selectedItems.reduce((sum, item) => sum + (parseFloat(item.value || "0") * item.quantity), 0);
+        const itemNames = selectedItems.map(i => i.name).join(", ");
+        const itemIds = selectedForReport.join(",");
+
+        // Navigate to treasury/new with prefilled data
+        const params = new URLSearchParams({
+            items: itemIds,
+            amount: totalValue.toFixed(2),
+            description: `Hankinta: ${itemNames}`,
+            type: "expense",
+            category: "inventory",
+        });
+        navigate(`/treasury/new?${params.toString()}`);
+    };
+
+    // Inline add row as prependedRow for DataTable
+    const addRowTableRow = isStaff && showAddRow ? (
+        <TableRow className="bg-primary/5 hover:bg-primary/10 border-b-2 border-primary/20">
+            {/* Empty cell for checkbox column */}
+            <TableCell className="w-10">
+                <span className="material-symbols-outlined text-primary text-lg">add_circle</span>
+            </TableCell>
+            {/* Name */}
+            {visibleColumns.has("name") && (
+                <TableCell>
+                    <SmartCombobox
+                        items={items.map(i => ({ value: i.name, label: i.name }))}
+                        value={newItem.name}
+                        onValueChange={(v) => setNewItem(prev => ({ ...prev, name: v }))}
+                        placeholder="Nimi..."
+                        searchPlaceholder="Etsi..."
+                        emptyText="Uusi"
+                    />
+                </TableCell>
+            )}
+            {/* Quantity */}
+            {visibleColumns.has("quantity") && (
+                <TableCell className="w-24">
+                    <Input
+                        type="number"
+                        min="1"
+                        value={newItem.quantity}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, quantity: e.target.value }))}
+                        className="h-9 w-20"
+                        placeholder="Kpl"
+                    />
+                </TableCell>
+            )}
+            {/* Location */}
+            {visibleColumns.has("location") && (
+                <TableCell>
+                    <SmartCombobox
+                        items={uniqueLocations}
+                        value={newItem.location}
+                        onValueChange={(v) => setNewItem(prev => ({ ...prev, location: v }))}
+                        placeholder="Sijainti..."
+                        searchPlaceholder="Etsi..."
+                        emptyText="Uusi"
+                    />
+                </TableCell>
+            )}
+            {/* Category */}
+            {visibleColumns.has("category") && (
+                <TableCell>
+                    <SmartCombobox
+                        items={uniqueCategories}
+                        value={newItem.category}
+                        onValueChange={(v) => setNewItem(prev => ({ ...prev, category: v }))}
+                        placeholder="Kategoria..."
+                        searchPlaceholder="Etsi..."
+                        emptyText="Uusi"
+                    />
+                </TableCell>
+            )}
+            {/* Description */}
+            {visibleColumns.has("description") && (
+                <TableCell>
+                    <Input
+                        value={newItem.description}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Kuvaus..."
+                        className="h-9"
+                    />
+                </TableCell>
+            )}
+            {/* Unit Value */}
+            {visibleColumns.has("unitValue") && (
+                <TableCell className="w-24">
+                    <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newItem.value}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, value: e.target.value }))}
+                        className="h-9 w-20"
+                        placeholder="€"
+                    />
+                </TableCell>
+            )}
+            {/* Total Value (calculated) */}
+            {visibleColumns.has("totalValue") && (
+                <TableCell className="text-right">
+                    <span className="text-gray-500">
+                        {(parseFloat(newItem.value || "0") * parseInt(newItem.quantity || "1")).toFixed(2).replace(".", ",")} €
+                    </span>
+                </TableCell>
+            )}
+            {/* ShowInInfoReel - skip for add row */}
+            {visibleColumns.has("showInInfoReel") && (
+                <TableCell>-</TableCell>
+            )}
+            {/* Actions */}
+            <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                            setNewItem({ name: "", quantity: "1", location: "", category: "", description: "", value: "0" });
+                            setShowAddRow(false);
+                        }}
+                        className="h-8 px-2 text-gray-500"
+                    >
+                        <span className="material-symbols-outlined text-base">close</span>
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={handleCreateItem}
+                        disabled={!newItem.name.trim() || !newItem.location.trim() || fetcher.state !== "idle"}
+                        className="h-8"
+                    >
+                        {fetcher.state !== "idle" ? (
+                            <span className="material-symbols-outlined text-base animate-spin">sync</span>
+                        ) : (
+                            <span className="material-symbols-outlined text-base">check</span>
+                        )}
+                    </Button>
+                </div>
+            </TableCell>
+        </TableRow>
+    ) : null;
+
     // Actions component for batch operations
     const actionsComponent = (
-        <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleReportSelected(selectedForReport)}
-            disabled={selectedForReport.length === 0}
-        >
-            <span className="material-symbols-outlined text-base mr-1">flag</span>
-            Ilmoita / Report
-        </Button>
+        <div className="flex gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleReportSelected(selectedForReport)}
+                disabled={selectedForReport.length === 0}
+            >
+                <span className="material-symbols-outlined text-base mr-1">flag</span>
+                Ilmoita / Report
+            </Button>
+            {isStaff && (
+                <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleAddTreasuryTransaction}
+                    disabled={selectedForReport.length === 0}
+                >
+                    <span className="material-symbols-outlined text-base mr-1">account_balance</span>
+                    Lisää rahastotapahtuma
+                </Button>
+            )}
+        </div>
     );
 
     // QR Panel for info reel
@@ -509,7 +750,17 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                     </label>
                 </>
             )}
-            {isStaff && <ActionButton href="/inventory/new" icon="add" labelFi="Lisää" labelEn="Add" external={false} />}
+            {isStaff && (
+                <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowAddRow(!showAddRow)}
+                    className="flex items-center gap-1"
+                >
+                    <span className="material-symbols-outlined text-base">{showAddRow ? "close" : "add"}</span>
+                    {showAddRow ? "Sulje" : "Lisää"}
+                </Button>
+            )}
         </div>
     );
 
@@ -579,6 +830,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                         getRowId={(row: InventoryItem) => row.id}
                         actionsComponent={actionsComponent}
                         onSelectionChange={(ids) => setSelectedForReport(ids)}
+                        prependedRow={addRowTableRow}
                     />
                 </div>
 

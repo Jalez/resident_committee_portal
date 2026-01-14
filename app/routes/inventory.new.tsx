@@ -28,11 +28,7 @@ import {
     CommandItem,
     CommandList,
 } from "~/components/ui/command";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "~/components/ui/popover";
+import { SmartCombobox } from "~/components/ui/smart-combobox";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
@@ -209,7 +205,7 @@ export async function action({ request }: Route.ActionArgs) {
             }
         }
 
-        // Create treasury transaction linked to this inventory item
+        // Create treasury transaction (no longer directly linked - use junction table)
         const newTransaction: NewTransaction = {
             type: "expense",
             amount: newItem.value || "0",
@@ -220,10 +216,12 @@ export async function action({ request }: Route.ActionArgs) {
             status,
             reimbursementStatus,
             purchaseId,
-            inventoryItemId: inventoryItem.id,
         };
 
-        await db.createTransaction(newTransaction);
+        const transaction = await db.createTransaction(newTransaction);
+
+        // Link inventory item to transaction via junction table
+        await db.linkInventoryItemToTransaction(inventoryItem.id, transaction.id, newItem.quantity);
     }
 
     return redirect("/inventory");
@@ -243,11 +241,6 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
     const [itemValue, setItemValue] = useState("0");
     const [itemName, setItemName] = useState("");
     const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
-
-    // Combobox open states
-    const [nameOpen, setNameOpen] = useState(false);
-    const [locationOpen, setLocationOpen] = useState(false);
-    const [categoryOpen, setCategoryOpen] = useState(false);
 
     // Extract unique options
     const uniqueLocations = Array.from(new Set(existingItems.map(i => i.location))).filter((l): l is string => !!l).sort();
@@ -341,71 +334,36 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Nimi / Name *</Label>
-                                {/* Name Combobox */}
-                                <Popover open={nameOpen} onOpenChange={setNameOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={nameOpen}
-                                            className="w-full justify-between"
-                                        >
-                                            {itemName || "Valitse tai kirjoita nimi..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Etsi tavaraa..."
-                                                value={itemName}
-                                                onValueChange={setItemName}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    <div className="py-2 px-2 text-sm">
-                                                        <span className="text-muted-foreground mr-2">Ei löydy.</span>
-                                                        <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => setNameOpen(false)}>
-                                                            Käytä nimeä "{itemName}"
-                                                        </span>
-                                                    </div>
-                                                </CommandEmpty>
-                                                <CommandGroup heading="Olemassa olevat tavarat">
-                                                    {existingItems.map((item) => (
-                                                        <CommandItem
-                                                            key={item.id}
-                                                            value={item.name}
-                                                            onSelect={(currentValue) => {
-                                                                setItemName(currentValue);
-                                                                // Trigger explicit auto-fill on selection
-                                                                const match = existingItems.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-                                                                if (match) {
-                                                                    setSelectedExistingId(match.id);
-                                                                    setLocation(match.location);
-                                                                    setCategory(match.category || "");
-                                                                    setDescription(match.description || "");
-                                                                    if (match.value && match.value !== "0") setItemValue(match.value);
-                                                                }
-                                                                setNameOpen(false);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    itemName === item.name ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {item.name}
-                                                            {item.location && <span className="ml-2 text-xs text-muted-foreground">({item.location})</span>}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <input type="hidden" name="name" value={itemName} />
+                                <SmartCombobox
 
+                                    items={existingItems.map(i => ({
+                                        ...i,
+                                        value: i.name, // Overwrite value (money) with name for combobox logic
+                                        label: i.name,
+                                        itemValue: i.value // Keep original money value accessible
+                                    }))}
+                                    value={itemName}
+                                    onValueChange={setItemName}
+                                    placeholder="Valitse tai kirjoita nimi..."
+                                    searchPlaceholder="Etsi tavaraa..."
+                                    emptyText="Ei löydy."
+                                    customLabel="Käytä nimeä"
+                                    renderItem={(item: any) => (
+                                        <>
+                                            {item.label}
+                                            {item.location && <span className="ml-2 text-xs text-muted-foreground">({item.location})</span>}
+                                        </>
+                                    )}
+                                    onSelect={(item: any) => {
+                                        // Auto-fill logic
+                                        setSelectedExistingId(item.id);
+                                        setLocation(item.location);
+                                        setCategory(item.category || "");
+                                        setDescription(item.description || "");
+                                        if (item.itemValue && item.itemValue !== "0") setItemValue(item.itemValue);
+                                    }}
+                                />
+                                <input type="hidden" name="name" value={itemName} />
                                 <input
                                     type="hidden"
                                     name="existingItemId"
@@ -428,116 +386,26 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="location">Sijainti / Location *</Label>
-                                {/* Location Combobox */}
-                                <Popover open={locationOpen} onOpenChange={setLocationOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={locationOpen}
-                                            className="w-full justify-between"
-                                        >
-                                            {location || "Valitse tai kirjoita..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Etsi sijaintia..."
-                                                value={location}
-                                                onValueChange={setLocation}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    <div className="py-2 px-2 text-sm">
-                                                        <span className="text-muted-foreground mr-2">Ei listalla.</span>
-                                                        <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => setLocationOpen(false)}>
-                                                            Käytä "{location}"
-                                                        </span>
-                                                    </div>
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {uniqueLocations.map((loc) => (
-                                                        <CommandItem
-                                                            key={loc}
-                                                            value={loc}
-                                                            onSelect={(currentValue) => {
-                                                                setLocation(currentValue);
-                                                                setLocationOpen(false);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    location === loc ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {loc}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
+                                <SmartCombobox
+                                    items={uniqueLocations}
+                                    value={location}
+                                    onValueChange={setLocation}
+                                    placeholder="Valitse tai kirjoita..."
+                                    searchPlaceholder="Etsi sijaintia..."
+                                    emptyText="Ei listalla."
+                                />
                                 <input type="hidden" name="location" value={location} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="category">Kategoria / Category</Label>
-                                {/* Category Combobox */}
-                                <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={categoryOpen}
-                                            className="w-full justify-between"
-                                        >
-                                            {category || "Valitse tai kirjoita..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Etsi kategoriaa..."
-                                                value={category}
-                                                onValueChange={setCategory}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    <div className="py-2 px-2 text-sm">
-                                                        <span className="text-muted-foreground mr-2">Ei listalla.</span>
-                                                        <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => setCategoryOpen(false)}>
-                                                            Käytä "{category}"
-                                                        </span>
-                                                    </div>
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {uniqueCategories.map((cat) => (
-                                                        <CommandItem
-                                                            key={cat}
-                                                            value={cat}
-                                                            onSelect={(currentValue) => {
-                                                                setCategory(currentValue);
-                                                                setCategoryOpen(false);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    category === cat ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {cat}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
+                                <SmartCombobox
+                                    items={uniqueCategories}
+                                    value={category}
+                                    onValueChange={setCategory}
+                                    placeholder="Valitse tai kirjoita..."
+                                    searchPlaceholder="Etsi kategoriaa..."
+                                    emptyText="Ei listalla."
+                                />
                                 <input type="hidden" name="category" value={category} />
                             </div>
                         </div>
