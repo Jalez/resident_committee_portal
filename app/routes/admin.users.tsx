@@ -79,22 +79,6 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 
 				</div>
 
-				{/* Navigation */}
-				<div className="flex gap-4 mb-8">
-					<a
-						href="/admin/board"
-						className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-					>
-						Yhteydenotot / Submissions
-					</a>
-					<a
-						href="/admin/users"
-						className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white"
-					>
-						Käyttäjät / Users
-					</a>
-				</div>
-
 				{/* Stats */}
 				<div className="grid grid-cols-3 gap-4 mb-8">
 					{USER_ROLES.map((role) => (

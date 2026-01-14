@@ -50,7 +50,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Redirect based on admin status
     const isAdminUser = isAdmin(userInfo.email);
-    const redirectPath = isAdminUser ? "/admin/board" : "/";
+    const redirectPath = isAdminUser ? "/submissions" : "/";
 
     console.log(`[OAuth Callback] User logged in: ${userInfo.email} (admin: ${isAdminUser})`);
 

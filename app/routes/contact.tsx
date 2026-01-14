@@ -4,10 +4,9 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { useState, useEffect } from "react";
-import { saveFormSubmission } from "~/lib/google.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSession } from "~/lib/auth.server";
-import { getDatabase } from "~/db";
+import { getDatabase, type SubmissionType } from "~/db";
 import type { loader as rootLoader } from "~/root";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -74,7 +73,7 @@ const FORM_TYPES = [
 
 export async function action({ request }: Route.ActionArgs) {
     const formData = await request.formData();
-    const type = formData.get("type") as string;
+    const type = formData.get("type") as SubmissionType;
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const apartmentNumber = formData.get("apartmentNumber") as string;
@@ -83,11 +82,19 @@ export async function action({ request }: Route.ActionArgs) {
 
     console.log("[Contact Form] Received submission:", { type, name, email, apartmentNumber, updateApartment });
 
-    const saved = await saveFormSubmission({ type, name, email, apartmentNumber, message });
+    const db = getDatabase();
 
-    if (!saved) {
-        console.error("[Contact Form] Failed to save submission to Google Sheets");
-        // Still return success to user (graceful degradation) but log the error
+    try {
+        await db.createSubmission({
+            type,
+            name,
+            email,
+            apartmentNumber: apartmentNumber || null,
+            message,
+        });
+        console.log("[Contact Form] Saved submission to database");
+    } catch (error) {
+        console.error("[Contact Form] Failed to save submission:", error);
     }
 
     // If user is logged in and wants to update their apartment number
@@ -95,7 +102,6 @@ export async function action({ request }: Route.ActionArgs) {
         try {
             const session = await getSession(request);
             if (session?.email) {
-                const db = getDatabase();
                 const dbUser = await db.findUserByEmail(session.email);
                 if (dbUser) {
                     await db.updateUser(dbUser.id, { apartmentNumber });
