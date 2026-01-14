@@ -1,4 +1,4 @@
-import type { Route } from "./+types/budget.reimbursements";
+import type { Route } from "./+types/treasury.reimbursements";
 import { Form, Link, useRouteLoaderData, useSearchParams } from "react-router";
 import { requireStaff } from "~/lib/auth.server";
 import { getDatabase, type Purchase } from "~/db";
@@ -183,8 +183,8 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                 key={s}
                                 onClick={() => handleFilter("status", s)}
                                 className={`px-3 py-1 rounded-lg text-sm font-bold transition-colors ${currentStatus === s
-                                        ? "bg-primary text-white"
-                                        : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20"
+                                    ? "bg-primary text-white"
+                                    : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20"
                                     }`}
                             >
                                 {s === "all" ? "Kaikki" : statusConfig[s as keyof typeof statusConfig]?.fi}
@@ -199,8 +199,8 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                     key={y}
                                     onClick={() => handleFilter("year", String(y))}
                                     className={`px-3 py-1 rounded-lg text-sm font-bold transition-colors ${currentYear === y
-                                            ? "bg-primary text-white"
-                                            : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20"
+                                        ? "bg-primary text-white"
+                                        : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20"
                                         }`}
                                 >
                                     {y}

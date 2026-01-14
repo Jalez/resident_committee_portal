@@ -1,4 +1,4 @@
-import type { Route } from "./+types/budget.reimbursement.new";
+import type { Route } from "./+types/treasury.reimbursement.new";
 import { Form, redirect, useNavigate, useActionData } from "react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
