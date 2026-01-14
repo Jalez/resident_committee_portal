@@ -198,44 +198,51 @@ export async function getMinutesByYear(): Promise<MinutesByYear[]> {
         console.log(`[getMinutesByYear] Found ${yearFolders.length} year folders`);
 
         // Step 2: For each year folder, look for "minutes" subfolder and get its files
-        const results: MinutesByYear[] = [];
         const currentYear = new Date().getFullYear().toString();
 
-        for (const yearFolder of yearFolders) {
+        // Use Promise.all to fetch years in parallel
+        const yearResults = await Promise.all(yearFolders.map(async (yearFolder: any) => {
             const minutesFolder = await findChildByName(yearFolder.id, "minutes", "application/vnd.google-apps.folder");
 
             if (!minutesFolder) {
                 // If this is the current year and no minutes folder, still include with empty files
                 if (yearFolder.name === currentYear) {
-                    results.push({
+                    return {
                         year: yearFolder.name,
                         files: [],
                         folderUrl: "#"
-                    });
+                    };
                 }
-                continue;
+                return null;
             }
 
             // List files in minutes folder
             const filesQ = `'${minutesFolder.id}' in parents and trashed = false`;
             const filesUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(filesQ)}&orderBy=name desc&key=${config.apiKey}&fields=files(id,name,webViewLink,createdTime)`;
 
-            const filesRes = await fetch(filesUrl);
-            if (!filesRes.ok) continue;
+            try {
+                const filesRes = await fetch(filesUrl);
+                if (!filesRes.ok) return null;
 
-            const filesData = await filesRes.json();
+                const filesData = await filesRes.json();
 
-            results.push({
-                year: yearFolder.name,
-                files: (filesData.files || []).map((f: any) => ({
-                    id: f.id,
-                    name: f.name?.replace(/\.(pdf|docx?)$/i, "") || "Untitled",
-                    url: f.webViewLink,
-                    createdTime: f.createdTime
-                })),
-                folderUrl: minutesFolder.webViewLink || "#"
-            });
-        }
+                return {
+                    year: yearFolder.name,
+                    files: (filesData.files || []).map((f: any) => ({
+                        id: f.id,
+                        name: f.name?.replace(/\.(pdf|docx?)$/i, "") || "Untitled",
+                        url: f.webViewLink,
+                        createdTime: f.createdTime
+                    })),
+                    folderUrl: minutesFolder.webViewLink || "#"
+                };
+            } catch (error) {
+                console.error(`Error fetching files for year ${yearFolder.name}:`, error);
+                return null;
+            }
+        }));
+
+        const results: MinutesByYear[] = yearResults.filter((r): r is MinutesByYear => r !== null);
 
         // Ensure current year is always first (even if no minutes yet)
         const hasCurrentYear = results.some(r => r.year === currentYear);
