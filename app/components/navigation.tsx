@@ -48,7 +48,7 @@ export function Navigation({ className, orientation = "vertical", user, navVisib
     const allNavItems = [
         { path: "/", icon: "volunteer_activism", label: "Osallistu", subLabel: "Get Involved" },
         { path: "/events", icon: "event", label: "Tapahtumat", subLabel: "Events" },
-        { path: "/budget", icon: "payments", label: "Budjetti", subLabel: "Budget" },
+        { path: "/treasury", icon: "payments", label: "Rahasto", subLabel: "Treasury" },
         { path: "/minutes", icon: "description", label: "Pöytäkirjat", subLabel: "Minutes" },
         { path: "/inventory", icon: "inventory_2", label: "Tavaraluettelo", subLabel: "Inventory" },
         { path: "/social", icon: "forum", label: "Some", subLabel: "Social" },

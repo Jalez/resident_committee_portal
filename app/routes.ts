@@ -5,10 +5,13 @@ export default [
 	route("events", "routes/events.tsx"),
 	route("contact", "routes/contact.tsx"),
 	route("social", "routes/social.tsx"),
-	route("budget", "routes/budget.tsx"),
-	route("budget/breakdown", "routes/budget.breakdown.tsx"),
-	route("budget/reimbursements", "routes/budget.reimbursements.tsx"),
-	route("budget/reimbursement/new", "routes/budget.reimbursement.new.tsx"),
+	route("social/new", "routes/social.new.tsx"),
+	route("treasury", "routes/treasury.tsx"),
+	route("treasury/breakdown", "routes/treasury.breakdown.tsx"),
+	route("treasury/breakdown/:transactionId/edit", "routes/treasury.breakdown.$transactionId.edit.tsx"),
+	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
+	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
+	route("treasury/new", "routes/treasury.new.tsx"),
 	route("minutes", "routes/minutes.tsx"),
 	route("inventory", "routes/inventory.tsx"),
 	route("inventory/new", "routes/inventory.new.tsx"),
@@ -22,12 +25,11 @@ export default [
 	// Staff routes (admin + board_member)
 	route("submissions", "routes/submissions.tsx"),
 	// Admin routes
-	route("admin/board", "routes/admin.board.tsx"),
 	route("admin/users", "routes/admin.users.tsx"),
 	route("admin/purchases", "routes/admin.purchases.tsx"),
-	route("admin/budget", "routes/admin.budget.tsx"),
 	// API routes
 	route("api/risc/receiver", "routes/api.risc.receiver.tsx"),
 	route("api/inventory/export", "routes/api.inventory.export.tsx"),
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),
 ] satisfies RouteConfig;
+
