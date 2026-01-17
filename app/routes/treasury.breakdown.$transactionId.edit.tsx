@@ -1,6 +1,6 @@
 import type { Route } from "./+types/treasury.breakdown.$transactionId.edit";
 import { Form, redirect, useNavigate } from "react-router";
-import { requireStaff } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type Transaction, type TransactionStatus, type ReimbursementStatus } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -27,7 +27,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "treasury:edit", getDatabase);
     const db = getDatabase();
 
     const transactions = await db.getAllTransactions();
@@ -51,7 +51,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "treasury:edit", getDatabase);
     const db = getDatabase();
 
     const formData = await request.formData();

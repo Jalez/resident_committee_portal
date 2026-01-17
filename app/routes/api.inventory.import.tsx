@@ -1,15 +1,15 @@
 import type { Route } from "./+types/api.inventory.import";
 import { getDatabase, type NewInventoryItem } from "~/db";
-import { requireAdmin } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 import * as XLSX from "xlsx";
 
 /**
- * Import inventory items from CSV or Excel (admin only)
+ * Import inventory items from CSV or Excel (requires inventory:import permission)
  * Expects multipart form data with a "file" field containing CSV or XLSX
  */
 export async function action({ request }: Route.ActionArgs) {
-    // Admin only
-    await requireAdmin(request);
+    // Requires inventory:import permission
+    await requirePermission(request, "inventory:import", getDatabase);
 
     const db = getDatabase();
 

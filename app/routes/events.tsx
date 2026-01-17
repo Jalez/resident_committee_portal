@@ -5,6 +5,8 @@ import { getCalendarEvents, getCalendarUrl } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
+import { getDatabase } from "~/db";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
@@ -29,6 +31,17 @@ interface GroupedMonth {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+    // Check permission (works for both logged-in users and guests)
+    const authUser = await getAuthenticatedUser(request, getDatabase);
+    const permissions = authUser
+        ? authUser.permissions
+        : await getGuestPermissions(() => getDatabase());
+
+    const canRead = permissions.some(p => p === "events:read" || p === "*");
+    if (!canRead) {
+        throw new Response("Not Found", { status: 404 });
+    }
+
     const url = new URL(request.url);
     const titleFilter = url.searchParams.get("title") || "";
     // Use ensureQueryData for client-side caching

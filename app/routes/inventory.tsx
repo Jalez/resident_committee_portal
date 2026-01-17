@@ -1,10 +1,11 @@
 import type { Route } from "./+types/inventory";
-import { useFetcher, useNavigation, useRouteLoaderData } from "react-router";
+import { useFetcher, useNavigation } from "react-router";
 import { useState } from "react";
 import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/layout/page-layout";
 import { getDatabase, type InventoryItem, type NewInventoryItem } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { loader as rootLoader } from "~/root";
+import { useUser } from "~/contexts/user-context";
+import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
 import { DataTable } from "~/components/ui/data-table";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "~/components/ui/dialog";
@@ -42,6 +43,17 @@ export function meta({ data }: Route.MetaArgs) {
 // ============================================================================
 
 export async function loader({ request }: Route.LoaderArgs) {
+    // Check permission (works for both logged-in users and guests)
+    const authUser = await getAuthenticatedUser(request, getDatabase);
+    const permissions = authUser
+        ? authUser.permissions
+        : await getGuestPermissions(() => getDatabase());
+
+    const canRead = permissions.some(p => p === "inventory:read" || p === "*");
+    if (!canRead) {
+        throw new Response("Not Found", { status: 404 });
+    }
+
     const db = getDatabase();
     const url = new URL(request.url);
     const nameFilter = url.searchParams.get("name") || "";
@@ -195,9 +207,9 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
     const { items, filters, isInfoReel, totalCount, currentPage, pageSize, uniqueLocations, uniqueCategories } = loaderData;
-    const rootData = useRouteLoaderData<typeof rootLoader>("root");
-    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
-    const isAdmin = rootData?.user?.role === "admin";
+    const { hasPermission } = useUser();
+    const canWrite = hasPermission("inventory:write");
+    const canDelete = hasPermission("inventory:delete");
 
     return (
         <InventoryProvider
@@ -208,8 +220,8 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
             totalCount={totalCount}
             currentPage={currentPage}
             pageSize={pageSize}
-            isStaff={isStaff}
-            isAdmin={isAdmin}
+            isStaff={canWrite}
+            isAdmin={canDelete}
         >
             {isInfoReel ? <InventoryInfoReelPage /> : <InventoryTablePage />}
         </InventoryProvider>

@@ -1,13 +1,13 @@
 import type { Route } from "./+types/api.inventory.export";
 import { getDatabase, type InventoryItem } from "~/db";
-import { requireAdmin } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 
 /**
- * Export all inventory items as CSV (admin only)
+ * Export all inventory items as CSV (requires inventory:export permission)
  */
 export async function loader({ request }: Route.LoaderArgs) {
-    // Admin only
-    await requireAdmin(request);
+    // Requires inventory:export permission
+    await requirePermission(request, "inventory:export", getDatabase);
 
     const db = getDatabase();
     const items = await db.getInventoryItems();

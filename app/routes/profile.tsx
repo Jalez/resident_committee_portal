@@ -1,6 +1,6 @@
 import type { Route } from "./+types/profile";
 import { Form, redirect, useLoaderData } from "react-router";
-import { getSession } from "~/lib/auth.server";
+import { getAuthenticatedUser } from "~/lib/auth.server";
 import { getDatabase } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -13,14 +13,14 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    const session = await getSession(request);
+    const authUser = await getAuthenticatedUser(request, getDatabase);
 
-    if (!session) {
+    if (!authUser) {
         return redirect("/auth/login");
     }
 
     const db = getDatabase();
-    const user = await db.findUserByEmail(session.email);
+    const user = await db.findUserByEmail(authUser.email);
 
     if (!user) {
         return redirect("/auth/login");
@@ -40,14 +40,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    const session = await getSession(request);
+    const authUser = await getAuthenticatedUser(request, getDatabase);
 
-    if (!session) {
+    if (!authUser) {
         throw new Response("Unauthorized", { status: 401 });
     }
 
     const db = getDatabase();
-    const user = await db.findUserByEmail(session.email);
+    const user = await db.findUserByEmail(authUser.email);
 
     if (!user) {
         throw new Response("User not found", { status: 404 });

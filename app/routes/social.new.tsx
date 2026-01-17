@@ -1,6 +1,6 @@
 import type { Route } from "./+types/social.new";
 import { Form, redirect, useNavigate } from "react-router";
-import { requireStaff } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type NewSocialLink } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -17,12 +17,12 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "social:write", getDatabase);
     return { siteConfig: SITE_CONFIG };
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "social:write", getDatabase);
     const db = getDatabase();
 
     const formData = await request.formData();

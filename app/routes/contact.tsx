@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSession } from "~/lib/auth.server";
 import { getDatabase, type SubmissionType } from "~/db";
-import type { loader as rootLoader } from "~/root";
 
 export function meta({ data }: Route.MetaArgs) {
     return [

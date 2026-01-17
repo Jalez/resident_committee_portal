@@ -1,12 +1,13 @@
 import type { Route } from "./+types/minutes";
-import { useRouteLoaderData } from "react-router";
 import { PageWrapper, SplitLayout, QRPanel, ActionButton, ContentArea } from "~/components/layout/page-layout";
 import { SearchMenu, type SearchField } from "~/components/search-menu";
 import { getMinutesByYear, type MinutesByYear } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { loader as rootLoader } from "~/root";
+import { useUser } from "~/contexts/user-context";
+import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
+import { getDatabase } from "~/db";
 import {
     Accordion,
     AccordionContent,
@@ -22,6 +23,17 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+    // Check permission (works for both logged-in users and guests)
+    const authUser = await getAuthenticatedUser(request, getDatabase);
+    const permissions = authUser
+        ? authUser.permissions
+        : await getGuestPermissions(() => getDatabase());
+
+    const canRead = permissions.some(p => p === "minutes:read" || p === "*");
+    if (!canRead) {
+        throw new Response("Not Found", { status: 404 });
+    }
+
     const url = new URL(request.url);
     const yearFilter = url.searchParams.get("year") || "";
     const nameFilter = url.searchParams.get("name") || "";
@@ -48,8 +60,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Minutes({ loaderData }: Route.ComponentProps) {
     const { minutesByYear, archiveUrl, uniqueYears, filters, hasFilters } = loaderData;
-    const rootData = useRouteLoaderData<typeof rootLoader>("root");
-    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
+    const { hasPermission } = useUser();
+    const canSeeNamingGuide = hasPermission("minutes:naming-guide");
     const currentYear = new Date().getFullYear().toString();
 
     // Configure search fields
@@ -116,7 +128,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
             >
                 <div className="space-y-8">
                     {/* Staff instructions for naming convention - outside scrollable area */}
-                    {isStaff && (
+                    {canSeeNamingGuide && (
                         <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
                             <div className="flex items-start gap-3">
                                 <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 shrink-0">

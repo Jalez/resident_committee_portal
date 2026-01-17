@@ -4,10 +4,10 @@ import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/lay
 import { useLocalReel } from "~/contexts/info-reel-context";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getDatabase, type SocialLink, type NewSocialLink } from "~/db";
-import { getSession } from "~/lib/auth.server";
-import { Form, Link, useRouteLoaderData } from "react-router";
+import { requirePermission, getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
+import { Form, Link } from "react-router";
 import { useState } from "react";
-import type { loader as rootLoader } from "~/root";
+import { useUser } from "~/contexts/user-context";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -21,6 +21,17 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+    // Check permission (works for both logged-in users and guests)
+    const authUser = await getAuthenticatedUser(request, getDatabase);
+    const permissions = authUser
+        ? authUser.permissions
+        : await getGuestPermissions(() => getDatabase());
+
+    const canRead = permissions.some(p => p === "social:read" || p === "*");
+    if (!canRead) {
+        throw new Response("Not Found", { status: 404 });
+    }
+
     const db = getDatabase();
     const links = await db.getSocialLinks();
 
@@ -36,19 +47,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    const session = await getSession(request);
-    if (!session?.email) {
-        throw new Response("Unauthorized", { status: 401 });
-    }
+    // Require permission for any action
+    await requirePermission(request, "social:write", getDatabase);
 
     const db = getDatabase();
-    const user = await db.findUserByEmail(session.email);
-    const isUserStaff = user?.role === "admin" || user?.role === "board_member";
-
-    if (!isUserStaff) {
-        throw new Response("Forbidden", { status: 403 });
-    }
-
     const formData = await request.formData();
     const actionType = formData.get("_action") as string;
 
@@ -72,8 +74,8 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function Social({ loaderData }: Route.ComponentProps) {
     const { channels, allLinks } = loaderData;
-    const rootData = useRouteLoaderData<typeof rootLoader>("root");
-    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
+    const { hasPermission } = useUser();
+    const canWrite = hasPermission("social:write");
 
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -105,10 +107,10 @@ export default function Social({ loaderData }: Route.ComponentProps) {
     ) : null;
 
     // Use allLinks for staff view (shows inactive too), channels for regular view
-    const displayLinks = isStaff && !isInfoReel ? allLinks : channels;
+    const displayLinks = canWrite && !isInfoReel ? allLinks : channels;
 
     // Footer with add link for staff
-    const FooterContent = isStaff && !isInfoReel ? (
+    const FooterContent = canWrite && !isInfoReel ? (
         <div className="flex items-center gap-2">
             <Link
                 to="/social/new"
@@ -133,7 +135,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                         const isEditing = editingId === channel.id;
 
                         // Edit form
-                        if (isEditing && isStaff) {
+                        if (isEditing && canWrite) {
                             return (
                                 <div key={channel.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                                     <Form method="post" className="space-y-3" onSubmit={() => setEditingId(null)}>
@@ -227,7 +229,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                                         >
                                             {channel.name}
                                         </h3>
-                                        {!channel.isActive && isStaff && (
+                                        {!channel.isActive && canWrite && (
                                             <span className="text-xs text-gray-400">(piilotettu)</span>
                                         )}
                                     </div>
@@ -245,7 +247,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                                 </a>
 
                                 {/* Staff actions */}
-                                {isStaff && !isInfoReel && (
+                                {canWrite && !isInfoReel && (
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             type="button"
@@ -276,7 +278,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
                         <div className="text-center py-12 text-gray-400">
                             <span className="material-symbols-outlined text-5xl mb-4 block opacity-50">share</span>
                             <p className="font-medium">Ei sosiaalisia kanavia / No social channels</p>
-                            {isStaff && (
+                            {canWrite && (
                                 <Link to="/social/new">
                                     <Button className="mt-4">
                                         <span className="material-symbols-outlined mr-2">add</span>

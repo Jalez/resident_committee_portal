@@ -1,6 +1,6 @@
 import type { Route } from "./+types/inventory.$itemId.edit";
 import { Form, redirect, useNavigate } from "react-router";
-import { requireStaff } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type InventoryItem, type NewInventoryItem } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -21,7 +21,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "inventory:write", getDatabase);
     const db = getDatabase();
 
     const item = await db.getInventoryItemById(params.itemId);
@@ -36,7 +36,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "inventory:write", getDatabase);
     const db = getDatabase();
 
     const formData = await request.formData();
