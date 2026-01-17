@@ -1,9 +1,9 @@
 import type { Route } from "./+types/treasury.breakdown";
 import { Link, useSearchParams } from "react-router";
 import { getDatabase, type Transaction } from "~/db";
-import { getSession } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { useUser } from "~/contexts/user-context";
 import {
     Table,
     TableBody,
@@ -31,7 +31,20 @@ export async function loader({ request }: Route.LoaderArgs) {
         throw new Response("Invalid year", { status: 400 });
     }
 
-    const transactions = await db.getTransactionsByYear(year);
+    const allTransactionsForYear = await db.getTransactionsByYear(year);
+
+    // Filter out pending/declined reimbursements - they shouldn't affect the budget yet
+    // Only include transactions that are either:
+    // - not_requested: normal transaction, no reimbursement needed
+    // - approved: reimbursement was approved and will be paid
+    // Exclude:
+    // - requested: waiting for approval
+    // - declined: rejected, won't be paid
+    const transactions = allTransactionsForYear.filter(t =>
+        !t.reimbursementStatus ||
+        t.reimbursementStatus === "not_requested" ||
+        t.reimbursementStatus === "approved"
+    );
 
     // Sort by date descending
     const sortedTransactions = transactions.sort((a, b) =>
@@ -53,14 +66,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     const allTransactions = await db.getAllTransactions();
     const years = [...new Set(allTransactions.map(t => t.year))].sort((a, b) => b - a);
 
-    // Check if user is staff
-    let isStaff = false;
-    const session = await getSession(request);
-    if (session) {
-        const user = await db.findUserByEmail(session.email);
-        isStaff = user?.role === "board_member" || user?.role === "admin";
-    }
-
     return {
         siteConfig: SITE_CONFIG,
         year,
@@ -69,13 +74,14 @@ export async function loader({ request }: Route.LoaderArgs) {
         totalIncome,
         balance,
         years,
-        isStaff,
     };
 }
 
 export default function TreasuryBreakdown({ loaderData }: Route.ComponentProps) {
-    const { year, transactions, totalExpenses, totalIncome, balance, years, isStaff } = loaderData;
+    const { year, transactions, totalExpenses, totalIncome, balance, years } = loaderData;
     const [searchParams, setSearchParams] = useSearchParams();
+    const { hasPermission } = useUser();
+    const canEdit = hasPermission("treasury:edit");
 
     const formatCurrency = (value: number | string) => {
         const num = typeof value === "string" ? parseFloat(value) : value;
@@ -167,7 +173,7 @@ export default function TreasuryBreakdown({ loaderData }: Route.ComponentProps) 
                                     <TableHead>Kategoria / Category</TableHead>
                                     <TableHead>Tila / Status</TableHead>
                                     <TableHead className="text-right">Summa / Amount</TableHead>
-                                    {isStaff && <TableHead className="w-16"></TableHead>}
+                                    {canEdit && <TableHead className="w-16"></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -204,7 +210,7 @@ export default function TreasuryBreakdown({ loaderData }: Route.ComponentProps) 
                                             {transaction.type === "expense" ? "-" : "+"}
                                             {formatCurrency(transaction.amount)}
                                         </TableCell>
-                                        {isStaff && (
+                                        {canEdit && (
                                             <TableCell>
                                                 <Link
                                                     to={`/treasury/breakdown/${transaction.id}/edit`}

@@ -1,6 +1,6 @@
 import type { Route } from "./+types/treasury.reimbursements";
 import { Form, Link, useRouteLoaderData, useSearchParams } from "react-router";
-import { requireStaff } from "~/lib/auth.server";
+import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type Purchase } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -23,7 +23,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "reimbursements:read", getDatabase);
     const db = getDatabase();
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || "all";
@@ -76,7 +76,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    await requireStaff(request, getDatabase);
+    await requirePermission(request, "reimbursements:approve", getDatabase);
     const db = getDatabase();
     const formData = await request.formData();
     const actionType = formData.get("_action");
@@ -85,6 +85,29 @@ export async function action({ request }: Route.ActionArgs) {
     if (actionType === "updateStatus" && purchaseId) {
         const newStatus = formData.get("status") as string;
         await db.updatePurchase(purchaseId, { status: newStatus as any });
+
+        // Also update the linked transaction's reimbursementStatus and status
+        const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
+        if (linkedTransaction) {
+            // Map purchase status to transaction reimbursementStatus and status
+            let newReimbursementStatus: "requested" | "approved" | "declined" | "not_requested" = "requested";
+            let newTransactionStatus: "pending" | "complete" | "paused" | "declined" = "pending";
+
+            if (newStatus === "approved" || newStatus === "reimbursed") {
+                newReimbursementStatus = "approved";
+                newTransactionStatus = "complete";
+            } else if (newStatus === "rejected") {
+                newReimbursementStatus = "declined";
+                newTransactionStatus = "declined";
+            } else if (newStatus === "pending") {
+                newReimbursementStatus = "requested";
+                newTransactionStatus = "pending";
+            }
+            await db.updateTransaction(linkedTransaction.id, {
+                reimbursementStatus: newReimbursementStatus,
+                status: newTransactionStatus
+            });
+        }
     } else if (actionType === "cancel" && purchaseId) {
         await db.deletePurchase(purchaseId);
     }
@@ -225,14 +248,16 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                     <TableHead>Ostaja</TableHead>
                                     <TableHead>Summa</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead></TableHead>
+                                    <TableHead title="Sähköposti lähetetty">📧</TableHead>
+                                    <TableHead title="Vastaus vastaanotettu">💬</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {purchases.map((purchase: Purchase & { inventoryItem: any }) => {
-                                    const status = statusConfig[purchase.status] || statusConfig.pending;
+                                    const statusInfo = statusConfig[purchase.status] || statusConfig.pending;
                                     const displayName = purchase.inventoryItem?.name || purchase.description || "—";
+                                    const canApprove = rootData?.user?.permissions?.includes("reimbursements:approve") ||
+                                        rootData?.user?.permissions?.includes("*");
 
                                     return (
                                         <TableRow key={purchase.id}>
@@ -245,13 +270,31 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                             <TableCell>{purchase.purchaserName}</TableCell>
                                             <TableCell className="font-bold">{formatCurrency(purchase.amount)}</TableCell>
                                             <TableCell>
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${status.color}`}>
-                                                    {status.fi}
-                                                </span>
+                                                {canApprove ? (
+                                                    <Form method="post" className="inline-block">
+                                                        <input type="hidden" name="_action" value="updateStatus" />
+                                                        <input type="hidden" name="purchaseId" value={purchase.id} />
+                                                        <select
+                                                            name="status"
+                                                            defaultValue={purchase.status}
+                                                            onChange={(e) => e.target.form?.requestSubmit()}
+                                                            className={`px-2 py-1 rounded text-xs font-bold cursor-pointer border-0 ${statusInfo.color}`}
+                                                        >
+                                                            <option value="pending">Odottaa / Pending</option>
+                                                            <option value="approved">Hyväksytty / Approved</option>
+                                                            <option value="reimbursed">Maksettu / Paid</option>
+                                                            <option value="rejected">Hylätty / Rejected</option>
+                                                        </select>
+                                                    </Form>
+                                                ) : (
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${statusInfo.color}`}>
+                                                        {statusInfo.fi}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {purchase.emailSent ? (
-                                                    <span className="text-green-600">✓</span>
+                                                    <span className="text-green-600" title="Sähköposti lähetetty">✓</span>
                                                 ) : purchase.emailError ? (
                                                     <span className="text-red-600" title={purchase.emailError}>✗</span>
                                                 ) : (
@@ -259,38 +302,17 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex gap-1">
-                                                    {purchase.status === "pending" && (
-                                                        <>
-                                                            <Form method="post">
-                                                                <input type="hidden" name="_action" value="updateStatus" />
-                                                                <input type="hidden" name="purchaseId" value={purchase.id} />
-                                                                <input type="hidden" name="status" value="approved" />
-                                                                <Button type="submit" size="sm" variant="outline" className="h-7 px-2">
-                                                                    ✓
-                                                                </Button>
-                                                            </Form>
-                                                            <Form method="post">
-                                                                <input type="hidden" name="_action" value="updateStatus" />
-                                                                <input type="hidden" name="purchaseId" value={purchase.id} />
-                                                                <input type="hidden" name="status" value="rejected" />
-                                                                <Button type="submit" size="sm" variant="outline" className="h-7 px-2 text-red-600">
-                                                                    ✗
-                                                                </Button>
-                                                            </Form>
-                                                        </>
-                                                    )}
-                                                    {purchase.status === "approved" && (
-                                                        <Form method="post">
-                                                            <input type="hidden" name="_action" value="updateStatus" />
-                                                            <input type="hidden" name="purchaseId" value={purchase.id} />
-                                                            <input type="hidden" name="status" value="reimbursed" />
-                                                            <Button type="submit" size="sm" variant="outline" className="h-7 px-2 text-green-600">
-                                                                💰
-                                                            </Button>
-                                                        </Form>
-                                                    )}
-                                                </div>
+                                                {/* Show reply indicator if email reply received */}
+                                                {purchase.emailReplyReceived ? (
+                                                    <span
+                                                        className="text-blue-600 cursor-help"
+                                                        title={purchase.emailReplyContent || "Vastaus vastaanotettu"}
+                                                    >
+                                                        💬
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400">—</span>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     );

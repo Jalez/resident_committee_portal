@@ -1,10 +1,11 @@
 import type { Route } from "./+types/treasury";
-import { Link, useRouteLoaderData } from "react-router";
+import { Link } from "react-router";
 import { PageWrapper, SplitLayout, QRPanel, ActionButton, ContentArea } from "~/components/layout/page-layout";
 import { SearchMenu, type SearchField } from "~/components/search-menu";
 import { getDatabase } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { loader as rootLoader } from "~/root";
+import { useUser } from "~/contexts/user-context";
+import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
 
 export function meta({ data }: Route.MetaArgs) {
     const year = data?.selectedYear ? ` ${data.selectedYear}` : "";
@@ -15,6 +16,17 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+    // Check permission (works for both logged-in users and guests)
+    const authUser = await getAuthenticatedUser(request, getDatabase);
+    const permissions = authUser
+        ? authUser.permissions
+        : await getGuestPermissions(() => getDatabase());
+
+    const canRead = permissions.some(p => p === "treasury:read" || p === "*");
+    if (!canRead) {
+        throw new Response("Not Found", { status: 404 });
+    }
+
     const db = getDatabase();
     const url = new URL(request.url);
     const yearParam = url.searchParams.get("year");
@@ -31,7 +43,20 @@ export async function loader({ request }: Route.LoaderArgs) {
     const selectedYear = yearParam ? parseInt(yearParam) : currentRealYear;
 
     // Get selected year's transactions
-    const transactions = await db.getTransactionsByYear(selectedYear);
+    const allYearTransactions = await db.getTransactionsByYear(selectedYear);
+
+    // Filter out pending/declined reimbursements - they shouldn't affect the budget yet
+    // Only include transactions that are either:
+    // - not_requested: normal transaction, no reimbursement needed
+    // - approved: reimbursement was approved and will be paid
+    // Exclude:
+    // - requested: waiting for approval
+    // - declined: rejected, won't be paid
+    const transactions = allYearTransactions.filter(t =>
+        !t.reimbursementStatus ||
+        t.reimbursementStatus === "not_requested" ||
+        t.reimbursementStatus === "approved"
+    );
 
     // Calculate totals: Balance = Income - Expenses
     const expenses = transactions
@@ -57,8 +82,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Treasury({ loaderData }: Route.ComponentProps) {
     const { selectedYear, expenses, income, balance, years, transactionCount } = loaderData;
-    const rootData = useRouteLoaderData<typeof rootLoader>("root");
-    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
+    const { hasPermission } = useUser();
+    const canWrite = hasPermission("treasury:write");
 
     const formatCurrency = (value: number) => {
         return value.toFixed(2).replace(".", ",") + " €";
@@ -99,7 +124,16 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                 labelEn="Breakdown"
                 external={false}
             />
-            {isStaff && (
+            {hasPermission("reimbursements:read") && (
+                <ActionButton
+                    href="/treasury/reimbursements"
+                    icon="receipt_long"
+                    labelFi="Kulukorvaukset"
+                    labelEn="Reimbursements"
+                    external={false}
+                />
+            )}
+            {canWrite && (
                 <ActionButton
                     href="/treasury/new"
                     icon="add"
@@ -172,7 +206,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                                 <br />
                                 No transactions recorded for {selectedYear} yet.
                             </p>
-                            {isStaff && (
+                            {canWrite && (
                                 <Link
                                     to="/treasury/new"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors"
