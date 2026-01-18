@@ -5,6 +5,7 @@
  * Run with: bun run scripts/seed-rbac.ts
  */
 
+import "dotenv/config";
 import postgres from "postgres";
 import { PERMISSIONS, type PermissionName } from "../app/lib/permissions";
 

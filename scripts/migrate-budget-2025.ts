@@ -1,5 +1,6 @@
 
-import * as XLSX from 'xlsx';
+import 'dotenv/config';
+import XLSX from 'xlsx';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getDatabase } from '../app/db/index';

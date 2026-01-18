@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router";
+import { useState } from "react";
 import { cn } from "~/lib/utils";
 import { useInfoReel } from "~/contexts/info-reel-context";
 import { useUser } from "~/contexts/user-context";
+import { useLanguage } from "~/contexts/language-context";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,6 +17,13 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "~/components/ui/tooltip";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "~/components/ui/sheet";
 import { NAV_ITEMS } from "~/lib/nav-config";
 
 interface NavigationProps {
@@ -27,6 +36,13 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
     const pathname = location.pathname;
     const { isInfoReel, fillProgress, opacity } = useInfoReel();
     const { user, hasPermission, hasAnyPermission } = useUser();
+    const { language, setLanguage, isInfoReel: contextIsInfoReel } = useLanguage();
+    // Use isInfoReel from language context to ensure consistency, though they should be same
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const toggleLanguage = () => {
+        setLanguage(language === "fi" ? "en" : "fi");
+    };
 
     // Check if profile menu should be shown (user is logged in, not guest)
     const showProfileMenu = user && user.userId !== "guest";
@@ -61,10 +77,213 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
     const isProfileActive = pathname === "/profile";
     const isSettingsActive = pathname.startsWith("/settings");
 
+    // Shared nav item renderer
+    const renderNavItem = (item: typeof navItems[0], isMobile = false) => {
+        const isActive = pathname === item.path;
+        const isAnimating = isActive && isInfoReel;
+
+        return (
+            <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => isMobile && setMobileMenuOpen(false)}
+                className={cn(
+                    "relative group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden",
+                    "hover:bg-primary/10 hover:text-primary",
+                    !isAnimating && isActive && "text-primary bg-primary/10",
+                    !isActive && "text-gray-500 dark:text-gray-400",
+                    isMobile && "w-full shrink-0"
+                )}
+                style={isAnimating ? {
+                    color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`
+                } : undefined}
+            >
+                {/* Animated filling background for active item in info reel mode */}
+                {isAnimating && (
+                    <div
+                        className="absolute inset-0 bg-primary/10"
+                        style={{
+                            clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+                            opacity: opacity
+                        }}
+                    />
+                )}
+
+                <span className="relative material-symbols-outlined text-2xl">
+                    {item.icon}
+                </span>
+
+                {/* Always show labels in mobile menu */}
+                {isMobile && (
+                    <div className="relative flex flex-col items-start leading-none">
+                        <span className="text-sm font-bold">
+                            {(language === "fi" || isInfoReel) ? item.label : item.subLabel}
+                        </span>
+                        {isInfoReel && (
+                            <span className="text-xs opacity-60 font-medium">{item.subLabel}</span>
+                        )}
+                    </div>
+                )}
+            </Link>
+        );
+    };
+
+    // Get current page info for mobile menu button
+    const currentNavItem = navItems.find(item => item.path === pathname) ||
+        allNavItems.find(item => item.path === pathname);
+    const isHomePage = pathname === "/";
+    const mobileMenuLabel = isHomePage
+        ? "Valikko / Menu"
+        : currentNavItem
+            ? `${currentNavItem.label} / ${currentNavItem.subLabel}`
+            : "Valikko / Menu";
+    const mobileMenuIcon = isHomePage
+        ? "menu"
+        : currentNavItem?.icon || "menu";
+
     return (
         <TooltipProvider delayDuration={200}>
+            {/* Mobile: Hamburger menu button + Sheet */}
+            <div className="md:hidden flex items-center justify-center w-full">
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <button
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all"
+                        >
+                            <span className="material-symbols-outlined text-2xl">{mobileMenuIcon}</span>
+                            <span className="text-sm font-bold">{mobileMenuLabel}</span>
+                            <span className="material-symbols-outlined text-lg opacity-60">expand_more</span>
+                        </button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-80 h-full flex flex-col">
+                        <SheetHeader className="shrink-0">
+                            <SheetTitle className="text-left text-lg font-black">
+                                Navigointi / Navigation
+                            </SheetTitle>
+                        </SheetHeader>
+                        <nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
+                            {/* Language Switcher Mobile */}
+                            {!isInfoReel && (
+                                <button
+                                    onClick={toggleLanguage}
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/10 hover:text-primary text-gray-500 dark:text-gray-400"
+                                >
+                                    <span className="material-symbols-outlined text-2xl">translate</span>
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-sm font-bold">
+                                            {language === "fi" ? "Suomi" : "English"}
+                                        </span>
+                                        <span className="text-xs opacity-60 font-medium">
+                                            {language === "fi" ? "Kieli / Language" : "Language / Kieli"}
+                                        </span>
+                                    </div>
+                                </button>
+                            )}
+
+                            {navItems.map((item) => renderNavItem(item, true))}
+
+                            {/* Settings in mobile menu */}
+                            {showSettingsMenu && (
+                                <div className="mt-4 pt-4 border-t border-border">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                                        Asetukset / Settings
+                                    </p>
+                                    {hasPermission("users:read") && (
+                                        <Link
+                                            to="/settings/users"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={cn(
+                                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                                                "hover:bg-primary/10 hover:text-primary",
+                                                pathname === "/settings/users" ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400"
+                                            )}
+                                        >
+                                            <span className="material-symbols-outlined text-2xl">manage_accounts</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold">Käyttäjät</span>
+                                                <span className="text-xs opacity-60">Users</span>
+                                            </div>
+                                        </Link>
+                                    )}
+                                    {hasPermission("roles:read") && (
+                                        <Link
+                                            to="/settings/roles"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={cn(
+                                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                                                "hover:bg-primary/10 hover:text-primary",
+                                                pathname === "/settings/roles" ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400"
+                                            )}
+                                        >
+                                            <span className="material-symbols-outlined text-2xl">shield_person</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold">Roolit</span>
+                                                <span className="text-xs opacity-60">Roles</span>
+                                            </div>
+                                        </Link>
+                                    )}
+                                    {hasPermission("reimbursements:approve") && (
+                                        <Link
+                                            to="/settings/reimbursements"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={cn(
+                                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                                                "hover:bg-primary/10 hover:text-primary",
+                                                pathname === "/settings/reimbursements" ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400"
+                                            )}
+                                        >
+                                            <span className="material-symbols-outlined text-2xl">smart_toy</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold">Korvaukset</span>
+                                                <span className="text-xs opacity-60">Reimbursements</span>
+                                            </div>
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Profile section in mobile menu */}
+                            {showProfileMenu && !isInfoReel && (
+                                <div className="mt-4 pt-4 border-t border-border">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                                        Profiili / Profile
+                                    </p>
+                                    <Link
+                                        to="/profile"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={cn(
+                                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                                            "hover:bg-primary/10 hover:text-primary",
+                                            isProfileActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400"
+                                        )}
+                                    >
+                                        <span className="material-symbols-outlined text-2xl">edit</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold">Muokkaa profiilia</span>
+                                            <span className="text-xs opacity-60">Edit profile</span>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        to="/auth/logout"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                                    >
+                                        <span className="material-symbols-outlined text-2xl">logout</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold">Kirjaudu ulos</span>
+                                            <span className="text-xs opacity-60">Log out</span>
+                                        </div>
+                                    </Link>
+                                </div>
+                            )}
+                        </nav>
+                    </SheetContent>
+                </Sheet>
+            </div>
+
+            {/* Desktop: Original horizontal/vertical navigation */}
             <nav className={cn(
-                "flex items-center justify-center gap-1",
+                "hidden md:flex items-center justify-center gap-1",
                 orientation === "vertical" ? "flex-col h-full" : "flex-row w-full",
                 className
             )}>
@@ -106,8 +325,12 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                         "relative flex-col items-start leading-none hidden lg:flex",
                                         orientation === "vertical" && "lg:hidden" // Hide even on large if vertical (uses sidebar tooltips)
                                     )}>
-                                        <span className="text-sm md:text-base font-bold">{item.label}</span>
-                                        <span className="text-[10px] md:text-xs opacity-60 font-medium">{item.subLabel}</span>
+                                        <span className="text-sm md:text-base font-bold">
+                                            {(language === "fi" || isInfoReel) ? item.label : item.subLabel}
+                                        </span>
+                                        {isInfoReel && (
+                                            <span className="text-[10px] md:text-xs opacity-60 font-medium">{item.subLabel}</span>
+                                        )}
                                     </div>
                                 </Link>
                             </TooltipTrigger>
@@ -119,8 +342,14 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     orientation === "horizontal" && "lg:hidden"
                                 )}
                             >
-                                <span>{item.label}</span>
-                                <span className="text-muted-foreground ml-1">/ {item.subLabel}</span>
+                                {(language === "fi" || isInfoReel) ? (
+                                    <>
+                                        <span>{item.label}</span>
+                                        {isInfoReel && <span className="text-muted-foreground ml-1">/ {item.subLabel}</span>}
+                                    </>
+                                ) : (
+                                    <span>{item.subLabel}</span>
+                                )}
                             </TooltipContent>
                         </Tooltip>
                     );
@@ -145,8 +374,12 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     "relative flex-col items-start leading-none hidden lg:flex",
                                     orientation === "vertical" && "lg:hidden"
                                 )}>
-                                    <span className="text-sm md:text-base font-bold">Asetukset</span>
-                                    <span className="text-[10px] md:text-xs opacity-60 font-medium">Settings</span>
+                                    <span className="text-sm md:text-base font-bold">
+                                        {(language === "fi" || isInfoReel) ? "Asetukset" : "Settings"}
+                                    </span>
+                                    {isInfoReel && (
+                                        <span className="text-[10px] md:text-xs opacity-60 font-medium">Settings</span>
+                                    )}
                                 </div>
 
                                 {/* Dropdown indicator */}
@@ -161,8 +394,10 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     <Link to="/settings/users" className="flex items-center gap-2 cursor-pointer">
                                         <span className="material-symbols-outlined text-lg">manage_accounts</span>
                                         <div>
-                                            <p className="font-medium">Käyttäjät</p>
-                                            <p className="text-xs text-muted-foreground">Users</p>
+                                            <p className="font-medium">
+                                                {(language === "fi" || isInfoReel) ? "Käyttäjät" : "Users"}
+                                            </p>
+                                            {isInfoReel && <p className="text-xs text-muted-foreground">Users</p>}
                                         </div>
                                     </Link>
                                 </DropdownMenuItem>
@@ -172,8 +407,10 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     <Link to="/settings/roles" className="flex items-center gap-2 cursor-pointer">
                                         <span className="material-symbols-outlined text-lg">shield_person</span>
                                         <div>
-                                            <p className="font-medium">Roolit</p>
-                                            <p className="text-xs text-muted-foreground">Roles</p>
+                                            <p className="font-medium">
+                                                {(language === "fi" || isInfoReel) ? "Roolit" : "Roles"}
+                                            </p>
+                                            {isInfoReel && <p className="text-xs text-muted-foreground">Roles</p>}
                                         </div>
                                     </Link>
                                 </DropdownMenuItem>
@@ -185,8 +422,10 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                         <Link to="/settings/reimbursements" className="flex items-center gap-2 cursor-pointer">
                                             <span className="material-symbols-outlined text-lg">smart_toy</span>
                                             <div>
-                                                <p className="font-medium">Korvaukset</p>
-                                                <p className="text-xs text-muted-foreground">Reimbursements</p>
+                                                <p className="font-medium">
+                                                    {(language === "fi" || isInfoReel) ? "Korvaukset" : "Reimbursements"}
+                                                </p>
+                                                {isInfoReel && <p className="text-xs text-muted-foreground">Reimbursements</p>}
                                             </div>
                                         </Link>
                                     </DropdownMenuItem>
@@ -215,8 +454,12 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     "relative flex-col items-start leading-none hidden lg:flex",
                                     orientation === "vertical" && "lg:hidden"
                                 )}>
-                                    <span className="text-sm md:text-base font-bold">Profiili</span>
-                                    <span className="text-[10px] md:text-xs opacity-60 font-medium">Profile</span>
+                                    <span className="text-sm md:text-base font-bold">
+                                        {(language === "fi" || isInfoReel) ? "Profiili" : "Profile"}
+                                    </span>
+                                    {isInfoReel && (
+                                        <span className="text-[10px] md:text-xs opacity-60 font-medium">Profile</span>
+                                    )}
                                 </div>
 
                                 {/* Dropdown indicator */}
@@ -230,8 +473,10 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                 <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
                                     <span className="material-symbols-outlined text-lg">edit</span>
                                     <div>
-                                        <p className="font-medium">Muokkaa profiilia</p>
-                                        <p className="text-xs text-muted-foreground">Edit profile</p>
+                                        <p className="font-medium">
+                                            {(language === "fi" || isInfoReel) ? "Muokkaa profiilia" : "Edit profile"}
+                                        </p>
+                                        {isInfoReel && <p className="text-xs text-muted-foreground">Edit profile</p>}
                                     </div>
                                 </Link>
                             </DropdownMenuItem>
@@ -240,13 +485,55 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                 <Link to="/auth/logout" className="flex items-center gap-2 cursor-pointer">
                                     <span className="material-symbols-outlined text-lg">logout</span>
                                     <div>
-                                        <p className="font-medium">Kirjaudu ulos</p>
-                                        <p className="text-xs opacity-75">Log out</p>
+                                        <p className="font-medium">
+                                            {(language === "fi" || isInfoReel) ? "Kirjaudu ulos" : "Log out"}
+                                        </p>
+                                        {isInfoReel && <p className="text-xs opacity-75">Log out</p>}
                                     </div>
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                )}
+
+                {/* Language Switcher Desktop - Only show when not in info reel */}
+                {!isInfoReel && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={toggleLanguage}
+                                className={cn(
+                                    "relative group flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 rounded-xl transition-all duration-300 overflow-hidden",
+                                    "hover:bg-primary/10 hover:text-primary cursor-pointer text-gray-500 dark:text-gray-400"
+                                )}
+                            >
+                                <span className="relative material-symbols-outlined text-2xl md:text-3xl">
+                                    translate
+                                </span>
+
+                                <div className={cn(
+                                    "relative flex-col items-start leading-none hidden lg:flex",
+                                    orientation === "vertical" && "lg:hidden"
+                                )}>
+                                    <span className="text-sm md:text-base font-bold">
+                                        {language === "fi" ? "Suomi" : "English"}
+                                    </span>
+                                    <span className="text-[10px] md:text-xs opacity-60 font-medium">
+                                        {language === "fi" ? "Kieli" : "Language"}
+                                    </span>
+                                </div>
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                            side={orientation === "vertical" ? "right" : "bottom"}
+                            className={cn(
+                                "font-bold",
+                                orientation === "horizontal" && "lg:hidden"
+                            )}
+                        >
+                            <span>{language === "fi" ? "Vaihda kieleksi englanti" : "Switch to Finnish"}</span>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
             </nav>
         </TooltipProvider>

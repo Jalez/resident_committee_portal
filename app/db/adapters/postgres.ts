@@ -52,7 +52,13 @@ export class PostgresAdapter implements DatabaseAdapter {
 			const updated = await this.updateUser(existing.id, { name: user.name, ...(user.role && { role: user.role }), ...(user.apartmentNumber && { apartmentNumber: user.apartmentNumber }) });
 			return updated!;
 		}
-		return this.createUser(user);
+		// For new users, automatically assign the Resident role from RBAC system
+		const residentRole = await this.getRoleByName("Resident");
+		const newUserData: NewUser = {
+			...user,
+			roleId: residentRole?.id ?? null,
+		};
+		return this.createUser(newUserData);
 	}
 
 	// ==================== RBAC Methods ====================

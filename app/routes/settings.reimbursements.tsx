@@ -28,7 +28,7 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    await requirePermission(request, "reimbursements:approve", getDatabase);
+    await requirePermission(request, "settings:reimbursements", getDatabase);
 
     const db = getDatabase();
 
@@ -71,7 +71,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    await requirePermission(request, "reimbursements:approve", getDatabase);
+    await requirePermission(request, "settings:reimbursements", getDatabase);
 
     const formData = await request.formData();
     const intent = formData.get("intent") as string;

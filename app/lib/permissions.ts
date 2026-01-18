@@ -207,6 +207,23 @@ export const PERMISSIONS = {
 		descriptionFi: "Poista rooleja",
 		category: "Roles",
 	},
+
+	// Settings (access to configuration pages)
+	"settings:users": {
+		description: "Access user management settings",
+		descriptionFi: "Pääsy käyttäjähallinnan asetuksiin",
+		category: "Settings",
+	},
+	"settings:roles": {
+		description: "Access role management settings",
+		descriptionFi: "Pääsy roolihallinnan asetuksiin",
+		category: "Settings",
+	},
+	"settings:reimbursements": {
+		description: "Access reimbursement settings (AI, keywords)",
+		descriptionFi: "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
+		category: "Settings",
+	},
 } as const;
 
 /**

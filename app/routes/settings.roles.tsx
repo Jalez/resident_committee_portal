@@ -31,7 +31,7 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
 	// Throw 404 for unauthorized access to hide admin routes
 	try {
-		await requirePermission(request, "roles:read", getDatabase);
+		await requirePermission(request, "settings:roles", getDatabase);
 	} catch (error) {
 		throw new Response("Not Found", { status: 404 });
 	}

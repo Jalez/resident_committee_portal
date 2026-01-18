@@ -2,6 +2,8 @@ import { Link } from "react-router";
 import { DynamicQR } from "~/components/dynamic-qr";
 import { cn } from "~/lib/utils";
 import { useInfoReel } from "~/contexts/info-reel-context";
+
+import { useLanguage } from "~/contexts/language-context";
 import { CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH } from "~/lib/layout-constants";
 
 /**
@@ -47,11 +49,23 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ finnish, english, className }: PageHeaderProps) {
+    const { language, isInfoReel } = useLanguage();
+
+    if (isInfoReel) {
+        return (
+            <h1 className={cn("hidden md:block text-4xl lg:text-5xl font-black tracking-tight leading-tight mb-8", className)}>
+                <span className="text-gray-900 dark:text-white">{finnish}</span>
+                <br />
+                <span className="text-primary">{english}</span>
+            </h1>
+        );
+    }
+
     return (
-        <h1 className={cn("text-4xl lg:text-5xl font-black tracking-tight leading-tight mb-8", className)}>
-            <span className="text-gray-900 dark:text-white">{finnish}</span>
-            <br />
-            <span className="text-primary">{english}</span>
+        <h1 className={cn("hidden md:block text-4xl lg:text-5xl font-black tracking-tight leading-tight mb-8", className)}>
+            <span className="text-gray-900 dark:text-white">
+                {language === "fi" ? finnish : english}
+            </span>
         </h1>
     );
 }
@@ -70,6 +84,7 @@ interface SplitLayoutProps {
 
 export function SplitLayout({ children, right, header, className, footer }: SplitLayoutProps) {
     const { isInfoReel } = useInfoReel();
+    const { language } = useLanguage();
 
     // Info Reel mode: split layout with QR panel
     if (isInfoReel && right) {
@@ -100,21 +115,36 @@ export function SplitLayout({ children, right, header, className, footer }: Spli
 
     // Regular mode: full-width content
     return (
-        <div className={cn("w-full overflow-hidden flex flex-col h-auto", className)}>
-            <div className="flex flex-col p-8 lg:p-12 relative">
+        <div className={cn("w-full overflow-hidden flex flex-col h-full flex-1", className)}>
+            <div className="flex flex-col p-2 lg:p-12 relative">
                 {/* Header row with optional action button on right */}
+                {/* Header row - hidden on mobile since nav shows page name */}
                 {header && (
-                    <div className="flex items-start justify-between gap-4 mb-8">
+                    <div className="hidden md:flex items-start justify-between gap-4 mb-8">
                         <h1 className="text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-                            <span className="text-gray-900 dark:text-white">{header.finnish}</span>
-                            <br />
-                            <span className="text-primary">{header.english}</span>
+                            {isInfoReel ? (
+                                <>
+                                    <span className="text-gray-900 dark:text-white">{header.finnish}</span>
+                                    <br />
+                                    <span className="text-primary">{header.english}</span>
+                                </>
+                            ) : (
+                                <span className="text-gray-900 dark:text-white">
+                                    {language === "fi" ? header.finnish : header.english}
+                                </span>
+                            )}
                         </h1>
                         {footer && (
                             <div className="shrink-0">
                                 {footer}
                             </div>
                         )}
+                    </div>
+                )}
+                {/* Mobile: just show footer if present */}
+                {footer && (
+                    <div className="md:hidden mb-4">
+                        {footer}
                     </div>
                 )}
                 {/* If no header but has footer, show footer separately */}
@@ -161,6 +191,7 @@ export function QRPanel({
     const path = qrPath || qrUrl || "/";
     const isExternal = !!qrUrl;
     const { isInfoReel } = useInfoReel();
+    const { language } = useLanguage();
 
     return (
         <div
@@ -198,10 +229,7 @@ export function QRPanel({
                             </span>
                             <div className="flex flex-col items-start">
                                 <span className="text-2xl font-black tracking-tight">
-                                    {buttonLabel.finnish}
-                                </span>
-                                <span className="text-lg font-bold opacity-80">
-                                    {buttonLabel.english}
+                                    {language === "fi" ? buttonLabel.finnish : buttonLabel.english}
                                 </span>
                             </div>
                         </Link>
@@ -214,11 +242,9 @@ export function QRPanel({
                                 {buttonIcon}
                             </span>
                             <span className="text-2xl font-black tracking-tight">
-                                {buttonLabel.finnish}
+                                {language === "fi" ? buttonLabel.finnish : buttonLabel.english}
                             </span>
-                            <span className="text-lg font-bold opacity-80">
-                                {buttonLabel.english}
-                            </span>
+                            {/* Hide secondary label in single-language mode */}
                         </Link>
                     )
                 )}
@@ -246,6 +272,8 @@ interface ActionButtonProps {
 }
 
 export function ActionButton({ href, icon, labelFi, labelEn, external = true, className }: ActionButtonProps) {
+    const { language } = useLanguage();
+
     const ButtonContent = (
         <>
             <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">
@@ -253,11 +281,9 @@ export function ActionButton({ href, icon, labelFi, labelEn, external = true, cl
             </span>
             <div className="flex flex-col items-start">
                 <span className="text-sm font-black tracking-tight leading-tight">
-                    {labelFi}
+                    {language === "fi" ? labelFi : labelEn}
                 </span>
-                <span className="text-xs font-bold opacity-80">
-                    {labelEn}
-                </span>
+                {/* Optional: could show secondary language smaller, but request is to NOT display both */}
             </div>
         </>
     );

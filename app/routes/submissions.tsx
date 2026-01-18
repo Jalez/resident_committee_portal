@@ -6,6 +6,7 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
@@ -99,29 +100,89 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                    {SUBMISSION_STATUSES.map((status) => {
-                        const count = submissions.filter(s => s.status === status).length;
-                        return (
-                            <div
-                                key={status}
-                                className={cn(
-                                    "p-4 rounded-xl text-center",
-                                    STATUS_COLORS[status] || "bg-gray-100"
-                                )}
-                            >
-                                <p className="text-3xl font-black">{count}</p>
-                                <p className="text-xs font-bold uppercase tracking-wide opacity-75">
-                                    {status.split(" / ")[0]}
-                                </p>
+                {/* Submissions List - Card View for Mobile */}
+                <div className="space-y-4 md:hidden mb-8">
+                    {submissions.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                            Ei vielä yhteydenottoja / No submissions yet
+                        </div>
+                    ) : (
+                        submissions.map((submission) => (
+                            <div key={submission.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        {new Date(submission.createdAt).toLocaleDateString("fi-FI", {
+                                            day: "numeric",
+                                            month: "short",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </span>
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-full text-xs font-bold uppercase",
+                                        TYPE_COLORS[submission.type] || "bg-gray-100 text-gray-700"
+                                    )}>
+                                        {submission.type}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-900 dark:text-white">{submission.name}</h3>
+                                    <p className="text-sm text-gray-500">{submission.email}</p>
+                                    {submission.apartmentNumber && (
+                                        <p className="text-xs text-gray-400 mt-0.5">Asunto: {submission.apartmentNumber}</p>
+                                    )}
+                                </div>
+
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                                    {submission.message}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                                    <Form method="post" className="flex-1 mr-4">
+                                        <input type="hidden" name="_action" value="status" />
+                                        <input type="hidden" name="submissionId" value={submission.id} />
+                                        <select
+                                            name="status"
+                                            defaultValue={submission.status}
+                                            onChange={(e) => e.target.form?.requestSubmit()}
+                                            className={cn(
+                                                "w-full px-3 py-2 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors appearance-none",
+                                                STATUS_COLORS[submission.status] || "bg-gray-100"
+                                            )}
+                                        >
+                                            {SUBMISSION_STATUSES.map((status) => (
+                                                <option key={status} value={status}>
+                                                    {status.split(" / ")[0]}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </Form>
+
+                                    {canDelete && (
+                                        <Form method="post" onSubmit={(e) => {
+                                            if (!confirm("Haluatko varmasti poistaa tämän yhteydenoton? / Are you sure you want to delete this submission?")) {
+                                                e.preventDefault();
+                                            }
+                                        }}>
+                                            <input type="hidden" name="_action" value="delete" />
+                                            <input type="hidden" name="submissionId" value={submission.id} />
+                                            <button
+                                                type="submit"
+                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </Form>
+                                    )}
+                                </div>
                             </div>
-                        );
-                    })}
+                        ))
+                    )}
                 </div>
 
                 {/* Submissions Table */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-gray-900">

@@ -34,6 +34,7 @@ import {
     QuantitySelectionModal,
     TransactionSelectorModal,
 } from "~/components/inventory";
+import { useLanguage } from "~/contexts/language-context";
 
 
 // ============================================================================
@@ -443,6 +444,10 @@ function InventoryTablePage() {
         quantity: number;
     } | null>(null);
 
+    const { language, isInfoReel } = useLanguage();
+    // Helper for bilingual strings
+    const t = (fi: string, en: string) => (language === "fi" || isInfoReel) ? fi : en;
+
     // Helper: calculate unknown quantity for an item
     const getUnknownQuantity = (item: InventoryItem) => {
         const links = transactionLinksMap[item.id] || [];
@@ -596,11 +601,52 @@ function InventoryTablePage() {
 
     const addRowElement = isStaff && showAddRow ? <InventoryAddRow /> : null;
 
-    // Actions bar (Right side)
-    const actionsComponent = (
-        <div className="flex gap-2 flex-wrap items-center">
-            {/* Add Item Button - moved here from footer */}
-            {isStaff && (
+    // Actions bar (Right side) - responsive: dropdown on mobile, inline on desktop
+    const actionsComponent = isStaff ? (
+        <>
+            {/* Mobile: Dropdown menu for actions */}
+            <div className="md:hidden">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="default" size="sm" className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300">
+                            <span className="material-symbols-outlined text-base">more_vert</span>
+                            {t("Toiminnot", "Actions")}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => setShowAddRow(!showAddRow)}>
+                            <span className="material-symbols-outlined text-base mr-2">{showAddRow ? "close" : "add"}</span>
+                            <div>
+                                <p className="font-medium">{showAddRow ? t("Sulje", "Close") : t("Lisää", "Add")}</p>
+                                {isInfoReel && <p className="text-xs text-muted-foreground">{showAddRow ? "Close add row" : "Add item"}</p>}
+                            </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <a href="/api/inventory/export" download className="flex items-center cursor-pointer">
+                                <span className="material-symbols-outlined text-base mr-2">download</span>
+                                <div>
+                                    <p className="font-medium">{t("Vie", "Export")}</p>
+                                    {isInfoReel && <p className="text-xs text-muted-foreground">Export CSV</p>}
+                                </div>
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={fetcher.state !== "idle"}
+                        >
+                            <span className="material-symbols-outlined text-base mr-2">upload</span>
+                            <div>
+                                <p className="font-medium">Tuo</p>
+                                <p className="text-xs text-muted-foreground">Import CSV</p>
+                            </div>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            {/* Desktop: Inline buttons */}
+            <div className="hidden md:flex gap-2 flex-wrap items-center">
                 <Button
                     variant="default"
                     size="sm"
@@ -608,54 +654,51 @@ function InventoryTablePage() {
                     className="flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-base">{showAddRow ? "close" : "add"}</span>
-                    {showAddRow ? "Sulje / Close" : "Lisää / Add"}
+                    {showAddRow ? t("Sulje", "Close") : t("Lisää", "Add")}
                 </Button>
-            )}
 
-            {/* Export/Import Buttons - for Staff */}
-            {isStaff && (
-                <>
-                    <Button variant="ghost" size="sm" asChild>
-                        <a href="/api/inventory/export" download className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-base">download</span>
-                            Export CSV
-                        </a>
-                    </Button>
+                <Button variant="ghost" size="sm" asChild>
+                    <a href="/api/inventory/export" download className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-base">download</span>
+                        {t("Vie CSV", "Export CSV")}
+                    </a>
+                </Button>
 
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        accept=".csv, .xlsx, .xls"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                const formData = new FormData();
-                                formData.set("file", file);
-                                fetcher.submit(formData, {
-                                    method: "POST",
-                                    action: "/api/inventory/import",
-                                    encType: "multipart/form-data",
-                                });
-                                e.target.value = "";
-                                toast.info("Tuodaan tiedostoa... / Importing...");
-                            }
-                        }}
-                    />
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1"
-                        disabled={fetcher.state !== "idle"}
-                    >
-                        <span className="material-symbols-outlined text-base">upload</span>
-                        Import CSV
-                    </Button>
-                </>
-            )}
-        </div>
-    );
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1"
+                    disabled={fetcher.state !== "idle"}
+                >
+                    <span className="material-symbols-outlined text-base">upload</span>
+                    {t("Tuo CSV", "Import CSV")}
+                </Button>
+            </div>
+
+            {/* Hidden file input - shared between mobile and desktop */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".csv, .xlsx, .xls"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                        const formData = new FormData();
+                        formData.set("file", file);
+                        fetcher.submit(formData, {
+                            method: "POST",
+                            action: "/api/inventory/import",
+                            encType: "multipart/form-data",
+                        });
+                        e.target.value = "";
+                        toast.info(t("Tuodaan tiedostoa...", "Importing file..."));
+                    }
+                }}
+            />
+        </>
+    ) : null;
 
     // Selection Actions (Left side)
     const selectionActions = selectedIds.length > 0 ? (
@@ -663,52 +706,43 @@ function InventoryTablePage() {
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                     <span className="material-symbols-outlined text-base mr-1">checklist</span>
-                    Valitut ({selectedIds.length}) / Selected
+                    {t("Valitut", "Selected")} ({selectedIds.length})
                     <span className="material-symbols-outlined text-base ml-1">expand_more</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => setShowReportModal(true)}>
                     <span className="material-symbols-outlined text-base mr-2">report</span>
-                    Ilmoita / Report
+                    {t("Ilmoita", "Report")}
                 </DropdownMenuItem>
                 {isStaff && (
                     <>
                         <DropdownMenuSeparator />
-                        {/* Treasury Submenu */}
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <span className="material-symbols-outlined text-base mr-2">account_balance</span>
-                                Rahastotapahtumat / Treasury
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuItem
-                                    onClick={() => handleOpenQuantityModal("addTransaction")}
-                                    disabled={!hasTreasuryCapableItems}
-                                >
-                                    <span className="material-symbols-outlined text-base mr-2">add_circle</span>
-                                    Lisää uuteen / Add to New
-                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => handleOpenQuantityModal("addToExisting")}
-                                    disabled={!hasTreasuryCapableItems || inventoryTransactions.length === 0}
-                                >
-                                    <span className="material-symbols-outlined text-base mr-2">playlist_add</span>
-                                    Lisää olemassaolevaan / Add to Existing
-                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => handleOpenQuantityModal("markNoTransaction")}
-                                    disabled={!hasTreasuryCapableItems}
-                                >
-                                    <span className="material-symbols-outlined text-base mr-2">block</span>
-                                    Merkitse ei tapahtumaa / Mark No Transaction
-                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
-                                </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
+                        {/* Treasury Section - flattened for mobile compatibility */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {t("Rahastotapahtumat", "Treasury")}
+                        </div>
+                        <DropdownMenuItem
+                            onClick={() => handleOpenQuantityModal("addTransaction")}
+                            disabled={!hasTreasuryCapableItems}
+                        >
+                            <span className="material-symbols-outlined text-base mr-2">add_circle</span>
+                            {t("Lisää uuteen", "Add to New")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => handleOpenQuantityModal("addToExisting")}
+                            disabled={!hasTreasuryCapableItems || inventoryTransactions.length === 0}
+                        >
+                            <span className="material-symbols-outlined text-base mr-2">playlist_add</span>
+                            {t("Lisää olemassaolevaan", "Add to Existing")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => handleOpenQuantityModal("markNoTransaction")}
+                            disabled={!hasTreasuryCapableItems}
+                        >
+                            <span className="material-symbols-outlined text-base mr-2">block</span>
+                            {t("Ei tapahtumaa", "No Transaction")}
+                        </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -717,7 +751,7 @@ function InventoryTablePage() {
                             className="text-red-600"
                         >
                             <span className="material-symbols-outlined text-base mr-2">delete</span>
-                            Poista / Remove
+                            {t("Poista", "Remove")}
                         </DropdownMenuItem>
                     </>
                 )}
@@ -744,37 +778,42 @@ function InventoryTablePage() {
                         prependedRow={addRowElement}
                         actionsComponent={actionsComponent}
                         selectionActions={selectionActions}
-                        maxBodyHeight="calc(100vh - 400px)"
+                        maxBodyHeight="calc(100vh - 280px)"
                     />
                 </div>
             </SplitLayout>
 
             {/* Report Modal */}
+            {/* Report Modal */}
             <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Ilmoita ongelmasta / Report an issue</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-sm text-gray-500 mb-2">Valitut tavarat / Selected items:</p>
-                            <p className="font-medium">{selectedItemNames.join(", ")}</p>
+                <DialogContent className="w-full h-full max-w-none md:h-auto md:max-w-lg p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
+                    <div className="p-4 md:p-0 flex-1 overflow-y-auto">
+                        <DialogHeader className="mb-4 text-left">
+                            <DialogTitle>{t("Ilmoita ongelmasta", "Report an issue")}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm text-gray-500 mb-2">{t("Valitut tavarat:", "Selected items:")}</p>
+                                <p className="font-medium">{selectedItemNames.join(", ")}</p>
+                            </div>
+                            <Textarea
+                                value={reportMessage}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReportMessage(e.target.value)}
+                                placeholder={t("Kuvaa ongelma...", "Describe the issue...")}
+                                rows={4}
+                            />
                         </div>
-                        <Textarea
-                            value={reportMessage}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReportMessage(e.target.value)}
-                            placeholder="Kuvaa ongelma... / Describe the issue..."
-                            rows={4}
-                        />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowReportModal(false)}>
-                            Peruuta / Cancel
-                        </Button>
-                        <Button onClick={handleSubmitReport} disabled={!reportMessage.trim()}>
-                            Lähetä / Send
-                        </Button>
-                    </DialogFooter>
+                    <div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
+                        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                            <Button variant="outline" onClick={() => setShowReportModal(false)} className="flex-1 sm:flex-none">
+                                Peruuta / Cancel
+                            </Button>
+                            <Button onClick={handleSubmitReport} disabled={!reportMessage.trim()} className="flex-1 sm:flex-none">
+                                Lähetä / Send
+                            </Button>
+                        </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

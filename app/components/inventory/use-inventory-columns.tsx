@@ -5,6 +5,7 @@ import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { EditableCell } from "~/components/ui/editable-cell";
 import type { ColumnKey } from "./inventory-constants";
+import { useLanguage } from "~/contexts/language-context";
 
 interface TransactionLink {
     transaction: { id: string; description: string; date: Date; type: string };
@@ -51,6 +52,11 @@ export function useInventoryColumns({
     itemNames,
     transactionLinksMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
+    const { language } = useLanguage();
+
+    // Helper for bilingual headers
+    const getHeader = (fi: string, en: string) => language === "fi" ? fi : en;
+
     // Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
     const columns: ColumnDef<InventoryItem>[] = [];
 
@@ -58,7 +64,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("status")) {
         columns.push({
             accessorKey: "status",
-            header: "Tila / Status",
+            header: getHeader("Tila", "Status"),
             cell: ({ row }) => <StatusBadge status={row.original.status || "active"} />,
         });
     }
@@ -66,7 +72,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("name")) {
         columns.push({
             accessorKey: "name",
-            header: "Nimi / Name",
+            header: getHeader("Nimi", "Name"),
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
                     <EditableCell
@@ -87,7 +93,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("location")) {
         columns.push({
             accessorKey: "location",
-            header: "Sijainti / Location",
+            header: getHeader("Sijainti", "Location"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("location") || ""}
@@ -102,7 +108,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("category")) {
         columns.push({
             accessorKey: "category",
-            header: "Kategoria / Category",
+            header: getHeader("Kategoria", "Category"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("category") || ""}
@@ -117,7 +123,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("description")) {
         columns.push({
             accessorKey: "description",
-            header: "Kuvaus / Description",
+            header: getHeader("Kuvaus", "Description"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("description") || ""}
@@ -131,11 +137,11 @@ export function useInventoryColumns({
     if (visibleColumns.has("updatedAt")) {
         columns.push({
             accessorKey: "updatedAt",
-            header: "Päivitetty / Updated",
+            header: getHeader("Päivitetty", "Updated"),
             cell: ({ row }) => {
                 const date = new Date(row.getValue("updatedAt"));
                 return <span className="text-gray-500 text-xs text-nowrap">
-                    {date.toLocaleDateString("fi-FI")}
+                    {date.toLocaleDateString(language === "fi" ? "fi-FI" : "en-GB")}
                 </span>;
             },
         });
@@ -145,7 +151,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("unitValue")) {
         columns.push({
             accessorKey: "value",
-            header: "Kpl-arvo / Unit",
+            header: getHeader("Kpl-arvo", "Unit"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("value") as string || "0"}
@@ -162,7 +168,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("quantity")) {
         columns.push({
             accessorKey: "quantity",
-            header: "Määrä / Qty",
+            header: getHeader("Määrä", "Qty"),
             cell: ({ row }) => (
                 isStaff && row.original.status === "active" ? (
                     <Input
@@ -193,7 +199,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("totalValue")) {
         columns.push({
             id: "totalValue",
-            header: "Yht. arvo / Total",
+            header: getHeader("Yht. arvo", "Total"),
             cell: ({ row }) => {
                 const value = row.original.value as string | null;
                 const qty = row.original.quantity;
@@ -208,7 +214,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("transactions")) {
         columns.push({
             id: "transactions",
-            header: "Tapahtumat",
+            header: getHeader("Tapahtumat", "Transactions"),
             cell: ({ row }) => {
                 const item = row.original;
                 // If item is removed, don't show transaction breakdown? Or show it but maybe dimmed?

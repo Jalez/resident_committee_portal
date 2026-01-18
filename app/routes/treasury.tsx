@@ -2,10 +2,12 @@ import type { Route } from "./+types/treasury";
 import { Link } from "react-router";
 import { PageWrapper, SplitLayout, QRPanel, ActionButton, ContentArea } from "~/components/layout/page-layout";
 import { SearchMenu, type SearchField } from "~/components/search-menu";
+import { MobileActionMenuWithItems } from "~/components/mobile-action-menu";
 import { getDatabase } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { useUser } from "~/contexts/user-context";
 import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
+import { useLanguage } from "~/contexts/language-context";
 
 export function meta({ data }: Route.MetaArgs) {
     const year = data?.selectedYear ? ` ${data.selectedYear}` : "";
@@ -89,13 +91,16 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
         return value.toFixed(2).replace(".", ",") + " €";
     };
 
+    const { language, isInfoReel } = useLanguage();
+    const t = (fi: string, en: string) => (language === "fi" || isInfoReel) ? fi : en;
+
     // Configure search fields
     const searchFields: SearchField[] = [
         {
             name: "year",
-            label: "Vuosi / Year",
+            label: t("Vuosi", "Year"),
             type: "select",
-            placeholder: "Valitse vuosi...",
+            placeholder: t("Valitse vuosi...", "Select year..."),
             options: years.map(String),
         },
     ];
@@ -106,42 +111,40 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
             qrUrl={`/treasury/breakdown?year=${selectedYear}`}
             title={
                 <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                    Katso erittely <br />
-                    <span className="text-lg text-gray-400 font-bold">See Breakdown</span>
+                    {t("Katso erittely", "See Breakdown")} <br />
+                    {isInfoReel && <span className="text-lg text-gray-400 font-bold">See Breakdown</span>}
                 </h2>
             }
         />
     );
 
+    // Build action items array based on permissions
+    const actionItems = [
+        {
+            href: `/treasury/breakdown?year=${selectedYear}`,
+            icon: "table_chart",
+            labelFi: "Erittely",
+            labelEn: "Breakdown",
+        },
+        ...(hasPermission("reimbursements:read") ? [{
+            href: "/treasury/reimbursements",
+            icon: "receipt_long",
+            labelFi: "Kulukorvaukset",
+            labelEn: "Reimbursements",
+        }] : []),
+        ...(canWrite ? [{
+            href: "/treasury/new",
+            icon: "add",
+            labelFi: "Lisää",
+            labelEn: "Add",
+        }] : []),
+    ];
+
     // Footer with breakdown link and add button for staff
     const FooterContent = (
         <div className="flex items-center gap-2">
             <SearchMenu fields={searchFields} />
-            <ActionButton
-                href={`/treasury/breakdown?year=${selectedYear}`}
-                icon="table_chart"
-                labelFi="Erittely"
-                labelEn="Breakdown"
-                external={false}
-            />
-            {hasPermission("reimbursements:read") && (
-                <ActionButton
-                    href="/treasury/reimbursements"
-                    icon="receipt_long"
-                    labelFi="Kulukorvaukset"
-                    labelEn="Reimbursements"
-                    external={false}
-                />
-            )}
-            {canWrite && (
-                <ActionButton
-                    href="/treasury/new"
-                    icon="add"
-                    labelFi="Lisää"
-                    labelEn="Add"
-                    external={false}
-                />
-            )}
+            <MobileActionMenuWithItems items={actionItems} />
         </div>
     );
 
@@ -160,7 +163,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                         <>
                             <div>
                                 <p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                                    Saldo / Balance
+                                    {t("Saldo", "Balance")}
                                 </p>
                                 <p className={`text-5xl lg:text-7xl font-black tracking-tighter ${balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                                     {formatCurrency(balance)}
@@ -170,7 +173,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                                        Tulot / Income
+                                        {t("Tulot", "Income")}
                                     </p>
                                     <p className="text-2xl lg:text-3xl font-bold text-green-600 dark:text-green-400">
                                         +{formatCurrency(income)}
@@ -178,7 +181,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                                        Menot / Expenses
+                                        {t("Menot", "Expenses")}
                                     </p>
                                     <p className="text-2xl lg:text-3xl font-bold text-red-600 dark:text-red-400">
                                         -{formatCurrency(expenses)}
@@ -188,9 +191,9 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 
                             <div className="inline-block bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    {transactionCount} tapahtumaa / transactions —
+                                    {transactionCount} {t("tapahtumaa", "transactions")} —
                                     <Link to={`/treasury/breakdown?year=${selectedYear}`} className="text-primary hover:underline ml-1">
-                                        Katso erittely / See breakdown
+                                        {t("Katso erittely", "See breakdown")}
                                     </Link>
                                 </p>
                             </div>
@@ -199,12 +202,11 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                         <div className="text-center py-12">
                             <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">account_balance_wallet</span>
                             <p className="text-xl font-bold text-gray-500 dark:text-gray-400 mb-2">
-                                Ei tapahtumia / No transactions
+                                {t("Ei tapahtumia", "No transactions")}
                             </p>
                             <p className="text-gray-400 dark:text-gray-500 mb-4">
-                                Vuodelle {selectedYear} ei ole vielä kirjattu tapahtumia.
-                                <br />
-                                No transactions recorded for {selectedYear} yet.
+                                {language === "fi" || isInfoReel ? `Vuodelle ${selectedYear} ei ole vielä kirjattu tapahtumia.` : `No transactions recorded for ${selectedYear} yet.`}
+                                {isInfoReel && <><br />No transactions recorded for {selectedYear} yet.</>}
                             </p>
                             {canWrite && (
                                 <Link
@@ -212,13 +214,13 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors"
                                 >
                                     <span className="material-symbols-outlined">add</span>
-                                    Lisää tapahtuma / Add Transaction
+                                    {t("Lisää tapahtuma", "Add Transaction")}
                                 </Link>
                             )}
                         </div>
                     )}
                 </ContentArea>
             </SplitLayout>
-        </PageWrapper>
+        </PageWrapper >
     );
 }

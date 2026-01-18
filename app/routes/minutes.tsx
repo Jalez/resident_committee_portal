@@ -8,6 +8,7 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import { useUser } from "~/contexts/user-context";
 import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
 import { getDatabase } from "~/db";
+import { useLanguage } from "~/contexts/language-context";
 import {
     Accordion,
     AccordionContent,
@@ -64,19 +65,22 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
     const canSeeNamingGuide = hasPermission("minutes:naming-guide");
     const currentYear = new Date().getFullYear().toString();
 
+    const { language, isInfoReel } = useLanguage();
+    const t = (fi: string, en: string) => (language === "fi" || isInfoReel) ? fi : en;
+
     // Configure search fields
     const searchFields: SearchField[] = [
         {
             name: "name",
-            label: "Nimi / Name",
+            label: t("Nimi", "Name"),
             type: "text",
-            placeholder: "Hae nimellä...",
+            placeholder: t("Hae nimellä...", "Search by name..."),
         },
         {
             name: "year",
-            label: "Vuosi / Year",
+            label: t("Vuosi", "Year"),
             type: "select",
-            placeholder: "Valitse vuosi...",
+            placeholder: t("Valitse vuosi...", "Select year..."),
             options: uniqueYears,
         },
     ];
@@ -98,8 +102,8 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
             qrUrl={archiveUrl}
             title={
                 <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                    Kaikki pöytäkirjat <br />
-                    <span className="text-3xl text-gray-400 font-bold">All Minutes</span>
+                    {t("Kaikki pöytäkirjat", "All Minutes")} <br />
+                    {isInfoReel && <span className="text-3xl text-gray-400 font-bold">All Minutes</span>}
                 </h2>
             }
         />
@@ -136,13 +140,13 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
                                 </span>
                                 <div className="text-sm text-blue-800 dark:text-blue-200">
                                     <p className="font-bold mb-1">
-                                        Pöytäkirjojen nimeäminen / Naming Minutes
+                                        {t("Pöytäkirjojen nimeäminen", "Naming Minutes")}
                                     </p>
                                     <p className="mb-2">
-                                        Käytä muotoa / Use format: <code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-800 rounded font-mono text-xs">YYYY-MM-DD_KuvausName.pdf</code>
+                                        {t("Käytä muotoa", "Use format")}: <code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-800 rounded font-mono text-xs">YYYY-MM-DD_KuvausName.pdf</code>
                                     </p>
                                     <p className="text-xs opacity-80">
-                                        Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin.
+                                        {t("Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin.", "Ex: 2026-01-05_Board_Meeting_1.pdf - Files are ordered newest first.")}
                                     </p>
                                 </div>
                             </div>
@@ -155,7 +159,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
                             <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 text-center">
                                 <span className="material-symbols-outlined text-4xl text-gray-400 mb-2">description</span>
                                 <p className="text-gray-600 dark:text-gray-400">
-                                    {hasFilters ? "Ei tuloksia / No results" : "Ei pöytäkirjoja / No minutes"}
+                                    {hasFilters ? t("Ei tuloksia", "No results") : t("Ei pöytäkirjoja", "No minutes")}
                                 </p>
                             </div>
                         ) : (
@@ -170,7 +174,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
                                                 </p>
                                                 {yearGroup.year === currentYear && (
                                                     <span className="text-xs font-bold uppercase tracking-wider opacity-80">
-                                                        Tämä vuosi / This Year
+                                                        {t("Tämä vuosi", "This Year")}
                                                     </span>
                                                 )}
                                             </div>
@@ -181,7 +185,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
                                             {yearGroup.files.length === 0 ? (
                                                 <div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 text-center">
                                                     <p className="text-gray-400 font-medium">
-                                                        Ei vielä pöytäkirjoja / No minutes yet
+                                                        {t("Ei vielä pöytäkirjoja", "No minutes yet")}
                                                     </p>
                                                 </div>
                                             ) : (

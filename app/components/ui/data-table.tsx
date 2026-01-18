@@ -150,18 +150,9 @@ export function DataTable<TData, TValue>({
 
             {/* Batch actions bar */}
             {enableRowSelection && (
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                        {selectedCount > 0 ? (
-                            selectionActions ? (
-                                selectionActions
-                            ) : (
-                                <span>{selectedCount} valittu / selected</span>
-                            )
-                        ) : (
-                            <span className="text-gray-400">Valitse tavaroita / Select items</span>
-                        )}
-                    </div>
+                <div className="flex flex- gap-2 md:flex-row md:items-center md:justify-between">
+
+
                     <div className="flex items-center gap-2">
                         {onDeleteSelected && (
                             <Button
@@ -176,6 +167,13 @@ export function DataTable<TData, TValue>({
                         )}
                         {actionsComponent}
                     </div>
+                    {selectedCount > 0 && (
+                        selectionActions ? (
+                            selectionActions
+                        ) : (
+                            <span>{selectedCount} valittu / selected</span>
+                        )
+                    )}
                 </div>
             )}
 

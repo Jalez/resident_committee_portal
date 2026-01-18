@@ -25,7 +25,7 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
 	// Throw 404 for unauthorized access to hide admin routes
 	try {
-		await requirePermission(request, "users:read", getDatabase);
+		await requirePermission(request, "settings:users", getDatabase);
 	} catch (error) {
 		throw new Response("Not Found", { status: 404 });
 	}
@@ -123,27 +123,6 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 					</div>
 				</div>
 
-				{/* Stats */}
-				<div className="flex flex-wrap gap-3 mb-8">
-					{roles.map((role) => (
-						<div
-							key={role.id}
-							className={cn(
-								"px-4 py-2 rounded-xl text-center text-white",
-								role.color
-							)}
-						>
-							<span className="text-2xl font-black">{roleCounts[role.id] || 0}</span>
-							<span className="ml-2 text-sm font-medium opacity-90">{role.name}</span>
-						</div>
-					))}
-					{legacyCount > 0 && (
-						<div className="px-4 py-2 rounded-xl text-center bg-yellow-500 text-white">
-							<span className="text-2xl font-black">{legacyCount}</span>
-							<span className="ml-2 text-sm font-medium opacity-90">Legacy (ei roolia)</span>
-						</div>
-					)}
-				</div>
 
 				{/* Users Table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
