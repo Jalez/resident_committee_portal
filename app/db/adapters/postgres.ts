@@ -258,6 +258,114 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return this.db.select().from(inventoryItems).where(notInArray(inventoryItems.id, linkedIds));
 	}
 
+	async getActiveInventoryItems(): Promise<InventoryItem[]> {
+		return this.db.select().from(inventoryItems).where(eq(inventoryItems.status, "active"));
+	}
+
+	async softDeleteInventoryItem(id: string, reason: string, notes?: string): Promise<InventoryItem | null> {
+		const result = await this.db.update(inventoryItems).set({
+			status: "removed",
+			removedAt: new Date(),
+			removalReason: reason as InventoryItem["removalReason"],
+			removalNotes: notes || null,
+			updatedAt: new Date(),
+		}).where(eq(inventoryItems.id, id)).returning();
+		return result[0] ?? null;
+	}
+
+	async markInventoryItemAsLegacy(id: string): Promise<InventoryItem | null> {
+		const result = await this.db.update(inventoryItems).set({
+			status: "legacy",
+			updatedAt: new Date(),
+		}).where(eq(inventoryItems.id, id)).returning();
+		return result[0] ?? null;
+	}
+
+	async getInventoryItemsForPicker(): Promise<(InventoryItem & { availableQuantity: number })[]> {
+		// Get all active (non-legacy, non-removed) items
+		const activeItems = await this.db.select().from(inventoryItems)
+			.where(eq(inventoryItems.status, "active"));
+
+		// Get all transaction links with quantities
+		const allLinks = await this.db.select().from(inventoryItemTransactions);
+
+		// Calculate linked quantity per item
+		const linkedQuantityMap = new Map<string, number>();
+		for (const link of allLinks) {
+			const current = linkedQuantityMap.get(link.inventoryItemId) || 0;
+			linkedQuantityMap.set(link.inventoryItemId, current + link.quantity);
+		}
+
+		// Return items with available quantity > 0
+		const result: (InventoryItem & { availableQuantity: number })[] = [];
+		for (const item of activeItems) {
+			const linkedQty = linkedQuantityMap.get(item.id) || 0;
+			const availableQuantity = item.quantity - linkedQty - (item.manualCount || 0);
+			if (availableQuantity > 0) {
+				result.push({ ...item, availableQuantity });
+			}
+		}
+
+		return result;
+	}
+
+	async getTransactionLinksForItem(itemId: string): Promise<{ transaction: Transaction; quantity: number }[]> {
+		const links = await this.db.select().from(inventoryItemTransactions)
+			.where(eq(inventoryItemTransactions.inventoryItemId, itemId));
+
+		if (links.length === 0) return [];
+
+		const result: { transaction: Transaction; quantity: number }[] = [];
+		for (const link of links) {
+			const txResult = await this.db.select().from(transactions)
+				.where(eq(transactions.id, link.transactionId)).limit(1);
+			if (txResult[0]) {
+				result.push({ transaction: txResult[0], quantity: link.quantity });
+			}
+		}
+
+		return result;
+	}
+
+	async reduceInventoryFromTransaction(itemId: string, transactionId: string, quantityToRemove: number): Promise<boolean> {
+		// Get current link
+		const links = await this.db.select().from(inventoryItemTransactions)
+			.where(and(
+				eq(inventoryItemTransactions.inventoryItemId, itemId),
+				eq(inventoryItemTransactions.transactionId, transactionId)
+			));
+
+		if (links.length === 0) return false;
+
+		const currentQty = links[0].quantity;
+		const newQty = currentQty - quantityToRemove;
+
+		if (newQty <= 0) {
+			// Remove the link entirely
+			await this.db.delete(inventoryItemTransactions)
+				.where(and(
+					eq(inventoryItemTransactions.inventoryItemId, itemId),
+					eq(inventoryItemTransactions.transactionId, transactionId)
+				));
+		} else {
+			// Update the quantity
+			await this.db.update(inventoryItemTransactions)
+				.set({ quantity: newQty })
+				.where(and(
+					eq(inventoryItemTransactions.inventoryItemId, itemId),
+					eq(inventoryItemTransactions.transactionId, transactionId)
+				));
+		}
+
+		// Also reduce the inventory item's total quantity
+		const item = await this.getInventoryItemById(itemId);
+		if (item) {
+			const newItemQty = Math.max(0, item.quantity - quantityToRemove);
+			await this.updateInventoryItem(itemId, { quantity: newItemQty });
+		}
+
+		return true;
+	}
 	// ==================== Purchase Methods ====================
 	async getPurchases(): Promise<Purchase[]> {
 		return this.db.select().from(purchases);
@@ -339,6 +447,14 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
+	async updateInventoryItemManualCount(itemId: string, manualCount: number): Promise<InventoryItem | null> {
+		const result = await this.db.update(inventoryItems)
+			.set({ manualCount, updatedAt: new Date() })
+			.where(eq(inventoryItems.id, itemId))
+			.returning();
+		return result[0] ?? null;
+	}
+
 	// ==================== Inventory-Transaction Junction Methods ====================
 	async linkInventoryItemToTransaction(itemId: string, transactionId: string, quantity = 1): Promise<InventoryItemTransaction> {
 		const result = await this.db.insert(inventoryItemTransactions).values({
@@ -382,6 +498,12 @@ export class PostgresAdapter implements DatabaseAdapter {
 			if (item[0]) result.push({ ...item[0], quantity: link.quantity });
 		}
 		return result;
+	}
+
+	async getActiveInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]> {
+		const allItems = await this.getInventoryItemsForTransaction(transactionId);
+		// Filter to only include active items (non-removed, non-legacy)
+		return allItems.filter(item => item.status === "active");
 	}
 
 	// ==================== Submission Methods ====================

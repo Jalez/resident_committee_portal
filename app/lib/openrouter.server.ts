@@ -130,7 +130,6 @@ Based on the email content, classify the response as one of:
 - "unclear" - if you cannot determine the intent
 
 Reply with ONLY one word: approved, rejected, or unclear.`,
-            maxTokens: 10,
         });
 
         const decision = text.trim().toLowerCase();

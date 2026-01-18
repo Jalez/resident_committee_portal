@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Form, useNavigation, useActionData } from "react-router";
+import { toast } from "sonner";
 import type { Route } from "./+types/settings.reimbursements";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { requirePermission } from "~/lib/auth.server";
@@ -139,6 +140,16 @@ export default function SettingsReimbursements({ loaderData }: Route.ComponentPr
         return a.name.localeCompare(b.name);
     });
 
+    useEffect(() => {
+        if (actionData) {
+            if (actionData.error) {
+                toast.error(actionData.error, { id: "settings-error" });
+            } else if (actionData.message) {
+                toast.success(actionData.message, { id: "settings-success" });
+            }
+        }
+    }, [actionData]);
+
     // Format price for display
     const formatPrice = (price: number) => {
         if (price === 0) return "Free";
@@ -159,11 +170,7 @@ export default function SettingsReimbursements({ loaderData }: Route.ComponentPr
 
                 <div className="space-y-6">
                     {/* Status message */}
-                    {actionData && (
-                        <div className={`p-4 rounded-lg ${actionData.error ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-600"}`}>
-                            {actionData.error || actionData.message}
-                        </div>
-                    )}
+
 
                     {/* OpenRouter API Key */}
                     <Card>
@@ -189,7 +196,7 @@ export default function SettingsReimbursements({ loaderData }: Route.ComponentPr
                                         className="font-mono"
                                     />
                                     <Button type="submit" disabled={isSubmitting}>
-                                        Save
+                                        {isSubmitting ? "Saving..." : "Save"}
                                     </Button>
                                     {settings.hasApiKey && (
                                         <Form method="post">
@@ -290,7 +297,7 @@ export default function SettingsReimbursements({ loaderData }: Route.ComponentPr
                                 )}
 
                                 <Button type="submit" disabled={isSubmitting || !settings.hasApiKey}>
-                                    Save AI Settings
+                                    {isSubmitting ? "Saving..." : "Save AI Settings"}
                                 </Button>
                             </Form>
                         </CardContent>
@@ -356,7 +363,7 @@ export default function SettingsReimbursements({ loaderData }: Route.ComponentPr
                                 </div>
 
                                 <Button type="submit" disabled={isSubmitting}>
-                                    Save Keywords
+                                    {isSubmitting ? "Saving..." : "Save Keywords"}
                                 </Button>
                             </Form>
                         </CardContent>

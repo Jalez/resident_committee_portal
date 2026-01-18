@@ -37,6 +37,10 @@ interface DataTableProps<TData, TValue> {
     onSelectionChange?: (selectedIds: string[]) => void
     prependedRow?: React.ReactNode
     selectedIds?: string[]
+    /** Custom actions to show on the left side of selection bar (replaces text) */
+    selectionActions?: React.ReactNode
+    /** Max height for table body (enables scrolling). e.g. "500px" or "calc(100vh - 300px)" */
+    maxBodyHeight?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -55,6 +59,8 @@ export function DataTable<TData, TValue>({
     onSelectionChange,
     prependedRow,
     selectedIds: controlledSelectedIds,
+    maxBodyHeight,
+    selectionActions,
 }: DataTableProps<TData, TValue>) {
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
@@ -147,7 +153,11 @@ export function DataTable<TData, TValue>({
                 <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
                         {selectedCount > 0 ? (
-                            <span>{selectedCount} valittu / selected</span>
+                            selectionActions ? (
+                                selectionActions
+                            ) : (
+                                <span>{selectedCount} valittu / selected</span>
+                            )
                         ) : (
                             <span className="text-gray-400">Valitse tavaroita / Select items</span>
                         )}
@@ -171,59 +181,61 @@ export function DataTable<TData, TValue>({
 
             {/* Table */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {prependedRow}
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                    className={`${row.getIsSelected() ? "bg-primary/5" : ""} ${enableRowSelection ? "cursor-pointer" : ""}`}
-                                    onClick={enableRowSelection ? () => row.toggleSelected() : undefined}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
+                <div className={maxBodyHeight ? "overflow-auto" : ""} style={maxBodyHeight ? { maxHeight: maxBodyHeight } : undefined}>
+                    <table className="w-full caption-bottom text-sm">
+                        <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={columnsWithSelection.length}
-                                    className="h-24 text-center text-gray-500"
-                                >
-                                    Ei tuloksia / No results
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {prependedRow}
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                        className={`${row.getIsSelected() ? "bg-primary/5" : ""} ${enableRowSelection ? "cursor-pointer" : ""}`}
+                                        onClick={enableRowSelection ? () => row.toggleSelected() : undefined}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columnsWithSelection.length}
+                                        className="h-24 text-center text-gray-500"
+                                    >
+                                        Ei tuloksia / No results
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </table>
+                </div>
             </div>
 
             {/* Pagination */}
-            {totalCount && totalCount > pageSize && (
+            {totalCount ? totalCount > pageSize && (
                 <div className="flex items-center justify-between px-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Sivu {currentPage} / {totalPages} ({totalCount} yhteensä)
@@ -249,7 +261,7 @@ export function DataTable<TData, TValue>({
                         </Button>
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     )
 }

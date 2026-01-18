@@ -3,10 +3,11 @@ import type { InventoryItem } from "~/db";
 export const PAGE_SIZE = 20;
 
 // Column keys that can be toggled
-export const COLUMN_KEYS = ["name", "quantity", "location", "category", "description", "updatedAt", "unitValue", "totalValue", "showInInfoReel"] as const;
+export const COLUMN_KEYS = ["status", "name", "quantity", "location", "category", "description", "updatedAt", "unitValue", "totalValue", "transactions", "showInInfoReel"] as const;
 export type ColumnKey = typeof COLUMN_KEYS[number];
 
 export const COLUMN_LABELS: Record<ColumnKey, string> = {
+    status: "Tila / Status",
     name: "Nimi / Name",
     quantity: "Määrä / Qty",
     location: "Sijainti / Location",
@@ -15,6 +16,7 @@ export const COLUMN_LABELS: Record<ColumnKey, string> = {
     updatedAt: "Päivitetty / Updated",
     unitValue: "Kpl-arvo / Unit Value",
     totalValue: "Yht. arvo / Total Value",
+    transactions: "Tapahtumat / Transactions",
     showInInfoReel: "Info Reel",
 };
 

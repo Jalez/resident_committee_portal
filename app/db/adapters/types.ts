@@ -1,4 +1,4 @@
-import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Budget, NewBudget, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink, InventoryItemTransaction, NewInventoryItemTransaction, Permission, NewPermission, Role, NewRole, RolePermission, NewRolePermission, AppSetting } from "../schema";
+import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Budget, NewBudget, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink, InventoryItemTransaction, NewInventoryItemTransaction, Permission, NewPermission, Role, NewRole, RolePermission, NewRolePermission, AppSetting, RemovalReason } from "../schema";
 
 /**
  * Database adapter interface
@@ -48,6 +48,19 @@ export interface DatabaseAdapter {
 	updateInventoryItem(id: string, data: Partial<Omit<NewInventoryItem, "id">>): Promise<InventoryItem | null>;
 	deleteInventoryItem(id: string): Promise<boolean>;
 	bulkCreateInventoryItems(items: NewInventoryItem[]): Promise<InventoryItem[]>;
+	// Lifecycle management
+	getActiveInventoryItems(): Promise<InventoryItem[]>;
+	softDeleteInventoryItem(id: string, reason: string, notes?: string): Promise<InventoryItem | null>;
+	markInventoryItemAsLegacy(id: string): Promise<InventoryItem | null>;
+	/** Get items available for transaction picker (active, non-legacy, with available quantity) */
+	getInventoryItemsForPicker(): Promise<(InventoryItem & { availableQuantity: number })[]>;
+	/** Get transaction links with quantities for an item */
+	getTransactionLinksForItem(itemId: string): Promise<{ transaction: Transaction; quantity: number }[]>;
+	/** Reduce quantity from a specific transaction link */
+	/** Reduce quantity from a specific transaction link */
+	reduceInventoryFromTransaction(itemId: string, transactionId: string, quantityToRemove: number): Promise<boolean>;
+	/** Update manually accounted quantity (no transaction) for an item */
+	updateInventoryItemManualCount(itemId: string, manualCount: number): Promise<InventoryItem | null>;
 
 	// ==================== Purchase Methods ====================
 	getPurchases(): Promise<Purchase[]>;
@@ -76,6 +89,8 @@ export interface DatabaseAdapter {
 	unlinkInventoryItemFromTransaction(itemId: string, transactionId: string): Promise<boolean>;
 	getTransactionsForInventoryItem(itemId: string): Promise<Transaction[]>;
 	getInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]>;
+	/** Get only active (non-removed, non-legacy) inventory items for a transaction */
+	getActiveInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]>;
 
 	// ==================== Submission Methods ====================
 	getSubmissions(): Promise<Submission[]>;

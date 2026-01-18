@@ -115,23 +115,37 @@ export default function TreasuryBreakdown({ loaderData }: Route.ComponentProps) 
                         <p className="text-lg text-gray-500">Treasury Breakdown {year}</p>
                     </div>
 
-                    {/* Year navigation */}
-                    {years.length > 0 && (
-                        <div className="flex gap-2">
-                            {years.map((y: number) => (
-                                <button
-                                    key={y}
-                                    onClick={() => handleYearChange(y)}
-                                    className={`px-4 py-2 rounded-xl font-bold transition-colors ${y === year
-                                        ? "bg-primary text-white"
-                                        : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20 hover:text-primary"
-                                        }`}
-                                >
-                                    {y}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-4">
+                        {/* Year navigation */}
+                        {years.length > 0 && (
+                            <div className="flex gap-2">
+                                {years.map((y: number) => (
+                                    <button
+                                        key={y}
+                                        onClick={() => handleYearChange(y)}
+                                        className={`px-4 py-2 rounded-xl font-bold transition-colors ${y === year
+                                            ? "bg-primary text-white"
+                                            : "bg-gray-200 dark:bg-gray-700 hover:bg-primary/20 hover:text-primary"
+                                            }`}
+                                    >
+                                        {y}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Export Button - only visible if user has permission */}
+                        {hasPermission("treasury:read") && (
+                            <a
+                                href={`/api/treasury/export?year=${year}`}
+                                download={`transactions-${year}.csv`}
+                                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                title="Lataa CSV / Export CSV"
+                            >
+                                <span className="material-symbols-outlined text-xl">download</span>
+                            </a>
+                        )}
+                    </div>
                 </div>
 
                 {/* Summary cards - 3 columns now (no allocation) */}

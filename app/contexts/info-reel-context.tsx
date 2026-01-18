@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
+import { getInfoReelNavItems, type NavItem } from "~/lib/nav-config";
+import { useUser } from "./user-context";
 
 // Route configuration with optional per-route durations
 interface RouteConfig {
@@ -14,15 +16,20 @@ const FILL_PHASE = 0.70;   // 70% - progress bar fills
 const HOLD_PHASE = 0.20;   // 20% - stays at 100%
 const FADE_PHASE = 0.10;   // 10% - fades out (and next fades in)
 
-// Routes with their durations (undefined = use default)
-const REEL_ROUTES: RouteConfig[] = [
-    { path: "/" },
-    { path: "/events" },
-    { path: "/budget" },
-    { path: "/minutes" },
-    { path: "/inventory" },
-    { path: "/social", duration: 16000 }, // Longer for social to cycle through channels
-];
+// Helper to check if a permission matches (supports wildcards)
+function permissionMatches(userPermission: string, requiredPermission: string): boolean {
+    if (userPermission === requiredPermission) return true;
+    if (userPermission.endsWith(":*")) {
+        const prefix = userPermission.slice(0, -1);
+        return requiredPermission.startsWith(prefix);
+    }
+    if (userPermission === "*") return true;
+    return false;
+}
+
+function hasPermission(permissions: string[], permission: string): boolean {
+    return permissions.some(p => permissionMatches(p, permission));
+}
 
 interface InfoReelContextValue {
     isInfoReel: boolean;
@@ -139,6 +146,7 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
     const [searchParams] = useSearchParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useUser();
 
     const isInfoReel = searchParams.get("view") === "infoReel";
     const [progress, setProgress] = useState(100);
@@ -150,14 +158,32 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
     // Track the current path to detect actual route changes
     const currentPathRef = useRef(location.pathname);
 
+    // Compute accessible routes based on user permissions
+    const reelRoutes: RouteConfig[] = useMemo(() => {
+        const navItems = getInfoReelNavItems();
+        const userPermissions = user?.permissions ?? [];
+
+        return navItems
+            .filter(item => {
+                // Items without permission requirement are always accessible
+                if (!item.permission) return true;
+                // Check if user has the required permission
+                return hasPermission(userPermissions, item.permission);
+            })
+            .map(item => ({
+                path: item.path,
+                duration: item.infoReelDuration,
+            }));
+    }, [user?.permissions]);
+
     // Get current route config
     const getCurrentRouteConfig = useCallback((): RouteConfig | undefined => {
-        return REEL_ROUTES.find(r => r.path === location.pathname);
-    }, [location.pathname]);
+        return reelRoutes.find((r: RouteConfig) => r.path === location.pathname);
+    }, [location.pathname, reelRoutes]);
 
     const getCurrentRouteIndex = useCallback(() => {
-        return REEL_ROUTES.findIndex(r => r.path === location.pathname);
-    }, [location.pathname]);
+        return reelRoutes.findIndex((r: RouteConfig) => r.path === location.pathname);
+    }, [location.pathname, reelRoutes]);
 
     // Get duration for current route
     const currentRouteDuration = getCurrentRouteConfig()?.duration ?? DEFAULT_REEL_DURATION;
@@ -165,13 +191,14 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
     const navigateToNextRoute = useCallback(() => {
         // Prevent double-navigation
         if (isNavigatingRef.current) return;
+        if (reelRoutes.length === 0) return;
         isNavigatingRef.current = true;
 
         const currentIndex = getCurrentRouteIndex();
-        const nextIndex = (currentIndex + 1) % REEL_ROUTES.length;
+        const nextIndex = (currentIndex + 1) % reelRoutes.length;
         // Use replace to avoid building up browser history
-        navigate(`${REEL_ROUTES[nextIndex].path}?view=infoReel`, { replace: true });
-    }, [getCurrentRouteIndex, navigate]);
+        navigate(`${reelRoutes[nextIndex].path}?view=infoReel`, { replace: true });
+    }, [getCurrentRouteIndex, navigate, reelRoutes]);
 
     // Reset navigation flag when route actually changes
     useEffect(() => {

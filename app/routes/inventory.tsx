@@ -1,8 +1,9 @@
 import type { Route } from "./+types/inventory";
-import { useFetcher, useNavigation } from "react-router";
-import { useState } from "react";
+import { useFetcher, useNavigate, useNavigation } from "react-router";
+import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/layout/page-layout";
-import { getDatabase, type InventoryItem, type NewInventoryItem } from "~/db";
+import { getDatabase, type InventoryItem, type NewInventoryItem, type Transaction } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { useUser } from "~/contexts/user-context";
 import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
@@ -11,6 +12,17 @@ import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "~/components/ui/dialog";
 import { Textarea } from "~/components/ui/textarea";
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+} from "~/components/ui/dropdown-menu";
+import { useNewTransaction } from "~/contexts/new-transaction-context";
+import {
     PAGE_SIZE,
     InventoryProvider,
     useInventory,
@@ -18,7 +30,11 @@ import {
     InventoryFilters,
     InventoryAddRow,
     InventoryInfoReelCards,
+    RemoveInventoryModal,
+    QuantitySelectionModal,
+    TransactionSelectorModal,
 } from "~/components/inventory";
+
 
 // ============================================================================
 // Meta
@@ -67,7 +83,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const uniqueCategories = [...new Set(allItems.map(item => item.category).filter(Boolean) as string[])].sort();
 
     if (isInfoReel) {
-        const reelItems = allItems.filter(item => item.showInInfoReel);
+        const reelItems = allItems.filter(item => item.showInInfoReel && item.status === "active");
         const shuffled = reelItems.sort(() => Math.random() - 0.5);
         const items = shuffled.slice(0, 3);
 
@@ -81,6 +97,7 @@ export async function loader({ request }: Route.LoaderArgs) {
             pageSize: PAGE_SIZE,
             uniqueLocations,
             uniqueCategories,
+            transactionLinksMap: {} as Record<string, { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[]>,
         };
     }
 
@@ -103,6 +120,35 @@ export async function loader({ request }: Route.LoaderArgs) {
     const startIndex = (page - 1) * PAGE_SIZE;
     const paginatedItems = items.slice(startIndex, startIndex + PAGE_SIZE);
 
+    // Fetch transaction links for each item (for remove modal)
+    const transactionLinksMap: Record<string, { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[]> = {};
+    for (const item of paginatedItems) {
+        const links = await db.getTransactionLinksForItem(item.id);
+        transactionLinksMap[item.id] = links.map(l => ({
+            transaction: {
+                id: l.transaction.id,
+                description: l.transaction.description,
+                date: l.transaction.date,
+                type: l.transaction.type,
+            },
+            quantity: l.quantity,
+        }));
+    }
+
+    // Fetch inventory-category transactions for "Add to Existing" feature
+    const allTransactions = await db.getAllTransactions();
+    const inventoryTransactions = allTransactions
+        .filter((t: { category: string | null; status: string }) => t.category === "inventory" && t.status !== "cancelled")
+        .map((t: { id: string; description: string; date: Date; amount: string; category: string | null }) => ({
+            id: t.id,
+            description: t.description,
+            date: t.date,
+            amount: t.amount,
+            category: t.category,
+        }))
+        .sort((a: { date: Date }, b: { date: Date }) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 50); // Limit to recent 50
+
     return {
         siteConfig: SITE_CONFIG,
         items: paginatedItems,
@@ -113,6 +159,8 @@ export async function loader({ request }: Route.LoaderArgs) {
         pageSize: PAGE_SIZE,
         uniqueLocations,
         uniqueCategories,
+        transactionLinksMap,
+        inventoryTransactions,
     };
 }
 
@@ -198,6 +246,103 @@ export async function action({ request }: Route.ActionArgs) {
         });
     }
 
+    // Remove item with transaction-aware quantity reduction
+    if (actionType === "removeItem" && itemId) {
+        const reason = formData.get("reason") as string;
+        const notes = formData.get("notes") as string;
+        const removals = JSON.parse(formData.get("removals") as string || "[]") as { transactionId: string; quantity: number }[];
+        const totalToRemove = parseInt(formData.get("totalToRemove") as string) || 0;
+
+        // Process each removal from linked transactions
+        for (const removal of removals) {
+            await db.reduceInventoryFromTransaction(itemId, removal.transactionId, removal.quantity);
+        }
+
+        // If no transaction links or removing all, just update the item
+        const item = await db.getInventoryItemById(itemId);
+        if (item) {
+            const newQty = removals.length > 0 ? item.quantity : Math.max(0, item.quantity - totalToRemove);
+            if (newQty <= 0) {
+                // Soft delete if quantity reaches zero
+                await db.softDeleteInventoryItem(itemId, reason, notes);
+            } else if (removals.length === 0 && totalToRemove > 0) {
+                // Direct quantity reduction (no transaction links)
+                await db.updateInventoryItem(itemId, { quantity: newQty });
+            }
+        }
+    }
+
+    // Mark item manual count (no transaction)
+    if (actionType === "markManualCount" && itemId) {
+        const item = await db.getInventoryItemById(itemId);
+        if (item) {
+            const quantityToAdd = parseInt(formData.get("quantityToAdd") as string) || 0;
+            const newManualCount = (item.manualCount || 0) + quantityToAdd;
+            // Ensure we don't exceed total quantity (logic check)
+            // We trust the client/dialog roughly, but could enforce strict check here
+            await db.updateInventoryItemManualCount(itemId, newManualCount);
+        }
+    }
+
+    // Reduce manual count (reverse of markManualCount - return units to unknown)
+    if (actionType === "reduceManualCount") {
+        const itemId = formData.get("itemId") as string;
+        const quantityToRemove = parseInt(formData.get("quantityToRemove") as string);
+
+        if (itemId && quantityToRemove > 0) {
+            const item = await db.getInventoryItemById(itemId);
+            if (item) {
+                const newManualCount = Math.max(0, (item.manualCount || 0) - quantityToRemove);
+                await db.updateInventoryItemManualCount(itemId, newManualCount);
+            }
+        }
+    }
+
+    // Unlink item from transaction with amount update
+    if (actionType === "unlinkFromTransaction") {
+        const itemId = formData.get("itemId") as string;
+        const transactionId = formData.get("transactionId") as string;
+
+        if (itemId && transactionId) {
+            // Fetch validation data to calculate amount reduction
+            const item = await db.getInventoryItemById(itemId);
+            const links = await db.getTransactionLinksForItem(itemId);
+            const link = links.find(l => l.transaction.id === transactionId);
+
+            if (item && link) {
+                // Calculate unit value and deduction
+                // item.value stores the UNIT VALUE (per item)
+                const unitValue = parseFloat(item.value || "0");
+                const deduction = link.quantity * unitValue;
+
+                if (deduction > 0) {
+                    const currentAmount = parseFloat(link.transaction.amount);
+                    const newAmount = Math.max(0, currentAmount - deduction).toFixed(2);
+
+                    console.log(`[Unlink] Reducing transaction ${transactionId} amount from ${currentAmount} to ${newAmount} (Deduction: ${deduction})`);
+
+                    await db.updateTransaction(transactionId, { amount: newAmount });
+                }
+            }
+
+            await db.unlinkInventoryItemFromTransaction(itemId, transactionId);
+        }
+    }
+
+    // Migrate legacy items to use manualCount (one-time operation)
+    if (actionType === "migrateLegacy") {
+        const allItems = await db.getInventoryItems();
+        const legacyItems = allItems.filter(item => item.status === "legacy");
+
+        for (const item of legacyItems) {
+            // Set manualCount = quantity and status = active
+            await db.updateInventoryItem(item.id, { status: "active" });
+            await db.updateInventoryItemManualCount(item.id, item.quantity);
+        }
+
+        return { success: true, migratedCount: legacyItems.length };
+    }
+
     return { success: true };
 }
 
@@ -206,7 +351,7 @@ export async function action({ request }: Route.ActionArgs) {
 // ============================================================================
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
-    const { items, filters, isInfoReel, totalCount, currentPage, pageSize, uniqueLocations, uniqueCategories } = loaderData;
+    const { items, filters, isInfoReel, totalCount, currentPage, pageSize, uniqueLocations, uniqueCategories, transactionLinksMap, inventoryTransactions } = loaderData;
     const { hasPermission } = useUser();
     const canWrite = hasPermission("inventory:write");
     const canDelete = hasPermission("inventory:delete");
@@ -222,6 +367,8 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
             pageSize={pageSize}
             isStaff={canWrite}
             isAdmin={canDelete}
+            transactionLinksMap={transactionLinksMap}
+            inventoryTransactions={inventoryTransactions || []}
         >
             {isInfoReel ? <InventoryInfoReelPage /> : <InventoryTablePage />}
         </InventoryProvider>
@@ -258,24 +405,62 @@ function InventoryTablePage() {
         pageSize,
         isStaff,
         showAddRow,
+        setShowAddRow,
         selectedIds,
         setSelectedIds,
         visibleColumns,
         handleInlineEdit,
         handlePageChange,
         handleDeleteSelected,
-        handleAddTreasuryTransaction,
         uniqueLocations,
         uniqueCategories,
+        transactionLinksMap,
+        inventoryTransactions,
     } = useInventory();
 
     const navigation = useNavigation();
+    const navigate = useNavigate();
     const fetcher = useFetcher();
+    const { setItems: setTransactionItems } = useNewTransaction();
     const isLoading = navigation.state === "loading";
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Report modal state
+    // Modal state
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportMessage, setReportMessage] = useState("");
+    const [removeModalItem, setRemoveModalItem] = useState<InventoryItem | null>(null);
+    const [showQuantityModal, setShowQuantityModal] = useState(false);
+    const [quantityModalMode, setQuantityModalMode] = useState<"markNoTransaction" | "addTransaction" | "addToExisting">("markNoTransaction");
+
+    // State for transaction selector (Add to Existing flow)
+    const [showTransactionSelector, setShowTransactionSelector] = useState(false);
+    const [pendingItemSelections, setPendingItemSelections] = useState<{ itemId: string; quantity: number }[]>([]);
+
+    // State for unlink confirmation dialog
+    const [unlinkConfirmation, setUnlinkConfirmation] = useState<{
+        itemId: string;
+        transactionId: string;
+        quantity: number;
+    } | null>(null);
+
+    // Helper: calculate unknown quantity for an item
+    const getUnknownQuantity = (item: InventoryItem) => {
+        const links = transactionLinksMap[item.id] || [];
+        const linkedQty = links.reduce((sum, l) => sum + l.quantity, 0);
+        const manualQty = (item as any).manualCount || 0;
+        return Math.max(0, item.quantity - linkedQty - manualQty);
+    };
+
+    // Get selected items and their unknown quantities
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const selectedItemNames = selectedItems.map(i => i.name);
+    const itemsWithUnknown = selectedItems
+        .map(item => ({ item, unknownQuantity: getUnknownQuantity(item) }))
+        .filter(({ unknownQuantity }) => unknownQuantity > 0);
+
+    // Check capabilities
+    const canRemoveSelection = selectedItems.some(i => i.status === "active");
+    const hasTreasuryCapableItems = itemsWithUnknown.length > 0;
 
     const handleSubmitReport = () => {
         if (selectedIds.length === 0 || !reportMessage.trim()) return;
@@ -292,51 +477,257 @@ function InventoryTablePage() {
         setSelectedIds([]);
     };
 
+    const getTransactionLinksForItem = (item: InventoryItem) => {
+        const links = transactionLinksMap[item.id] || [];
+        return links.map(l => ({
+            transaction: l.transaction as Transaction,
+            quantity: l.quantity,
+        }));
+    };
+
+    const handleRemoveSelected = () => {
+        const firstActiveItem = selectedItems.find(i => i.status === "active");
+        if (firstActiveItem) {
+            setRemoveModalItem(firstActiveItem);
+        }
+    };
+
+    const handleOpenQuantityModal = (mode: "markNoTransaction" | "addTransaction" | "addToExisting") => {
+        setQuantityModalMode(mode);
+        setShowQuantityModal(true);
+    };
+
+    const handleQuantityConfirm = (selections: { itemId: string; quantity: number }[]) => {
+        if (quantityModalMode === "markNoTransaction") {
+            // Submit each selection as a markManualCount action
+            for (const sel of selections) {
+                fetcher.submit(
+                    {
+                        _action: "markManualCount",
+                        itemId: sel.itemId,
+                        quantityToAdd: sel.quantity.toString(),
+                    },
+                    { method: "POST" }
+                );
+            }
+            setSelectedIds([]);
+        } else if (quantityModalMode === "addToExisting") {
+            // Store selections and show transaction selector
+            setPendingItemSelections(selections);
+            setShowTransactionSelector(true);
+        } else {
+            // Set items in context and navigate to new transaction
+            const transactionItems = selections.map(sel => {
+                const item = items.find(i => i.id === sel.itemId);
+                return {
+                    itemId: sel.itemId,
+                    name: item?.name || "Unknown",
+                    quantity: sel.quantity,
+                    unitValue: parseFloat(item?.value || "0"),
+                };
+            });
+            setTransactionItems(transactionItems);
+            navigate("/treasury/new");
+        }
+    };
+
+    const handleSelectTransaction = (transaction: { id: string; description: string; date: Date; amount: string; category: string | null }) => {
+        // Set items in context for the edit page
+        const transactionItems = pendingItemSelections.map(sel => {
+            const item = items.find(i => i.id === sel.itemId);
+            return {
+                itemId: sel.itemId,
+                name: item?.name || "Unknown",
+                quantity: sel.quantity,
+                unitValue: parseFloat(item?.value || "0"),
+            };
+        });
+        setTransactionItems(transactionItems);
+        setShowTransactionSelector(false);
+        setPendingItemSelections([]);
+        setSelectedIds([]);
+        // Navigate to the edit page
+        navigate(`/treasury/breakdown/${transaction.id}/edit?addItems=true`);
+    };
+
+    // Handlers for unlink operations
+    const handleUnlinkFromTransaction = (itemId: string, transactionId: string, quantity: number) => {
+        // Show confirmation dialog
+        setUnlinkConfirmation({ itemId, transactionId, quantity });
+    };
+
+    const handleConfirmUnlink = () => {
+        if (unlinkConfirmation) {
+            fetcher.submit(
+                {
+                    _action: "unlinkFromTransaction",
+                    itemId: unlinkConfirmation.itemId,
+                    transactionId: unlinkConfirmation.transactionId,
+                },
+                { method: "POST" }
+            );
+            setUnlinkConfirmation(null);
+        }
+    };
+
+    const handleReduceManualCount = (itemId: string, quantity: number) => {
+        // No confirmation needed - directly remove marker
+        fetcher.submit(
+            {
+                _action: "reduceManualCount",
+                itemId,
+                quantityToRemove: quantity.toString(),
+            },
+            { method: "POST" }
+        );
+    };
+
     const columns = useInventoryColumns({
         visibleColumns,
         isStaff,
         onInlineEdit: handleInlineEdit,
+        onUnlinkFromTransaction: handleUnlinkFromTransaction,
+        onReduceManualCount: handleReduceManualCount,
         uniqueLocations,
         uniqueCategories,
         itemNames: items.map(i => i.name),
+        transactionLinksMap,
     });
 
     const addRowElement = isStaff && showAddRow ? <InventoryAddRow /> : null;
 
-    // Get selected item names for display
-    const selectedItemNames = items
-        .filter(i => selectedIds.includes(i.id))
-        .map(i => i.name);
-
+    // Actions bar (Right side)
     const actionsComponent = (
-        <div className="flex gap-2">
-            {/* Report button - available to all users */}
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowReportModal(true)}
-                disabled={selectedIds.length === 0}
-            >
-                <span className="material-symbols-outlined text-base mr-1">report</span>
-                Ilmoita / Report
-            </Button>
+        <div className="flex gap-2 flex-wrap items-center">
+            {/* Add Item Button - moved here from footer */}
             {isStaff && (
                 <Button
                     variant="default"
                     size="sm"
-                    onClick={handleAddTreasuryTransaction}
-                    disabled={selectedIds.length === 0}
+                    onClick={() => setShowAddRow(!showAddRow)}
+                    className="flex items-center gap-1"
                 >
-                    <span className="material-symbols-outlined text-base mr-1">account_balance</span>
-                    Lisää rahastotapahtuma
+                    <span className="material-symbols-outlined text-base">{showAddRow ? "close" : "add"}</span>
+                    {showAddRow ? "Sulje / Close" : "Lisää / Add"}
                 </Button>
+            )}
+
+            {/* Export/Import Buttons - for Staff */}
+            {isStaff && (
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <a href="/api/inventory/export" download className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-base">download</span>
+                            Export CSV
+                        </a>
+                    </Button>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept=".csv, .xlsx, .xls"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const formData = new FormData();
+                                formData.set("file", file);
+                                fetcher.submit(formData, {
+                                    method: "POST",
+                                    action: "/api/inventory/import",
+                                    encType: "multipart/form-data",
+                                });
+                                e.target.value = "";
+                                toast.info("Tuodaan tiedostoa... / Importing...");
+                            }
+                        }}
+                    />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1"
+                        disabled={fetcher.state !== "idle"}
+                    >
+                        <span className="material-symbols-outlined text-base">upload</span>
+                        Import CSV
+                    </Button>
+                </>
             )}
         </div>
     );
 
+    // Selection Actions (Left side)
+    const selectionActions = selectedIds.length > 0 ? (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <span className="material-symbols-outlined text-base mr-1">checklist</span>
+                    Valitut ({selectedIds.length}) / Selected
+                    <span className="material-symbols-outlined text-base ml-1">expand_more</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setShowReportModal(true)}>
+                    <span className="material-symbols-outlined text-base mr-2">report</span>
+                    Ilmoita / Report
+                </DropdownMenuItem>
+                {isStaff && (
+                    <>
+                        <DropdownMenuSeparator />
+                        {/* Treasury Submenu */}
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <span className="material-symbols-outlined text-base mr-2">account_balance</span>
+                                Rahastotapahtumat / Treasury
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                                <DropdownMenuItem
+                                    onClick={() => handleOpenQuantityModal("addTransaction")}
+                                    disabled={!hasTreasuryCapableItems}
+                                >
+                                    <span className="material-symbols-outlined text-base mr-2">add_circle</span>
+                                    Lisää uuteen / Add to New
+                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => handleOpenQuantityModal("addToExisting")}
+                                    disabled={!hasTreasuryCapableItems || inventoryTransactions.length === 0}
+                                >
+                                    <span className="material-symbols-outlined text-base mr-2">playlist_add</span>
+                                    Lisää olemassaolevaan / Add to Existing
+                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => handleOpenQuantityModal("markNoTransaction")}
+                                    disabled={!hasTreasuryCapableItems}
+                                >
+                                    <span className="material-symbols-outlined text-base mr-2">block</span>
+                                    Merkitse ei tapahtumaa / Mark No Transaction
+                                    {!hasTreasuryCapableItems && <span className="ml-2 text-xs text-gray-400">(ei saatavilla / not available)</span>}
+                                </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            onClick={handleRemoveSelected}
+                            disabled={!canRemoveSelection}
+                            className="text-red-600"
+                        >
+                            <span className="material-symbols-outlined text-base mr-2">delete</span>
+                            Poista / Remove
+                        </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    ) : null;
+
     return (
         <PageWrapper>
-            <SplitLayout footer={<InventoryFooter />} header={{ finnish: "Tavaraluettelo", english: "Inventory" }}>
+            <SplitLayout header={{ finnish: "Tavaraluettelo", english: "Inventory" }}>
                 <div className={`space-y-4 transition-opacity duration-200 ${isLoading ? "opacity-50" : ""}`}>
                     <InventoryFilters />
 
@@ -349,10 +740,11 @@ function InventoryTablePage() {
                         pageSize={pageSize}
                         onPageChange={handlePageChange}
                         enableRowSelection={true}
-                        onDeleteSelected={isStaff ? handleDeleteSelected : undefined}
                         onSelectionChange={setSelectedIds}
                         prependedRow={addRowElement}
-                        actionsComponent={selectedIds.length > 0 ? actionsComponent : undefined}
+                        actionsComponent={actionsComponent}
+                        selectionActions={selectionActions}
+                        maxBodyHeight="calc(100vh - 400px)"
                     />
                 </div>
             </SplitLayout>
@@ -385,6 +777,60 @@ function InventoryTablePage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Remove Inventory Modal */}
+            {removeModalItem && (
+                <RemoveInventoryModal
+                    item={removeModalItem}
+                    transactionLinks={getTransactionLinksForItem(removeModalItem)}
+                    isOpen={!!removeModalItem}
+                    onClose={() => setRemoveModalItem(null)}
+                />
+            )}
+
+            {/* Quantity Selection Modal */}
+            <QuantitySelectionModal
+                open={showQuantityModal}
+                onOpenChange={setShowQuantityModal}
+                items={itemsWithUnknown}
+                mode={quantityModalMode}
+                onConfirm={handleQuantityConfirm}
+            />
+
+            {/* Unlink Confirmation Dialog */}
+            <Dialog open={!!unlinkConfirmation} onOpenChange={(open) => !open && setUnlinkConfirmation(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Vahvista irrotus / Confirm Unlink</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Haluatko varmasti irrottaa tämän tuotteen tapahtumasta?
+                            Tämä palauttaa {unlinkConfirmation?.quantity} kpl tuntemattomaan tilaan.
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                            Are you sure you want to unlink this item from the transaction?
+                            This will return {unlinkConfirmation?.quantity} unit(s) to unknown state.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setUnlinkConfirmation(null)}>
+                            Peruuta / Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleConfirmUnlink}>
+                            Irrota / Unlink
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Transaction Selector Modal */}
+            <TransactionSelectorModal
+                open={showTransactionSelector}
+                onOpenChange={setShowTransactionSelector}
+                transactions={inventoryTransactions}
+                onSelect={handleSelectTransaction}
+            />
         </PageWrapper>
     );
 }
@@ -408,7 +854,7 @@ function InventoryQRPanel() {
 }
 
 function InventoryFooter() {
-    const { isAdmin, isStaff, showAddRow, setShowAddRow } = useInventory();
+    const { isAdmin } = useInventory();
 
     return (
         <div className="flex items-center gap-2">
@@ -432,17 +878,6 @@ function InventoryFooter() {
                         <span className="material-symbols-outlined text-xl">upload</span>
                     </label>
                 </>
-            )}
-            {isStaff && (
-                <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setShowAddRow(!showAddRow)}
-                    className="flex items-center gap-1"
-                >
-                    <span className="material-symbols-outlined text-base">{showAddRow ? "close" : "add"}</span>
-                    {showAddRow ? "Sulje" : "Lisää"}
-                </Button>
             )}
         </div>
     );

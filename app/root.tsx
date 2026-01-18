@@ -90,6 +90,7 @@ import { Navigation } from "./components/navigation";
 import { InfoReelProvider } from "./contexts/info-reel-context";
 import { useInfoReel } from "./contexts/info-reel-context";
 import { UserProvider } from "./contexts/user-context";
+import { NewTransactionProvider } from "./contexts/new-transaction-context";
 import { Toaster } from "~/components/ui/sonner";
 
 function ContentFader({ children }: { children: React.ReactNode }) {
@@ -111,33 +112,35 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider user={user}>
-        <InfoReelProvider>
-          <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
-            <div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0">
-              <header className="flex items-center justify-center px-4 pb-2">
-                <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
-                  <span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
-                    {siteConfig.shortName || siteConfig.name}
-                  </span>
-                  <div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
-                    <span className="text-sm sm:text-2xl md:text-3xl">Asukastoimikunta</span>
-                    <span className="text-[9px] sm:text-xl md:text-2xl opacity-90 mt-0.5 md:mt-2">Tenant Committee</span>
+        <NewTransactionProvider>
+          <InfoReelProvider>
+            <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+              <div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0">
+                <header className="flex items-center justify-center px-4 pb-2">
+                  <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
+                    <span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
+                      {siteConfig.shortName || siteConfig.name}
+                    </span>
+                    <div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
+                      <span className="text-sm sm:text-2xl md:text-3xl">Asukastoimikunta</span>
+                      <span className="text-[9px] sm:text-xl md:text-2xl opacity-90 mt-0.5 md:mt-2">Tenant Committee</span>
+                    </div>
                   </div>
-                </div>
-              </header>
+                </header>
 
-              <nav className="pb-1 sm:pb-2 md:pb-4">
-                <Navigation orientation="horizontal" />
-              </nav>
+                <nav className="pb-1 sm:pb-2 md:pb-4">
+                  <Navigation orientation="horizontal" />
+                </nav>
 
+              </div>
+
+              {/* Main Content Area - fades during info reel transitions */}
+              <ContentFader>
+                <Outlet />
+              </ContentFader>
             </div>
-
-            {/* Main Content Area - fades during info reel transitions */}
-            <ContentFader>
-              <Outlet />
-            </ContentFader>
-          </div>
-        </InfoReelProvider>
+          </InfoReelProvider>
+        </NewTransactionProvider>
       </UserProvider>
       <Toaster richColors position="top-center" />
     </QueryClientProvider>

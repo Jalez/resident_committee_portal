@@ -79,6 +79,19 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 /**
+ * Inventory item status for lifecycle tracking
+ * - active: Item is currently in use
+ * - removed: Item was removed from inventory (soft-deleted)
+ * - legacy: Item existed before treasury records (no linked transactions expected)
+ */
+export type InventoryItemStatus = "active" | "removed" | "legacy";
+
+/**
+ * Removal reason for audit purposes
+ */
+export type RemovalReason = "broken" | "used_up" | "lost" | "sold" | "other";
+
+/**
  * Inventory items table schema
  * Stores committee inventory with purchase info for budget tracking
  */
@@ -86,11 +99,19 @@ export const inventoryItems = pgTable("inventory_items", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
 	quantity: integer("quantity").notNull().default(1),
+	// Quantity explicitly confirmed to have no transaction (legacy/gift/etc)
+	manualCount: integer("manual_count").notNull().default(0),
 	location: text("location").notNull(),
 	category: text("category"),
 	description: text("description"),
 	value: decimal("value", { precision: 10, scale: 2 }).default("0"),
 	showInInfoReel: boolean("show_in_info_reel").notNull().default(false),
+	// Lifecycle tracking
+	status: text("status").$type<InventoryItemStatus>().notNull().default("active"),
+	removedAt: timestamp("removed_at"),
+	removalReason: text("removal_reason").$type<RemovalReason>(),
+	removalNotes: text("removal_notes"),
+	// Timestamps
 	purchasedAt: timestamp("purchased_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),

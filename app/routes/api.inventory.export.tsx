@@ -31,7 +31,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         ].join(",");
     });
 
-    const csv = [headers.join(","), ...rows].join("\n");
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
 
     const date = new Date().toISOString().split("T")[0];
     const filename = `inventory-${date}.csv`;

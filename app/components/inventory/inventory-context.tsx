@@ -18,6 +18,8 @@ interface InventoryContextValue {
     pageSize: number;
     isStaff: boolean;
     isAdmin: boolean;
+    transactionLinksMap: Record<string, { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[]>;
+    inventoryTransactions: { id: string; description: string; date: Date; amount: string; category: string | null }[];
 
     // UI State
     showAddRow: boolean;
@@ -72,6 +74,10 @@ interface InventoryProviderProps {
     pageSize: number;
     isStaff: boolean;
     isAdmin: boolean;
+    // Transaction links for modals
+    transactionLinksMap?: Record<string, { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[]>;
+    // Inventory category transactions for "Add to Existing" feature
+    inventoryTransactions?: { id: string; description: string; date: Date; amount: string; category: string | null }[];
 }
 
 export function InventoryProvider({
@@ -85,6 +91,8 @@ export function InventoryProvider({
     pageSize,
     isStaff,
     isAdmin,
+    transactionLinksMap = {},
+    inventoryTransactions = [],
 }: InventoryProviderProps) {
     const fetcher = useFetcher();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -219,6 +227,8 @@ export function InventoryProvider({
         pageSize,
         isStaff,
         isAdmin,
+        transactionLinksMap,
+        inventoryTransactions,
 
         // UI State
         showAddRow,

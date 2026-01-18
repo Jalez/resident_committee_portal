@@ -33,5 +33,6 @@ export default [
 	route("api/inventory/export", "routes/api.inventory.export.tsx"),
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),
 	route("api/webhooks/resend", "routes/api.webhooks.resend.tsx"),
+	route("api/treasury/export", "routes/api.treasury.export.tsx"),
 ] satisfies RouteConfig;
 

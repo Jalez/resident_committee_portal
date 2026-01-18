@@ -174,11 +174,11 @@ export async function action({ request }: Route.ActionArgs) {
                             notes,
                         },
                         purchase.id,
-                        {
+                        [{
                             name: receiptFile.name,
                             type: receiptFile.type,
                             content: base64Content,
-                        }
+                        }]
                     );
                     if (emailResult.success) {
                         await db.updatePurchase(purchase.id, {

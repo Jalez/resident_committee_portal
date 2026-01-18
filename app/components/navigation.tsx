@@ -15,6 +15,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { NAV_ITEMS } from "~/lib/nav-config";
 
 interface NavigationProps {
     className?: string;
@@ -33,34 +34,24 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
     // Check if settings menu should be shown (has any admin permissions)
     const showSettingsMenu = !isInfoReel && hasAnyPermission(["users:read", "roles:read", "reimbursements:approve"]);
 
-    const allNavItems = [
-        { path: "/", icon: "volunteer_activism", label: "Osallistu", subLabel: "Get Involved" },
-        { path: "/events", icon: "event", label: "Tapahtumat", subLabel: "Events", permission: "events:read" },
-        { path: "/treasury", icon: "payments", label: "Rahasto", subLabel: "Treasury", permission: "treasury:read" },
-        { path: "/minutes", icon: "description", label: "Pöytäkirjat", subLabel: "Minutes", permission: "minutes:read" },
-        { path: "/inventory", icon: "inventory_2", label: "Tavaraluettelo", subLabel: "Inventory", permission: "inventory:read" },
-        { path: "/social", icon: "forum", label: "Some", subLabel: "Social", permission: "social:read" },
-        // Auth items - shown conditionally
-        { path: "/auth/login", icon: "login", label: "Kirjaudu", subLabel: "Login", showWhen: "logged-out" },
-        // Submissions - requires submissions:read permission
-        { path: "/submissions", icon: "mail", label: "Yhteydenotot", subLabel: "Submissions", permission: "submissions:read" },
-    ] as const;
+    // Use shared nav items configuration
+    const allNavItems = NAV_ITEMS;
 
     // Filter nav items based on permissions and info reel mode
     const navItems = allNavItems.filter(item => {
-        // Hide all conditional items during info reel
-        if (isInfoReel && ('showWhen' in item || 'permission' in item)) return false;
+        // During info reel: only hide login/logout items, show permitted routes
+        if (isInfoReel && item.showWhen) return false;
 
         // Always show items without conditions
-        if (!('showWhen' in item) && !('permission' in item)) return true;
+        if (!item.showWhen && !item.permission) return true;
 
         // Handle login visibility (show for guests, hide for logged-in users)
-        if ('showWhen' in item && item.showWhen === "logged-out") {
+        if (item.showWhen === "logged-out") {
             return !user || user.userId === "guest";
         }
 
         // Handle permission-based visibility
-        if ('permission' in item) {
+        if (item.permission) {
             return hasPermission(item.permission);
         }
 
