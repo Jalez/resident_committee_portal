@@ -6,6 +6,7 @@ import {
     isAdmin
 } from "~/lib/auth.server";
 import { getDatabase } from "~/db";
+
 export async function loader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
@@ -36,10 +37,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Persist user to database (creates new or updates existing)
     const db = getDatabase();
-    await db.upsertUser({
+    const isAdminUser = isAdmin(userInfo.email);
+    let roleId: string | undefined;
+
+    // If user is super admin, fetch the Admin role ID
+    if (isAdminUser) {
+        const adminRole = await db.getRoleByName("Admin");
+        if (adminRole) {
+            roleId = adminRole.id;
+        }
+    }
+
+    const user = await db.upsertUser({
         email: userInfo.email,
         name: userInfo.name || userInfo.email.split("@")[0],
+        roleId,
     });
+
+    // Ensure super admins always have the Admin role (even if they already existed)
+    if (isAdminUser && roleId && user.roleId !== roleId) {
+        await db.updateUser(user.id, { roleId });
+        console.log(`[OAuth Callback] Promoted ${userInfo.email} to Admin role`);
+    }
 
     // Create session for all authenticated users
     const sessionCookie = await createSession({
@@ -48,13 +67,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
         picture: userInfo.picture,
     });
 
-    // Redirect based on admin status
-    const isAdminUser = isAdmin(userInfo.email);
-    const redirectPath = isAdminUser ? "/submissions" : "/";
-
     console.log(`[OAuth Callback] User logged in: ${userInfo.email} (admin: ${isAdminUser})`);
 
-    return redirect(redirectPath, {
+    // Always redirect to home page
+    return redirect("/", {
         headers: {
             "Set-Cookie": sessionCookie,
         },
