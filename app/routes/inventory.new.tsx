@@ -3,32 +3,19 @@ import { Form, redirect, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type NewInventoryItem, type NewPurchase, type NewTransaction } from "~/db";
-import { getMinutesByYear } from "~/lib/google.server";
+import { getMinutesByYear, getReceiptsByYear, uploadReceiptToDrive, getOrCreateReceiptsFolder } from "~/lib/google.server";
 import { sendReimbursementEmail, isEmailConfigured } from "~/lib/email.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
+import { clearCache } from "~/lib/cache.server";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "~/components/ui/select";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "~/lib/utils";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "~/components/ui/command";
+
 import { SmartCombobox } from "~/components/ui/smart-combobox";
+import { ReimbursementForm } from "~/components/treasury/reimbursement-form";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
@@ -74,6 +61,10 @@ export async function loader({ request }: Route.LoaderArgs) {
         value: item.value,
     }));
 
+    // Get receipts for picker
+    const receiptsByYear = await getReceiptsByYear();
+    const currentYearReceipts = receiptsByYear.find(r => r.year === currentYear.toString());
+
     return {
         siteConfig: SITE_CONFIG,
         recentMinutes,
@@ -81,6 +72,8 @@ export async function loader({ request }: Route.LoaderArgs) {
         emailConfigured: isEmailConfigured(),
         currentYear,
         existingItems: uniqueItems,
+        receiptsByYear,
+        receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
     };
 }
 
@@ -89,6 +82,68 @@ export async function action({ request }: Route.ActionArgs) {
     const db = getDatabase();
 
     const formData = await request.formData();
+    const actionType = formData.get("_action");
+
+    // Handle uploadReceipt action for ReimbursementForm
+    if (actionType === "uploadReceipt") {
+        const receiptFile = formData.get("receiptFile") as File;
+        const year = formData.get("year") as string;
+        const description = formData.get("description") as string;
+
+        if (!receiptFile || receiptFile.size === 0) {
+            return { success: false, error: "No file provided" };
+        }
+
+        if (receiptFile.size > RECEIPT_MAX_SIZE_BYTES) {
+            return { success: false, error: "File too large" };
+        }
+
+        try {
+            const arrayBuffer = await receiptFile.arrayBuffer();
+            const base64Content = Buffer.from(arrayBuffer).toString("base64");
+
+            const result = await uploadReceiptToDrive(
+                {
+                    name: receiptFile.name,
+                    content: base64Content,
+                    mimeType: receiptFile.type,
+                },
+                year,
+                description
+            );
+
+            if (result) {
+                return { success: true, receipt: result };
+            } else {
+                return { success: false, error: "Upload failed" };
+            }
+        } catch (error) {
+            console.error("[uploadReceipt] Error:", error);
+            return { success: false, error: "Upload failed" };
+        }
+    }
+
+    // Handle ensureReceiptsFolder action for ReimbursementForm
+    if (actionType === "ensureReceiptsFolder") {
+        const year = formData.get("year") as string;
+        try {
+            const result = await getOrCreateReceiptsFolder(year);
+            if (result) {
+                return { success: true, folderUrl: result.folderUrl };
+            }
+            return { success: false, error: "Could not create receipts folder" };
+        } catch (error) {
+            console.error("[ensureReceiptsFolder] Error:", error);
+            return { success: false, error: "Failed to create receipts folder" };
+        }
+    }
+
+    // Handle refreshReceipts action to clear cache
+    if (actionType === "refreshReceipts") {
+        clearCache("RECEIPTS_BY_YEAR");
+        return { success: true };
+    }
+
     const addToTreasury = formData.get("addToTreasury") === "on";
     const requestReimbursement = formData.get("requestReimbursement") === "on";
 
@@ -139,7 +194,15 @@ export async function action({ request }: Route.ActionArgs) {
             const bankAccount = formData.get("bankAccount") as string;
             const minutesId = formData.get("minutesId") as string;
             const notes = formData.get("notes") as string;
-            const receiptFile = formData.get("receipt") as File | null;
+
+            // Parse receipt links from the form (JSON string from ReceiptPicker)
+            const receiptLinksJson = formData.get("receiptLinks") as string;
+            let receiptLinks: { id: string; name: string; url: string }[] = [];
+            try {
+                receiptLinks = receiptLinksJson ? JSON.parse(receiptLinksJson) : [];
+            } catch {
+                receiptLinks = [];
+            }
 
             const newPurchase: NewPurchase = {
                 inventoryItemId: inventoryItem.id,
@@ -158,69 +221,32 @@ export async function action({ request }: Route.ActionArgs) {
             const purchase = await db.createPurchase(newPurchase);
             purchaseId = purchase.id;
 
-            // Send email with receipt if file provided
-            if (receiptFile && receiptFile.size > 0) {
-                try {
-                    const arrayBuffer = await receiptFile.arrayBuffer();
-                    const base64Content = Buffer.from(arrayBuffer).toString("base64");
-
-                    const emailResult = await sendReimbursementEmail(
-                        {
-                            itemName: newItem.name,
-                            itemValue: newItem.value || "0",
-                            purchaserName,
-                            bankAccount,
-                            minutesReference: minutesId || "Ei määritetty / Not specified",
-                            notes,
-                        },
-                        purchase.id,
-                        [{
-                            name: receiptFile.name,
-                            type: receiptFile.type,
-                            content: base64Content,
-                        }]
-                    );
-                    if (emailResult.success) {
-                        await db.updatePurchase(purchase.id, {
-                            emailSent: true,
-                            emailMessageId: emailResult.messageId,
-                        });
-                    } else {
-                        await db.updatePurchase(purchase.id, { emailError: emailResult.error || "Unknown error" });
-                    }
-                } catch (error) {
+            // Send email with receipt links (fire-and-forget)
+            sendReimbursementEmail(
+                {
+                    itemName: newItem.name,
+                    itemValue: newItem.value || "0",
+                    purchaserName,
+                    bankAccount,
+                    minutesReference: minutesId || "Ei määritetty / Not specified",
+                    notes,
+                    receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+                },
+                purchase.id
+            ).then(async (emailResult) => {
+                if (emailResult.success) {
                     await db.updatePurchase(purchase.id, {
-                        emailError: error instanceof Error ? error.message : "Unknown error",
+                        emailSent: true,
+                        emailMessageId: emailResult.messageId,
                     });
+                } else {
+                    await db.updatePurchase(purchase.id, { emailError: emailResult.error || "Unknown error" });
                 }
-            } else {
-                // Send email without attachment
-                try {
-                    const emailResult = await sendReimbursementEmail(
-                        {
-                            itemName: newItem.name,
-                            itemValue: newItem.value || "0",
-                            purchaserName,
-                            bankAccount,
-                            minutesReference: minutesId || "Ei määritetty / Not specified",
-                            notes,
-                        },
-                        purchase.id
-                    );
-                    if (emailResult.success) {
-                        await db.updatePurchase(purchase.id, {
-                            emailSent: true,
-                            emailMessageId: emailResult.messageId,
-                        });
-                    } else {
-                        await db.updatePurchase(purchase.id, { emailError: emailResult.error || "Unknown error" });
-                    }
-                } catch (error) {
-                    await db.updatePurchase(purchase.id, {
-                        emailError: error instanceof Error ? error.message : "Unknown error",
-                    });
-                }
-            }
+            }).catch(async (error) => {
+                await db.updatePurchase(purchase.id, {
+                    emailError: error instanceof Error ? error.message : "Unknown error",
+                });
+            });
         }
 
         // Create treasury transaction (no longer directly linked - use junction table)
@@ -246,12 +272,14 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
-    const { recentMinutes, recentTransactions, emailConfigured, currentYear, existingItems } = loaderData ?? {
+    const { recentMinutes, recentTransactions, emailConfigured, currentYear, existingItems, receiptsByYear, receiptsFolderUrl } = loaderData ?? {
         recentMinutes: [] as Array<{ id: string; name: string; year: number }>,
         recentTransactions: [] as Array<{ amount: string; description: string; date: Date }>,
         emailConfigured: false,
         currentYear: new Date().getFullYear(),
         existingItems: [] as Array<{ id: string; name: string; location: string; category: string | null; description: string | null; value: string | null; }>,
+        receiptsByYear: [],
+        receiptsFolderUrl: "#",
     };
     const navigate = useNavigate();
     const [addToTreasury, setAddToTreasury] = useState(false);
@@ -531,77 +559,17 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
                                 {/* Reimbursement Details - only if reimbursement is checked */}
                                 {requestReimbursement && (
-                                    <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                        {!emailConfigured && (
-                                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                                    ⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.
-                                                    <br />
-                                                    Email sending is not configured. Request will be saved but email won't be sent.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="receipt">Kuitti / Receipt (PDF tai kuva) *</Label>
-                                            <Input
-                                                id="receipt"
-                                                name="receipt"
-                                                type="file"
-                                                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                                required={requestReimbursement}
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="purchaserName">Ostajan nimi / Purchaser Name *</Label>
-                                                <Input
-                                                    id="purchaserName"
-                                                    name="purchaserName"
-                                                    required={requestReimbursement}
-                                                    placeholder="Etu- ja sukunimi"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="bankAccount">Tilinumero (IBAN) / Bank Account *</Label>
-                                                <Input
-                                                    id="bankAccount"
-                                                    name="bankAccount"
-                                                    required={requestReimbursement}
-                                                    placeholder="FI12 3456 7890 1234 56"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="minutesId">Pöytäkirja / Related Minutes *</Label>
-                                            <Select name="minutesId" defaultValue={recentMinutes[0]?.id || ""} required={requestReimbursement}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Valitse pöytäkirja..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {recentMinutes.map((minute) => (
-                                                        <SelectItem key={minute.id} value={minute.id}>
-                                                            {minute.name} ({minute.year})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-xs text-gray-500">
-                                                Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="notes">Lisätiedot / Additional Notes</Label>
-                                            <textarea
-                                                id="notes"
-                                                name="notes"
-                                                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
-                                                placeholder="Vapaamuotoinen viesti..."
-                                            />
-                                        </div>
+                                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <ReimbursementForm
+                                            recentMinutes={recentMinutes.map(m => ({ ...m, year: m.year.toString() }))}
+                                            emailConfigured={emailConfigured}
+                                            receiptsByYear={receiptsByYear}
+                                            currentYear={currentYear}
+                                            receiptsFolderUrl={receiptsFolderUrl}
+                                            description={itemName}
+                                            showNotes={true}
+                                            required={requestReimbursement}
+                                        />
                                     </div>
                                 )}
                             </div>

@@ -59,7 +59,7 @@ async function findChildByName(parentId: string, name: string, mimeType?: string
         return null;
     }
 }
-import { getCached, setCache, CACHE_TTL, CACHE_KEYS } from "./cache.server";
+import { getCached, setCache, clearCache, CACHE_TTL, CACHE_KEYS } from "./cache.server";
 
 export async function getCalendarEvents() {
     // Check cache first
@@ -265,6 +265,287 @@ export async function getMinutesByYear(): Promise<MinutesByYear[]> {
     } catch (error) {
         console.error("[getMinutesByYear] Error:", error);
         return [];
+    }
+}
+
+// Receipts grouped by year - mirrors getMinutesByYear structure
+export interface ReceiptsByYear {
+    year: string;
+    files: {
+        id: string;
+        name: string;
+        url: string;
+        createdTime: string;
+    }[];
+    folderUrl: string;
+    folderId: string;
+}
+
+export async function getReceiptsByYear(): Promise<ReceiptsByYear[]> {
+    // Check cache first
+    const cacheKey = "RECEIPTS_BY_YEAR";
+    const cached = getCached<ReceiptsByYear[]>(cacheKey, CACHE_TTL.MINUTES);
+    if (cached !== null && cached.length > 0) {
+        return cached;
+    }
+
+    if (!config.apiKey || !config.publicRootFolderId) {
+        console.log("[getReceiptsByYear] Missing config");
+        return [];
+    }
+
+    // Step 1: List all year folders in the public root
+    const q = `'${config.publicRootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const foldersUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&key=${config.apiKey}&fields=files(id,name,webViewLink)&orderBy=name desc`;
+
+    try {
+        const foldersRes = await fetch(foldersUrl);
+        if (!foldersRes.ok) {
+            console.log(`[getReceiptsByYear] Failed to list year folders: ${foldersRes.status}`);
+            return [];
+        }
+        const foldersData = await foldersRes.json();
+        const yearFolders = (foldersData.files || []).filter((f: any) => /^\d{4}$/.test(f.name));
+
+        console.log(`[getReceiptsByYear] Found ${yearFolders.length} year folders`);
+
+        const currentYear = new Date().getFullYear().toString();
+
+        // Step 2: For each year folder, look for "receipts" subfolder and get its files
+        const yearResults = await Promise.all(yearFolders.map(async (yearFolder: any) => {
+            const receiptsFolder = await findChildByName(yearFolder.id, "receipts", "application/vnd.google-apps.folder");
+
+            if (!receiptsFolder) {
+                // If this is the current year and no receipts folder, still include with empty files
+                if (yearFolder.name === currentYear) {
+                    return {
+                        year: yearFolder.name,
+                        files: [],
+                        folderUrl: "#",
+                        folderId: "",
+                    };
+                }
+                return null;
+            }
+
+            // List files in receipts folder
+            const filesQ = `'${receiptsFolder.id}' in parents and trashed = false`;
+            const filesUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(filesQ)}&orderBy=name desc&key=${config.apiKey}&fields=files(id,name,webViewLink,createdTime)`;
+
+            try {
+                const filesRes = await fetch(filesUrl);
+                if (!filesRes.ok) return null;
+
+                const filesData = await filesRes.json();
+
+                return {
+                    year: yearFolder.name,
+                    files: (filesData.files || []).map((f: any) => ({
+                        id: f.id,
+                        name: f.name || "Untitled",
+                        url: f.webViewLink,
+                        createdTime: f.createdTime
+                    })),
+                    folderUrl: receiptsFolder.webViewLink || "#",
+                    folderId: receiptsFolder.id,
+                };
+            } catch (error) {
+                console.error(`Error fetching receipts for year ${yearFolder.name}:`, error);
+                return null;
+            }
+        }));
+
+        const results: ReceiptsByYear[] = yearResults.filter((r): r is ReceiptsByYear => r !== null);
+
+        // Ensure current year is always first (even if no receipts folder yet)
+        const hasCurrentYear = results.some(r => r.year === currentYear);
+        if (!hasCurrentYear) {
+            results.unshift({
+                year: currentYear,
+                files: [],
+                folderUrl: "#",
+                folderId: "",
+            });
+        }
+
+        // Sort by year descending
+        results.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+
+        // Cache results
+        setCache(cacheKey, results);
+
+        console.log(`[getReceiptsByYear] Returning ${results.length} years`);
+        return results;
+    } catch (error) {
+        console.error("[getReceiptsByYear] Error:", error);
+        return [];
+    }
+}
+
+/**
+ * Get or create receipts folder for a given year
+ * Uses service account to create folder if it doesn't exist
+ */
+export async function getOrCreateReceiptsFolder(year: string): Promise<{ folderId: string; folderUrl: string } | null> {
+    if (!config.publicRootFolderId) {
+        console.error("[getOrCreateReceiptsFolder] Missing publicRootFolderId");
+        return null;
+    }
+
+    // First, find the year folder
+    const yearFolder = await findChildByName(config.publicRootFolderId, year, "application/vnd.google-apps.folder");
+    if (!yearFolder) {
+        console.error(`[getOrCreateReceiptsFolder] Year folder '${year}' not found`);
+        return null;
+    }
+
+    // Check if receipts folder already exists
+    const existingReceipts = await findChildByName(yearFolder.id, "receipts", "application/vnd.google-apps.folder");
+    if (existingReceipts) {
+        return {
+            folderId: existingReceipts.id,
+            folderUrl: existingReceipts.webViewLink || `https://drive.google.com/drive/folders/${existingReceipts.id}`,
+        };
+    }
+
+    // Create receipts folder using service account
+    const accessToken = await getServiceAccountAccessToken();
+    if (!accessToken) {
+        console.error("[getOrCreateReceiptsFolder] Could not get service account access token");
+        return null;
+    }
+
+    try {
+        const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                name: "receipts",
+                mimeType: "application/vnd.google-apps.folder",
+                parents: [yearFolder.id],
+            }),
+        });
+
+        if (!createRes.ok) {
+            const errorText = await createRes.text();
+            console.error("[getOrCreateReceiptsFolder] Failed to create folder:", errorText);
+            
+            // If it's a permissions error, return a special response
+            if (createRes.status === 403) {
+                console.warn("[getOrCreateReceiptsFolder] Service account lacks write permissions on year folder. Manual creation required.");
+                // Return null to indicate folder doesn't exist but avoid crashing
+                return null;
+            }
+            return null;
+        }
+
+        const newFolder = await createRes.json();
+        console.log(`[getOrCreateReceiptsFolder] Created receipts folder for ${year}: ${newFolder.id}`);
+
+        // Clear cache so new folder is picked up
+        clearCache("RECEIPTS_BY_YEAR");
+
+        return {
+            folderId: newFolder.id,
+            folderUrl: newFolder.webViewLink || `https://drive.google.com/drive/folders/${newFolder.id}`,
+        };
+    } catch (error) {
+        console.error("[getOrCreateReceiptsFolder] Error creating folder:", error);
+        return null;
+    }
+}
+
+/**
+ * Upload a receipt file to Google Drive
+ * @param file - File object with name, content (base64), and mimeType
+ * @param year - The year folder to upload to
+ * @param description - Description used for naming the file
+ * @returns The uploaded file info or null on failure
+ */
+export async function uploadReceiptToDrive(
+    file: { name: string; content: string; mimeType: string },
+    year: string,
+    description: string
+): Promise<{ id: string; name: string; url: string } | null> {
+    // Get or create the receipts folder
+    const receiptsFolder = await getOrCreateReceiptsFolder(year);
+    if (!receiptsFolder) {
+        console.error("[uploadReceiptToDrive] Could not get/create receipts folder");
+        return null;
+    }
+
+    const accessToken = await getServiceAccountAccessToken();
+    if (!accessToken) {
+        console.error("[uploadReceiptToDrive] Could not get service account access token");
+        return null;
+    }
+
+    // Generate filename: YYYY-MM-DD_kuitti_description.ext
+    const date = new Date().toISOString().split("T")[0];
+    const ext = file.name.split(".").pop() || "pdf";
+    const sanitizedDesc = description
+        .toLowerCase()
+        .replace(/[^a-z0-9äöå]/gi, "_")
+        .replace(/_+/g, "_")
+        .substring(0, 50);
+    const newFileName = `${date}_kuitti_${sanitizedDesc}.${ext}`;
+
+    try {
+        // Use multipart upload for files with content
+        const boundary = "-------314159265358979323846";
+        const delimiter = `\r\n--${boundary}\r\n`;
+        const closeDelimiter = `\r\n--${boundary}--`;
+
+        const metadata = {
+            name: newFileName,
+            parents: [receiptsFolder.folderId],
+        };
+
+        const multipartBody =
+            delimiter +
+            "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+            JSON.stringify(metadata) +
+            delimiter +
+            `Content-Type: ${file.mimeType}\r\n` +
+            "Content-Transfer-Encoding: base64\r\n\r\n" +
+            file.content +
+            closeDelimiter;
+
+        const uploadRes = await fetch(
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "Content-Type": `multipart/related; boundary=${boundary}`,
+                },
+                body: multipartBody,
+            }
+        );
+
+        if (!uploadRes.ok) {
+            const errorText = await uploadRes.text();
+            console.error("[uploadReceiptToDrive] Upload failed:", errorText);
+            return null;
+        }
+
+        const uploadedFile = await uploadRes.json();
+        console.log(`[uploadReceiptToDrive] Uploaded: ${uploadedFile.name} (${uploadedFile.id})`);
+
+        // Clear cache so new file is picked up
+        clearCache("RECEIPTS_BY_YEAR");
+
+        return {
+            id: uploadedFile.id,
+            name: uploadedFile.name,
+            url: uploadedFile.webViewLink || `https://drive.google.com/file/d/${uploadedFile.id}/view`,
+        };
+    } catch (error) {
+        console.error("[uploadReceiptToDrive] Error:", error);
+        return null;
     }
 }
 
@@ -636,10 +917,10 @@ async function getServiceAccountAccessToken(): Promise<string | null> {
         // JWT Header
         const header = { alg: "RS256", typ: "JWT" };
 
-        // JWT Payload
+        // JWT Payload - includes both Sheets and Drive scopes
         const payload = {
             iss: config.serviceAccountEmail,
-            scope: "https://www.googleapis.com/auth/spreadsheets",
+            scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file",
             aud: "https://oauth2.googleapis.com/token",
             iat: now,
             exp: expiry,
