@@ -126,7 +126,7 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
     const { purchases, years, currentYear, currentStatus, totals } = loaderData;
     const [searchParams, setSearchParams] = useSearchParams();
     const rootData = useRouteLoaderData<typeof rootLoader>("root");
-    const isStaff = rootData?.user?.role === "admin" || rootData?.user?.role === "board_member";
+    const isStaff = rootData?.user?.roleName === "Admin" || rootData?.user?.roleName === "Board Member";
 
     const formatCurrency = (value: number | string) => {
         const num = typeof value === "string" ? parseFloat(value) : value;
@@ -162,7 +162,7 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                 <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <Link
-                            to="/budget"
+                            to="/treasury"
                             className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-2"
                         >
                             <span className="material-symbols-outlined text-base">arrow_back</span>
@@ -173,7 +173,7 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                         </h1>
                         <p className="text-lg text-gray-500">Reimbursements</p>
                     </div>
-                    <Link to="/budget/reimbursement/new">
+                    <Link to="/treasury/reimbursement/new">
                         <Button>
                             <span className="material-symbols-outlined mr-2">add</span>
                             Uusi / New

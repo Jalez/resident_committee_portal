@@ -209,7 +209,7 @@ export async function action({ request }: Route.ActionArgs) {
         });
     });
 
-    return redirect("/budget/reimbursements?success=true");
+    return redirect("/treasury/reimbursements?success=true");
 }
 
 export default function NewReimbursement({ loaderData }: Route.ComponentProps) {

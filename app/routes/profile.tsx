@@ -26,6 +26,9 @@ export async function loader({ request }: Route.LoaderArgs) {
         return redirect("/auth/login");
     }
 
+    // Get role name from the user's role
+    const role = await db.getRoleById(user.roleId);
+
     return {
         siteConfig: SITE_CONFIG,
         user: {
@@ -33,7 +36,7 @@ export async function loader({ request }: Route.LoaderArgs) {
             email: user.email,
             name: user.name,
             apartmentNumber: user.apartmentNumber,
-            role: user.role,
+            roleName: role?.name || "Unknown",
             createdAt: user.createdAt,
         },
     };
@@ -66,11 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
     return { success: true };
 }
 
-const ROLE_LABELS: Record<string, { fi: string; en: string }> = {
-    resident: { fi: "Asukas", en: "Resident" },
-    board_member: { fi: "Hallituksen jäsen", en: "Board Member" },
-    admin: { fi: "Ylläpitäjä", en: "Admin" },
-};
+
 
 export default function Profile({ loaderData, actionData }: Route.ComponentProps) {
     const { user } = loaderData;
@@ -154,7 +153,7 @@ export default function Profile({ loaderData, actionData }: Route.ComponentProps
                             </label>
                             <div className="px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {ROLE_LABELS[user.role]?.fi || user.role} / {ROLE_LABELS[user.role]?.en || user.role}
+                                    {user.roleName}
                                 </span>
                             </div>
                         </div>

@@ -11,3 +11,11 @@ service_account_key.json
 
 
 data/
+
+# Prevent npm lock file (this is a bun project)
+package-lock.json
+
+# Test files
+test-*.png
+test-*.jpg
+*.tmp

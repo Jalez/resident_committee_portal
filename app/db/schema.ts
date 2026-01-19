@@ -1,36 +1,20 @@
 import { pgTable, text, timestamp, uuid, integer, decimal, boolean } from "drizzle-orm/pg-core";
 
-/**
- * Legacy user roles (kept for backward compatibility during migration)
- * - resident: Regular resident of the housing complex
- * - board_member: Member of the student committee/board
- * - admin: Administrator with full access
- */
-export type UserRole = "resident" | "board_member" | "admin";
-
 // ============================================
 // RBAC (Role-Based Access Control) System
 // ============================================
 
 /**
- * Permissions table schema
- * Defines all available permissions in the system
- * Format: "resource:action" (e.g., "inventory:write", "users:manage")
- */
-export const permissions = pgTable("permissions", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	name: text("name").notNull().unique(), // e.g., "inventory:write"
-	description: text("description"), // Human-readable description
-	category: text("category").notNull(), // Grouping for UI (e.g., "Inventory", "Treasury")
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type Permission = typeof permissions.$inferSelect;
-export type NewPermission = typeof permissions.$inferInsert;
-
-/**
  * Roles table schema
  * Admin-defined roles that can be assigned to users
+ * 
+ * IMPORTANT: Permission definitions are stored in app/lib/permissions.ts
+ * The `permissions` array on each role stores permission NAME strings
+ * that must match keys defined in the PERMISSIONS constant.
+ * 
+ * To add a new permission:
+ * 1. Add it to PERMISSIONS in app/lib/permissions.ts
+ * 2. Assign it to roles via the admin UI or seed-rbac.ts
  */
 export const roles = pgTable("roles", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -39,6 +23,9 @@ export const roles = pgTable("roles", {
 	color: text("color").notNull().default("bg-gray-500"), // Tailwind class for UI badge
 	isSystem: boolean("is_system").notNull().default(false), // Prevent deletion of built-in roles
 	sortOrder: integer("sort_order").notNull().default(0), // For UI ordering
+	// Permission names (e.g., ["inventory:read", "treasury:write"])
+	// Must match permission keys in app/lib/permissions.ts
+	permissions: text("permissions").array().notNull().default([]),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -47,29 +34,17 @@ export type Role = typeof roles.$inferSelect;
 export type NewRole = typeof roles.$inferInsert;
 
 /**
- * Role-Permission junction table
- * Maps which permissions belong to which roles
- */
-export const rolePermissions = pgTable("role_permissions", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	roleId: uuid("role_id").references(() => roles.id, { onDelete: "cascade" }).notNull(),
-	permissionId: uuid("permission_id").references(() => permissions.id, { onDelete: "cascade" }).notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type RolePermission = typeof rolePermissions.$inferSelect;
-export type NewRolePermission = typeof rolePermissions.$inferInsert;
-
-/**
  * Users table schema
  * Stores authenticated user information
+ * 
+ * Users MUST have a roleId assigned. New users are automatically 
+ * assigned the "Resident" role when created via upsertUser().
  */
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	email: text("email").notNull().unique(),
 	name: text("name").notNull(),
-	role: text("role").$type<UserRole>().notNull().default("resident"), // Legacy field
-	roleId: uuid("role_id").references(() => roles.id), // New RBAC role reference
+	roleId: uuid("role_id").references(() => roles.id).notNull(), // Required role reference
 	apartmentNumber: text("apartment_number"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -93,7 +68,7 @@ export type RemovalReason = "broken" | "used_up" | "lost" | "sold" | "other";
 
 /**
  * Inventory items table schema
- * Stores committee inventory with purchase info for budget tracking
+ * Stores committee inventory with purchase info
  */
 export const inventoryItems = pgTable("inventory_items", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -123,8 +98,8 @@ export type NewInventoryItem = typeof inventoryItems.$inferInsert;
 /**
  * Purchase status values
  * - pending: Waiting for approval
- * - approved: Approved, reserved from budget
- * - reimbursed: Paid, deducted from budget
+ * - approved: Approved, reserved from treasury
+ * - reimbursed: Paid, deducted from treasury
  * - rejected: Not approved, not deducted
  */
 export type PurchaseStatus = "pending" | "approved" | "reimbursed" | "rejected";
@@ -158,7 +133,7 @@ export const purchases = pgTable("purchases", {
 	emailMessageId: text("email_message_id"), // Resend message ID for threading
 	emailReplyReceived: boolean("email_reply_received").default(false),
 	emailReplyContent: text("email_reply_content"), // Store reply for audit/review
-	// Year for budget association
+	// Year for treasury association
 	year: integer("year").notNull(),
 	// Timestamps
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -167,22 +142,6 @@ export const purchases = pgTable("purchases", {
 
 export type Purchase = typeof purchases.$inferSelect;
 export type NewPurchase = typeof purchases.$inferInsert;
-
-/**
- * Budgets table schema
- * Stores yearly budget allocations
- */
-export const budgets = pgTable("budgets", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	year: integer("year").notNull().unique(),
-	allocation: decimal("allocation", { precision: 10, scale: 2 }).notNull(),
-	notes: text("notes"),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export type Budget = typeof budgets.$inferSelect;
-export type NewBudget = typeof budgets.$inferInsert;
 
 /**
  * Transaction types

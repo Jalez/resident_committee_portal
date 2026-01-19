@@ -54,8 +54,8 @@ export interface SessionData {
 
 export interface AuthenticatedUser extends SessionData {
     userId: string;
-    role: string;
-    roleId: string | null;
+    roleId: string;
+    roleName?: string;
     permissions: string[];
 }
 
@@ -101,10 +101,10 @@ export function isAdmin(email: string): boolean {
  * Database adapter interface for RBAC operations
  */
 interface RBACDatabaseAdapter {
-    findUserByEmail: (email: string) => Promise<{ id: string; role: string; roleId: string | null } | null>;
+    findUserByEmail: (email: string) => Promise<{ id: string; roleId: string } | null>;
     getUserPermissions: (userId: string) => Promise<string[]>;
-    getRoleByName: (name: string) => Promise<{ id: string } | null>;
-    getRolePermissions: (roleId: string) => Promise<{ name: string }[]>;
+    getRoleByName: (name: string) => Promise<{ id: string; permissions: string[] } | null>;
+    getRoleById: (id: string) => Promise<{ name: string; permissions: string[] } | null>;
 }
 
 /**
@@ -116,9 +116,7 @@ export async function getGuestPermissions(
 ): Promise<string[]> {
     const db = getDatabase();
     const guestRole = await db.getRoleByName("Guest");
-    if (!guestRole) return [];
-    const permissions = await db.getRolePermissions(guestRole.id);
-    return permissions.map(p => p.name);
+    return guestRole?.permissions ?? [];
 }
 
 /**
@@ -156,12 +154,13 @@ export async function getAuthenticatedUser(
     if (!dbUser) return null;
 
     const permissions = await db.getUserPermissions(dbUser.id);
+    const role = await db.getRoleById(dbUser.roleId);
 
     return {
         ...session,
         userId: dbUser.id,
-        role: dbUser.role,
         roleId: dbUser.roleId,
+        roleName: role?.name,
         permissions,
     };
 }

@@ -1,19 +1,19 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, and, notInArray, inArray } from "drizzle-orm";
-import { users, inventoryItems, purchases, budgets, transactions, submissions, socialLinks, inventoryItemTransactions, permissions, roles, rolePermissions, appSettings, type User, type NewUser, type InventoryItem, type NewInventoryItem, type Purchase, type NewPurchase, type Budget, type NewBudget, type Transaction, type NewTransaction, type Submission, type NewSubmission, type SubmissionStatus, type SocialLink, type NewSocialLink, type InventoryItemTransaction, type Permission, type NewPermission, type Role, type NewRole, type RolePermission, type NewRolePermission, type AppSetting } from "../schema";
+import { eq, and, notInArray } from "drizzle-orm";
+import { users, inventoryItems, purchases, transactions, submissions, socialLinks, inventoryItemTransactions, roles, appSettings, type User, type NewUser, type InventoryItem, type NewInventoryItem, type Purchase, type NewPurchase, type Transaction, type NewTransaction, type Submission, type NewSubmission, type SubmissionStatus, type SocialLink, type NewSocialLink, type InventoryItemTransaction, type Role, type NewRole, type AppSetting } from "../schema";
 import type { DatabaseAdapter } from "./types";
 
 /**
- * Standard PostgreSQL adapter using postgres.js driver
+ * Standard PostgreSQL database adapter using Drizzle ORM
+ * For local development with Docker or any standard Postgres instance
  */
 export class PostgresAdapter implements DatabaseAdapter {
 	private db: ReturnType<typeof drizzle>;
-	private client: postgres.Sql;
 
 	constructor(connectionString: string) {
-		this.client = postgres(connectionString);
-		this.db = drizzle(this.client);
+		const client = postgres(connectionString);
+		this.db = drizzle(client);
 	}
 
 	// ==================== User Methods ====================
@@ -46,48 +46,29 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return this.db.select().from(users).limit(limit).offset(offset);
 	}
 
-	async upsertUser(user: NewUser): Promise<User> {
+	async upsertUser(user: Omit<NewUser, "roleId"> & { roleId?: string }): Promise<User> {
 		const existing = await this.findUserByEmail(user.email);
 		if (existing) {
-			const updated = await this.updateUser(existing.id, { name: user.name, ...(user.role && { role: user.role }), ...(user.apartmentNumber && { apartmentNumber: user.apartmentNumber }) });
+			const updated = await this.updateUser(existing.id, {
+				name: user.name,
+				...(user.apartmentNumber && { apartmentNumber: user.apartmentNumber })
+			});
 			return updated!;
 		}
-		// For new users, automatically assign the Resident role from RBAC system
+		// For new users, automatically assign the Resident role
 		const residentRole = await this.getRoleByName("Resident");
+		if (!residentRole) {
+			throw new Error("Resident role not found. Run the seed-rbac.ts script to create default roles.");
+		}
 		const newUserData: NewUser = {
 			...user,
-			roleId: residentRole?.id ?? null,
+			roleId: user.roleId ?? residentRole.id,
 		};
 		return this.createUser(newUserData);
 	}
 
 	// ==================== RBAC Methods ====================
-	// Permissions
-	async getAllPermissions(): Promise<Permission[]> {
-		return this.db.select().from(permissions);
-	}
-
-	async getPermissionById(id: string): Promise<Permission | null> {
-		const result = await this.db.select().from(permissions).where(eq(permissions.id, id)).limit(1);
-		return result[0] ?? null;
-	}
-
-	async getPermissionByName(name: string): Promise<Permission | null> {
-		const result = await this.db.select().from(permissions).where(eq(permissions.name, name)).limit(1);
-		return result[0] ?? null;
-	}
-
-	async createPermission(permission: NewPermission): Promise<Permission> {
-		const result = await this.db.insert(permissions).values(permission).returning();
-		return result[0];
-	}
-
-	async deletePermission(id: string): Promise<boolean> {
-		const result = await this.db.delete(permissions).where(eq(permissions.id, id)).returning();
-		return result.length > 0;
-	}
-
-	// Roles
+	// Roles (permissions are stored as array on role, no junction table needed)
 	async getAllRoles(): Promise<Role[]> {
 		return this.db.select().from(roles);
 	}
@@ -118,101 +99,34 @@ export class PostgresAdapter implements DatabaseAdapter {
 		if (role?.isSystem) {
 			throw new Error("Cannot delete system role");
 		}
-		// Remove role from users first
-		await this.db.update(users).set({ roleId: null }).where(eq(users.roleId, id));
-		// Delete role (cascade will remove role_permissions)
+		// Get the Resident role to reassign users
+		const residentRole = await this.getRoleByName("Resident");
+		if (residentRole) {
+			await this.db.update(users).set({ roleId: residentRole.id }).where(eq(users.roleId, id));
+		}
 		const result = await this.db.delete(roles).where(eq(roles.id, id)).returning();
 		return result.length > 0;
 	}
 
-	// Role-Permission mappings
-	async getRolePermissions(roleId: string): Promise<Permission[]> {
-		const mappings = await this.db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-		if (mappings.length === 0) return [];
-		const permissionIds = mappings.map(m => m.permissionId);
-		return this.db.select().from(permissions).where(inArray(permissions.id, permissionIds));
-	}
-
-	async setRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
-		// Delete existing permissions for role
-		await this.db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-		// Add new permissions
-		if (permissionIds.length > 0) {
-			await this.db.insert(rolePermissions).values(
-				permissionIds.map(permissionId => ({ roleId, permissionId }))
-			);
-		}
-	}
-
-	async addPermissionToRole(roleId: string, permissionId: string): Promise<RolePermission> {
-		const result = await this.db.insert(rolePermissions).values({ roleId, permissionId }).returning();
-		return result[0];
-	}
-
-	async removePermissionFromRole(roleId: string, permissionId: string): Promise<boolean> {
-		const result = await this.db.delete(rolePermissions)
-			.where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)))
-			.returning();
-		return result.length > 0;
-	}
-
-	// User permissions (computed from role)
+	// User permissions (fetched directly from role's permissions array)
 	async getUserPermissions(userId: string): Promise<string[]> {
 		const user = await this.findUserById(userId);
 		if (!user) return [];
 
-		// If user has new roleId, use that
-		if (user.roleId) {
-			const perms = await this.getRolePermissions(user.roleId);
-			return perms.map(p => p.name);
-		}
-
-		// Fallback to legacy role mapping
-		return this.getLegacyPermissions(user.role);
+		const role = await this.getRoleById(user.roleId);
+		return role?.permissions ?? [];
 	}
 
 	async getUserWithRole(userId: string): Promise<(User & { roleName?: string; permissions: string[] }) | null> {
 		const user = await this.findUserById(userId);
 		if (!user) return null;
 
-		let roleName: string | undefined;
-		let perms: string[];
-
-		if (user.roleId) {
-			const role = await this.getRoleById(user.roleId);
-			roleName = role?.name;
-			const rolePerms = await this.getRolePermissions(user.roleId);
-			perms = rolePerms.map(p => p.name);
-		} else {
-			// Fallback to legacy
-			roleName = user.role;
-			perms = this.getLegacyPermissions(user.role);
-		}
-
-		return { ...user, roleName, permissions: perms };
-	}
-
-	// Helper: Map legacy roles to permissions
-	private getLegacyPermissions(legacyRole: string): string[] {
-		const basePermissions = ["profile:read:own", "profile:write:own"];
-
-		if (legacyRole === "board_member") {
-			return [
-				...basePermissions,
-				"inventory:write", "inventory:delete",
-				"treasury:read", "treasury:write", "treasury:edit",
-				"reimbursements:read", "reimbursements:write", "reimbursements:approve",
-				"submissions:read", "submissions:write",
-				"social:write", "social:delete",
-				"minutes:guide",
-			];
-		}
-
-		if (legacyRole === "admin") {
-			return ["*"]; // Super admin has all permissions
-		}
-
-		return basePermissions; // resident
+		const role = await this.getRoleById(user.roleId);
+		return {
+			...user,
+			roleName: role?.name,
+			permissions: role?.permissions ?? []
+		};
 	}
 
 	// ==================== Inventory Methods ====================
@@ -251,16 +165,13 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]> {
-		// Get all item IDs that have linked transactions
 		const linkedItems = await this.db.select({ id: inventoryItemTransactions.inventoryItemId }).from(inventoryItemTransactions);
 		const linkedIds = linkedItems.map(l => l.id);
 
 		if (linkedIds.length === 0) {
-			// No items are linked, return all
 			return this.db.select().from(inventoryItems);
 		}
 
-		// Return items not in the linked list
 		return this.db.select().from(inventoryItems).where(notInArray(inventoryItems.id, linkedIds));
 	}
 
@@ -288,21 +199,17 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async getInventoryItemsForPicker(): Promise<(InventoryItem & { availableQuantity: number })[]> {
-		// Get all active (non-legacy, non-removed) items
 		const activeItems = await this.db.select().from(inventoryItems)
 			.where(eq(inventoryItems.status, "active"));
 
-		// Get all transaction links with quantities
 		const allLinks = await this.db.select().from(inventoryItemTransactions);
 
-		// Calculate linked quantity per item
 		const linkedQuantityMap = new Map<string, number>();
 		for (const link of allLinks) {
 			const current = linkedQuantityMap.get(link.inventoryItemId) || 0;
 			linkedQuantityMap.set(link.inventoryItemId, current + link.quantity);
 		}
 
-		// Return items with available quantity > 0
 		const result: (InventoryItem & { availableQuantity: number })[] = [];
 		for (const item of activeItems) {
 			const linkedQty = linkedQuantityMap.get(item.id) || 0;
@@ -334,7 +241,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async reduceInventoryFromTransaction(itemId: string, transactionId: string, quantityToRemove: number): Promise<boolean> {
-		// Get current link
 		const links = await this.db.select().from(inventoryItemTransactions)
 			.where(and(
 				eq(inventoryItemTransactions.inventoryItemId, itemId),
@@ -347,14 +253,12 @@ export class PostgresAdapter implements DatabaseAdapter {
 		const newQty = currentQty - quantityToRemove;
 
 		if (newQty <= 0) {
-			// Remove the link entirely
 			await this.db.delete(inventoryItemTransactions)
 				.where(and(
 					eq(inventoryItemTransactions.inventoryItemId, itemId),
 					eq(inventoryItemTransactions.transactionId, transactionId)
 				));
 		} else {
-			// Update the quantity
 			await this.db.update(inventoryItemTransactions)
 				.set({ quantity: newQty })
 				.where(and(
@@ -363,7 +267,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 				));
 		}
 
-		// Also reduce the inventory item's total quantity
 		const item = await this.getInventoryItemById(itemId);
 		if (item) {
 			const newItemQty = Math.max(0, item.quantity - quantityToRemove);
@@ -372,6 +275,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 		return true;
 	}
+
 	// ==================== Purchase Methods ====================
 	async getPurchases(): Promise<Purchase[]> {
 		return this.db.select().from(purchases);
@@ -397,31 +301,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deletePurchase(id: string): Promise<boolean> {
-		// First unlink any transactions referencing this purchase
 		await this.db.update(transactions).set({ purchaseId: null }).where(eq(transactions.purchaseId, id));
-
 		const result = await this.db.delete(purchases).where(eq(purchases.id, id)).returning();
 		return result.length > 0;
-	}
-
-	// ==================== Budget Methods ====================
-	async getBudgetByYear(year: number): Promise<Budget | null> {
-		const result = await this.db.select().from(budgets).where(eq(budgets.year, year)).limit(1);
-		return result[0] ?? null;
-	}
-
-	async getAllBudgets(): Promise<Budget[]> {
-		return this.db.select().from(budgets);
-	}
-
-	async createBudget(budget: NewBudget): Promise<Budget> {
-		const result = await this.db.insert(budgets).values(budget).returning();
-		return result[0];
-	}
-
-	async updateBudget(id: string, data: Partial<Omit<NewBudget, "id">>): Promise<Budget | null> {
-		const result = await this.db.update(budgets).set({ ...data, updatedAt: new Date() }).where(eq(budgets.id, id)).returning();
-		return result[0] ?? null;
 	}
 
 	// ==================== Transaction Methods ====================
@@ -485,10 +367,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 		const links = await this.db.select().from(inventoryItemTransactions)
 			.where(eq(inventoryItemTransactions.inventoryItemId, itemId));
 		if (links.length === 0) return [];
-		const transactionIds = links.map(l => l.transactionId);
 		const result: Transaction[] = [];
-		for (const tid of transactionIds) {
-			const t = await this.db.select().from(transactions).where(eq(transactions.id, tid)).limit(1);
+		for (const link of links) {
+			const t = await this.db.select().from(transactions).where(eq(transactions.id, link.transactionId)).limit(1);
 			if (t[0]) result.push(t[0]);
 		}
 		return result;
@@ -508,7 +389,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	async getActiveInventoryItemsForTransaction(transactionId: string): Promise<(InventoryItem & { quantity: number })[]> {
 		const allItems = await this.getInventoryItemsForTransaction(transactionId);
-		// Filter to only include active items (non-removed, non-legacy)
 		return allItems.filter(item => item.status === "active");
 	}
 
@@ -569,11 +449,11 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async setSetting(key: string, value: string, description?: string): Promise<AppSetting> {
-		// Upsert: insert or update
 		const existing = await this.db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
-		if (existing[0]) {
-			const result = await this.db.update(appSettings)
-				.set({ value, ...(description && { description }), updatedAt: new Date() })
+		if (existing.length > 0) {
+			const result = await this.db
+				.update(appSettings)
+				.set({ value, description, updatedAt: new Date() })
 				.where(eq(appSettings.key, key))
 				.returning();
 			return result[0];
@@ -591,5 +471,3 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 }
-
-

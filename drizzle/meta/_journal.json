@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1768392186483,
-      "tag": "0000_steady_loki",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1768402595610,
-      "tag": "0001_illegal_wind_dancer",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1768646527165,
-      "tag": "0002_tense_nightmare",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1768672212697,
-      "tag": "0003_cute_machine_man",
+      "when": 1737305909000,
+      "tag": "0000_initial",
       "breakpoints": true
     }
   ]

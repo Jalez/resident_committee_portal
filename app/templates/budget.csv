@@ -1,4 +1,0 @@
-Receipt,Date,Description,Person,Amount,Category,,SUMMARY,
-1,01.01.2025,TOAS rahat,TOAS,"1834,00",Tulot,,Tulot / Income,"=SUMMA.JOS(E:E;"">0"";E:E)"
-2,05.12.2025,Kokouseväät,Mikko,"-20,93",Tapahtumat,,Menot / Expenses,"=SUMMA.JOS(E:E;""<0"";E:E)"
-3,06.04.2025,Ikea Keittiövälineet,Niko,"-113,01",Hankinnat,,Jäljellä / Remaining,=SUMMA(E:E)

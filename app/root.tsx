@@ -27,7 +27,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       userId: authUser.userId,
       email: authUser.email,
       name: authUser.name,
-      role: authUser.role,
+      roleName: authUser.roleName || "Unknown",
       roleId: authUser.roleId,
       permissions: authUser.permissions,
     };
@@ -38,8 +38,8 @@ export async function loader({ request }: Route.LoaderArgs) {
       userId: "guest",
       email: "",
       name: "Guest",
-      role: "guest",
-      roleId: null,
+      roleName: "Guest",
+      roleId: "guest",
       permissions: guestPermissions,
     };
   }

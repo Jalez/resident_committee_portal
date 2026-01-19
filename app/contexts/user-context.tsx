@@ -8,8 +8,8 @@ export interface ClientUser {
 	userId: string;
 	email: string;
 	name?: string;
-	role: string;
-	roleId: string | null;
+	roleName: string;
+	roleId: string;
 	permissions: string[];
 }
 

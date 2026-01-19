@@ -1,8 +1,15 @@
 /**
- * RBAC Permissions Constants
+ * RBAC Permissions - Single Source of Truth
  * 
- * This file defines all available permissions in the system.
+ * This file defines ALL available permissions in the system.
  * Use these constants throughout the app for type safety and consistency.
+ * 
+ * IMPORTANT: To add a new permission:
+ * 1. Add the permission definition below (key + description + category)
+ * 2. Assign it to roles via the admin UI or update scripts/seed-rbac.ts
+ * 
+ * Permission format: "resource:action" or "resource:action:scope"
+ * Examples: "inventory:write", "profile:read:own"
  */
 
 export interface PermissionDefinition {

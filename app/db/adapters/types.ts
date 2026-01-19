@@ -1,4 +1,4 @@
-import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Budget, NewBudget, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink, InventoryItemTransaction, NewInventoryItemTransaction, Permission, NewPermission, Role, NewRole, RolePermission, NewRolePermission, AppSetting, RemovalReason } from "../schema";
+import type { User, NewUser, InventoryItem, NewInventoryItem, Purchase, NewPurchase, Transaction, NewTransaction, Submission, NewSubmission, SubmissionStatus, SocialLink, NewSocialLink, InventoryItemTransaction, NewInventoryItemTransaction, Role, NewRole, AppSetting, RemovalReason } from "../schema";
 
 /**
  * Database adapter interface
@@ -12,16 +12,9 @@ export interface DatabaseAdapter {
 	updateUser(id: string, data: Partial<Omit<NewUser, "id">>): Promise<User | null>;
 	deleteUser(id: string): Promise<boolean>;
 	getAllUsers(limit?: number, offset?: number): Promise<User[]>;
-	upsertUser(user: NewUser): Promise<User>;
+	upsertUser(user: Omit<NewUser, "roleId"> & { roleId?: string }): Promise<User>;
 
 	// ==================== RBAC Methods ====================
-	// Permissions
-	getAllPermissions(): Promise<Permission[]>;
-	getPermissionById(id: string): Promise<Permission | null>;
-	getPermissionByName(name: string): Promise<Permission | null>;
-	createPermission(permission: NewPermission): Promise<Permission>;
-	deletePermission(id: string): Promise<boolean>;
-
 	// Roles
 	getAllRoles(): Promise<Role[]>;
 	getRoleById(id: string): Promise<Role | null>;
@@ -30,13 +23,7 @@ export interface DatabaseAdapter {
 	updateRole(id: string, data: Partial<Omit<NewRole, "id">>): Promise<Role | null>;
 	deleteRole(id: string): Promise<boolean>;
 
-	// Role-Permission mappings
-	getRolePermissions(roleId: string): Promise<Permission[]>;
-	setRolePermissions(roleId: string, permissionIds: string[]): Promise<void>;
-	addPermissionToRole(roleId: string, permissionId: string): Promise<RolePermission>;
-	removePermissionFromRole(roleId: string, permissionId: string): Promise<boolean>;
-
-	// User permissions (computed from role)
+	// User permissions (fetched from user's role)
 	getUserPermissions(userId: string): Promise<string[]>;
 	getUserWithRole(userId: string): Promise<(User & { roleName?: string; permissions: string[] }) | null>;
 
@@ -57,7 +44,6 @@ export interface DatabaseAdapter {
 	/** Get transaction links with quantities for an item */
 	getTransactionLinksForItem(itemId: string): Promise<{ transaction: Transaction; quantity: number }[]>;
 	/** Reduce quantity from a specific transaction link */
-	/** Reduce quantity from a specific transaction link */
 	reduceInventoryFromTransaction(itemId: string, transactionId: string, quantityToRemove: number): Promise<boolean>;
 	/** Update manually accounted quantity (no transaction) for an item */
 	updateInventoryItemManualCount(itemId: string, manualCount: number): Promise<InventoryItem | null>;
@@ -69,12 +55,6 @@ export interface DatabaseAdapter {
 	createPurchase(purchase: NewPurchase): Promise<Purchase>;
 	updatePurchase(id: string, data: Partial<Omit<NewPurchase, "id">>): Promise<Purchase | null>;
 	deletePurchase(id: string): Promise<boolean>;
-
-	// ==================== Budget Methods ====================
-	getBudgetByYear(year: number): Promise<Budget | null>;
-	getAllBudgets(): Promise<Budget[]>;
-	createBudget(budget: NewBudget): Promise<Budget>;
-	updateBudget(id: string, data: Partial<Omit<NewBudget, "id">>): Promise<Budget | null>;
 
 	// ==================== Transaction Methods ====================
 	getTransactionsByYear(year: number): Promise<Transaction[]>;
@@ -112,4 +92,3 @@ export interface DatabaseAdapter {
 	getAllSettings(): Promise<AppSetting[]>;
 	deleteSetting(key: string): Promise<boolean>;
 }
-

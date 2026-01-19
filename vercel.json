@@ -1,8 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "build/server/**/*.mjs": {
-      "maxDuration": 10
-    }
-  }
+  "installCommand": "bun install"
 }

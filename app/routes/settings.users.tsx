@@ -3,17 +3,10 @@ import { useFetcher } from "react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { requirePermission, isAdmin } from "~/lib/auth.server";
-import { getDatabase, type UserRole, type Role } from "~/db";
+import { getDatabase, type Role } from "~/db";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
 import { SITE_CONFIG } from "~/lib/config.server";
-
-// Legacy roles for fallback display
-const LEGACY_ROLE_LABELS: Record<UserRole, { fi: string; en: string }> = {
-	resident: { fi: "Asukas", en: "Resident" },
-	board_member: { fi: "Hallituksen jäsen", en: "Board Member" },
-	admin: { fi: "Ylläpitäjä", en: "Admin" },
-};
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -41,7 +34,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		const userRole = roles.find(r => r.id === user.roleId);
 		return {
 			...user,
-			roleName: userRole?.name || LEGACY_ROLE_LABELS[user.role]?.en || user.role,
+			roleName: userRole?.name || "Unknown",
 			roleColor: userRole?.color || "bg-gray-500",
 			isSuperAdmin: isAdmin(user.email),
 		};
@@ -79,17 +72,7 @@ export async function action({ request }: Route.ActionArgs) {
 			return { success: false, error: "super_admin_protected" };
 		}
 
-		// Get the role to also update the legacy role field
-		const role = await db.getRoleById(roleId);
-		const legacyRole = role?.name.toLowerCase().replace(" ", "_") as UserRole;
-
-		await db.updateUser(userId, {
-			roleId,
-			// Map to closest legacy role for backward compatibility
-			role: role?.isSystem
-				? (legacyRole === "admin" ? "admin" : legacyRole === "board_member" ? "board_member" : "resident")
-				: "board_member", // Custom roles map to board_member for legacy systems
-		});
+		await db.updateUser(userId, { roleId });
 
 		return { success: true };
 	} catch (error) {
@@ -100,15 +83,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 	const { users, roles } = loaderData;
-
-	// Count users per role
-	const roleCounts = roles.reduce((acc, role) => {
-		acc[role.id] = users.filter(u => u.roleId === role.id).length;
-		return acc;
-	}, {} as Record<string, number>);
-
-	// Count users without new roleId (legacy)
-	const legacyCount = users.filter(u => !u.roleId).length;
 
 	return (
 		<PageWrapper>
@@ -176,8 +150,7 @@ interface UserRowProps {
 		id: string;
 		email: string;
 		name: string;
-		role: UserRole;
-		roleId: string | null;
+		roleId: string;
 		roleName: string;
 		roleColor: string;
 		apartmentNumber: string | null;
@@ -242,7 +215,7 @@ function UserRow({ user, roles }: UserRowProps) {
 						<input type="hidden" name="userId" value={user.id} />
 						<select
 							name="roleId"
-							defaultValue={user.roleId || ""}
+							defaultValue={user.roleId}
 							onChange={(e) => e.target.form?.requestSubmit()}
 							disabled={fetcher.state !== "idle"}
 							className={cn(
@@ -251,11 +224,6 @@ function UserRow({ user, roles }: UserRowProps) {
 								fetcher.state !== "idle" && "opacity-50 cursor-wait"
 							)}
 						>
-							{!user.roleId && (
-								<option value="" disabled>
-									{user.roleName} (legacy)
-								</option>
-							)}
 							{roles.map((role) => (
 								<option key={role.id} value={role.id}>
 									{role.name}
@@ -271,4 +239,3 @@ function UserRow({ user, roles }: UserRowProps) {
 		</tr>
 	);
 }
-

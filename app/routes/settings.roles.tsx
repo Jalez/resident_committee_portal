@@ -1,7 +1,7 @@
 import type { Route } from "./+types/settings.roles";
-import { Form, useNavigation, Link, useActionData } from "react-router";
+import { Form, useNavigation, useActionData } from "react-router";
 import { requirePermission } from "~/lib/auth.server";
-import { getDatabase, type Role, type Permission } from "~/db";
+import { getDatabase, type Role } from "~/db";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { cn } from "~/lib/utils";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -37,37 +37,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	const db = getDatabase();
+	const roles = await db.getAllRoles();
 
-	const [roles, permissions] = await Promise.all([
-		db.getAllRoles(),
-		db.getAllPermissions(),
-	]);
+	// Add permission count from role.permissions array
+	const rolesWithPermissions = roles.map((role) => ({
+		...role,
+		permissionCount: role.permissions.length,
+	}));
 
-	// Get permission counts for each role
-	const rolesWithPermissions = await Promise.all(
-		roles.map(async (role) => {
-			const rolePerms = await db.getRolePermissions(role.id);
-			return {
-				...role,
-				permissionCount: rolePerms.length,
-				permissionIds: rolePerms.map(p => p.id),
-			};
-		})
-	);
-
-	// Group permissions by category
-	const permissionsByCategory = permissions.reduce((acc, perm) => {
-		if (!acc[perm.category]) {
-			acc[perm.category] = [];
-		}
-		acc[perm.category].push(perm);
-		return acc;
-	}, {} as Record<string, Permission[]>);
+	// Group permissions by category from permissions.ts (source of truth)
+	const permissionsByCategory = getPermissionsByCategory();
 
 	return {
 		siteConfig: SITE_CONFIG,
 		roles: rolesWithPermissions,
-		permissions,
 		permissionsByCategory,
 	};
 }
@@ -100,6 +83,7 @@ export async function action({ request }: Route.ActionArgs) {
 				color,
 				isSystem: false,
 				sortOrder: 99,
+				permissions: [],
 			});
 		}
 	}
@@ -128,10 +112,11 @@ export async function action({ request }: Route.ActionArgs) {
 
 	if (actionType === "updatePermissions") {
 		const roleId = formData.get("roleId") as string;
-		const permissionIds = formData.getAll("permissions") as string[];
+		const permissions = formData.getAll("permissions") as string[];
 
 		if (roleId) {
-			await db.setRolePermissions(roleId, permissionIds);
+			// Update role.permissions array directly
+			await db.updateRole(roleId, { permissions });
 		}
 	}
 
@@ -179,7 +164,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 		}
 	}, [actionData]);
 
-	const selectedRoleData = roles.find(r => r.id === selectedRole);
+	const selectedRoleData = roles.find((r) => r.id === selectedRole);
 
 	return (
 		<PageWrapper>
@@ -275,7 +260,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 								</Button>
 							</div>
 							<div className="divide-y divide-gray-100 dark:divide-gray-700">
-								{roles.map(role => (
+								{roles.map((role) => (
 									<button
 										key={role.id}
 										type="button"
@@ -367,34 +352,31 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 													{category}
 												</h4>
 												<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-													{perms.map(perm => {
-														const permDef = PERMISSIONS[perm.name as PermissionName];
-														return (
-															<label
-																key={perm.id}
-																className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
-															>
-																<input
-																	type="checkbox"
-																	name="permissions"
-																	value={perm.id}
-																	defaultChecked={selectedRoleData.permissionIds.includes(perm.id)}
-																	className="mt-1"
-																/>
-																<div>
-																	<p className="font-mono text-sm text-gray-900 dark:text-white">
-																		{perm.name}
-																	</p>
-																	<p className="text-xs text-gray-500">
-																		{permDef?.descriptionFi || perm.description}
-																	</p>
-																	<p className="text-xs text-gray-400">
-																		{permDef?.description || ""}
-																	</p>
-																</div>
-															</label>
-														);
-													})}
+													{perms.map((perm) => (
+														<label
+															key={perm.name}
+															className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+														>
+															<input
+																type="checkbox"
+																name="permissions"
+																value={perm.name}
+																defaultChecked={selectedRoleData.permissions.includes(perm.name)}
+																className="mt-1"
+															/>
+															<div>
+																<p className="font-mono text-sm text-gray-900 dark:text-white">
+																	{perm.name}
+																</p>
+																<p className="text-xs text-gray-500">
+																	{perm.definition.descriptionFi}
+																</p>
+																<p className="text-xs text-gray-400">
+																	{perm.definition.description}
+																</p>
+															</div>
+														</label>
+													))}
 												</div>
 											</div>
 										))}

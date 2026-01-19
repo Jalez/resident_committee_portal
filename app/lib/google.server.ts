@@ -432,7 +432,7 @@ export async function getOrCreateReceiptsFolder(year: string): Promise<{ folderI
         if (!createRes.ok) {
             const errorText = await createRes.text();
             console.error("[getOrCreateReceiptsFolder] Failed to create folder:", errorText);
-            
+
             // If it's a permissions error, return a special response
             if (createRes.status === 403) {
                 console.warn("[getOrCreateReceiptsFolder] Service account lacks write permissions on year folder. Manual creation required.");
@@ -549,86 +549,8 @@ export async function uploadReceiptToDrive(
     }
 }
 
-export async function getBudgetInfo() {
-    // Check cache first
-    const cached = getCached<{ remaining: string; total: string; lastUpdated: string; detailsUrl: string }>(CACHE_KEYS.BUDGET, CACHE_TTL.BUDGET);
-    if (cached !== null && cached.detailsUrl) {
-        return cached;
-    }
-
-    const yearFolder = await getCurrentYearFolder();
-    if (!yearFolder) return null;
-
-    // Look for "budget" spreadsheet
-    let budgetFile = await findChildByName(yearFolder.id, "budget", "application/vnd.google-apps.spreadsheet");
-
-    // If not found, maybe they named it "budget.csv" but it IS a spreadsheet
-    if (!budgetFile) {
-        budgetFile = await findChildByName(yearFolder.id, "budget.csv", "application/vnd.google-apps.spreadsheet");
-    }
-
-    if (!budgetFile) return null;
-
-    // Fetch transaction rows: Receipt, Date, Description, Person, Amount, Category
-    // Stop at "---" marker row (summary section)
-    const range = "A2:E";
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${budgetFile.id}/values/${range}?key=${config.apiKey}`;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        const data = await res.json();
-        const rows = data.values || [];
-
-        let totalIncome = 0;
-        let totalExpenses = 0;
-        let latestDate = "";
-
-        for (const row of rows) {
-            // Stop at marker row (starts with "---")
-            if (row[0]?.toString().startsWith("---")) break;
-
-            // Skip empty rows
-            if (!row[0] || !row[4]) continue;
-
-            const amount = parseFloat(row[4]?.toString().replace(/−/g, "-").replace(",", ".").replace(/[^\d.-]/g, "")) || 0;
-            const date = row[1]?.toString() || "";
-
-            if (amount > 0) {
-                totalIncome += amount;
-            } else {
-                totalExpenses += Math.abs(amount);
-            }
-
-            // Track latest date (simple string comparison works for DD.MM.YYYY if sorted)
-            if (date && date > latestDate) {
-                latestDate = date;
-            }
-        }
-
-        const remaining = totalIncome - totalExpenses;
-
-        const result = {
-            remaining: `${remaining.toFixed(2).replace(".", ",")} €`,
-            total: `${totalIncome.toFixed(2).replace(".", ",")} €`,
-            lastUpdated: latestDate,
-            detailsUrl: budgetFile.webViewLink || `https://docs.google.com/spreadsheets/d/${budgetFile.id}`
-        };
-
-        console.log(`[getBudgetInfo] Calculated from ${rows.length} rows: remaining=${result.remaining}, total=${result.total}`);
-
-        // Cache the result
-        setCache(CACHE_KEYS.BUDGET, result);
-
-        return result;
-    } catch (error) {
-        console.error("Budget fetch error:", error);
-        return null;
-    }
-}
-
 // ============================================
-// INVENTORY (from "inventory" sheet in year folder)
+// INVENTORY (from database, legacy sheet methods below for reference)
 // ============================================
 
 export interface InventoryItem {
