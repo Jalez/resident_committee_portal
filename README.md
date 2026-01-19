@@ -1,5 +1,7 @@
 # Resident Committee Portal
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJalez%2Fresident_committee_portal)
+
 A modern, production-ready portal designed for resident committees and tenant associations. This platform streamlines communication between residents and their representatives, providing tools for involvement, transparency, and administrative management.
 
 The objective of this project is to provide a generic, easily deployable template that any resident committee can use to manage their community engagement.
@@ -21,18 +23,45 @@ The objective of this project is to provide a generic, easily deployable templat
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **Components**: [shadcn/ui](https://ui.shadcn.com/) based components
 - **Database**: [Drizzle ORM](https://orm.drizzle.team/) with [Neon](https://neon.tech/) PostgreSQL
-- **Integrations**: Google Cloud API (Sheets, Drive, Calendar)
-- **Linting & Formatting**: [Biome](https://biomejs.dev/)
-- **Runtime**: [Bun](https://bun.sh/) (Recommended)
+- **Integrations**: Google Cloud API (Drive, Calendar)
+- **Runtime**: [Bun](https://bun.sh/) (Required)
 
 ## Getting Started
 
-### Installation
+### Prerequisites
 
 Ensure you have [Bun](https://bun.sh/) installed:
 
 ```bash
-bun install
+curl -fsSL https://bun.sh/install | bash
+```
+
+### Installation
+
+1.  **Install dependencies**:
+    ```bash
+    bun install
+    ```
+
+2.  **Environment Setup**:
+    Copy the template and fill in your keys (see [Google Services Integration](#google-services-integration)):
+    ```bash
+    cp .env.template .env
+    ```
+
+### Database Setup
+
+The easiest way to start fresh (migrates schema + seeds roles):
+
+```bash
+# WARNING: This wipes the database!
+bun run db:reset
+```
+
+Or manually:
+```bash
+bun run db:push                # Apply schema
+bun run scripts/seed-rbac.ts   # Create access roles
 ```
 
 ### Development
@@ -45,71 +74,43 @@ bun dev
 
 The application will be available at `http://localhost:5173`.
 
-### Production Build
+## Deployment
 
-Create an optimized production build:
+### Vercel (Recommended)
+
+1.  Push your code to a Git repository.
+2.  Click the **Deploy with Vercel** button above.
+3.  Configure your environment variables in Vercel.
+4.  Connect a Neon PostgreSQL database via Vercel Integrations.
+
+### Docker (Self-Hosted)
+
+Build and run the container using [Bun](https://bun.sh/):
 
 ```bash
-bun run build
+# Build the image
+docker build -t hippos-portal .
+
+# Run the container (expose on port 3000)
+docker run -p 3000:3000 --env-file .env hippos-portal
 ```
 
-The application is container-ready and can be deployed using the included Dockerfile.
+## Database Management
 
-## Database Setup
-
-The portal uses PostgreSQL for storing user data. Two adapters are included:
+The portal uses PostgreSQL. Two adapters are included:
 - **postgres**: Standard PostgreSQL (default for local development)
-- **neon**: [Neon](https://neon.tech/) serverless PostgreSQL (default for production/Vercel)
+- **neon**: [Neon](https://neon.tech/) serverless PostgreSQL (default for production)
 
-### Local Development
-
-By default, the app uses standard PostgreSQL in development. If you have a local Postgres container:
-
+Common commands:
 ```bash
-# Default connection (customize in .env if needed)
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/portal
+bun run db:push      # Push schema changes
+bun run db:studio    # Open Drizzle Admin GUI
+bun run db:reset     # WIPE database and reset to fresh state
 ```
-
-Push the schema to your local database:
-```bash
-bun run db:push
-```
-
-### Production (Neon + Vercel)
-
-1. In your Vercel project, go to **Storage** → **Create Database** → **Neon**
-2. Vercel automatically sets `DATABASE_URL` and the app detects production environment
-
-### Database Commands
-
-```bash
-bun run db:push      # Push schema to database (dev)
-bun run db:generate  # Generate migrations
-bun run db:migrate   # Run migrations (prod)
-bun run db:studio    # Open Drizzle Studio GUI
-```
-
-### Initial Setup (RBAC Seeding)
-
-After pushing the schema, seed the role-based access control system:
-
-```bash
-bun run scripts/seed-rbac.ts
-```
-
-This creates the default roles (Admin, Board Member, Resident) and permissions.
-
-### Adding Other Database Providers
-
-The database layer uses an adapter pattern (`app/db/adapters/`). To add a new provider:
-
-1. Create a new adapter implementing `DatabaseAdapter` interface
-2. Add the provider to `createDatabaseAdapter()` in `app/db/index.ts`
-3. Set `DATABASE_PROVIDER` env var to your provider name
 
 ## Google Services Integration
 
-This project integrates with Google Calendar, Drive, and Sheets to display dynamic content. To enable these features, you need to set up Google Cloud credentials.
+This project integrates with Google Calendar, Drive, and Sheets. To enable these features, you need to set up Google Cloud credentials.
 
 ### Setup Instructions
 
@@ -124,11 +125,10 @@ This project integrates with Google Calendar, Drive, and Sheets to display dynam
     - Enable the following APIs:
         - **Google Calendar API**
         - **Google Drive API**
-        - **Google Sheets API**
     - Create credentials -> API Key.
     - Paste this key into `GOOGLE_API_KEY` in your `.env` file.
 
-3.  **Get ID's**:
+3.  **Get IDs**:
     - **Calendar ID**: Open Google Calendar settings -> Integrate calendar -> Calendar ID.
     
     - **Public Root Folder ID** (`GOOGLE_DRIVE_PUBLIC_ROOT_ID`): 
@@ -149,23 +149,11 @@ This project integrates with Google Calendar, Drive, and Sheets to display dynam
         - `client_email` -> `GOOGLE_SERVICE_ACCOUNT_EMAIL`
         - `private_key` -> `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (replace newlines with `\n`)
 
-5.  **Create Submissions Sheet** (`GOOGLE_SUBMISSIONS_SHEET_ID`):
-    - Create a new Google Sheet (e.g., "Form Submissions")
-    - Add headers in row 1: `Timestamp | Type | Name | Email | Message | Status`
-    - **Share this sheet with your service account email** (as Editor)
-    - Get the Sheet ID from the URL and paste into `GOOGLE_SUBMISSIONS_SHEET_ID`
-    
-    **Status Values** (for the board/tracking):
-    - `Uusi / New` - Just submitted, not yet reviewed
-    - `Käsittelyssä / In Progress` - Being reviewed/worked on
-    - `Hyväksytty / Approved` - Approved (for applications, event suggestions, purchases)
-    - `Hylätty / Rejected` - Rejected/declined
-    - `Valmis / Done` - Fully completed/resolved
 
-6.  **Permissions Summary**:
+
+5.  **Permissions Summary**:
     - Calendar: Make public (for event display)
     - Public folder: Share with "Anyone with the link" (Viewer)
-    - Submissions sheet: Share with service account email (Editor)
  
 ---
  
