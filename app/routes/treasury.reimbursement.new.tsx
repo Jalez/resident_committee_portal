@@ -1,31 +1,19 @@
 import type { Route } from "./+types/treasury.reimbursement.new";
-import { Form, redirect, useNavigate, useActionData, useNavigation } from "react-router";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { Form, redirect, useNavigate, useNavigation } from "react-router";
+import { useState } from "react";
 import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type NewPurchase, type NewInventoryItem } from "~/db";
-import { getMinutesByYear, getFileAsBase64 } from "~/lib/google.server";
+import { getMinutesByYear, getReceiptsByYear, uploadReceiptToDrive, getOrCreateReceiptsFolder } from "~/lib/google.server";
 import { sendReimbursementEmail, isEmailConfigured } from "~/lib/email.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
+import { clearCache } from "~/lib/cache.server";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "~/components/ui/select";
-
-interface MinuteFile {
-    id: string;
-    name: string;
-    url: string;
-    year: string;
-}
+import { ReimbursementForm, type MinuteFile } from "~/components/treasury/reimbursement-form";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
@@ -47,11 +35,18 @@ export async function loader({ request }: Route.LoaderArgs) {
         }))
     ).slice(0, 20);
 
+    // Get receipts for picker
+    const receiptsByYear = await getReceiptsByYear();
+    const currentYear = new Date().getFullYear();
+    const currentYearReceipts = receiptsByYear.find(r => r.year === currentYear.toString());
+
     return {
         siteConfig: SITE_CONFIG,
         recentMinutes,
         emailConfigured: isEmailConfigured(),
-        currentYear: new Date().getFullYear(),
+        currentYear,
+        receiptsByYear,
+        receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
     };
 }
 
@@ -59,6 +54,69 @@ export async function action({ request }: Route.ActionArgs) {
     await requirePermission(request, "reimbursements:write", getDatabase);
     const db = getDatabase();
     const formData = await request.formData();
+
+    const actionType = formData.get("_action");
+
+    // Handle uploadReceipt action for ReceiptPicker
+    if (actionType === "uploadReceipt") {
+        const receiptFile = formData.get("receiptFile") as File;
+        const year = formData.get("year") as string;
+        const description = formData.get("description") as string;
+
+        if (!receiptFile || receiptFile.size === 0) {
+            return { success: false, error: "No file provided" };
+        }
+
+        // Validate file size
+        if (receiptFile.size > RECEIPT_MAX_SIZE_BYTES) {
+            return { success: false, error: "File too large" };
+        }
+
+        try {
+            const arrayBuffer = await receiptFile.arrayBuffer();
+            const base64Content = Buffer.from(arrayBuffer).toString("base64");
+
+            const result = await uploadReceiptToDrive(
+                {
+                    name: receiptFile.name,
+                    content: base64Content,
+                    mimeType: receiptFile.type,
+                },
+                year,
+                description
+            );
+
+            if (result) {
+                return { success: true, receipt: result };
+            } else {
+                return { success: false, error: "Upload failed" };
+            }
+        } catch (error) {
+            console.error("[uploadReceipt] Error:", error);
+            return { success: false, error: "Upload failed" };
+        }
+    }
+
+    // Handle ensureReceiptsFolder action for ReimbursementForm
+    if (actionType === "ensureReceiptsFolder") {
+        const year = formData.get("year") as string;
+        try {
+            const result = await getOrCreateReceiptsFolder(year);
+            if (result) {
+                return { success: true, folderUrl: result.folderUrl };
+            }
+            return { success: false, error: "Could not create receipts folder" };
+        } catch (error) {
+            console.error("[ensureReceiptsFolder] Error:", error);
+            return { success: false, error: "Failed to create receipts folder" };
+        }
+    }
+
+    // Handle refreshReceipts action to clear cache
+    if (actionType === "refreshReceipts") {
+        clearCache("RECEIPTS_BY_YEAR");
+        return { success: true };
+    }
 
     const description = formData.get("description") as string;
     const amount = formData.get("amount") as string;
@@ -74,8 +132,16 @@ export async function action({ request }: Route.ActionArgs) {
     }
     const notes = formData.get("notes") as string;
     const addToInventory = formData.get("addToInventory") === "on";
-    const receiptFiles = formData.getAll("receipt") as File[];
     const currentYear = new Date().getFullYear();
+
+    // Parse receipt links from the form (JSON string from ReceiptPicker)
+    const receiptLinksJson = formData.get("receiptLinks") as string;
+    let receiptLinks: { id: string; name: string; url: string }[] = [];
+    try {
+        receiptLinks = receiptLinksJson ? JSON.parse(receiptLinksJson) : [];
+    } catch {
+        receiptLinks = [];
+    }
 
     let inventoryItemId: string | null = null;
 
@@ -114,52 +180,20 @@ export async function action({ request }: Route.ActionArgs) {
 
     const purchase = await db.createPurchase(newPurchase);
 
-    // Send email with receipt(s) and minutes PDF
-    try {
-        const receiptAttachments: { name: string; type: string; content: string }[] = [];
-        for (const receiptFile of receiptFiles) {
-            if (receiptFile && receiptFile.size > 0) {
-                const arrayBuffer = await receiptFile.arrayBuffer();
-                receiptAttachments.push({
-                    name: receiptFile.name,
-                    type: receiptFile.type,
-                    content: Buffer.from(arrayBuffer).toString("base64"),
-                });
-            }
-        }
-
-        // Fetch minutes PDF from Google Drive
-        let minutesAttachment;
-        if (minutesId) {
-            try {
-                const minutesPdf = await getFileAsBase64(minutesId);
-                if (minutesPdf) {
-                    minutesAttachment = {
-                        name: `${minutesName || "poytakirja"}.pdf`,
-                        type: "application/pdf",
-                        content: minutesPdf,
-                    };
-                }
-            } catch (e) {
-                console.error("[Reimbursement] Failed to fetch minutes PDF:", e);
-            }
-        }
-
-        const emailResult = await sendReimbursementEmail(
-            {
-                itemName: description,
-                itemValue: amount,
-                purchaserName,
-                bankAccount,
-                minutesReference: minutesName || minutesId,
-                minutesUrl,
-                notes,
-            },
-            purchase.id,
-            receiptAttachments.length > 0 ? receiptAttachments : undefined,
-            minutesAttachment
-        );
-
+    // Send email with receipt links (fire-and-forget to avoid timeout)
+    sendReimbursementEmail(
+        {
+            itemName: description,
+            itemValue: amount,
+            purchaserName,
+            bankAccount,
+            minutesReference: minutesName || minutesId,
+            minutesUrl,
+            notes,
+            receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+        },
+        purchase.id
+    ).then(async (emailResult) => {
         if (emailResult.success) {
             await db.updatePurchase(purchase.id, {
                 emailSent: true,
@@ -168,21 +202,21 @@ export async function action({ request }: Route.ActionArgs) {
         } else {
             await db.updatePurchase(purchase.id, { emailError: emailResult.error || "Email sending failed" });
         }
-    } catch (error) {
+    }).catch(async (error) => {
         console.error("[Reimbursement] Email error:", error);
         await db.updatePurchase(purchase.id, {
             emailError: error instanceof Error ? error.message : "Unknown error"
         });
-    }
+    });
 
     return redirect("/budget/reimbursements?success=true");
 }
 
 export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
-    const { recentMinutes, emailConfigured, currentYear } = loaderData;
+    const { recentMinutes, emailConfigured, currentYear, receiptsByYear, receiptsFolderUrl } = loaderData;
     const navigate = useNavigate();
     const [addToInventory, setAddToInventory] = useState(false);
-    const [selectedMinutes, setSelectedMinutes] = useState<MinuteFile | null>(recentMinutes[0] || null);
+    const [descriptionValue, setDescriptionValue] = useState("");
 
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
@@ -198,17 +232,9 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
                 </div>
 
                 <Form method="post" encType="multipart/form-data" className="space-y-6">
-                    {/* Purchase Info */}
+                    {/* Purchase Info - description and amount are specific to this form */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
                         <h2 className="text-lg font-bold">Ostoksen tiedot / Purchase Details</h2>
-
-                        {!emailConfigured && (
-                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                    ⚠️ Sähköposti ei konfiguroitu / Email not configured
-                                </p>
-                            </div>
-                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="description">Kuvaus / Description *</Label>
@@ -217,106 +243,37 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
                                 name="description"
                                 required
                                 placeholder="Esim. Kahvitarjoilu kokoukseen"
+                                value={descriptionValue}
+                                onChange={(e) => setDescriptionValue(e.target.value)}
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="amount">Summa € / Amount € *</Label>
-                                <Input
-                                    id="amount"
-                                    name="amount"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    required
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="receipt">Kuitit / Receipts *</Label>
-                                <Input
-                                    id="receipt"
-                                    name="receipt"
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                    required
-                                    multiple
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Voit valita useita tiedostoja (Ctrl/Cmd + klikkaus) / Select multiple files (Ctrl/Cmd + click)
-                                </p>
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="amount">Summa € / Amount € *</Label>
+                            <Input
+                                id="amount"
+                                name="amount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                required
+                                placeholder="0.00"
+                            />
                         </div>
                     </div>
 
-                    {/* Purchaser Info */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-                        <h2 className="text-lg font-bold">Ostajan tiedot / Purchaser Info</h2>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="purchaserName">Nimi / Name *</Label>
-                                <Input
-                                    id="purchaserName"
-                                    name="purchaserName"
-                                    required
-                                    placeholder="Etu- ja sukunimi"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="bankAccount">Tilinumero (IBAN) *</Label>
-                                <Input
-                                    id="bankAccount"
-                                    name="bankAccount"
-                                    required
-                                    placeholder="FI12 3456 7890 1234 56"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Minutes Reference */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-                        <h2 className="text-lg font-bold">Pöytäkirja / Minutes *</h2>
-                        <p className="text-sm text-gray-500">Valitse kokous jossa osto hyväksyttiin / Select the meeting where this was approved</p>
-
-                        <Select
-                            name="minutesId"
-                            required
-                            defaultValue={recentMinutes[0]?.id}
-                            onValueChange={(value) => {
-                                const selected = recentMinutes.find((m: MinuteFile) => m.id === value);
-                                setSelectedMinutes(selected || null);
-                            }}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Valitse pöytäkirja..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {recentMinutes.map((minute: MinuteFile) => (
-                                    <SelectItem key={minute.id} value={minute.id}>
-                                        {minute.name} ({minute.year})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <input type="hidden" name="minutesName" value={selectedMinutes?.name || ""} />
-                        <input
-                            type="hidden"
-                            name="minutesUrl"
-                            value={selectedMinutes?.url || (selectedMinutes?.id ? `https://drive.google.com/file/d/${selectedMinutes.id}/view` : "")}
-                        />
-                    </div>
-
-                    {/* Notes */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-                        <Label htmlFor="notes">Lisätiedot / Notes</Label>
-                        <textarea
-                            id="notes"
-                            name="notes"
-                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px]"
-                            placeholder="Vapaamuotoinen viesti..."
+                    {/* Reimbursement Form - handles receipts, purchaser info, minutes, notes */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <ReimbursementForm
+                            recentMinutes={recentMinutes}
+                            emailConfigured={emailConfigured}
+                            receiptsByYear={receiptsByYear}
+                            currentYear={currentYear}
+                            receiptsFolderUrl={receiptsFolderUrl}
+                            description={descriptionValue}
+                            showNotes={true}
+                            showEmailWarning={true}
+                            required={true}
                         />
                     </div>
 

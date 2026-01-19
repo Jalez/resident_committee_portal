@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type NewTransaction, type NewPurchase, type NewInventoryItem, type InventoryItem } from "~/db";
-import { getMinutesByYear } from "~/lib/google.server";
+import { getMinutesByYear, getReceiptsByYear, uploadReceiptToDrive, getOrCreateReceiptsFolder } from "~/lib/google.server";
 import { sendReimbursementEmail, isEmailConfigured } from "~/lib/email.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
+import { clearCache } from "~/lib/cache.server";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -28,6 +30,7 @@ import {
     DialogTrigger,
 } from "~/components/ui/dialog";
 import { TransactionItemList, type TransactionItem } from "~/components/treasury/transaction-item-list";
+import { ReimbursementForm } from "~/components/treasury/reimbursement-form";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 
 // Category options for transactions
@@ -118,6 +121,10 @@ export async function loader({ request }: Route.LoaderArgs) {
         }))
     ).slice(0, 20);
 
+    // Get receipts for picker
+    const receiptsByYear = await getReceiptsByYear();
+    const currentYearReceipts = receiptsByYear.find(r => r.year === new Date().getFullYear().toString());
+
     return {
         siteConfig: SITE_CONFIG,
         currentYear: new Date().getFullYear(),
@@ -136,6 +143,9 @@ export async function loader({ request }: Route.LoaderArgs) {
         pickerItems,
         uniqueLocations,
         uniqueCategories,
+        // Receipt picker data
+        receiptsByYear,
+        receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
     };
 }
 
@@ -169,6 +179,67 @@ export async function action({ request }: Route.ActionArgs) {
         return { success: true, item, message: "Inventory item created successfully" };
     }
 
+    // Handle uploadReceipt action for ReceiptPicker
+    if (actionType === "uploadReceipt") {
+        const receiptFile = formData.get("receiptFile") as File;
+        const year = formData.get("year") as string;
+        const description = formData.get("description") as string;
+
+        if (!receiptFile || receiptFile.size === 0) {
+            return { success: false, error: "No file provided" };
+        }
+
+        // Validate file size
+        if (receiptFile.size > RECEIPT_MAX_SIZE_BYTES) {
+            return { success: false, error: "File too large" };
+        }
+
+        try {
+            const arrayBuffer = await receiptFile.arrayBuffer();
+            const base64Content = Buffer.from(arrayBuffer).toString("base64");
+
+            const result = await uploadReceiptToDrive(
+                {
+                    name: receiptFile.name,
+                    content: base64Content,
+                    mimeType: receiptFile.type,
+                },
+                year,
+                description
+            );
+
+            if (result) {
+                return { success: true, receipt: result };
+            } else {
+                return { success: false, error: "Upload failed" };
+            }
+        } catch (error) {
+            console.error("[uploadReceipt] Error:", error);
+            return { success: false, error: "Upload failed" };
+        }
+    }
+
+    // Handle ensureReceiptsFolder action for ReimbursementForm
+    if (actionType === "ensureReceiptsFolder") {
+        const year = formData.get("year") as string;
+        try {
+            const result = await getOrCreateReceiptsFolder(year);
+            if (result) {
+                return { success: true, folderUrl: result.folderUrl };
+            }
+            return { success: false, error: "Could not create receipts folder" };
+        } catch (error) {
+            console.error("[ensureReceiptsFolder] Error:", error);
+            return { success: false, error: "Failed to create receipts folder" };
+        }
+    }
+
+    // Handle refreshReceipts action to clear cache
+    if (actionType === "refreshReceipts") {
+        clearCache("RECEIPTS_BY_YEAR");
+        return { success: true };
+    }
+
     const type = formData.get("type") as "income" | "expense";
     const amount = formData.get("amount") as string;
     const description = formData.get("description") as string;
@@ -197,7 +268,15 @@ export async function action({ request }: Route.ActionArgs) {
         }
 
         const notes = formData.get("notes") as string;
-        const receiptFiles = formData.getAll("receipt") as File[];
+
+        // Parse receipt links from the form (JSON string from ReceiptPicker)
+        const receiptLinksJson = formData.get("receiptLinks") as string;
+        let receiptLinks: { id: string; name: string; url: string }[] = [];
+        try {
+            receiptLinks = receiptLinksJson ? JSON.parse(receiptLinksJson) : [];
+        } catch {
+            receiptLinks = [];
+        }
 
         const newPurchase: NewPurchase = {
             description,
@@ -215,35 +294,20 @@ export async function action({ request }: Route.ActionArgs) {
         const purchase = await db.createPurchase(newPurchase);
         purchaseId = purchase.id;
 
-        // Process attachments
-        const receiptAttachments: { name: string; type: string; content: string }[] = [];
-        for (const receiptFile of receiptFiles) {
-            if (receiptFile && receiptFile.size > 0) {
-                const arrayBuffer = await receiptFile.arrayBuffer();
-                receiptAttachments.push({
-                    name: receiptFile.name,
-                    type: receiptFile.type,
-                    content: Buffer.from(arrayBuffer).toString("base64"),
-                });
-            }
-        }
-
-        // Send email
-        try {
-            const emailResult = await sendReimbursementEmail(
-                {
-                    itemName: description,
-                    itemValue: amount,
-                    purchaserName,
-                    bankAccount,
-                    minutesReference: minutesName || minutesId || "Ei määritetty / Not specified",
-                    minutesUrl,
-                    notes,
-                },
-                purchase.id,
-                receiptAttachments.length > 0 ? receiptAttachments : undefined
-            );
-
+        // Send email with receipt links (fire-and-forget to avoid timeout on Vercel Hobby plan)
+        sendReimbursementEmail(
+            {
+                itemName: description,
+                itemValue: amount,
+                purchaserName,
+                bankAccount,
+                minutesReference: minutesName || minutesId || "Ei määritetty / Not specified",
+                minutesUrl,
+                notes,
+                receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+            },
+            purchase.id
+        ).then(async (emailResult) => {
             if (emailResult.success) {
                 await db.updatePurchase(purchase.id, {
                     emailSent: true,
@@ -252,11 +316,11 @@ export async function action({ request }: Route.ActionArgs) {
             } else {
                 await db.updatePurchase(purchase.id, { emailError: emailResult.error || "Unknown email error" });
             }
-        } catch (error) {
+        }).catch(async (error) => {
             await db.updatePurchase(purchase.id, {
                 emailError: error instanceof Error ? error.message : "Unknown error",
             });
-        }
+        });
     }
 
     const newTransaction: NewTransaction = {
@@ -308,6 +372,8 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
         pickerItems,
         uniqueLocations,
         uniqueCategories,
+        receiptsByYear,
+        receiptsFolderUrl,
     } = loaderData ?? {
         currentYear: new Date().getFullYear(),
         recentMinutes: [] as Array<{ id: string; name: string; url?: string; year: number }>,
@@ -317,6 +383,8 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
         pickerItems: [] as (InventoryItem & { availableQuantity: number })[],
         uniqueLocations: [] as string[],
         uniqueCategories: [] as string[],
+        receiptsByYear: [] as Array<{ year: string; files: Array<{ id: string; name: string; url: string; createdTime: string }>; folderUrl: string; folderId: string }>,
+        receiptsFolderUrl: "#",
     };
     const navigate = useNavigate();
     const fetcher = useFetcher();
@@ -330,7 +398,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
     const [requestReimbursement, setRequestReimbursement] = useState(false);
     const [transactionType, setTransactionType] = useState<"income" | "expense">(prefill.type);
     const [amount, setAmount] = useState(prefill.amount || "");
-    const [selectedMinutes, setSelectedMinutes] = useState<{ id: string; name: string; url?: string } | null>(recentMinutes[0] || null);
+    const [descriptionValue, setDescriptionValue] = useState(prefill.description || "");
 
     useEffect(() => {
         if (actionData && 'error' in actionData && actionData.error) {
@@ -514,7 +582,8 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
                                 name="description"
                                 required
                                 placeholder="Esim. Kahvitarjoilut, Kokoukseen hankitut eväät"
-                                defaultValue={prefill.description}
+                                value={descriptionValue}
+                                onChange={(e) => setDescriptionValue(e.target.value)}
                             />
                         </div>
 
@@ -619,95 +688,17 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
                             </p>
 
                             {requestReimbursement && (
-                                <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    {!emailConfigured && (
-                                        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                                ⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.
-                                                <br />
-                                                Email sending is not configured. Request will be saved but email won't be sent.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="receipt">Kuitit / Receipts (PDF tai kuva) *</Label>
-                                        <Input
-                                            id="receipt"
-                                            name="receipt"
-                                            type="file"
-                                            accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                            required={requestReimbursement}
-                                            multiple
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            Voit valita useita tiedostoja (Ctrl/Cmd + klikkaus) / Select multiple files (Ctrl/Cmd + click)
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="purchaserName">Ostajan nimi / Purchaser Name *</Label>
-                                            <Input
-                                                id="purchaserName"
-                                                name="purchaserName"
-                                                required={requestReimbursement}
-                                                placeholder="Etu- ja sukunimi"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="bankAccount">Tilinumero (IBAN) / Bank Account *</Label>
-                                            <Input
-                                                id="bankAccount"
-                                                name="bankAccount"
-                                                required={requestReimbursement}
-                                                placeholder="FI12 3456 7890 1234 56"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="minutesId">Pöytäkirja / Related Minutes *</Label>
-                                        <Select
-                                            name="minutesId"
-                                            defaultValue={recentMinutes[0]?.id || ""}
-                                            required={requestReimbursement}
-                                            onValueChange={(value) => {
-                                                const selected = recentMinutes.find(m => m.id === value);
-                                                setSelectedMinutes(selected || null);
-                                            }}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Valitse pöytäkirja..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {recentMinutes.map((minute) => (
-                                                    <SelectItem key={minute.id} value={minute.id}>
-                                                        {minute.name} ({minute.year})
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <input type="hidden" name="minutesName" value={selectedMinutes?.name || ""} />
-                                        <input
-                                            type="hidden"
-                                            name="minutesUrl"
-                                            value={selectedMinutes?.url || (selectedMinutes?.id ? `https://drive.google.com/file/d/${selectedMinutes.id}/view` : "")}
-                                        />
-                                        <p className="text-xs text-gray-500">
-                                            Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="notes">Lisätiedot / Additional Notes</Label>
-                                        <textarea
-                                            id="notes"
-                                            name="notes"
-                                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
-                                            placeholder="Vapaamuotoinen viesti..."
-                                        />
-                                    </div>
+                                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <ReimbursementForm
+                                        recentMinutes={recentMinutes.map(m => ({ ...m, year: m.year.toString() }))}
+                                        emailConfigured={emailConfigured}
+                                        receiptsByYear={receiptsByYear}
+                                        currentYear={currentYear}
+                                        receiptsFolderUrl={receiptsFolderUrl}
+                                        description={descriptionValue}
+                                        showNotes={true}
+                                        required={requestReimbursement}
+                                    />
                                 </div>
                             )}
                         </div>
