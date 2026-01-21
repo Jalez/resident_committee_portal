@@ -307,9 +307,15 @@ export function useInventoryColumns({
                 <Form method="post" className="flex justify-center" onClick={(e) => e.stopPropagation()}>
                     <input type="hidden" name="_action" value="toggleInfoReel" />
                     <input type="hidden" name="itemId" value={row.original.id} />
-                    <button type="submit" className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled={row.original.status !== "active"}>
-                        <Checkbox checked={row.original.showInInfoReel} className="pointer-events-none" />
-                    </button>
+                    <Checkbox
+                        checked={row.original.showInInfoReel}
+                        disabled={row.original.status !== "active"}
+                        onCheckedChange={() => {
+                            // Find the closest form and submit it
+                            const form = document.querySelector(`form input[value="${row.original.id}"]`)?.closest('form');
+                            if (form) (form as HTMLFormElement).requestSubmit();
+                        }}
+                    />
                 </Form>
             ),
         });
