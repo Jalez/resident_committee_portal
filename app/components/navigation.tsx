@@ -23,7 +23,9 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
+    SheetClose,
 } from "~/components/ui/sheet";
+import { XIcon } from "lucide-react";
 import { NAV_ITEMS } from "~/lib/nav-config";
 
 interface NavigationProps {
@@ -48,7 +50,7 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
     const showProfileMenu = user && user.userId !== "guest";
 
     // Check if settings menu should be shown (has any admin permissions)
-    const showSettingsMenu = !isInfoReel && hasAnyPermission(["users:read", "roles:read", "reimbursements:approve"]);
+    const showSettingsMenu = !isInfoReel && hasAnyPermission(["settings:users", "settings:roles", "settings:reimbursements"]);
 
     // Use shared nav items configuration
     const allNavItems = NAV_ITEMS;
@@ -155,10 +157,14 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                             <span className="material-symbols-outlined text-lg opacity-60">expand_more</span>
                         </button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-80 h-full flex flex-col">
-                        <SheetHeader className="shrink-0">
+                    <SheetContent side="left" className="w-80 h-full flex flex-col" showClose={false}>
+                        <SheetHeader className="shrink-0 flex flex-row items-center gap-2 space-y-0">
+                            <SheetClose className="p-1 rounded-md hover:bg-muted transition-colors">
+                                <XIcon className="size-5" />
+                                <span className="sr-only">Close</span>
+                            </SheetClose>
                             <SheetTitle className="text-left text-lg font-black">
-                                Navigointi / Navigation
+                                {language === "fi" ? "Navigointi" : "Navigation"}
                             </SheetTitle>
                         </SheetHeader>
                         <nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
@@ -186,9 +192,9 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                             {showSettingsMenu && (
                                 <div className="mt-4 pt-4 border-t border-border">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-                                        Asetukset / Settings
+                                        {language === "fi" ? "Asetukset" : "Settings"}
                                     </p>
-                                    {hasPermission("users:read") && (
+                                    {hasPermission("settings:users") && (
                                         <Link
                                             to="/settings/users"
                                             onClick={() => setMobileMenuOpen(false)}
@@ -199,13 +205,12 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                             )}
                                         >
                                             <span className="material-symbols-outlined text-2xl">manage_accounts</span>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold">Käyttäjät</span>
-                                                <span className="text-xs opacity-60">Users</span>
-                                            </div>
+                                            <span className="text-sm font-bold">
+                                                {language === "fi" ? "Käyttäjät" : "Users"}
+                                            </span>
                                         </Link>
                                     )}
-                                    {hasPermission("roles:read") && (
+                                    {hasPermission("settings:roles") && (
                                         <Link
                                             to="/settings/roles"
                                             onClick={() => setMobileMenuOpen(false)}
@@ -216,13 +221,12 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                             )}
                                         >
                                             <span className="material-symbols-outlined text-2xl">shield_person</span>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold">Roolit</span>
-                                                <span className="text-xs opacity-60">Roles</span>
-                                            </div>
+                                            <span className="text-sm font-bold">
+                                                {language === "fi" ? "Roolit" : "Roles"}
+                                            </span>
                                         </Link>
                                     )}
-                                    {hasPermission("reimbursements:approve") && (
+                                    {hasPermission("settings:reimbursements") && (
                                         <Link
                                             to="/settings/reimbursements"
                                             onClick={() => setMobileMenuOpen(false)}
@@ -233,10 +237,9 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                             )}
                                         >
                                             <span className="material-symbols-outlined text-2xl">smart_toy</span>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold">Korvaukset</span>
-                                                <span className="text-xs opacity-60">Reimbursements</span>
-                                            </div>
+                                            <span className="text-sm font-bold">
+                                                {language === "fi" ? "Korvaukset" : "Reimbursements"}
+                                            </span>
                                         </Link>
                                     )}
                                 </div>
@@ -246,7 +249,7 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                             {showProfileMenu && !isInfoReel && (
                                 <div className="mt-4 pt-4 border-t border-border">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-                                        Profiili / Profile
+                                        {language === "fi" ? "Profiili" : "Profile"}
                                     </p>
                                     <Link
                                         to="/profile"
@@ -258,10 +261,9 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                         )}
                                     >
                                         <span className="material-symbols-outlined text-2xl">edit</span>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold">Muokkaa profiilia</span>
-                                            <span className="text-xs opacity-60">Edit profile</span>
-                                        </div>
+                                        <span className="text-sm font-bold">
+                                            {language === "fi" ? "Muokkaa profiilia" : "Edit profile"}
+                                        </span>
                                     </Link>
                                     <Link
                                         to="/auth/logout"
@@ -269,10 +271,9 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                                     >
                                         <span className="material-symbols-outlined text-2xl">logout</span>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold">Kirjaudu ulos</span>
-                                            <span className="text-xs opacity-60">Log out</span>
-                                        </div>
+                                        <span className="text-sm font-bold">
+                                            {language === "fi" ? "Kirjaudu ulos" : "Log out"}
+                                        </span>
                                     </Link>
                                 </div>
                             )}
@@ -389,7 +390,7 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
-                            {hasPermission("users:read") && (
+                            {hasPermission("settings:users") && (
                                 <DropdownMenuItem asChild>
                                     <Link to="/settings/users" className="flex items-center gap-2 cursor-pointer">
                                         <span className="material-symbols-outlined text-lg">manage_accounts</span>
@@ -402,7 +403,7 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     </Link>
                                 </DropdownMenuItem>
                             )}
-                            {hasPermission("roles:read") && (
+                            {hasPermission("settings:roles") && (
                                 <DropdownMenuItem asChild>
                                     <Link to="/settings/roles" className="flex items-center gap-2 cursor-pointer">
                                         <span className="material-symbols-outlined text-lg">shield_person</span>
@@ -415,7 +416,7 @@ export function Navigation({ className, orientation = "vertical" }: NavigationPr
                                     </Link>
                                 </DropdownMenuItem>
                             )}
-                            {hasPermission("reimbursements:approve") && (
+                            {hasPermission("settings:reimbursements") && (
                                 <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
