@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useFetcher, useRevalidator } from "react-router";
+import { useLanguage } from "~/contexts/language-context";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
@@ -81,7 +82,8 @@ export function ReceiptPicker({
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+    const { language } = useLanguage();
+
     const isRefreshing = refreshFetcher.state !== "idle" || revalidator.state !== "idle";
 
     // Get receipts for selected year
@@ -117,7 +119,7 @@ export function ReceiptPicker({
         const formData = new FormData();
         formData.append("_action", "refreshReceipts");
         refreshFetcher.submit(formData, { method: "post" });
-        
+
         // Revalidate to refetch loader data after cache is cleared
         setTimeout(() => {
             revalidator.revalidate();
@@ -131,24 +133,28 @@ export function ReceiptPicker({
 
         setUploadError(null);
 
-        // Validate file type
         const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`;
         if (!RECEIPT_ALLOWED_TYPES.includes(fileExt as any)) {
-            setUploadError(`Virheellinen tiedostotyyppi. Sallitut: ${RECEIPT_ALLOWED_TYPES.join(", ")}`);
+            setUploadError(
+                language === "fi"
+                    ? `Virheellinen tiedostotyyppi. Sallitut: ${RECEIPT_ALLOWED_TYPES.join(", ")}`
+                    : `Invalid file type. Allowed: ${RECEIPT_ALLOWED_TYPES.join(", ")}`
+            );
             return;
         }
 
         // Validate file size
         if (file.size > RECEIPT_MAX_SIZE_BYTES) {
             setUploadError(
-                `Tiedosto on liian suuri (max ${RECEIPT_MAX_SIZE_MB}MB). ` +
-                `Lataa kuitti suoraan Google Driveen ja valitse se listalta.`
+                language === "fi"
+                    ? `Tiedosto on liian suuri (max ${RECEIPT_MAX_SIZE_MB}MB). Lataa kuitti suoraan Google Driveen ja valitse se listalta.`
+                    : `File is too large (max ${RECEIPT_MAX_SIZE_MB}MB). Upload the receipt directly to Google Drive and select it from the list.`
             );
             return;
         }
 
         if (!onUploadReceipt) {
-            setUploadError("Lataus ei ole käytettävissä");
+            setUploadError(language === "fi" ? "Lataus ei ole käytettävissä" : "Upload is not available");
             return;
         }
 
@@ -162,7 +168,11 @@ export function ReceiptPicker({
                 fileInputRef.current.value = "";
             }
         } else {
-            setUploadError("Lataus epäonnistui. Yritä uudelleen tai lataa suoraan Google Driveen.");
+            setUploadError(
+                language === "fi"
+                    ? "Lataus epäonnistui. Yritä uudelleen tai lataa suoraan Google Driveen."
+                    : "Upload failed. Try again or upload directly to Google Drive."
+            );
         }
     };
 
@@ -172,7 +182,7 @@ export function ReceiptPicker({
             {selectedReceipts.length > 0 && (
                 <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">
-                        Valitut kuitit / Selected Receipts ({selectedReceipts.length})
+                        {language === "fi" ? "Valitut kuitit" : "Selected Receipts"} ({selectedReceipts.length})
                     </Label>
                     <div className="flex flex-wrap gap-2">
                         {selectedReceipts.map((receipt) => (
@@ -195,7 +205,7 @@ export function ReceiptPicker({
                                     type="button"
                                     onClick={() => removeReceipt(receipt.id)}
                                     className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
-                                    aria-label={`Poista ${receipt.name}`}
+                                    aria-label={language === "fi" ? `Poista ${receipt.name}` : `Remove ${receipt.name}`}
                                 >
                                     <span className="material-symbols-outlined text-base">delete</span>
                                 </button>
@@ -222,8 +232,8 @@ export function ReceiptPicker({
                     >
                         <span className="material-symbols-outlined mr-2">add_circle</span>
                         {selectedReceipts.length > 0
-                            ? "Lisää kuitteja / Add More Receipts"
-                            : "Valitse kuitit / Select Receipts"}
+                            ? (language === "fi" ? "Lisää kuitteja" : "Add More Receipts")
+                            : (language === "fi" ? "Valitse kuitit" : "Select Receipts")}
                     </Button>
                 </DialogTrigger>
 
@@ -237,16 +247,18 @@ export function ReceiptPicker({
                             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                         >
                             <span className="material-symbols-outlined text-base">folder_open</span>
-                            Avaa kuitit Drivessä / Open Receipts in Drive
+                            {language === "fi" ? "Avaa kuitit Drivessä" : "Open Receipts in Drive"}
                         </a>
                     </div>
                 )}
 
                 <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-6">
                     <DialogHeader>
-                        <DialogTitle>Valitse kuitit / Select Receipts</DialogTitle>
+                        <DialogTitle>{language === "fi" ? "Valitse kuitit" : "Select Receipts"}</DialogTitle>
                         <DialogDescription>
-                            Valitse olemassaolevat kuitit Google Drivestä tai lataa uusi kuitti.
+                            {language === "fi"
+                                ? "Valitse olemassaolevat kuitit Google Drivestä tai lataa uusi kuitti."
+                                : "Select existing receipts from Google Drive or upload a new one."}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -269,7 +281,7 @@ export function ReceiptPicker({
                             </div>
                             <div className="flex-1">
                                 <Input
-                                    placeholder="Hae kuitteja..."
+                                    placeholder={language === "fi" ? "Hae kuitteja..." : "Search receipts..."}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -280,7 +292,7 @@ export function ReceiptPicker({
                                 size="icon"
                                 onClick={handleRefresh}
                                 disabled={isRefreshing}
-                                title="Päivitä kuittilista / Refresh receipts"
+                                title={language === "fi" ? "Päivitä kuittilista" : "Refresh receipts"}
                             >
                                 <span className="material-symbols-outlined">
                                     {isRefreshing ? "sync" : "refresh"}
@@ -292,7 +304,7 @@ export function ReceiptPicker({
                         {onUploadReceipt && (
                             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-3">
                                 <Label className="font-medium">
-                                    Lataa uusi kuitti / Upload New Receipt
+                                    {language === "fi" ? "Lataa uusi kuitti" : "Upload New Receipt"}
                                 </Label>
                                 <div className="flex gap-2">
                                     <Input
@@ -305,7 +317,7 @@ export function ReceiptPicker({
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Max {RECEIPT_MAX_SIZE_MB}MB. Sallitut: {RECEIPT_ALLOWED_TYPES.join(", ")}
+                                    Max {RECEIPT_MAX_SIZE_MB}MB. {language === "fi" ? "Sallitut" : "Allowed"}: {RECEIPT_ALLOWED_TYPES.join(", ")}
                                 </p>
 
                                 {uploadError && (
@@ -321,7 +333,7 @@ export function ReceiptPicker({
                                                 className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
                                             >
                                                 <span className="material-symbols-outlined text-base">folder_open</span>
-                                                Avaa kuitit-kansio / Open Receipts Folder
+                                                {language === "fi" ? "Avaa kuitit-kansio" : "Open Receipts Folder"}
                                             </a>
                                         )}
                                     </div>
@@ -329,7 +341,7 @@ export function ReceiptPicker({
 
                                 {isUploading && (
                                     <p className="text-sm text-muted-foreground animate-pulse">
-                                        Ladataan... / Uploading...
+                                        {language === "fi" ? "Ladataan..." : "Uploading..."}
                                     </p>
                                 )}
                             </div>
@@ -340,7 +352,7 @@ export function ReceiptPicker({
                             {filteredReceipts.length === 0 ? (
                                 <div className="p-8 text-center text-muted-foreground">
                                     <span className="material-symbols-outlined text-4xl mb-2 block">folder_off</span>
-                                    <p>Ei kuitteja vuodelta {selectedYear}</p>
+                                    <p>{language === "fi" ? `Ei kuitteja vuodelta ${selectedYear}` : `No receipts for year ${selectedYear}`}</p>
                                     {folderUrl && folderUrl !== "#" && (
                                         <a
                                             href={folderUrl}
@@ -349,7 +361,7 @@ export function ReceiptPicker({
                                             className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
                                         >
                                             <span className="material-symbols-outlined text-base">folder_open</span>
-                                            Avaa kansio Drivessä
+                                            {language === "fi" ? "Avaa kansio Drivessä" : "Open folder in Drive"}
                                         </a>
                                     )}
                                 </div>
@@ -374,7 +386,7 @@ export function ReceiptPicker({
                                             className="text-blue-600 hover:underline text-sm"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            Avaa
+                                            {language === "fi" ? "Avaa" : "Open"}
                                         </a>
                                     </label>
                                 ))
@@ -391,11 +403,13 @@ export function ReceiptPicker({
                                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                             >
                                 <span className="material-symbols-outlined text-base">open_in_new</span>
-                                Avaa Drive-kansio
+                                {language === "fi" ? "Avaa Drive-kansio" : "Open Drive Folder"}
                             </a>
                         )}
                         <Button onClick={() => setIsOpen(false)}>
-                            Valmis / Done ({selectedReceipts.length} valittu)
+                            {language === "fi"
+                                ? `Valmis (${selectedReceipts.length} valittu)`
+                                : `Done (${selectedReceipts.length} selected)`}
                         </Button>
                     </div>
                 </DialogContent>
