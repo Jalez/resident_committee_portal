@@ -72,7 +72,7 @@ const DEFAULT_ROLES = [
 			"treasury:edit",
 			"reimbursements:read",
 			"reimbursements:write",
-			"reimbursements:approve",
+			"reimbursements:delete",
 			"submissions:read",
 			"submissions:write",
 			"social:read",

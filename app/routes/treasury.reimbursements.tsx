@@ -76,13 +76,15 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-    await requirePermission(request, "reimbursements:approve", getDatabase);
     const db = getDatabase();
     const formData = await request.formData();
     const actionType = formData.get("_action");
     const purchaseId = formData.get("purchaseId") as string;
 
     if (actionType === "updateStatus" && purchaseId) {
+        // Updating status requires approve permission
+        await requirePermission(request, "reimbursements:approve", getDatabase);
+
         const newStatus = formData.get("status") as string;
         await db.updatePurchase(purchaseId, { status: newStatus as any });
 
@@ -108,7 +110,9 @@ export async function action({ request }: Route.ActionArgs) {
                 status: newTransactionStatus
             });
         }
-    } else if (actionType === "cancel" && purchaseId) {
+    } else if (actionType === "delete" && purchaseId) {
+        // Deleting requires delete permission
+        await requirePermission(request, "reimbursements:delete", getDatabase);
         await db.deletePurchase(purchaseId);
     }
 
@@ -250,6 +254,7 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                     <TableHead>Status</TableHead>
                                     <TableHead title="Sähköposti lähetetty">📧</TableHead>
                                     <TableHead title="Vastaus vastaanotettu">💬</TableHead>
+                                    <TableHead></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -257,6 +262,8 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                     const statusInfo = statusConfig[purchase.status] || statusConfig.pending;
                                     const displayName = purchase.inventoryItem?.name || purchase.description || "—";
                                     const canApprove = rootData?.user?.permissions?.includes("reimbursements:approve") ||
+                                        rootData?.user?.permissions?.includes("*");
+                                    const canDelete = rootData?.user?.permissions?.includes("reimbursements:delete") ||
                                         rootData?.user?.permissions?.includes("*");
 
                                     return (
@@ -312,6 +319,26 @@ export default function BudgetReimbursements({ loaderData }: Route.ComponentProp
                                                     </span>
                                                 ) : (
                                                     <span className="text-gray-400">—</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {canDelete && (
+                                                    <Form method="post" className="inline-block">
+                                                        <input type="hidden" name="_action" value="delete" />
+                                                        <input type="hidden" name="purchaseId" value={purchase.id} />
+                                                        <button
+                                                            type="submit"
+                                                            onClick={(e) => {
+                                                                if (!confirm("Haluatko varmasti poistaa tämän kulukorvauksen? / Are you sure you want to delete this reimbursement?")) {
+                                                                    e.preventDefault();
+                                                                }
+                                                            }}
+                                                            className="text-red-500 hover:text-red-700 transition-colors"
+                                                            title="Poista / Delete"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">delete</span>
+                                                        </button>
+                                                    </Form>
                                                 )}
                                             </TableCell>
                                         </TableRow>
