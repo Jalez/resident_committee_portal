@@ -170,6 +170,54 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  // Check if this is a configuration/setup error (database, env vars, connection issues)
+  const isConfigError = error instanceof Error && (
+    error.message.includes("DATABASE_URL") ||
+    error.message.includes("environment variable") ||
+    error.message.includes("connection") ||
+    error.message.includes("ECONNREFUSED") ||
+    error.message.includes("connect ECONNREFUSED") ||
+    error.message.includes("Connection refused")
+  );
+
+  // If it's a config error, show a helpful setup prompt
+  if (isConfigError) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-6 text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full">
+            <span className="material-symbols-outlined text-5xl text-primary">settings</span>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Setup Required / Asetukset tarvitaan
+          </h1>
+          <p className="text-muted-foreground">
+            It looks like the app isn't configured yet. Please check your environment variables.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Sovellusta ei ole vielä määritetty. Tarkista ympäristömuuttujat.
+          </p>
+          <div className="bg-muted p-4 rounded-lg text-left space-y-2">
+            <p className="text-sm font-medium">Error details:</p>
+            <code className="text-xs text-destructive block overflow-auto">
+              {error.message}
+            </code>
+          </div>
+          <a
+            href="/setup"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+          >
+            <span className="material-symbols-outlined">arrow_forward</span>
+            Open Setup Guide
+          </a>
+          <p className="text-xs text-muted-foreground">
+            Or copy <code className="bg-muted px-1 rounded">.env.template</code> to <code className="bg-muted px-1 rounded">.env</code> and configure your settings.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
@@ -197,3 +245,4 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     </main>
   );
 }
+
