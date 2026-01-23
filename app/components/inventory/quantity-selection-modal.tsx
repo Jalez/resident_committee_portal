@@ -19,7 +19,7 @@ import {
     TableRow,
 } from "~/components/ui/table";
 import type { InventoryItem } from "~/db";
-import { useLanguage } from "~/contexts/language-context";
+import { useTranslation } from "react-i18next";
 
 interface ItemWithUnknown {
     item: InventoryItem;
@@ -43,8 +43,7 @@ export function QuantitySelectionModal({
 }: QuantitySelectionModalProps) {
     // Track quantity for each item
     const [quantities, setQuantities] = useState<Record<string, number>>({});
-    const { language } = useLanguage();
-    const t = (fi: string, en: string) => (language === "fi" ? fi : en);
+    const { t } = useTranslation();
 
     // Reset quantities when modal opens
     useEffect(() => {
@@ -79,25 +78,16 @@ export function QuantitySelectionModal({
     const totalSelected = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
 
     const title = mode === "markNoTransaction"
-        ? t("Merkitse ei tapahtumaa", "Mark No Transaction")
+        ? t("inventory.modals.quantity_selection.title_no_txn")
         : mode === "addToExisting"
-            ? t("Lisää olemassaolevaan", "Add to Existing")
-            : t("Lisää rahastotapahtumaan", "Add to Transaction");
+            ? t("inventory.modals.quantity_selection.title_existing")
+            : t("inventory.modals.quantity_selection.title_txn");
 
     const description = mode === "markNoTransaction"
-        ? t(
-            "Valitse kuinka monta kappaletta kustakin tavarasta merkitään ilman tapahtumaa.",
-            "Select how many of each item to mark as having no transaction."
-        )
+        ? t("inventory.modals.quantity_selection.desc_no_txn")
         : mode === "addToExisting"
-            ? t(
-                "Valitse kuinka monta kappaletta kustakin tavarasta lisätään olemassaolevaan tapahtumaan.",
-                "Select how many of each item to add to an existing transaction."
-            )
-            : t(
-                "Valitse kuinka monta kappaletta kustakin tavarasta lisätään tapahtumaan.",
-                "Select how many of each item to add to the transaction."
-            );
+            ? t("inventory.modals.quantity_selection.desc_existing")
+            : t("inventory.modals.quantity_selection.desc_txn");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,9 +104,9 @@ export function QuantitySelectionModal({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t("Nimi", "Name")}</TableHead>
-                                    <TableHead className="text-center">{t("Saatavilla", "Available")}</TableHead>
-                                    <TableHead className="text-center">{t("Määrä", "Quantity")}</TableHead>
+                                    <TableHead>{t("inventory.columns.name")}</TableHead>
+                                    <TableHead className="text-center">{t("inventory.modals.quantity_selection.available")}</TableHead>
+                                    <TableHead className="text-center">{t("inventory.columns.quantity")}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -148,14 +138,14 @@ export function QuantitySelectionModal({
                 <div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
                     <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <span className="text-sm text-gray-500 order-2 sm:order-1">
-                            {t("Yhteensä", "Total")}: <span className="font-bold">{totalSelected}</span>
+                            {t("inventory.columns.total")}: <span className="font-bold">{totalSelected}</span>
                         </span>
                         <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
                             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
-                                {t("Peruuta", "Cancel")}
+                                {t("inventory.modals.cancel")}
                             </Button>
                             <Button onClick={handleConfirm} disabled={totalSelected === 0} className="flex-1 sm:flex-none">
-                                {mode === "markNoTransaction" ? t("Vahvista", "Confirm") : t("Jatka", "Continue")}
+                                {mode === "markNoTransaction" ? t("inventory.modals.quantity_selection.confirm") : t("inventory.modals.quantity_selection.continue")}
                             </Button>
                         </div>
                     </DialogFooter>

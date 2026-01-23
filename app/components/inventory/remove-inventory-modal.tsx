@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "~/components/ui/select";
 import type { InventoryItem, Transaction, RemovalReason } from "~/db";
-import { useLanguage } from "~/contexts/language-context";
+import { useTranslation } from "react-i18next";
 
 interface TransactionLink {
     transaction: Transaction;
@@ -34,14 +34,6 @@ interface RemoveInventoryModalProps {
     onClose: () => void;
 }
 
-const REMOVAL_REASONS: { value: RemovalReason; labelFi: string; labelEn: string }[] = [
-    { value: "broken", labelFi: "Rikki", labelEn: "Broken" },
-    { value: "used_up", labelFi: "Käytetty loppuun", labelEn: "Used up" },
-    { value: "lost", labelFi: "Kadonnut", labelEn: "Lost" },
-    { value: "sold", labelFi: "Myyty", labelEn: "Sold" },
-    { value: "other", labelFi: "Muu", labelEn: "Other" },
-];
-
 export function RemoveInventoryModal({
     item,
     transactionLinks,
@@ -49,12 +41,18 @@ export function RemoveInventoryModal({
     onClose,
 }: RemoveInventoryModalProps) {
     const fetcher = useFetcher();
-    const { language } = useLanguage();
+    const { t, i18n } = useTranslation();
     const [selectedRemovals, setSelectedRemovals] = useState<Map<string, number>>(new Map());
     const [reason, setReason] = useState<RemovalReason>("broken");
     const [notes, setNotes] = useState("");
 
-    const t = (fi: string, en: string) => (language === "fi" ? fi : en);
+    const REMOVAL_REASONS: { value: RemovalReason; label: string }[] = [
+        { value: "broken", label: t("inventory.modals.remove.reasons.broken") },
+        { value: "used_up", label: t("inventory.modals.remove.reasons.used_up") },
+        { value: "lost", label: t("inventory.modals.remove.reasons.lost") },
+        { value: "sold", label: t("inventory.modals.remove.reasons.sold") },
+        { value: "other", label: t("inventory.modals.remove.reasons.other") },
+    ];
 
     const totalToRemove = Array.from(selectedRemovals.values()).reduce((sum, qty) => sum + qty, 0);
     const hasTransactionLinks = transactionLinks.length > 0;
@@ -94,7 +92,7 @@ export function RemoveInventoryModal({
 
     const formatDate = (date: Date | string) => {
         const d = new Date(date);
-        return d.toLocaleDateString(language === "fi" ? "fi-FI" : "en-US", { year: "numeric", month: "2-digit", day: "2-digit" });
+        return d.toLocaleDateString(i18n.language);
     };
 
     return (
@@ -102,9 +100,9 @@ export function RemoveInventoryModal({
             <DialogContent className="w-full h-full max-w-none md:max-w-lg p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
                 <div className="p-4 md:p-0 flex-1 overflow-y-auto">
                     <DialogHeader className="mb-4 text-left">
-                        <DialogTitle>{t("Poista tavaraa", "Remove Inventory Item")}</DialogTitle>
+                        <DialogTitle>{t("inventory.modals.remove.title")}</DialogTitle>
                         <DialogDescription>
-                            <span className="font-medium">{item.name}</span> — {t("Nykyinen määrä", "Current quantity")}:{" "}
+                            <span className="font-medium">{item.name}</span> — {t("inventory.modals.remove.current_quantity")}:{" "}
                             <span className="font-medium">{item.quantity}</span>
                         </DialogDescription>
                     </DialogHeader>
@@ -114,13 +112,10 @@ export function RemoveInventoryModal({
                             <>
                                 <div>
                                     <Label className="text-sm font-medium">
-                                        {t("Yhdistetyt tapahtumat", "Linked Transactions")}
+                                        {t("inventory.modals.remove.linked_transactions")}
                                     </Label>
                                     <p className="text-xs text-muted-foreground mb-2">
-                                        {t(
-                                            "Valitse mistä tapahtumasta poistat ja kuinka monta.",
-                                            "Select from which transaction(s) to remove and how many."
-                                        )}
+                                        {t("inventory.modals.remove.linked_desc")}
                                     </p>
                                 </div>
 
@@ -139,9 +134,9 @@ export function RemoveInventoryModal({
                                                     <p className="text-xs text-muted-foreground">
                                                         {formatDate(transaction.date)} ·{" "}
                                                         {transaction.type === "expense"
-                                                            ? t("Meno", "Expense")
-                                                            : t("Tulo", "Income")}{" "}
-                                                        · {t("Linkitetty", "Linked")}: {quantity} kpl
+                                                            ? t("inventory.modals.remove.expense")
+                                                            : t("inventory.modals.remove.income")}{" "}
+                                                        · {t("inventory.modals.remove.linked")}: {quantity} kpl
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -192,19 +187,16 @@ export function RemoveInventoryModal({
                         ) : (
                             <div className="p-4 border rounded-lg bg-muted/40 text-center">
                                 <p className="text-sm text-muted-foreground">
-                                    {t("Tähän tavaraan ei ole yhdistetty tapahtumia.", "No transactions linked to this item.")}
+                                    {t("inventory.modals.remove.no_linked_txns")}
                                 </p>
                                 <p className="text-sm mt-2">
-                                    {t(
-                                        "Voit poistaa sen suoraan tai merkitä sen 'legacy'-tavaraksi.",
-                                        "You can remove it directly or mark it as a legacy item."
-                                    )}
+                                    {t("inventory.modals.remove.no_linked_desc")}
                                 </p>
                             </div>
                         )}
 
                         <div className="space-y-2">
-                            <Label htmlFor="reason">{t("Syy", "Reason")}</Label>
+                            <Label htmlFor="reason">{t("inventory.modals.remove.reason")}</Label>
                             <Select value={reason} onValueChange={(v) => setReason(v as RemovalReason)}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -212,7 +204,7 @@ export function RemoveInventoryModal({
                                 <SelectContent>
                                     {REMOVAL_REASONS.map((r) => (
                                         <SelectItem key={r.value} value={r.value}>
-                                            {t(r.labelFi, r.labelEn)}
+                                            {r.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -221,13 +213,13 @@ export function RemoveInventoryModal({
 
                         <div className="space-y-2">
                             <Label htmlFor="notes">
-                                {t("Lisätiedot (valinnainen)", "Notes (optional)")}
+                                {t("inventory.modals.remove.notes_optional")}
                             </Label>
                             <Textarea
                                 id="notes"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder={t("Lisää tarvittaessa lisätietoja...", "Add notes if necessary...")}
+                                placeholder={t("inventory.modals.remove.notes_placeholder")}
                                 rows={2}
                             />
                         </div>
@@ -235,14 +227,11 @@ export function RemoveInventoryModal({
                         {totalToRemove > 0 && (
                             <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
                                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                    {t("Poistat", "Removing")} {totalToRemove} {t("kpl", "item(s)")}
+                                    {t("inventory.modals.remove.removing")} {totalToRemove} {t("inventory.unit")}
                                 </p>
                                 {totalToRemove >= item.quantity && (
                                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                        {t(
-                                            "Tavara merkitään poistetuksi",
-                                            "Item will be marked as removed"
-                                        )}
+                                        {t("inventory.modals.remove.item_will_be_removed")}
                                     </p>
                                 )}
                             </div>
@@ -253,7 +242,7 @@ export function RemoveInventoryModal({
                 <div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
                     <DialogFooter className="gap-2 sm:justify-end">
                         <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
-                            {t("Peruuta", "Cancel")}
+                            {t("inventory.modals.cancel")}
                         </Button>
                         <Button
                             type="button"
@@ -263,8 +252,8 @@ export function RemoveInventoryModal({
                             className="flex-1 sm:flex-none"
                         >
                             {hasTransactionLinks
-                                ? `${t("Poista", "Remove")} ${totalToRemove || "0"} kpl`
-                                : t("Poista tavara", "Remove Item")}
+                                ? t("inventory.modals.remove.remove_count", { count: totalToRemove })
+                                : t("inventory.modals.remove.remove_item")}
                         </Button>
                     </DialogFooter>
                 </div>

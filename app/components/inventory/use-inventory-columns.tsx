@@ -5,7 +5,7 @@ import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { EditableCell } from "~/components/ui/editable-cell";
 import type { ColumnKey } from "./inventory-constants";
-import { useLanguage } from "~/contexts/language-context";
+import { useTranslation } from "react-i18next";
 
 interface TransactionLink {
     transaction: { id: string; description: string; date: Date; type: string };
@@ -33,12 +33,18 @@ function StatusBadge({ status }: { status: string }) {
         return (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
                 <span className="material-symbols-outlined text-sm">delete</span>
-                Poistettu
+                {/* We need useTranslation here too, but it's a component. */}
+                <StatusRemovedText />
             </span>
         );
     }
     // Active - show nothing (default state)
     return null;
+}
+
+function StatusRemovedText() {
+    const { t } = useTranslation();
+    return <>{t("inventory.status.removed")}</>;
 }
 
 export function useInventoryColumns({
@@ -52,10 +58,7 @@ export function useInventoryColumns({
     itemNames,
     transactionLinksMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
-    const { language } = useLanguage();
-
-    // Helper for bilingual headers
-    const getHeader = (fi: string, en: string) => language === "fi" ? fi : en;
+    const { t, i18n } = useTranslation();
 
     // Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
     const columns: ColumnDef<InventoryItem>[] = [];
@@ -64,7 +67,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("status")) {
         columns.push({
             accessorKey: "status",
-            header: getHeader("Tila", "Status"),
+            header: t("inventory.columns.status"),
             cell: ({ row }) => <StatusBadge status={row.original.status || "active"} />,
         });
     }
@@ -72,7 +75,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("name")) {
         columns.push({
             accessorKey: "name",
-            header: getHeader("Nimi", "Name"),
+            header: t("inventory.columns.name"),
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
                     <EditableCell
@@ -93,7 +96,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("location")) {
         columns.push({
             accessorKey: "location",
-            header: getHeader("Sijainti", "Location"),
+            header: t("inventory.columns.location"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("location") || ""}
@@ -108,7 +111,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("category")) {
         columns.push({
             accessorKey: "category",
-            header: getHeader("Kategoria", "Category"),
+            header: t("inventory.columns.category"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("category") || ""}
@@ -123,7 +126,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("description")) {
         columns.push({
             accessorKey: "description",
-            header: getHeader("Kuvaus", "Description"),
+            header: t("inventory.columns.description"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("description") || ""}
@@ -137,11 +140,11 @@ export function useInventoryColumns({
     if (visibleColumns.has("updatedAt")) {
         columns.push({
             accessorKey: "updatedAt",
-            header: getHeader("Päivitetty", "Updated"),
+            header: t("inventory.columns.updated"),
             cell: ({ row }) => {
                 const date = new Date(row.getValue("updatedAt"));
                 return <span className="text-gray-500 text-xs text-nowrap">
-                    {date.toLocaleDateString(language === "fi" ? "fi-FI" : "en-GB")}
+                    {date.toLocaleDateString(i18n.language)}
                 </span>;
             },
         });
@@ -151,7 +154,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("unitValue")) {
         columns.push({
             accessorKey: "value",
-            header: getHeader("Kpl-arvo", "Unit"),
+            header: t("inventory.columns.unit_value"),
             cell: ({ row }) => (
                 <EditableCell
                     value={row.getValue("value") as string || "0"}
@@ -168,7 +171,7 @@ export function useInventoryColumns({
     if (visibleColumns.has("quantity")) {
         columns.push({
             accessorKey: "quantity",
-            header: getHeader("Määrä", "Qty"),
+            header: t("inventory.columns.quantity"),
             cell: ({ row }) => (
                 isStaff && row.original.status === "active" ? (
                     <Input
@@ -190,7 +193,7 @@ export function useInventoryColumns({
                         onClick={(e) => e.stopPropagation()}
                     />
                 ) : (
-                    <span className="text-gray-600 dark:text-gray-400">{row.getValue("quantity")} kpl</span>
+                    <span className="text-gray-600 dark:text-gray-400">{row.getValue("quantity")} {t("inventory.unit")}</span>
                 )
             ),
         });
@@ -199,7 +202,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("totalValue")) {
         columns.push({
             id: "totalValue",
-            header: getHeader("Yht. arvo", "Total"),
+            header: t("inventory.columns.total_value"),
             cell: ({ row }) => {
                 const value = row.original.value as string | null;
                 const qty = row.original.quantity;
@@ -214,7 +217,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("transactions")) {
         columns.push({
             id: "transactions",
-            header: getHeader("Tapahtumat", "Transactions"),
+            header: t("inventory.columns.transactions"),
             cell: ({ row }) => {
                 const item = row.original;
                 // If item is removed, don't show transaction breakdown? Or show it but maybe dimmed?
@@ -257,7 +260,7 @@ export function useInventoryColumns({
                                             onUnlinkFromTransaction(item.id, link.transaction.id, link.quantity);
                                         }}
                                         className="ml-0.5 p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-300"
-                                        title="Poista linkki / Unlink"
+                                        title={t("inventory.actions.unlink")}
                                     >
                                         <span className="material-symbols-outlined text-xs" style={{ fontSize: '12px' }}>delete</span>
                                     </button>
@@ -278,7 +281,7 @@ export function useInventoryColumns({
                                             onReduceManualCount(item.id, manualQuantity);
                                         }}
                                         className="ml-0.5 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                                        title="Poista merkintä / Remove marker"
+                                        title={t("inventory.actions.remove_marker")}
                                     >
                                         <span className="material-symbols-outlined text-xs" style={{ fontSize: '12px' }}>delete</span>
                                     </button>
@@ -302,7 +305,7 @@ export function useInventoryColumns({
     if (isStaff && visibleColumns.has("showInInfoReel")) {
         columns.push({
             accessorKey: "showInInfoReel",
-            header: "Info Reel",
+            header: t("inventory.columns.info_reel"),
             cell: ({ row }) => (
                 <Form method="post" className="flex justify-center" onClick={(e) => e.stopPropagation()}>
                     <input type="hidden" name="_action" value="toggleInfoReel" />

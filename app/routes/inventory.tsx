@@ -6,7 +6,7 @@ import { PageWrapper, SplitLayout, QRPanel, ContentArea } from "~/components/lay
 import { getDatabase, type InventoryItem, type NewInventoryItem, type Transaction } from "~/db";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { useUser } from "~/contexts/user-context";
-import { getAuthenticatedUser, getGuestPermissions } from "~/lib/auth.server";
+import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { DataTable } from "~/components/ui/data-table";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "~/components/ui/dialog";
@@ -22,6 +22,7 @@ import {
     DropdownMenuSubContent,
 } from "~/components/ui/dropdown-menu";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
+import { useTranslation } from "react-i18next";
 import {
     PAGE_SIZE,
     InventoryProvider,
@@ -62,9 +63,21 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
     // Check permission (works for both logged-in users and guests)
     const authUser = await getAuthenticatedUser(request, getDatabase);
-    const permissions = authUser
-        ? authUser.permissions
-        : await getGuestPermissions(() => getDatabase());
+
+    let permissions: string[];
+    let languages: { primary: string; secondary: string };
+
+    if (authUser) {
+        permissions = authUser.permissions;
+        languages = {
+            primary: authUser.primaryLanguage,
+            secondary: authUser.secondaryLanguage
+        };
+    } else {
+        const guestContext = await getGuestContext(() => getDatabase());
+        permissions = guestContext.permissions;
+        languages = guestContext.languages;
+    }
 
     const canRead = permissions.some(p => p === "inventory:read" || p === "*");
     if (!canRead) {
@@ -99,6 +112,7 @@ export async function loader({ request }: Route.LoaderArgs) {
             uniqueLocations,
             uniqueCategories,
             transactionLinksMap: {} as Record<string, { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[]>,
+            languages,
         };
     }
 
@@ -162,6 +176,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         uniqueCategories,
         transactionLinksMap,
         inventoryTransactions,
+        languages,
     };
 }
 
@@ -352,7 +367,7 @@ export async function action({ request }: Route.ActionArgs) {
 // ============================================================================
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
-    const { items, filters, isInfoReel, totalCount, currentPage, pageSize, uniqueLocations, uniqueCategories, transactionLinksMap, inventoryTransactions } = loaderData;
+    const { items, filters, isInfoReel, totalCount, currentPage, pageSize, uniqueLocations, uniqueCategories, transactionLinksMap, inventoryTransactions, languages } = loaderData;
     const { hasPermission } = useUser();
     const canWrite = hasPermission("inventory:write");
     const canDelete = hasPermission("inventory:delete");
@@ -371,7 +386,11 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
             transactionLinksMap={transactionLinksMap}
             inventoryTransactions={inventoryTransactions || []}
         >
-            {isInfoReel ? <InventoryInfoReelPage /> : <InventoryTablePage />}
+            {isInfoReel ? (
+                <InventoryInfoReelPage languages={languages} />
+            ) : (
+                <InventoryTablePage languages={languages} />
+            )}
         </InventoryProvider>
     );
 }
@@ -380,12 +399,20 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 // Info Reel Page
 // ============================================================================
 
-function InventoryInfoReelPage() {
+function InventoryInfoReelPage({ languages }: { languages: { primary: string; secondary: string } }) {
     const { items, isStaff, showAddRow, setShowAddRow } = useInventory();
+    const { t } = useTranslation();
 
     return (
         <PageWrapper>
-            <SplitLayout right={<InventoryQRPanel />} footer={<InventoryFooter />} header={{ finnish: "Tavaraluettelo", english: "Inventory" }}>
+            <SplitLayout
+                right={<InventoryQRPanel languages={languages} />}
+                footer={<InventoryFooter />}
+                header={{
+                    primary: t("inventory.title", { lng: languages.primary }),
+                    secondary: t("inventory.title", { lng: languages.secondary })
+                }}
+            >
                 <ContentArea>
                     <InventoryInfoReelCards items={items} />
                 </ContentArea>
@@ -398,7 +425,7 @@ function InventoryInfoReelPage() {
 // Table Page
 // ============================================================================
 
-function InventoryTablePage() {
+function InventoryTablePage({ languages }: { languages: { primary: string; secondary: string } }) {
     const {
         items,
         totalCount,
@@ -445,8 +472,7 @@ function InventoryTablePage() {
     } | null>(null);
 
     const { language, isInfoReel } = useLanguage();
-    // Helper for bilingual strings
-    const t = (fi: string, en: string) => (language === "fi" || isInfoReel) ? fi : en;
+    const { t } = useTranslation();
 
     // Helper: calculate unknown quantity for an item
     const getUnknownQuantity = (item: InventoryItem) => {
@@ -610,14 +636,14 @@ function InventoryTablePage() {
                     <DropdownMenuTrigger asChild>
                         <Button variant="default" size="sm" className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300">
                             <span className="material-symbols-outlined text-base">more_vert</span>
-                            {t("Toiminnot", "Actions")}
+                            {t("inventory.actions.menu")}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuItem onClick={() => setShowAddRow(!showAddRow)}>
                             <span className="material-symbols-outlined text-base mr-2">{showAddRow ? "close" : "add"}</span>
                             <div>
-                                <p className="font-medium">{showAddRow ? t("Sulje", "Close") : t("Lisää", "Add")}</p>
+                                <p className="font-medium">{showAddRow ? t("inventory.actions.close") : t("inventory.actions.add")}</p>
                                 {isInfoReel && <p className="text-xs text-muted-foreground">{showAddRow ? "Close add row" : "Add item"}</p>}
                             </div>
                         </DropdownMenuItem>
@@ -626,7 +652,7 @@ function InventoryTablePage() {
                             <a href="/api/inventory/export" download className="flex items-center cursor-pointer">
                                 <span className="material-symbols-outlined text-base mr-2">download</span>
                                 <div>
-                                    <p className="font-medium">{t("Vie", "Export")}</p>
+                                    <p className="font-medium">{t("inventory.actions.export_short")}</p>
                                     {isInfoReel && <p className="text-xs text-muted-foreground">Export CSV</p>}
                                 </div>
                             </a>
@@ -637,7 +663,7 @@ function InventoryTablePage() {
                         >
                             <span className="material-symbols-outlined text-base mr-2">upload</span>
                             <div>
-                                <p className="font-medium">Tuo</p>
+                                <p className="font-medium">{t("inventory.actions.import_short")}</p>
                                 <p className="text-xs text-muted-foreground">Import CSV</p>
                             </div>
                         </DropdownMenuItem>
@@ -654,13 +680,13 @@ function InventoryTablePage() {
                     className="flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-base">{showAddRow ? "close" : "add"}</span>
-                    {showAddRow ? t("Sulje", "Close") : t("Lisää", "Add")}
+                    {showAddRow ? t("inventory.actions.close") : t("inventory.actions.add")}
                 </Button>
 
                 <Button variant="ghost" size="sm" asChild>
                     <a href="/api/inventory/export" download className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-base">download</span>
-                        {t("Vie CSV", "Export CSV")}
+                        {t("inventory.actions.export")}
                     </a>
                 </Button>
 
@@ -672,7 +698,7 @@ function InventoryTablePage() {
                     disabled={fetcher.state !== "idle"}
                 >
                     <span className="material-symbols-outlined text-base">upload</span>
-                    {t("Tuo CSV", "Import CSV")}
+                    {t("inventory.actions.import")}
                 </Button>
             </div>
 
@@ -693,7 +719,7 @@ function InventoryTablePage() {
                             encType: "multipart/form-data",
                         });
                         e.target.value = "";
-                        toast.info(t("Tuodaan tiedostoa...", "Importing file..."));
+                        toast.info(t("inventory.messages.importing"));
                     }
                 }}
             />
@@ -706,42 +732,42 @@ function InventoryTablePage() {
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                     <span className="material-symbols-outlined text-base mr-1">checklist</span>
-                    {t("Valitut", "Selected")} ({selectedIds.length})
+                    {t("inventory.actions.selected")} ({selectedIds.length})
                     <span className="material-symbols-outlined text-base ml-1">expand_more</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => setShowReportModal(true)}>
                     <span className="material-symbols-outlined text-base mr-2">report</span>
-                    {t("Ilmoita", "Report")}
+                    {t("inventory.actions.report")}
                 </DropdownMenuItem>
                 {isStaff && (
                     <>
                         <DropdownMenuSeparator />
                         {/* Treasury Section - flattened for mobile compatibility */}
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                            {t("Rahastotapahtumat", "Treasury")}
+                            {t("inventory.actions.treasury")}
                         </div>
                         <DropdownMenuItem
                             onClick={() => handleOpenQuantityModal("addTransaction")}
                             disabled={!hasTreasuryCapableItems}
                         >
                             <span className="material-symbols-outlined text-base mr-2">add_circle</span>
-                            {t("Lisää uuteen", "Add to New")}
+                            {t("inventory.actions.add_to_new")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => handleOpenQuantityModal("addToExisting")}
                             disabled={!hasTreasuryCapableItems || inventoryTransactions.length === 0}
                         >
                             <span className="material-symbols-outlined text-base mr-2">playlist_add</span>
-                            {t("Lisää olemassaolevaan", "Add to Existing")}
+                            {t("inventory.actions.add_to_existing")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => handleOpenQuantityModal("markNoTransaction")}
                             disabled={!hasTreasuryCapableItems}
                         >
                             <span className="material-symbols-outlined text-base mr-2">block</span>
-                            {t("Ei tapahtumaa", "No Transaction")}
+                            {t("inventory.actions.no_transaction")}
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
@@ -751,7 +777,7 @@ function InventoryTablePage() {
                             className="text-red-600"
                         >
                             <span className="material-symbols-outlined text-base mr-2">delete</span>
-                            {t("Poista", "Remove")}
+                            {t("inventory.actions.remove")}
                         </DropdownMenuItem>
                     </>
                 )}
@@ -761,7 +787,10 @@ function InventoryTablePage() {
 
     return (
         <PageWrapper>
-            <SplitLayout header={{ finnish: "Tavaraluettelo", english: "Inventory" }}>
+            <SplitLayout header={{
+                primary: t("inventory.title", { lng: languages.primary }),
+                secondary: t("inventory.title", { lng: languages.secondary })
+            }}>
                 <div className={`space-y-4 transition-opacity duration-200 ${isLoading ? "opacity-50" : ""}`}>
                     <InventoryFilters />
 
@@ -789,17 +818,17 @@ function InventoryTablePage() {
                 <DialogContent className="w-full h-full max-w-none md:h-auto md:max-w-lg p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
                     <div className="p-4 md:p-0 flex-1 overflow-y-auto">
                         <DialogHeader className="mb-4 text-left">
-                            <DialogTitle>{t("Ilmoita ongelmasta", "Report an issue")}</DialogTitle>
+                            <DialogTitle>{t("inventory.modals.report_title")}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div>
-                                <p className="text-sm text-gray-500 mb-2">{t("Valitut tavarat:", "Selected items:")}</p>
+                                <p className="text-sm text-gray-500 mb-2">{t("inventory.modals.selected_items")}</p>
                                 <p className="font-medium">{selectedItemNames.join(", ")}</p>
                             </div>
                             <Textarea
                                 value={reportMessage}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReportMessage(e.target.value)}
-                                placeholder={t("Kuvaa ongelma...", "Describe the issue...")}
+                                placeholder={t("inventory.modals.describe_issue")}
                                 rows={4}
                             />
                         </div>
@@ -807,10 +836,10 @@ function InventoryTablePage() {
                     <div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
                         <DialogFooter className="flex flex-col sm:flex-row gap-2">
                             <Button variant="outline" onClick={() => setShowReportModal(false)} className="flex-1 sm:flex-none">
-                                Peruuta / Cancel
+                                {t("inventory.modals.cancel")}
                             </Button>
                             <Button onClick={handleSubmitReport} disabled={!reportMessage.trim()} className="flex-1 sm:flex-none">
-                                Lähetä / Send
+                                {t("inventory.modals.send")}
                             </Button>
                         </DialogFooter>
                     </div>
@@ -840,24 +869,28 @@ function InventoryTablePage() {
             <Dialog open={!!unlinkConfirmation} onOpenChange={(open) => !open && setUnlinkConfirmation(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Vahvista irrotus / Confirm Unlink</DialogTitle>
+                        <DialogTitle>{t("inventory.modals.confirm_unlink_title")}</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
                         <p className="text-gray-600 dark:text-gray-400">
-                            Haluatko varmasti irrottaa tämän tuotteen tapahtumasta?
-                            Tämä palauttaa {unlinkConfirmation?.quantity} kpl tuntemattomaan tilaan.
+                            {t("inventory.modals.confirm_unlink_desc")}
                         </p>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            Are you sure you want to unlink this item from the transaction?
-                            This will return {unlinkConfirmation?.quantity} unit(s) to unknown state.
+                            {/* Note: This is now handled by the bilingual t() helper replacement which we can't easily do for mixed text content without changing structure.
+                                Actually, the original was:
+                                <p>Haluatko... {quantity} kpl...</p>
+                                <p>Are you... {quantity} unit(s)...</p>
+                                I can utilize t with interpolation.
+                             */}
+                            {t("inventory.modals.confirm_unlink_details", { count: unlinkConfirmation?.quantity })}
                         </p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setUnlinkConfirmation(null)}>
-                            Peruuta / Cancel
+                            {t("inventory.modals.cancel")}
                         </Button>
                         <Button variant="destructive" onClick={handleConfirmUnlink}>
-                            Irrota / Unlink
+                            {t("inventory.modals.unlink")}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -878,14 +911,15 @@ function InventoryTablePage() {
 // Shared Components
 // ============================================================================
 
-function InventoryQRPanel() {
+function InventoryQRPanel({ languages }: { languages: { primary: string; secondary: string } }) {
+    const { t } = useTranslation();
     return (
         <QRPanel
             qrUrl="/inventory"
             title={
                 <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                    Tavaraluettelo <br />
-                    <span className="text-lg text-gray-400 font-bold">Inventory</span>
+                    {t("inventory.title", { lng: languages.primary })} <br />
+                    <span className="text-lg text-gray-400 font-bold">{t("inventory.title", { lng: languages.secondary })}</span>
                 </h2>
             }
         />

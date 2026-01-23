@@ -3,6 +3,8 @@ import { Form, redirect, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { requirePermission } from "~/lib/auth.server";
 import { getDatabase, type NewInventoryItem, type NewPurchase, type NewTransaction } from "~/db";
+import { useTranslation } from "react-i18next";
+import i18next from "~/i18next.server";
 import { getMinutesByYear, getReceiptsByYear, uploadReceiptToDrive, getOrCreateReceiptsFolder } from "~/lib/google.server";
 import { sendReimbursementEmail, isEmailConfigured } from "~/lib/email.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -19,7 +21,7 @@ import { ReimbursementForm } from "~/components/treasury/reimbursement-form";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
-        { title: `${data?.siteConfig?.name || "Portal"} - Uusi tavara / New Item` },
+        { title: `${data?.siteConfig?.name || "Portal"} - ${data?.metaTitle || "Uusi tavara / New Item"}` },
         { name: "robots", content: "noindex" },
     ];
 }
@@ -27,6 +29,8 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
     await requirePermission(request, "inventory:write", getDatabase);
     const db = getDatabase();
+    const t = await i18next.getFixedT(request, "common");
+    const metaTitle = t("inventory.form.title_new");
 
     // Get recent minutes for dropdown
     const minutesByYear = await getMinutesByYear();
@@ -74,6 +78,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         existingItems: uniqueItems,
         receiptsByYear,
         receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
+        metaTitle,
     };
 }
 
@@ -280,7 +285,9 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
         existingItems: [] as Array<{ id: string; name: string; location: string; category: string | null; description: string | null; value: string | null; }>,
         receiptsByYear: [],
         receiptsFolderUrl: "#",
+        metaTitle: "New Item",
     };
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [addToTreasury, setAddToTreasury] = useState(false);
     const [requestReimbursement, setRequestReimbursement] = useState(false);
@@ -351,35 +358,35 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
         });
 
         if (similarTransactions.length > 0) {
-            const examples = similarTransactions.slice(0, 2).map(t =>
-                `"${t.description}" (${parseFloat(t.amount).toFixed(2)}€)`
+            const examples = similarTransactions.slice(0, 2).map(tx =>
+                t("inventory.form.example", { example: `"${tx.description}" (${parseFloat(tx.amount).toFixed(2)}€)` })
             ).join(", ");
-            setDuplicateWarning(`Mahdollinen duplikaatti: ${examples}. Varmista, ettei samanlaista tapahtumaa ole jo lisätty.`);
+            setDuplicateWarning(t("inventory.new.duplicate_warning", { examples }));
         } else {
             setDuplicateWarning(null);
         }
-    }, [itemValue, itemName, addToTreasury, recentTransactions]);
+    }, [itemValue, itemName, addToTreasury, recentTransactions, t]);
 
     return (
         <PageWrapper>
             <div className="w-full max-w-2xl mx-auto px-4">
                 <div className="mb-8">
                     <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-                        Uusi tavara
+                        {t("inventory.form.title_new")}
                     </h1>
-                    <p className="text-lg text-gray-500">New Item</p>
+                    <p className="text-lg text-gray-500">{t("inventory.form.subtitle_new")}</p>
                 </div>
 
                 <Form method="post" encType="multipart/form-data" className="space-y-6">
                     {/* Basic Item Info */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                            Tavaran tiedot / Item Details
+                            {t("inventory.form.details_header")}
                         </h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nimi / Name *</Label>
+                                <Label htmlFor="name">{t("inventory.form.name_label")} *</Label>
                                 <SmartCombobox
 
                                     items={existingItems.map(i => ({
@@ -390,10 +397,10 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                     }))}
                                     value={itemName}
                                     onValueChange={setItemName}
-                                    placeholder="Valitse tai kirjoita nimi..."
-                                    searchPlaceholder="Etsi tavaraa..."
-                                    emptyText="Ei löydy."
-                                    customLabel="Käytä nimeä"
+                                    placeholder={t("inventory.form.name_placeholder")}
+                                    searchPlaceholder={t("inventory.form.name_search_placeholder")}
+                                    emptyText={t("inventory.form.name_empty")}
+                                    customLabel={t("inventory.add_row.new_text")}
                                     renderItem={(item: any) => (
                                         <>
                                             {item.label}
@@ -417,7 +424,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="quantity">Määrä / Quantity *</Label>
+                                <Label htmlFor="quantity">{t("inventory.form.quantity_label")} *</Label>
                                 <Input
                                     id="quantity"
                                     name="quantity"
@@ -431,37 +438,37 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="location">Sijainti / Location *</Label>
+                                <Label htmlFor="location">{t("inventory.form.location_label")} *</Label>
                                 <SmartCombobox
                                     items={uniqueLocations}
                                     value={location}
                                     onValueChange={setLocation}
-                                    placeholder="Valitse tai kirjoita..."
-                                    searchPlaceholder="Etsi sijaintia..."
-                                    emptyText="Ei listalla."
+                                    placeholder={t("inventory.form.location_placeholder")}
+                                    searchPlaceholder={t("inventory.form.location_search_placeholder")}
+                                    emptyText={t("inventory.form.location_empty")}
                                 />
                                 <input type="hidden" name="location" value={location} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="category">Kategoria / Category</Label>
+                                <Label htmlFor="category">{t("inventory.form.category_label")}</Label>
                                 <SmartCombobox
                                     items={uniqueCategories}
                                     value={category}
                                     onValueChange={setCategory}
-                                    placeholder="Valitse tai kirjoita..."
-                                    searchPlaceholder="Etsi kategoriaa..."
-                                    emptyText="Ei listalla."
+                                    placeholder={t("inventory.form.category_placeholder")}
+                                    searchPlaceholder={t("inventory.form.category_search_placeholder")}
+                                    emptyText={t("inventory.form.location_empty")}
                                 />
                                 <input type="hidden" name="category" value={category} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="description">Kuvaus / Description</Label>
+                            <Label htmlFor="description">{t("inventory.form.description_label")}</Label>
                             <Input
                                 id="description"
                                 name="description"
-                                placeholder="Lisätietoja tavarasta"
+                                placeholder={t("inventory.form.description_placeholder")}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
@@ -469,7 +476,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="value">Arvo € / Value €</Label>
+                                <Label htmlFor="value">{t("inventory.form.value_label")}</Label>
                                 <Input
                                     id="value"
                                     name="value"
@@ -478,11 +485,11 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                     min="0"
                                     value={itemValue}
                                     onChange={(e) => setItemValue(e.target.value)}
-                                    placeholder="0.00"
+                                    placeholder={t("inventory.form.value_placeholder")}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="purchasedAt">Hankintapäivä / Purchase Date</Label>
+                                <Label htmlFor="purchasedAt">{t("inventory.form.purchased_at_label")}</Label>
                                 <Input
                                     id="purchasedAt"
                                     name="purchasedAt"
@@ -498,7 +505,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                 name="showInInfoReel"
                             />
                             <Label htmlFor="showInInfoReel" className="cursor-pointer">
-                                Näytä Info Reelissä / Show in Info Reel
+                                {t("inventory.form.show_in_info_reel")}
                             </Label>
                         </div>
                     </div>
@@ -513,14 +520,12 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                 onCheckedChange={(checked) => setAddToTreasury(checked === true)}
                             />
                             <Label htmlFor="addToTreasury" className="text-lg font-bold cursor-pointer">
-                                Lisää rahastotapahtuma / Add Treasury Transaction
+                                {t("inventory.new.add_treasury_label")}
                             </Label>
                         </div>
 
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Valitse jos haluat luoda menon rahaston erittelyyn tämän hankinnan perusteella.
-                            <br />
-                            Check if you want to create an expense entry in the treasury based on this item.
+                            {t("inventory.new.add_treasury_desc")}
                         </p>
 
                         {/* Duplicate Warning */}
@@ -528,10 +533,6 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                             <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                                 <p className="text-sm text-orange-800 dark:text-orange-200">
                                     ⚠️ {duplicateWarning}
-                                    <br />
-                                    <span className="text-orange-600 dark:text-orange-300">
-                                        Possible duplicate detected. Make sure a similar transaction hasn't already been added.
-                                    </span>
                                 </p>
                             </div>
                         )}
@@ -547,14 +548,12 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                                         onCheckedChange={(checked) => setRequestReimbursement(checked === true)}
                                     />
                                     <Label htmlFor="requestReimbursement" className="font-bold cursor-pointer">
-                                        Hae kulukorvausta / Request Reimbursement
+                                        {t("inventory.new.request_reimbursement_label")}
                                     </Label>
                                 </div>
 
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Valitse jos haluat hakea kulukorvausta määrärahasta.
-                                    <br />
-                                    Check if you want to request reimbursement from the allowance.
+                                    {t("inventory.new.request_reimbursement_desc")}
                                 </p>
 
                                 {/* Reimbursement Details - only if reimbursement is checked */}
@@ -583,14 +582,14 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
                             onClick={() => navigate(-1)}
                             className="flex-1"
                         >
-                            Peruuta / Cancel
+                            {t("inventory.form.cancel")}
                         </Button>
                         <Button type="submit" className="flex-1">
                             {requestReimbursement
-                                ? "Lisää ja hae korvausta / Add & Request Reimbursement"
+                                ? t("inventory.form.add_and_request")
                                 : addToTreasury
-                                    ? "Lisää tavaraan ja rahastoon / Add to Inventory & Treasury"
-                                    : "Lisää / Add"
+                                    ? t("inventory.form.add_to_treasury_btn")
+                                    : t("inventory.form.add")
                             }
                         </Button>
                     </div>

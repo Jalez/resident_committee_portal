@@ -5,6 +5,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "~/components/ui/tooltip";
 import { SmartCombobox } from "~/components/ui/smart-combobox";
 import { useInventory } from "./inventory-context";
+import { useTranslation } from "react-i18next";
 
 export function InventoryAddRow() {
     const {
@@ -17,6 +18,7 @@ export function InventoryAddRow() {
         handleCreateItem,
         resetAddRow,
     } = useInventory();
+    const { t, i18n } = useTranslation();
 
     const [errors, setErrors] = useState<{ name?: boolean; location?: boolean }>({});
     const rowRef = useRef<HTMLTableRowElement>(null);
@@ -97,14 +99,14 @@ export function InventoryAddRow() {
                                         setNewItem({ ...newItem, name: v });
                                         clearError("name");
                                     }}
-                                    placeholder="Nimi..."
-                                    searchPlaceholder="Etsi..."
-                                    emptyText="Uusi"
+                                    placeholder={t("inventory.add_row.name_placeholder")}
+                                    searchPlaceholder={t("inventory.add_row.search_placeholder")}
+                                    emptyText={t("inventory.add_row.new_text")}
                                 />
                             </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" sideOffset={4} className="bg-red-500 text-white font-medium">
-                            Pakollinen kenttä / Required field
+                            {t("inventory.add_row.required_field")}
                         </TooltipContent>
                     </Tooltip>
                 </TableCell>
@@ -122,14 +124,14 @@ export function InventoryAddRow() {
                                         setNewItem({ ...newItem, location: v });
                                         clearError("location");
                                     }}
-                                    placeholder="Sijainti..."
-                                    searchPlaceholder="Etsi..."
-                                    emptyText="Uusi"
+                                    placeholder={t("inventory.add_row.location_placeholder")}
+                                    searchPlaceholder={t("inventory.add_row.search_placeholder")}
+                                    emptyText={t("inventory.add_row.new_text")}
                                 />
                             </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" sideOffset={4} className="bg-red-500 text-white font-medium">
-                            Pakollinen kenttä / Required field
+                            {t("inventory.add_row.required_field")}
                         </TooltipContent>
                     </Tooltip>
                 </TableCell>
@@ -141,9 +143,9 @@ export function InventoryAddRow() {
                         items={uniqueCategories}
                         value={newItem.category}
                         onValueChange={(v) => setNewItem({ ...newItem, category: v })}
-                        placeholder="Kategoria..."
-                        searchPlaceholder="Etsi..."
-                        emptyText="Uusi"
+                        placeholder={t("inventory.add_row.category_placeholder")}
+                        searchPlaceholder={t("inventory.add_row.search_placeholder")}
+                        emptyText={t("inventory.add_row.new_text")}
                     />
                 </TableCell>
             )}
@@ -153,7 +155,7 @@ export function InventoryAddRow() {
                     <Input
                         value={newItem.description}
                         onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                        placeholder="Kuvaus..."
+                        placeholder={t("inventory.add_row.description_placeholder")}
                         className="h-9"
                     />
                 </TableCell>
@@ -162,7 +164,7 @@ export function InventoryAddRow() {
             {visibleColumns.has("updatedAt") && (
                 <TableCell>
                     <span className="text-gray-500 text-xs text-nowrap">
-                        {new Date().toLocaleDateString("fi-FI")}
+                        {new Date().toLocaleDateString(i18n.language)}
                     </span>
                 </TableCell>
             )}
@@ -189,7 +191,7 @@ export function InventoryAddRow() {
                         value={newItem.quantity}
                         onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
                         className="h-9 w-20"
-                        placeholder="Kpl"
+                        placeholder={t("inventory.unit")}
                     />
                 </TableCell>
             )}

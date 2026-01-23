@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { useState } from "react";
-import { useLanguage } from "~/contexts/language-context";
+import { useTranslation } from "react-i18next";
 
 interface Transaction {
     id: string;
@@ -25,8 +25,7 @@ export function TransactionSelectorModal({
     onSelect,
 }: TransactionSelectorModalProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const { language } = useLanguage();
-    const t = (fi: string, en: string) => (language === "fi" ? fi : en);
+    const { t, i18n } = useTranslation();
 
     const handleConfirm = () => {
         const selected = transactions.find(t => t.id === selectedId);
@@ -44,21 +43,18 @@ export function TransactionSelectorModal({
             <DialogContent className="w-full h-full max-w-none md:max-w-xl p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
                 <div className="p-4 md:p-0 flex-1 overflow-y-auto">
                     <DialogHeader className="mb-4 text-left">
-                        <DialogTitle>{t("Valitse tapahtuma", "Select Transaction")}</DialogTitle>
+                        <DialogTitle>{t("inventory.modals.transaction_selector.title")}</DialogTitle>
                     </DialogHeader>
 
                     <div className="py-4">
                         <p className="text-sm text-gray-500 mb-4">
-                            {t(
-                                "Valitse tapahtuma, johon haluat lisätä valitut tavarat.",
-                                "Select a transaction to add the selected items to."
-                            )}
+                            {t("inventory.modals.transaction_selector.desc")}
                         </p>
 
                         {inventoryTransactions.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
                                 <span className="material-symbols-outlined text-4xl mb-2">inbox</span>
-                                <p>{t("Ei sopivia tapahtumia", "No suitable transactions found")}</p>
+                                <p>{t("inventory.modals.transaction_selector.no_suitable")}</p>
                             </div>
                         ) : (
                             <div className="space-y-2 max-h-[calc(100vh-250px)] md:max-h-[300px] overflow-y-auto pb-4">
@@ -78,7 +74,7 @@ export function TransactionSelectorModal({
                                                     {transaction.description}
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    {new Date(transaction.date).toLocaleDateString(language === "fi" ? "fi-FI" : "en-US")}
+                                                    {new Date(transaction.date).toLocaleDateString(i18n.language)}
                                                 </p>
                                             </div>
                                             <div className="text-right shrink-0 ml-4">
@@ -100,10 +96,10 @@ export function TransactionSelectorModal({
                 <div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
                     <DialogFooter className="flex flex-col sm:flex-row gap-2">
                         <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
-                            {t("Peruuta", "Cancel")}
+                            {t("inventory.modals.cancel")}
                         </Button>
                         <Button onClick={handleConfirm} disabled={!selectedId} className="flex-1 sm:flex-none">
-                            {t("Valitse", "Select")}
+                            {t("inventory.modals.transaction_selector.select")}
                         </Button>
                     </DialogFooter>
                 </div>

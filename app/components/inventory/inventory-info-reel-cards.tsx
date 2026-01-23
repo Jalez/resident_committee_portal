@@ -4,12 +4,16 @@ interface InventoryInfoReelCardProps {
     items: InventoryItem[];
 }
 
+import { useTranslation } from "react-i18next";
+
 export function InventoryInfoReelCards({ items }: InventoryInfoReelCardProps) {
+    const { t } = useTranslation();
+
     if (items.length === 0) {
         return (
             <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 text-center">
                 <span className="material-symbols-outlined text-4xl text-gray-400 mb-2">inventory_2</span>
-                <p className="text-gray-600 dark:text-gray-400">Ei näytettäviä tavaroita / No items to display</p>
+                <p className="text-gray-600 dark:text-gray-400">{t("inventory.info_reel.no_items")}</p>
             </div>
         );
     }

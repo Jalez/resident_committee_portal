@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "~/components/ui/sheet";
 import { COLUMN_KEYS, COLUMN_LABELS } from "./inventory-constants";
 import { useInventory } from "./inventory-context";
-import { useLanguage } from "~/contexts/language-context";
+import { useTranslation } from "react-i18next";
 
 export function InventoryFilters() {
     const {
@@ -21,8 +21,9 @@ export function InventoryFilters() {
         toggleColumn,
     } = useInventory();
 
-    const { language } = useLanguage();
-    const t = (fi: string, en: string) => language === "fi" ? fi : en;
+
+
+    const { t } = useTranslation();
 
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -35,7 +36,7 @@ export function InventoryFilters() {
             <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full justify-start">
                     <span className="material-symbols-outlined text-base mr-1">view_column</span>
-                    {t("Sarakkeet", "Columns")}
+                    {t("inventory.search.columns")}
                 </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-56 p-2">
@@ -62,36 +63,36 @@ export function InventoryFilters() {
     const filterFields = (
         <>
             <div className="space-y-1">
-                <Label htmlFor="name-filter" className="text-xs text-gray-500">{t("Nimi", "Name")}</Label>
+                <Label htmlFor="name-filter" className="text-xs text-gray-500">{t("inventory.search.name_label")}</Label>
                 <Input
                     id="name-filter"
-                    placeholder={t("Hae nimellä...", "Search by name...")}
+                    placeholder={t("inventory.search.name_placeholder")}
                     defaultValue={filters.name}
                     onChange={(e) => handleFilterChange("name", e.target.value)}
                 />
             </div>
             <div className="space-y-1">
-                <Label htmlFor="location-filter" className="text-xs text-gray-500">{t("Sijainti", "Location")}</Label>
+                <Label htmlFor="location-filter" className="text-xs text-gray-500">{t("inventory.search.location_label")}</Label>
                 <Select value={filters.location} onValueChange={(value) => handleFilterChange("location", value === "all" ? "" : value)}>
-                    <SelectTrigger><SelectValue placeholder={t("Kaikki sijainnit...", "All locations...")} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("inventory.search.location_all")} /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">{t("Kaikki sijainnit", "All locations")}</SelectItem>
+                        <SelectItem value="all">{t("inventory.search.location_all")}</SelectItem>
                         {uniqueLocations.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
-                <Label htmlFor="category-filter" className="text-xs text-gray-500">{t("Kategoria", "Category")}</Label>
+                <Label htmlFor="category-filter" className="text-xs text-gray-500">{t("inventory.search.category_label")}</Label>
                 <Select value={filters.category} onValueChange={(value) => handleFilterChange("category", value === "all" ? "" : value)}>
-                    <SelectTrigger><SelectValue placeholder={t("Kaikki kategoriat...", "All categories...")} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("inventory.search.category_all")} /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">{t("Kaikki kategoriat", "All categories")}</SelectItem>
+                        <SelectItem value="all">{t("inventory.search.category_all")}</SelectItem>
                         {uniqueCategories.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">{t("Sarakkeet", "Columns")}</Label>
+                <Label className="text-xs text-gray-500">{t("inventory.search.columns")}</Label>
                 {columnVisibilityMenu}
             </div>
         </>
@@ -106,7 +107,7 @@ export function InventoryFilters() {
                         <Button variant="outline" size="sm" className="w-full justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-base">filter_list</span>
-                                <span>{t("Suodattimet", "Filters")}</span>
+                                <span>{t("inventory.search.filters")}</span>
                             </div>
                             {activeFilterCount > 0 && (
                                 <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
@@ -117,7 +118,7 @@ export function InventoryFilters() {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-auto max-h-[80vh] overflow-y-auto">
                         <SheetHeader>
-                            <SheetTitle>{t("Suodattimet", "Filters")}</SheetTitle>
+                            <SheetTitle>{t("inventory.search.filters")}</SheetTitle>
                         </SheetHeader>
                         <div className="grid grid-cols-1 gap-4 mt-4 pb-4">
                             {filterFields}
