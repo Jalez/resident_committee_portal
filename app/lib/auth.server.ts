@@ -52,11 +52,16 @@ export interface SessionData {
     picture?: string;
 }
 
+import { getSystemLanguageDefaults } from "./settings.server";
+
 export interface AuthenticatedUser extends SessionData {
     userId: string;
     roleId: string;
     roleName?: string;
     permissions: string[];
+    // Language preferences
+    primaryLanguage: string;
+    secondaryLanguage: string;
 }
 
 export async function createSession(data: SessionData): Promise<string> {
@@ -101,7 +106,7 @@ export function isAdmin(email: string): boolean {
  * Database adapter interface for RBAC operations
  */
 interface RBACDatabaseAdapter {
-    findUserByEmail: (email: string) => Promise<{ id: string; roleId: string } | null>;
+    findUserByEmail: (email: string) => Promise<{ id: string; roleId: string; primaryLanguage: string; secondaryLanguage: string } | null>;
     getUserPermissions: (userId: string) => Promise<string[]>;
     getRoleByName: (name: string) => Promise<{ id: string; permissions: string[] } | null>;
     getRoleById: (id: string) => Promise<{ name: string; permissions: string[] } | null>;
@@ -117,6 +122,19 @@ export async function getGuestPermissions(
     const db = getDatabase();
     const guestRole = await db.getRoleByName("Guest");
     return guestRole?.permissions ?? [];
+}
+
+/**
+ * Get context for guest users (permissions + default languages)
+ */
+export async function getGuestContext(
+    getDatabase: () => RBACDatabaseAdapter
+): Promise<{ permissions: string[]; languages: { primary: string; secondary: string } }> {
+    const [permissions, languages] = await Promise.all([
+        getGuestPermissions(getDatabase),
+        getSystemLanguageDefaults()
+    ]);
+    return { permissions, languages };
 }
 
 /**
@@ -162,6 +180,8 @@ export async function getAuthenticatedUser(
         roleId: dbUser.roleId,
         roleName: role?.name,
         permissions,
+        primaryLanguage: dbUser.primaryLanguage,
+        secondaryLanguage: dbUser.secondaryLanguage,
     };
 }
 

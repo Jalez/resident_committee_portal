@@ -216,6 +216,11 @@ export const PERMISSIONS = {
 	},
 
 	// Settings (access to configuration pages)
+	"settings:general": {
+		description: "Access general settings",
+		descriptionFi: "Pääsy yleisiin asetuksiin",
+		category: "Settings",
+	},
 	"settings:users": {
 		description: "Access user management settings",
 		descriptionFi: "Pääsy käyttäjähallinnan asetuksiin",

@@ -46,6 +46,9 @@ export const users = pgTable("users", {
 	name: text("name").notNull(),
 	roleId: uuid("role_id").references(() => roles.id).notNull(), // Required role reference
 	apartmentNumber: text("apartment_number"),
+	// Language preferences
+	primaryLanguage: text("primary_language").notNull().default("fi"),
+	secondaryLanguage: text("secondary_language").notNull().default("en"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -11,6 +11,8 @@ export interface ClientUser {
 	roleName: string;
 	roleId: string;
 	permissions: string[];
+	primaryLanguage: string;
+	secondaryLanguage: string;
 }
 
 interface UserContextValue {
