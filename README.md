@@ -13,7 +13,7 @@ The objective of this project is to provide a generic, easily deployable templat
 - **Resident Involvement**: Integrated forms for committee applications, event suggestions, and purchase requests.
 - **Event Management**: Up-to-date view of upcoming community events (integrated with Google Calendar).
 - **Transparency**: Easy access to meeting minutes, treasury records, and public documents.
-- **Social Integration**: Dynamic social media links managed via Google Sheets.
+- **Social Integration**: Dynamic social media links managed via the Admin Dashboard.
 - **Info Reel Mode**: Automated "kiosk" mode that cycles through all pages—perfect for public displays.
 - **Admin Dashboard**: A dedicated management interface for committee members to track and process submissions.
 
@@ -138,7 +138,7 @@ This project integrates with Google Calendar, Drive, and Sheets. To enable these
         - **Share this folder with "Anyone with the link" (Viewer)**.
         - Get the ID from the URL and paste into `GOOGLE_DRIVE_PUBLIC_ROOT_ID`.
 
-4.  **Create a Service Account** (for writing form submissions):
+4.  **Create a Service Account** (for uploading receipts and minutes):
     - In Google Cloud Console -> IAM & Admin -> Service Accounts
     - Click "Create Service Account"
     - Give it a name (e.g., "Committee Portal")

@@ -114,8 +114,8 @@ export function Navigation({
 				style={
 					isAnimating
 						? {
-								color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-							}
+							color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+						}
 						: undefined
 				}
 			>
@@ -366,8 +366,8 @@ export function Navigation({
 									style={
 										isAnimating
 											? {
-													color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-												}
+												color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+											}
 											: undefined
 									}
 								>
@@ -602,7 +602,7 @@ export function Navigation({
 
 				{/* Language Switcher for guests (not logged in) */}
 				{!showProfileMenu && !isInfoReel && (
-					<LanguageSwitcher variant="standalone" />
+					<LanguageSwitcher variant="standalone" className="w-auto" />
 				)}
 			</nav>
 		</TooltipProvider>

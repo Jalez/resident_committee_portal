@@ -29,7 +29,8 @@ interface LanguageSwitcherProps {
  */
 export function LanguageSwitcher({
 	variant = "standalone",
-}: LanguageSwitcherProps) {
+	className,
+}: LanguageSwitcherProps & { className?: string }) {
 	const { t, i18n } = useTranslation();
 	const { supportedLanguages, languageNames, isInfoReel } = useLanguage();
 	const { user } = useUser();
@@ -147,7 +148,10 @@ export function LanguageSwitcher({
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="ghost"
-					className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/10 hover:text-primary text-gray-500 dark:text-gray-400 w-full text-left justify-start"
+					className={cn(
+						"flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/10 hover:text-primary text-gray-500 dark:text-gray-400 text-left justify-start",
+						className || "w-full",
+					)}
 				>
 					<span className="material-symbols-outlined text-2xl">translate</span>
 					<span className="text-sm font-bold">{t("lang.label")}</span>
