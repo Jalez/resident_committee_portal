@@ -4,27 +4,30 @@
  */
 
 import { useLoaderData } from "react-router";
-import { getEnvStatus, type EnvStatus } from "~/lib/env-config.server";
 import { SetupGuide } from "~/components/setup-guide";
+import { type EnvStatus, getEnvStatus } from "~/lib/env-config.server";
 
 export async function loader() {
-    // This loader doesn't require database access
-    const envStatus = getEnvStatus();
+	// This loader doesn't require database access
+	const envStatus = getEnvStatus();
 
-    return {
-        envStatus,
-    };
+	return {
+		envStatus,
+	};
 }
 
 export function meta() {
-    return [
-        { title: "Setup Guide | Portal" },
-        { name: "description", content: "Configure your environment to get started" },
-    ];
+	return [
+		{ title: "Setup Guide | Portal" },
+		{
+			name: "description",
+			content: "Configure your environment to get started",
+		},
+	];
 }
 
 export default function SetupPage() {
-    const { envStatus } = useLoaderData<{ envStatus: EnvStatus }>();
+	const { envStatus } = useLoaderData<{ envStatus: EnvStatus }>();
 
-    return <SetupGuide envStatus={envStatus} />;
+	return <SetupGuide envStatus={envStatus} />;
 }

@@ -156,6 +156,44 @@ This project integrates with Google Calendar, Drive, and Sheets. To enable these
     - Public folder: Share with "Anyone with the link" (Viewer)
  
 ---
+
+## Internationalization (i18n)
+
+The portal supports multiple languages. Languages are automatically discovered from the filesystem.
+
+### Adding a New Language
+
+1. Create a new folder in `public/locales/` with the language code (e.g., `fr` for French):
+   ```
+   public/locales/fr/
+   ```
+
+2. Copy an existing translation file as a starting point:
+   ```bash
+   cp public/locales/en/common.json public/locales/fr/common.json
+   ```
+
+3. Edit `public/locales/fr/common.json` and translate all values. Make sure to set the language's display name:
+   ```json
+   {
+     "lang": {
+       "name": "Français",
+       "label": "Langue"
+     },
+     ...
+   }
+   ```
+
+4. Restart the dev server – the new language will appear in the language switcher automatically.
+
+### Current Languages
+
+- 🇬🇧 English (`en`)
+- 🇫🇮 Suomi (`fi`)
+- 🇸🇪 Svenska (`sv`)
+- 🇩🇪 Deutsch (`de`)
+ 
+---
  
 ## Performance & Caching
  

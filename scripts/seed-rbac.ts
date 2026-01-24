@@ -1,10 +1,10 @@
 /**
  * Seed script for RBAC system
  * Creates default roles with their permissions
- * 
+ *
  * IMPORTANT: This script only creates roles. Permissions are defined in
  * app/lib/permissions.ts and stored as arrays on roles.
- * 
+ *
  * Run with: bun run scripts/seed-rbac.ts
  */
 
@@ -117,7 +117,6 @@ async function seed() {
 
 		console.log(`\n✅ Created ${DEFAULT_ROLES.length} roles\n`);
 		console.log("🎉 RBAC seed complete!");
-
 	} catch (error) {
 		console.error("❌ Seed failed:", error);
 		process.exit(1);

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import type { PermissionName } from "~/lib/permissions";
 
 /**
@@ -11,6 +11,8 @@ export interface ClientUser {
 	roleName: string;
 	roleId: string;
 	permissions: string[];
+	primaryLanguage: string;
+	secondaryLanguage: string;
 }
 
 interface UserContextValue {
@@ -29,7 +31,10 @@ const UserContext = createContext<UserContextValue | null>(null);
  * Check if a permission matches (supports wildcards)
  * e.g., "inventory:*" matches "inventory:read", "inventory:write"
  */
-function permissionMatches(userPermission: string, requiredPermission: string): boolean {
+function permissionMatches(
+	userPermission: string,
+	requiredPermission: string,
+): boolean {
 	// Exact match
 	if (userPermission === requiredPermission) return true;
 
@@ -53,19 +58,25 @@ interface UserProviderProps {
 export function UserProvider({ children, user }: UserProviderProps) {
 	const hasPermission = (permission: PermissionName | string): boolean => {
 		if (!user) return false;
-		return user.permissions.some(p => permissionMatches(p, permission));
+		return user.permissions.some((p) => permissionMatches(p, permission));
 	};
 
-	const hasAnyPermission = (permissions: (PermissionName | string)[]): boolean => {
-		return permissions.some(p => hasPermission(p));
+	const hasAnyPermission = (
+		permissions: (PermissionName | string)[],
+	): boolean => {
+		return permissions.some((p) => hasPermission(p));
 	};
 
-	const hasAllPermissions = (permissions: (PermissionName | string)[]): boolean => {
-		return permissions.every(p => hasPermission(p));
+	const hasAllPermissions = (
+		permissions: (PermissionName | string)[],
+	): boolean => {
+		return permissions.every((p) => hasPermission(p));
 	};
 
 	return (
-		<UserContext.Provider value={{ user, hasPermission, hasAnyPermission, hasAllPermissions }}>
+		<UserContext.Provider
+			value={{ user, hasPermission, hasAnyPermission, hasAllPermissions }}
+		>
 			{children}
 		</UserContext.Provider>
 	);

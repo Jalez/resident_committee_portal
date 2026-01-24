@@ -1,13 +1,13 @@
 /**
  * RBAC Permissions - Single Source of Truth
- * 
+ *
  * This file defines ALL available permissions in the system.
  * Use these constants throughout the app for type safety and consistency.
- * 
+ *
  * IMPORTANT: To add a new permission:
  * 1. Add the permission definition below (key + description + category)
  * 2. Assign it to roles via the admin UI or update scripts/seed-rbac.ts
- * 
+ *
  * Permission format: "resource:action" or "resource:action:scope"
  * Examples: "inventory:write", "profile:read:own"
  */
@@ -216,6 +216,11 @@ export const PERMISSIONS = {
 	},
 
 	// Settings (access to configuration pages)
+	"settings:general": {
+		description: "Access general settings",
+		descriptionFi: "Pääsy yleisiin asetuksiin",
+		category: "Settings",
+	},
 	"settings:users": {
 		description: "Access user management settings",
 		descriptionFi: "Pääsy käyttäjähallinnan asetuksiin",
@@ -246,8 +251,14 @@ export const PERMISSION_NAMES = Object.keys(PERMISSIONS) as PermissionName[];
 /**
  * Get permissions grouped by category
  */
-export function getPermissionsByCategory(): Record<string, { name: PermissionName; definition: PermissionDefinition }[]> {
-	const grouped: Record<string, { name: PermissionName; definition: PermissionDefinition }[]> = {};
+export function getPermissionsByCategory(): Record<
+	string,
+	{ name: PermissionName; definition: PermissionDefinition }[]
+> {
+	const grouped: Record<
+		string,
+		{ name: PermissionName; definition: PermissionDefinition }[]
+	> = {};
 
 	for (const [name, definition] of Object.entries(PERMISSIONS)) {
 		const category = definition.category;
@@ -263,7 +274,9 @@ export function getPermissionsByCategory(): Record<string, { name: PermissionNam
 /**
  * Get all unique categories
  */
-export const PERMISSION_CATEGORIES = [...new Set(Object.values(PERMISSIONS).map(p => p.category))];
+export const PERMISSION_CATEGORIES = [
+	...new Set(Object.values(PERMISSIONS).map((p) => p.category)),
+];
 
 /**
  * Check if a string is a valid permission name
@@ -275,6 +288,8 @@ export function isValidPermission(name: string): name is PermissionName {
 /**
  * Get permission definition by name
  */
-export function getPermissionDefinition(name: string): PermissionDefinition | undefined {
+export function getPermissionDefinition(
+	name: string,
+): PermissionDefinition | undefined {
 	return PERMISSIONS[name as PermissionName];
 }

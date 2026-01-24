@@ -1,0 +1,614 @@
+{
+	"app": {
+		"title": "Tenant Committee",
+		"setup_required": "Setup Required",
+		"setup_message": "It looks like the app isn't configured yet. Please check your environment variables.",
+		"error_details": "Error details",
+		"open_setup": "Open Setup Guide",
+		"copy_env": "Or copy .env.template to .env and configure your settings."
+	},
+	"nav": {
+		"menu": "Menu",
+		"navigation": "Navigation",
+		"settings": "Settings",
+		"profile": "Profile",
+		"edit_profile": "Edit profile",
+		"log_out": "Log out",
+		"users": "Users",
+		"roles": "Roles",
+		"reimbursements": "Reimbursements",
+		"get_involved": "Get Involved",
+		"events": "Events",
+		"treasury": "Treasury",
+		"minutes": "Minutes",
+		"inventory": "Inventory",
+		"social": "Social",
+		"login": "Login",
+		"submissions": "Submissions"
+	},
+	"receipts": {
+		"select_receipts": "Select Receipts",
+		"selected": "Selected Receipts",
+		"add_more": "Add More Receipts",
+		"open_drive": "Open Receipts in Drive",
+		"open_folder": "Open folder in Drive",
+		"search_placeholder": "Search receipts...",
+		"refresh": "Refresh receipts",
+		"upload_new": "Upload New Receipt",
+		"upload_unavailable": "Upload is not available",
+		"upload_failed": "Upload failed. Try again or upload directly to Google Drive.",
+		"file_too_large": "File is too large (max {{size}}MB). Upload the receipt directly to Google Drive and select it from the list.",
+		"invalid_type": "Invalid file type. Allowed: {{types}}",
+		"uploading": "Uploading...",
+		"no_receipts": "No receipts for year {{year}}",
+		"done": "Done",
+		"open": "Open",
+		"delete": "Remove",
+		"select_existing_or_upload": "Select existing receipts from Google Drive or upload a new one.",
+		"allowed": "Allowed",
+		"selected_count": "selected"
+	},
+	"lang": {
+		"name": "English",
+		"label": "Language"
+	},
+	"home": {
+		"header": "Get Involved",
+		"contact": {
+			"title": "Contact Us"
+		},
+		"options": {
+			"committee": {
+				"title": "Apply for the Tenant Committee"
+			},
+			"events": {
+				"title": "Suggest Events"
+			},
+			"purchases": {
+				"title": "Request Purchases"
+			},
+			"questions": {
+				"title": "Submit Questions"
+			}
+		}
+	},
+	"treasury": {
+		"title": "Treasury {{year}}",
+		"year": "Year",
+		"select_year": "Select year...",
+		"view_breakdown": "See Breakdown",
+		"balance": "Balance",
+		"income": "Income",
+		"expenses": "Expenses",
+		"transactions_count": "{{count}} transactions",
+		"no_transactions": "No transactions",
+		"no_transactions_desc": "No transactions recorded for {{year}} yet.",
+		"add_transaction": "Add Transaction",
+		"actions": {
+			"breakdown": "Breakdown",
+			"reimbursements": "Reimbursements",
+			"add": "Add"
+		},
+		"new": {
+			"title": "New Transaction",
+			"header": "New Transaction",
+			"details_header": "Transaction Details",
+			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
+			"request_reimbursement": "Request Reimbursement",
+			"reimbursement_help": "Check if you want to request reimbursement from the allowance.",
+			"submit": "Add",
+			"submit_and_request": "Add & Request Reimbursement"
+		},
+		"form": {
+			"type": "Type",
+			"amount": "Amount €",
+			"description": "Description",
+			"description_placeholder": "E.g. Coffee service, Meeting snacks",
+			"category": "Category",
+			"date": "Date",
+			"year": "Year"
+		},
+		"placeholders": {
+			"select_type": "Select type...",
+			"select_category": "Select category...",
+			"select_year": "Select year..."
+		},
+		"types": {
+			"income": "Income",
+			"expense": "Expense"
+		},
+		"categories": {
+			"inventory": "Inventory",
+			"snacks": "Snacks",
+			"supplies": "Supplies",
+			"event": "Event",
+			"other": "Other",
+			"grant": "Grant",
+			"sales": "Sales",
+			"event_income": "Event Income",
+			"membership": "Membership Fees"
+		},
+		"reimbursements": {
+			"title": "Reimbursements",
+			"back": "Back",
+			"new": "New",
+			"status": "Status",
+			"date": "Date",
+			"description": "Description",
+			"purchaser": "Purchaser",
+			"amount": "Amount",
+			"email_sent": "Email Sent",
+			"reply_received": "Reply Received",
+			"delete_confirm": "Are you sure you want to delete this reimbursement?",
+			"access_denied": "Access denied",
+			"all": "All",
+			"statuses": {
+				"pending": "Pending",
+				"approved": "Approved",
+				"reimbursed": "Paid",
+				"rejected": "Rejected"
+			}
+		},
+		"new_reimbursement": {
+			"title": "New Reimbursement",
+			"subtitle": "New Reimbursement",
+			"purchase_details": "Purchase Details",
+			"description": "Description",
+			"description_placeholder": "E.g. Coffee for meeting",
+			"amount": "Amount €",
+			"receipts": "Receipts",
+			"select_receipt_error": "Select at least one receipt",
+			"purchaser_name": "Purchaser Name",
+			"purchaser_placeholder": "First and last name",
+			"bank_account": "Bank Account",
+			"minutes": "Related Minutes",
+			"select_minutes": "Select minutes...",
+			"minutes_help": "For purchases over 100€, minutes are required before payment.",
+			"notes": "Additional Notes",
+			"notes_placeholder": "Free-form message...",
+			"add_to_inventory": "Also add to inventory",
+			"location": "Location",
+			"category": "Category",
+			"cancel": "Cancel",
+			"submit": "Submit",
+			"submitting": "Submitting...",
+			"receipt_uploaded": "Receipt uploaded",
+			"error": "Error",
+			"email_warning": "⚠️ Email sending is not configured. Request will be saved but email won't be sent.",
+			"location_placeholder": "E.g. Club room",
+			"category_placeholder": "E.g. Kitchen"
+		},
+		"breakdown": {
+			"title": "Treasury Breakdown",
+			"back": "Back",
+			"income": "Income",
+			"expenses": "Expenses",
+			"balance": "Balance",
+			"transactions": "Transactions",
+			"no_transactions": "No transactions for this year",
+			"date": "Date",
+			"description": "Description",
+			"category": "Category",
+			"status": "Status",
+			"amount": "Amount",
+			"public_info": "This is public information",
+			"export": "Export CSV",
+			"edit": {
+				"title": "Edit Transaction",
+				"subtitle": "Edit Transaction",
+				"editable_fields": "Editable Fields",
+				"save": "Save",
+				"save_links": "Save Links",
+				"cancel": "Cancel",
+				"delete": "Delete Transaction",
+				"delete_title": "Delete transaction?",
+				"delete_confirm": "Are you sure you want to delete this transaction? This action cannot be undone.",
+				"delete_blocked": "Deletion blocked",
+				"linked_reimbursement": "Linked Reimbursement",
+				"purchaser": "Purchaser",
+				"iban": "IBAN",
+				"minutes": "Minutes",
+				"email": "Email",
+				"email_sent": "Sent",
+				"email_not_sent": "Not sent",
+				"items_to_add": "Items to Add",
+				"items_to_add_desc": "Select items to link to this transaction.",
+				"no_items_to_add": "No items to add",
+				"link_items": "Link {{count}} items now",
+				"linked_items": "Linked Items",
+				"no_linked_items": "No linked items",
+				"items_linked_success": "Items linked",
+				"title_with_desc": "Edit: {{desc}}",
+				"delete_error_linked": "Cannot delete transaction because it has linked active inventory items: {{names}}. Remove or mark items as Legacy first.",
+				"reimbursement_statuses": {
+					"not_requested": "Not Requested",
+					"requested": "Requested",
+					"approved": "Approved",
+					"declined": "Declined"
+				},
+				"statuses": {
+					"complete": "Complete",
+					"pending": "Pending",
+					"paused": "Paused",
+					"declined": "Declined"
+				}
+			}
+		}
+	},
+	"inventory": {
+		"title": "Inventory",
+		"meta_title": "Inventory",
+		"meta_description": "Tenant Committee Inventory",
+		"unit": "pcs",
+		"search": {
+			"name_label": "Name",
+			"name_placeholder": "Search by name...",
+			"location_label": "Location",
+			"location_all": "All locations",
+			"category_label": "Category",
+			"category_all": "All categories",
+			"columns": "Columns",
+			"filters": "Filters"
+		},
+		"columns": {
+			"status": "Status",
+			"name": "Name",
+			"location": "Location",
+			"category": "Category",
+			"description": "Description",
+			"updated": "Updated",
+			"unit_value": "Unit",
+			"quantity": "Qty",
+			"total_value": "Total",
+			"transactions": "Transactions",
+			"info_reel": "Info Reel"
+		},
+		"actions": {
+			"menu": "Actions",
+			"add": "Add",
+			"close": "Close",
+			"export": "Export CSV",
+			"export_short": "Export",
+			"import": "Import CSV",
+			"import_short": "Import",
+			"selected": "Selected",
+			"report": "Report",
+			"treasury": "Treasury",
+			"add_to_new": "Add to New",
+			"add_to_existing": "Add to Existing",
+			"no_transaction": "No Transaction",
+			"remove": "Remove",
+			"unlink": "Unlink",
+			"remove_marker": "Remove marker"
+		},
+		"messages": {
+			"importing": "Importing file...",
+			"import_success": "Imported {{count}} rows",
+			"import_error": "Error: {{error}}"
+		},
+		"add_row": {
+			"name_placeholder": "Name...",
+			"location_placeholder": "Location...",
+			"category_placeholder": "Category...",
+			"description_placeholder": "Description...",
+			"search_placeholder": "Search...",
+			"new_text": "New",
+			"required_field": "Required field"
+		},
+		"form": {
+			"title_new": "New Item",
+			"title_edit": "Edit Item",
+			"details_header": "Item Details",
+			"name_label": "Name",
+			"name_placeholder": "Select or type name...",
+			"name_search_placeholder": "Search item...",
+			"name_empty": "Not found.",
+			"quantity_label": "Quantity",
+			"location_label": "Location",
+			"location_placeholder": "Select or type...",
+			"location_search_placeholder": "Search location...",
+			"location_empty": "Not in list.",
+			"category_label": "Category",
+			"category_placeholder": "Select or type...",
+			"category_search_placeholder": "Search category...",
+			"description_label": "Description",
+			"description_placeholder": "Item details",
+			"value_label": "Value €",
+			"value_placeholder": "0.00",
+			"purchased_at_label": "Purchase Date",
+			"show_in_info_reel": "Show in Info Reel",
+			"save": "Save",
+			"cancel": "Cancel",
+			"add": "Add",
+			"add_and_request": "Add & Request Reimbursement",
+			"add_to_treasury_btn": "Add to Inventory & Treasury",
+			"example": "E.g. {{example}}"
+		},
+		"new": {
+			"add_treasury_label": "Add Treasury Transaction",
+			"add_treasury_desc": "Check if you want to create an expense entry in the treasury based on this item.",
+			"duplicate_warning": "Possible duplicate: {{examples}}. Make sure a similar transaction hasn't already been added.",
+			"request_reimbursement_label": "Request Reimbursement",
+			"request_reimbursement_desc": "Check if you want to request reimbursement from the allowance."
+		},
+		"modals": {
+			"report_title": "Report an issue",
+			"selected_items": "Selected items:",
+			"describe_issue": "Describe the issue or what should be changed...",
+			"cancel": "Cancel",
+			"send": "Send",
+			"confirm_unlink_title": "Unlink Item?",
+			"confirm_unlink_desc": "This will unlink the item from the selected transaction.",
+			"confirm_unlink_details": "Item: {{name}} ({{count}} pcs)\nTransaction: {{description}} ({{date}})",
+			"unlink": "Unlink",
+			"quantity_selection": {
+				"title_no_txn": "Mark No Transaction",
+				"title_existing": "Add to Existing",
+				"title_txn": "Add to Transaction",
+				"desc_no_txn": "Select how many of each item to mark as having no transaction.",
+				"desc_existing": "Select how many of each item to add to an existing transaction.",
+				"desc_txn": "Select how many of each item to add to the transaction.",
+				"available": "Available",
+				"continue": "Continue",
+				"confirm": "Confirm"
+			},
+			"remove": {
+				"title": "Remove Inventory Item",
+				"current_quantity": "Current quantity",
+				"linked_transactions": "Linked Transactions",
+				"linked_desc": "Select from which transaction(s) to remove and how many.",
+				"expense": "Expense",
+				"income": "Income",
+				"linked": "Linked",
+				"no_linked_txns": "No transactions linked to this item.",
+				"no_linked_desc": "You can remove it directly or mark it as a legacy item.",
+				"reason": "Reason",
+				"notes_optional": "Notes (optional)",
+				"notes_placeholder": "Add notes if necessary...",
+				"removing": "Removing",
+				"item_will_be_removed": "Item will be marked as removed",
+				"remove_count": "Remove {{count}} pcs",
+				"remove_item": "Remove Item",
+				"reasons": {
+					"broken": "Broken",
+					"used_up": "Used up",
+					"lost": "Lost",
+					"sold": "Sold",
+					"other": "Other"
+				}
+			},
+			"transaction_selector": {
+				"title": "Select Transaction",
+				"desc": "Select a transaction to add the selected items to."
+			}
+		},
+		"info_reel": {
+			"no_items": "No items to display"
+		},
+		"status": {
+			"removed": "Removed"
+		}
+	},
+	"minutes": {
+		"title": "Minutes",
+		"meta_description": "Tenant Committee Meeting Minutes",
+		"all_minutes": "All Minutes",
+		"archive": "Archive",
+		"no_results": "No results",
+		"no_minutes": "No minutes",
+		"no_minutes_yet": "No minutes yet",
+		"this_year": "This Year",
+		"search": {
+			"name_label": "Name",
+			"name_placeholder": "Search by name...",
+			"year_label": "Year",
+			"year_placeholder": "Select year..."
+		},
+		"naming_guide": {
+			"title": "Naming Minutes",
+			"use_format": "Use format",
+			"example": "Ex: 2026-01-05_Board_Meeting_1.pdf - Files are ordered newest first."
+		}
+	},
+	"profile": {
+		"title": "Profile",
+		"update_success": "Profile updated!",
+		"email_label": "Email",
+		"email_help": "Email cannot be changed",
+		"name_label": "Name",
+		"apartment_label": "Apartment Number",
+		"optional": "optional",
+		"apartment_placeholder": "e.g. A 101",
+		"apartment_help": "Used for validating votes",
+		"role_label": "Role",
+		"member_since_label": "Member since",
+		"save_changes": "Save Changes"
+	},
+	"settings": {
+		"general": {
+			"title": "General",
+			"languages_title": "Default Languages",
+			"languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
+			"primary_language": "Primary Language",
+			"secondary_language": "Secondary Language",
+			"saved": "Settings saved",
+			"error": "Failed to save settings"
+		},
+		"common": {
+			"save": "Save",
+			"saving": "Saving...",
+			"delete": "Delete",
+			"cancel": "Cancel",
+			"create": "Create",
+			"new": "New",
+			"edit": "Edit",
+			"free": "Free",
+			"none": "None"
+		},
+		"reimbursements": {
+			"title": "Reimbursement Settings",
+			"api_key_title": "OpenRouter API Key",
+			"api_key_desc": "Get your API key from openrouter.ai/keys",
+			"ai_parsing_title": "AI Parsing",
+			"ai_parsing_desc": "Enable AI-assisted parsing for more accurate reply interpretation",
+			"enable_ai": "Enable AI Parsing",
+			"enable_ai_desc": "Use AI to interpret email replies before falling back to keywords",
+			"sort_by": "Sort by",
+			"price": "Price",
+			"name": "Name",
+			"ai_model_label": "AI Model",
+			"select_model": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models",
+			"no_api_key_msg": "Add an API key above to enable AI parsing and select a model.",
+			"save_ai_settings": "Save AI Settings",
+			"keywords_title": "Keywords",
+			"keywords_desc": "Custom keywords for detecting approval or rejection in emails",
+			"default_approval": "Default Approval Keywords",
+			"additional_approval": "Additional Approval Keywords",
+			"approval_placeholder": "paid, done, accepted (comma-separated)",
+			"default_rejection": "Default Rejection Keywords",
+			"additional_rejection": "Additional Rejection Keywords",
+			"rejection_placeholder": "refused, cancelled (comma-separated)",
+			"save_keywords": "Save Keywords"
+		},
+		"roles": {
+			"title": "Role Management",
+			"create_new_title": "Create New Role",
+			"name_label": "Name",
+			"color_label": "Color",
+			"desc_label": "Description",
+			"list_title": "Roles ({{count}})",
+			"system": "System",
+			"permissions_count": "{{count}} permissions",
+			"delete_title": "Delete Role",
+			"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
+			"permissions_header": "Permissions",
+			"select_role_msg": "Select a role from the left to edit permissions"
+		},
+		"users": {
+			"title": "User Management",
+			"headers": {
+				"name": "Name",
+				"email": "Email",
+				"apartment": "Apartment",
+				"role": "Role",
+				"joined": "Joined"
+			},
+			"no_users": "No users yet",
+			"super_admin": "Super Admin",
+			"role_updated": "Role updated",
+			"cannot_change_super_admin": "Cannot change Super Admin role",
+			"update_failed": "Failed to update role"
+		}
+	},
+	"contact": {
+		"title": "Contact",
+		"description": "Contact the Tenant Committee",
+		"header": "Contact Us",
+		"select_topic": "Select Topic",
+		"select_topic_prompt": "Select a topic to begin",
+		"types": {
+			"committee": {
+				"title": "Apply for Committee",
+				"placeholder": "Tell us about yourself and why you'd like to join the committee..."
+			},
+			"events": {
+				"title": "Suggest an Event",
+				"placeholder": "Describe your event idea: what, when, where..."
+			},
+			"purchases": {
+				"title": "Request a Purchase",
+				"placeholder": "What would you like to purchase and how would it benefit residents?"
+			},
+			"questions": {
+				"title": "Ask a Question",
+				"placeholder": "Write your question here..."
+			}
+		},
+		"form": {
+			"name": "Name",
+			"email": "Email",
+			"apartment": "Apartment",
+			"apartment_placeholder": "e.g. A 123",
+			"update_apartment_profile": "Update apartment number in my profile",
+			"message": "Message",
+			"send": "Send"
+		},
+		"success": {
+			"title": "Message Sent!",
+			"message": "Thank you for contacting us! We will respond as soon as possible.",
+			"back_home": "Back to Home"
+		}
+	},
+	"social": {
+		"title": "Social",
+		"description": "Follow us on social media",
+		"header": "Social Media",
+		"add_link": "Add",
+		"hidden": "(hidden)",
+		"delete_confirm": "Delete?",
+		"no_channels": "No social channels",
+		"add_first": "Add first",
+		"form": {
+			"name": "Name",
+			"icon": "Icon",
+			"url": "URL",
+			"color": "Color",
+			"sort_order": "Order",
+			"active": "Active"
+		},
+		"new": {
+			"title": "New Social Channel",
+			"header": "New Social Channel",
+			"hidden_desc": "Hidden channels only visible to staff",
+			"sort_desc": "Lower numbers appear first"
+		},
+		"colors": {
+			"blue": "Blue",
+			"dark_blue": "Dark Blue",
+			"pink": "Pink",
+			"purple": "Purple",
+			"red": "Red",
+			"green": "Green",
+			"orange": "Orange",
+			"gray": "Gray"
+		},
+		"icons": {
+			"telegram": "Telegram",
+			"instagram": "Instagram",
+			"facebook": "Facebook",
+			"website": "Website",
+			"email": "Email",
+			"discord": "Discord",
+			"youtube": "YouTube",
+			"link": "Link"
+		}
+	},
+	"submissions": {
+		"title": "Submissions",
+		"header": "Submissions",
+		"no_submissions": "No submissions yet",
+		"delete_confirm": "Are you sure you want to delete this submission?",
+		"apartment": "Apartment",
+		"table": {
+			"time": "Time",
+			"type": "Type",
+			"sender": "Sender",
+			"message": "Message",
+			"status": "Status"
+		}
+	},
+	"events": {
+		"title": "Events",
+		"header": "Events",
+		"upcoming": "Upcoming",
+		"no_upcoming": "No upcoming events",
+		"no_results": "No results",
+		"open_calendar": "Open Calendar",
+		"all_day": "All Day",
+		"search": {
+			"label": "Event",
+			"placeholder": "Search by name..."
+		}
+	}
+}

@@ -9,7 +9,10 @@ export default [
 	route("social/new", "routes/social.new.tsx"),
 	route("treasury", "routes/treasury.tsx"),
 	route("treasury/breakdown", "routes/treasury.breakdown.tsx"),
-	route("treasury/breakdown/:transactionId/edit", "routes/treasury.breakdown.$transactionId.edit.tsx"),
+	route(
+		"treasury/breakdown/:transactionId/edit",
+		"routes/treasury.breakdown.$transactionId.edit.tsx",
+	),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
 	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
 	route("treasury/new", "routes/treasury.new.tsx"),
@@ -26,6 +29,7 @@ export default [
 	// Staff routes (admin + board_member)
 	route("submissions", "routes/submissions.tsx"),
 	// Settings routes (admin only)
+	route("settings/general", "routes/settings.general.tsx"),
 	route("settings/users", "routes/settings.users.tsx"),
 	route("settings/roles", "routes/settings.roles.tsx"),
 	route("settings/reimbursements", "routes/settings.reimbursements.tsx"),
@@ -35,5 +39,5 @@ export default [
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),
 	route("api/webhooks/resend", "routes/api.webhooks.resend.tsx"),
 	route("api/treasury/export", "routes/api.treasury.export.tsx"),
+	route("api/set-language", "routes/api.set-language.ts"),
 ] satisfies RouteConfig;
-

@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, uuid, integer, decimal, boolean } from "drizzle-orm/pg-core";
+import {
+	boolean,
+	decimal,
+	integer,
+	pgTable,
+	text,
+	timestamp,
+	uuid,
+} from "drizzle-orm/pg-core";
 
 // ============================================
 // RBAC (Role-Based Access Control) System
@@ -7,11 +15,11 @@ import { pgTable, text, timestamp, uuid, integer, decimal, boolean } from "drizz
 /**
  * Roles table schema
  * Admin-defined roles that can be assigned to users
- * 
+ *
  * IMPORTANT: Permission definitions are stored in app/lib/permissions.ts
  * The `permissions` array on each role stores permission NAME strings
  * that must match keys defined in the PERMISSIONS constant.
- * 
+ *
  * To add a new permission:
  * 1. Add it to PERMISSIONS in app/lib/permissions.ts
  * 2. Assign it to roles via the admin UI or seed-rbac.ts
@@ -36,16 +44,21 @@ export type NewRole = typeof roles.$inferInsert;
 /**
  * Users table schema
  * Stores authenticated user information
- * 
- * Users MUST have a roleId assigned. New users are automatically 
+ *
+ * Users MUST have a roleId assigned. New users are automatically
  * assigned the "Resident" role when created via upsertUser().
  */
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	email: text("email").notNull().unique(),
 	name: text("name").notNull(),
-	roleId: uuid("role_id").references(() => roles.id).notNull(), // Required role reference
+	roleId: uuid("role_id")
+		.references(() => roles.id)
+		.notNull(), // Required role reference
 	apartmentNumber: text("apartment_number"),
+	// Language preferences
+	primaryLanguage: text("primary_language").notNull().default("fi"),
+	secondaryLanguage: text("secondary_language").notNull().default("en"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -82,7 +95,10 @@ export const inventoryItems = pgTable("inventory_items", {
 	value: decimal("value", { precision: 10, scale: 2 }).default("0"),
 	showInInfoReel: boolean("show_in_info_reel").notNull().default(false),
 	// Lifecycle tracking
-	status: text("status").$type<InventoryItemStatus>().notNull().default("active"),
+	status: text("status")
+		.$type<InventoryItemStatus>()
+		.notNull()
+		.default("active"),
 	removedAt: timestamp("removed_at"),
 	removalReason: text("removal_reason").$type<RemovalReason>(),
 	removalNotes: text("removal_notes"),
@@ -111,7 +127,9 @@ export type PurchaseStatus = "pending" | "approved" | "reimbursed" | "rejected";
 export const purchases = pgTable("purchases", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	// Optional link to inventory item (null for consumables like food)
-	inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id),
+	inventoryItemId: uuid("inventory_item_id").references(
+		() => inventoryItems.id,
+	),
 	// Description for standalone purchases (e.g., "Kahvitarjoilu kokoukseen")
 	description: text("description"),
 	// Amount for the purchase (separate from inventory item value)
@@ -164,7 +182,11 @@ export type TransactionStatus = "pending" | "complete" | "paused" | "declined";
  * - approved: Reimbursement approved
  * - declined: Reimbursement rejected
  */
-export type ReimbursementStatus = "not_requested" | "requested" | "approved" | "declined";
+export type ReimbursementStatus =
+	| "not_requested"
+	| "requested"
+	| "approved"
+	| "declined";
 
 /**
  * Transactions table schema
@@ -179,8 +201,13 @@ export const transactions = pgTable("transactions", {
 	category: text("category"),
 	date: timestamp("date").notNull(),
 	// Status tracking
-	status: text("status").$type<TransactionStatus>().notNull().default("complete"),
-	reimbursementStatus: text("reimbursement_status").$type<ReimbursementStatus>().default("not_requested"),
+	status: text("status")
+		.$type<TransactionStatus>()
+		.notNull()
+		.default("complete"),
+	reimbursementStatus: text("reimbursement_status")
+		.$type<ReimbursementStatus>()
+		.default("not_requested"),
 	// Links to other entities (inventoryItemId moved to junction table)
 	purchaseId: uuid("purchase_id").references(() => purchases.id),
 	// Timestamps
@@ -196,17 +223,26 @@ export type NewTransaction = typeof transactions.$inferInsert;
  * Allows multiple items per transaction (bulk purchases) and
  * items appearing in multiple transactions (restocking)
  */
-export const inventoryItemTransactions = pgTable("inventory_item_transactions", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id).notNull(),
-	transactionId: uuid("transaction_id").references(() => transactions.id).notNull(),
-	// Quantity of this item in this transaction (for bulk purchases)
-	quantity: integer("quantity").notNull().default(1),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const inventoryItemTransactions = pgTable(
+	"inventory_item_transactions",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		inventoryItemId: uuid("inventory_item_id")
+			.references(() => inventoryItems.id)
+			.notNull(),
+		transactionId: uuid("transaction_id")
+			.references(() => transactions.id)
+			.notNull(),
+		// Quantity of this item in this transaction (for bulk purchases)
+		quantity: integer("quantity").notNull().default(1),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+);
 
-export type InventoryItemTransaction = typeof inventoryItemTransactions.$inferSelect;
-export type NewInventoryItemTransaction = typeof inventoryItemTransactions.$inferInsert;
+export type InventoryItemTransaction =
+	typeof inventoryItemTransactions.$inferSelect;
+export type NewInventoryItemTransaction =
+	typeof inventoryItemTransactions.$inferInsert;
 
 /**
  * Submission types matching contact form options
@@ -234,7 +270,10 @@ export const submissions = pgTable("submissions", {
 	email: text("email").notNull(),
 	apartmentNumber: text("apartment_number"),
 	message: text("message").notNull(),
-	status: text("status").$type<SubmissionStatus>().notNull().default("Uusi / New"),
+	status: text("status")
+		.$type<SubmissionStatus>()
+		.notNull()
+		.default("Uusi / New"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

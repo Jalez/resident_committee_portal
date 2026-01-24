@@ -2,11 +2,11 @@ import { NeonAdapter } from "./adapters/neon";
 import { PostgresAdapter } from "./adapters/postgres";
 import type { DatabaseAdapter } from "./adapters/types";
 
-// Re-export types and schema
-export * from "./schema";
-export * from "./adapters/types";
 export { NeonAdapter } from "./adapters/neon";
 export { PostgresAdapter } from "./adapters/postgres";
+export * from "./adapters/types";
+// Re-export types and schema
+export * from "./schema";
 
 /**
  * Supported database providers
@@ -44,7 +44,7 @@ let dbInstance: DatabaseAdapter | null = null;
 /**
  * Get the database instance
  * Uses environment variables for configuration
- * 
+ *
  * Required env vars:
  * - DATABASE_URL: PostgreSQL connection string
  * - DATABASE_PROVIDER: (optional) "postgres" | "neon" (default: "postgres" in dev, "neon" in prod)
@@ -60,8 +60,10 @@ export function getDatabase(): DatabaseAdapter {
 	}
 
 	// Default to postgres for local dev, neon for production
-	const defaultProvider = process.env.NODE_ENV === "production" ? "neon" : "postgres";
-	const provider = (process.env.DATABASE_PROVIDER as DatabaseProvider) || defaultProvider;
+	const defaultProvider =
+		process.env.NODE_ENV === "production" ? "neon" : "postgres";
+	const provider =
+		(process.env.DATABASE_PROVIDER as DatabaseProvider) || defaultProvider;
 
 	dbInstance = createDatabaseAdapter({
 		provider,

@@ -1,69 +1,86 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
+import { useTranslation } from "react-i18next";
+import { useRouteLoaderData } from "react-router";
 import { useInfoReel } from "./info-reel-context";
+import { useUser } from "./user-context";
 
-export type Language = "fi" | "en";
+export type Language = string;
 
 interface BilingualText {
-    finnish: string;
-    english: string;
+	finnish: string;
+	english: string;
 }
 
 interface LanguageContextValue {
-    language: Language;
-    setLanguage: (lang: Language) => void;
-    getText: (text: BilingualText) => string | ReactNode;
-    isInfoReel: boolean;
+	language: Language;
+	setLanguage: (lang: Language) => void;
+	getText: (text: BilingualText) => string | ReactNode;
+	isInfoReel: boolean;
+	primaryLanguage: string;
+	secondaryLanguage: string;
+	supportedLanguages: string[];
+	languageNames: Record<string, string>;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-const STORAGE_KEY = "hippos-portal-language";
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    const { isInfoReel } = useInfoReel();
-    const [language, setLanguageState] = useState<Language>("fi");
+	const { isInfoReel } = useInfoReel();
+	const { i18n } = useTranslation();
+	const { user } = useUser();
 
-    // Load from local storage on mount
-    useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === "fi" || stored === "en") {
-            setLanguageState(stored);
-        }
-    }, []);
+	// Get supported languages and language names from root loader
+	const rootData = useRouteLoaderData<typeof import("~/root").loader>("root");
+	const supportedLanguages = rootData?.supportedLanguages || ["en", "fi", "sv"];
+	const languageNames = rootData?.languageNames || {};
 
-    const setLanguage = (lang: Language) => {
-        setLanguageState(lang);
-        localStorage.setItem(STORAGE_KEY, lang);
-    };
+	// Default to fi/en if user not loaded yet (though this provider is inside UserProvider)
+	// or if user is somehow null (shouldn't be for guest context)
+	const primaryLanguage = user?.primaryLanguage || "fi";
+	const secondaryLanguage = user?.secondaryLanguage || "en";
 
-    const getText = (text: BilingualText): string | ReactNode => {
-        // In info reel mode, we don't return a single string, we return both (handled by components)
-        // BUT for simple text consumers, if they call this in info reel mode, 
-        // we probably want to return Finnish or both concatenated?
-        // Actually, components like PageHeader handle bilingual display themselves when in info reel mode.
-        // This helper is primarily for "dumb" components or when we want to force single language.
+	// Derived state from i18next - use the current language or fallback to first supported language
+	const currentLang = i18n.language || supportedLanguages[0] || "en";
+	const language = supportedLanguages.includes(currentLang)
+		? currentLang
+		: supportedLanguages[0] || "en";
 
-        if (isInfoReel) {
-            // If something blindly calls getText in info reel mode, return Finnish (primary)
-            // or maybe a formatted string? Let's return Finnish for now as safe default
-            // for places that can't handle custom bilingual UI.
-            return text.finnish;
-        }
+	const setLanguage = (lang: Language) => {
+		i18n.changeLanguage(lang);
+	};
 
-        return language === "fi" ? text.finnish : text.english;
-    };
+	const getText = (text: BilingualText): string | ReactNode => {
+		// Legacy support helper
+		if (isInfoReel) {
+			return text.finnish;
+		}
+		if (language === "fi") return text.finnish;
+		// Fallback to English for other languages as we don't have trilingual content in DB
+		return text.english;
+	};
 
-    return (
-        <LanguageContext.Provider value={{ language, setLanguage, getText, isInfoReel }}>
-            {children}
-        </LanguageContext.Provider>
-    );
+	return (
+		<LanguageContext.Provider
+			value={{
+				language,
+				setLanguage,
+				getText,
+				isInfoReel,
+				primaryLanguage,
+				secondaryLanguage,
+				supportedLanguages,
+				languageNames,
+			}}
+		>
+			{children}
+		</LanguageContext.Provider>
+	);
 }
 
 export function useLanguage() {
-    const context = useContext(LanguageContext);
-    if (!context) {
-        throw new Error("useLanguage must be used within a LanguageProvider");
-    }
-    return context;
+	const context = useContext(LanguageContext);
+	if (!context) {
+		throw new Error("useLanguage must be used within a LanguageProvider");
+	}
+	return context;
 }

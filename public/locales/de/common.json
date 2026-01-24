@@ -1,0 +1,89 @@
+{
+	"app": {
+		"title": "Mieterausschuss",
+		"setup_required": "Einrichtung erforderlich",
+		"setup_message": "Die App scheint noch nicht konfiguriert zu sein. Bitte überprüfen Sie Ihre Umgebungsvariablen.",
+		"error_details": "Fehlerdetails",
+		"open_setup": "Einrichtungsanleitung öffnen",
+		"copy_env": "Oder kopieren Sie .env.template nach .env und konfigurieren Sie Ihre Einstellungen."
+	},
+	"nav": {
+		"menu": "Menü",
+		"navigation": "Navigation",
+		"settings": "Einstellungen",
+		"profile": "Profil",
+		"edit_profile": "Profil bearbeiten",
+		"log_out": "Abmelden",
+		"users": "Benutzer",
+		"roles": "Rollen",
+		"reimbursements": "Erstattungen",
+		"get_involved": "Mitmachen",
+		"events": "Veranstaltungen",
+		"treasury": "Kasse",
+		"minutes": "Protokolle",
+		"inventory": "Inventar",
+		"social": "Sozial",
+		"login": "Anmelden",
+		"submissions": "Einreichungen"
+	},
+	"lang": {
+		"name": "Deutsch",
+		"label": "Sprache"
+	},
+	"home": {
+		"header": "Mitmachen",
+		"contact": {
+			"title": "Kontaktieren Sie uns"
+		},
+		"options": {
+			"committee": {
+				"title": "Bewerben Sie sich für den Mieterausschuss"
+			},
+			"events": {
+				"title": "Veranstaltungen vorschlagen"
+			},
+			"purchases": {
+				"title": "Käufe anfordern"
+			},
+			"questions": {
+				"title": "Fragen stellen"
+			}
+		}
+	},
+	"profile": {
+		"title": "Profil",
+		"update_success": "Profil aktualisiert!",
+		"email_label": "E-Mail",
+		"email_help": "E-Mail kann nicht geändert werden",
+		"name_label": "Name",
+		"apartment_label": "Wohnungsnummer",
+		"optional": "optional",
+		"apartment_placeholder": "z.B. A 101",
+		"apartment_help": "Wird zur Validierung von Stimmen verwendet",
+		"role_label": "Rolle",
+		"member_since_label": "Mitglied seit",
+		"save_changes": "Änderungen speichern"
+	},
+	"settings": {
+		"general": {
+			"title": "Allgemein",
+			"languages_title": "Standardsprachen",
+			"languages_desc": "Legen Sie die Standardsprachen für neue Benutzer und Gäste fest. Diese können von Benutzern in ihrem Profil überschrieben werden.",
+			"primary_language": "Hauptsprache",
+			"secondary_language": "Zweitsprache",
+			"saved": "Einstellungen gespeichert",
+			"error": "Einstellungen konnten nicht gespeichert werden"
+		},
+		"common": {
+			"save": "Speichern",
+			"saving": "Speichern...",
+			"delete": "Löschen",
+			"cancel": "Abbrechen",
+			"create": "Erstellen",
+			"new": "Neu",
+			"edit": "Bearbeiten",
+			"free": "Frei",
+			"none": "Keine"
+		}
+	}
+}

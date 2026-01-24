@@ -1,14 +1,8 @@
-import type { Route } from "./+types/settings.roles";
-import { Form, useNavigation, useActionData } from "react-router";
-import { requirePermission } from "~/lib/auth.server";
-import { getDatabase, type Role } from "~/db";
-import { PageWrapper } from "~/components/layout/page-layout";
-import { cn } from "~/lib/utils";
-import { SITE_CONFIG } from "~/lib/config.server";
-import { Button } from "~/components/ui/button";
-import { useState, useEffect } from "react";
-import { PERMISSIONS, getPermissionsByCategory, type PermissionName } from "~/lib/permissions";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
+import { PageWrapper } from "~/components/layout/page-layout";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -20,6 +14,13 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
+import { Button } from "~/components/ui/button";
+import { getDatabase } from "~/db";
+import { requirePermission } from "~/lib/auth.server";
+import { SITE_CONFIG } from "~/lib/config.server";
+import { getPermissionsByCategory } from "~/lib/permissions";
+import { cn } from "~/lib/utils";
+import type { Route } from "./+types/settings.roles";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -32,7 +33,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Throw 404 for unauthorized access to hide admin routes
 	try {
 		await requirePermission(request, "settings:roles", getDatabase);
-	} catch (error) {
+	} catch (_error) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
@@ -67,14 +68,14 @@ export async function action({ request }: Route.ActionArgs) {
 		} else {
 			await requirePermission(request, "roles:write", getDatabase);
 		}
-	} catch (error) {
+	} catch (_error) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
 	if (actionType === "create") {
 		const name = formData.get("name") as string;
 		const description = formData.get("description") as string;
-		const color = formData.get("color") as string || "bg-gray-500";
+		const color = (formData.get("color") as string) || "bg-gray-500";
 
 		if (name) {
 			await db.createRole({
@@ -104,7 +105,7 @@ export async function action({ request }: Route.ActionArgs) {
 		if (roleId) {
 			try {
 				await db.deleteRole(roleId);
-			} catch (error) {
+			} catch (_error) {
 				return { error: "Cannot delete system role" };
 			}
 		}
@@ -138,12 +139,17 @@ const ROLE_COLORS = [
 
 export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 	const { roles, permissionsByCategory } = loaderData;
+	const { t } = useTranslation();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 
 	const [selectedRole, setSelectedRole] = useState<string | null>(null);
 	const [showNewRoleForm, setShowNewRoleForm] = useState(false);
-	const actionData = useActionData<{ success?: boolean; action?: string; error?: string }>();
+	const actionData = useActionData<{
+		success?: boolean;
+		action?: string;
+		error?: string;
+	}>();
 
 	// Show toast notifications on action completion
 	useEffect(() => {
@@ -173,25 +179,30 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 				<div className="flex items-center justify-between mb-8">
 					<div>
 						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							Roolihallinta
+							{t("settings.roles.title")}
 						</h1>
-						<p className="text-lg text-gray-500">Role Management</p>
 					</div>
 				</div>
 
 				{/* New Role Form */}
 				{showNewRoleForm && (
 					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-						<h2 className="text-xl font-bold mb-4">Luo uusi rooli / Create New Role</h2>
+						<h2 className="text-xl font-bold mb-4">
+							{t("settings.roles.create_new_title")}
+						</h2>
 						<Form method="post" className="space-y-4">
 							<input type="hidden" name="_action" value="create" />
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
-									<label className="block text-sm font-medium mb-1">
-										Nimi / Name *
+									<label
+										htmlFor="role-name"
+										className="block text-sm font-medium mb-1"
+									>
+										{t("settings.roles.name_label")} *
 									</label>
 									<input
+										id="role-name"
 										type="text"
 										name="name"
 										required
@@ -200,14 +211,18 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									/>
 								</div>
 								<div>
-									<label className="block text-sm font-medium mb-1">
-										Väri / Color
+									<label
+										htmlFor="role-color"
+										className="block text-sm font-medium mb-1"
+									>
+										{t("settings.roles.color_label")}
 									</label>
 									<select
+										id="role-color"
 										name="color"
 										className="w-full px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700"
 									>
-										{ROLE_COLORS.map(color => (
+										{ROLE_COLORS.map((color) => (
 											<option key={color.value} value={color.value}>
 												{color.label}
 											</option>
@@ -217,10 +232,14 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium mb-1">
-									Kuvaus / Description
+								<label
+									htmlFor="role-desc"
+									className="block text-sm font-medium mb-1"
+								>
+									{t("settings.roles.desc_label")}
 								</label>
 								<input
+									id="role-desc"
 									type="text"
 									name="description"
 									className="w-full px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700"
@@ -234,10 +253,12 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									variant="outline"
 									onClick={() => setShowNewRoleForm(false)}
 								>
-									Peruuta / Cancel
+									{t("settings.common.cancel")}
 								</Button>
 								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting ? "Luodaan..." : "Luo / Create"}
+									{isSubmitting
+										? t("settings.common.saving")
+										: t("settings.common.create")}
 								</Button>
 							</div>
 						</Form>
@@ -249,25 +270,31 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 					<div className="lg:col-span-1">
 						<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
 							<div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-								<h2 className="font-bold">Roolit / Roles ({roles.length})</h2>
+								<h2 className="font-bold">
+									{t("settings.roles.list_title", { count: roles.length })}
+								</h2>
 								<Button
 									size="sm"
 									onClick={() => setShowNewRoleForm(true)}
 									className="bg-blue-600 hover:bg-blue-700"
 								>
-									<span className="material-symbols-outlined text-sm mr-1">add</span>
-									Uusi / New
+									<span className="material-symbols-outlined text-sm mr-1">
+										add
+									</span>
+									{t("settings.common.new")}
 								</Button>
 							</div>
 							<div className="divide-y divide-gray-100 dark:divide-gray-700">
 								{roles.map((role) => (
-									<button
+									<Button
 										key={role.id}
 										type="button"
+										variant="ghost"
 										onClick={() => setSelectedRole(role.id)}
 										className={cn(
-											"w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors",
-											selectedRole === role.id && "bg-blue-50 dark:bg-blue-900/20"
+											"w-full h-auto p-4 justify-start text-left font-normal rounded-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50",
+											selectedRole === role.id &&
+												"bg-blue-50 dark:bg-blue-900/20",
 										)}
 									>
 										<div className="flex items-center gap-3">
@@ -277,16 +304,18 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 													{role.name}
 													{role.isSystem && (
 														<span className="ml-2 text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">
-															System
+															{t("settings.roles.system")}
 														</span>
 													)}
 												</p>
 												<p className="text-sm text-gray-500">
-													{role.permissionCount} permissions
+													{t("settings.roles.permissions_count", {
+														count: role.permissionCount,
+													})}
 												</p>
 											</div>
 										</div>
-									</button>
+									</Button>
 								))}
 							</div>
 						</div>
@@ -300,35 +329,59 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 								<div className="p-6 border-b border-gray-200 dark:border-gray-700">
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-3">
-											<div className={cn("w-4 h-4 rounded-full", selectedRoleData.color)} />
+											<div
+												className={cn(
+													"w-4 h-4 rounded-full",
+													selectedRoleData.color,
+												)}
+											/>
 											<div>
-												<h2 className="text-xl font-bold">{selectedRoleData.name}</h2>
-												<p className="text-sm text-gray-500">{selectedRoleData.description}</p>
+												<h2 className="text-xl font-bold">
+													{selectedRoleData.name}
+												</h2>
+												<p className="text-sm text-gray-500">
+													{selectedRoleData.description}
+												</p>
 											</div>
 										</div>
 										{!selectedRoleData.isSystem && (
 											<AlertDialog>
 												<AlertDialogTrigger asChild>
 													<Button variant="destructive" size="sm">
-														Poista / Delete
+														{t("settings.common.delete")}
 													</Button>
 												</AlertDialogTrigger>
 												<AlertDialogContent>
 													<AlertDialogHeader>
-														<AlertDialogTitle>Poista rooli / Delete Role</AlertDialogTitle>
+														<AlertDialogTitle>
+															{t("settings.roles.delete_title")}
+														</AlertDialogTitle>
 														<AlertDialogDescription>
-															Oletko varma että haluat poistaa roolin "{selectedRoleData.name}"? Tätä toimintoa ei voi peruuttaa.
-															<br /><br />
-															Are you sure you want to delete the role "{selectedRoleData.name}"? This action cannot be undone.
+															{t("settings.roles.delete_confirm", {
+																name: selectedRoleData.name,
+															})}
 														</AlertDialogDescription>
 													</AlertDialogHeader>
 													<AlertDialogFooter>
-														<AlertDialogCancel>Peruuta / Cancel</AlertDialogCancel>
+														<AlertDialogCancel>
+															{t("settings.common.cancel")}
+														</AlertDialogCancel>
 														<Form method="post">
-															<input type="hidden" name="_action" value="delete" />
-															<input type="hidden" name="roleId" value={selectedRoleData.id} />
-															<AlertDialogAction type="submit" className="bg-red-600 hover:bg-red-700 font-bold text-white border-0">
-																Poista / Delete
+															<input
+																type="hidden"
+																name="_action"
+																value="delete"
+															/>
+															<input
+																type="hidden"
+																name="roleId"
+																value={selectedRoleData.id}
+															/>
+															<AlertDialogAction
+																type="submit"
+																className="bg-red-600 hover:bg-red-700 font-bold text-white border-0"
+															>
+																{t("settings.common.delete")}
 															</AlertDialogAction>
 														</Form>
 													</AlertDialogFooter>
@@ -340,51 +393,67 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 
 								{/* Permissions Form */}
 								<Form method="post" className="p-6" key={selectedRoleData.id}>
-									<input type="hidden" name="_action" value="updatePermissions" />
-									<input type="hidden" name="roleId" value={selectedRoleData.id} />
+									<input
+										type="hidden"
+										name="_action"
+										value="updatePermissions"
+									/>
+									<input
+										type="hidden"
+										name="roleId"
+										value={selectedRoleData.id}
+									/>
 
-									<h3 className="font-bold mb-4">Oikeudet / Permissions</h3>
+									<h3 className="font-bold mb-4">
+										{t("settings.roles.permissions_header")}
+									</h3>
 
 									<div className="space-y-6">
-										{Object.entries(permissionsByCategory).map(([category, perms]) => (
-											<div key={category}>
-												<h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-													{category}
-												</h4>
-												<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-													{perms.map((perm) => (
-														<label
-															key={perm.name}
-															className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
-														>
-															<input
-																type="checkbox"
-																name="permissions"
-																value={perm.name}
-																defaultChecked={selectedRoleData.permissions.includes(perm.name)}
-																className="mt-1"
-															/>
-															<div>
-																<p className="font-mono text-sm text-gray-900 dark:text-white">
-																	{perm.name}
-																</p>
-																<p className="text-xs text-gray-500">
-																	{perm.definition.descriptionFi}
-																</p>
-																<p className="text-xs text-gray-400">
-																	{perm.definition.description}
-																</p>
-															</div>
-														</label>
-													))}
+										{Object.entries(permissionsByCategory).map(
+											([category, perms]) => (
+												<div key={category}>
+													<h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+														{category}
+													</h4>
+													<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+														{perms.map((perm) => (
+															<label
+																key={perm.name}
+																className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+															>
+																<input
+																	type="checkbox"
+																	name="permissions"
+																	value={perm.name}
+																	defaultChecked={selectedRoleData.permissions.includes(
+																		perm.name,
+																	)}
+																	className="mt-1"
+																/>
+																<div>
+																	<p className="font-mono text-sm text-gray-900 dark:text-white">
+																		{perm.name}
+																	</p>
+																	<p className="text-xs text-gray-500">
+																		{perm.definition.descriptionFi}
+																	</p>
+																	<p className="text-xs text-gray-400">
+																		{perm.definition.description}
+																	</p>
+																</div>
+															</label>
+														))}
+													</div>
 												</div>
-											</div>
-										))}
+											),
+										)}
 									</div>
 
 									<div className="mt-6 flex justify-end">
 										<Button type="submit" disabled={isSubmitting}>
-											{isSubmitting ? "Tallennetaan..." : "Tallenna / Save"}
+											{isSubmitting
+												? t("settings.common.saving")
+												: t("settings.common.save")}
 										</Button>
 									</div>
 								</Form>
@@ -392,17 +461,12 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 						) : (
 							<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
 								<p className="text-gray-500">
-									Valitse rooli vasemmalta muokataksesi oikeuksia
-								</p>
-								<p className="text-gray-400 text-sm">
-									Select a role from the left to edit permissions
+									{t("settings.roles.select_role_msg")}
 								</p>
 							</div>
 						)}
 					</div>
 				</div>
-
-
 			</div>
 		</PageWrapper>
 	);

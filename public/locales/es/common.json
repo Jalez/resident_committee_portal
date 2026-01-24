@@ -1,0 +1,53 @@
+{
+	"app": {
+		"title": "Comité de Inquilinos",
+		"setup_required": "Configuración Requerida",
+		"setup_message": "Parece que la aplicación aún no está configurada. Por favor, verifique sus variables de entorno.",
+		"error_details": "Detalles del error",
+		"open_setup": "Abrir Guía de Configuración",
+		"copy_env": "O copie .env.template a .env y configure sus ajustes."
+	},
+	"nav": {
+		"menu": "Menú",
+		"navigation": "Navegación",
+		"settings": "Ajustes",
+		"profile": "Perfil",
+		"edit_profile": "Editar perfil",
+		"log_out": "Cerrar sesión",
+		"users": "Usuarios",
+		"roles": "Roles",
+		"reimbursements": "Reembolsos",
+		"get_involved": "Involúcrate",
+		"events": "Eventos",
+		"treasury": "Tesorería",
+		"minutes": "Actas",
+		"inventory": "Inventario",
+		"social": "Social",
+		"login": "Iniciar sesión",
+		"submissions": "Envíos"
+	},
+	"lang": {
+		"name": "Español",
+		"label": "Idioma"
+	},
+	"home": {
+		"header": "Involúcrate",
+		"contact": {
+			"title": "Contáctenos"
+		},
+		"options": {
+			"committee": {
+				"title": "Solicitar unirse al Comité de Inquilinos"
+			},
+			"events": {
+				"title": "Sugerir Eventos"
+			},
+			"purchases": {
+				"title": "Solicitar Compras"
+			},
+			"questions": {
+				"title": "Enviar Preguntas"
+			}
+		}
+	}
+}
