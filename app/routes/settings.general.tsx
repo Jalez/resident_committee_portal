@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
 	Select,
@@ -23,6 +24,7 @@ import { useLanguage } from "~/contexts/language-context";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import {
 	getSystemLanguageDefaults,
 	updateSystemLanguageDefaults,
@@ -39,19 +41,19 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Reuse existing permission or define a new one? Using settings:users as a proxy for admin access for now
-	// Ideally we should have a 'settings:general' permission.
-	// For now, let's use 'settings:users' or just require admin role if we had a check.
-	// Let's assume 'settings:reimbursements' is close enough or use a generic one.
-	// Actually, let's stick to a generic admin permission if available, or just check 'settings:users'
-	// essentially restricting to admins.
 	await requirePermission(request, "settings:general", getDatabase);
 
-	const defaults = await getSystemLanguageDefaults();
+	const db = getDatabase();
+	const [defaults, apiKey] = await Promise.all([
+		getSystemLanguageDefaults(),
+		db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
+	]);
 
 	return {
 		siteConfig: SITE_CONFIG,
 		defaults,
+		apiKey: apiKey ? "••••••••" : "", // Mask API key
+		hasApiKey: !!apiKey,
 	};
 }
 
@@ -59,6 +61,32 @@ export async function action({ request }: Route.ActionArgs) {
 	await requirePermission(request, "settings:general", getDatabase);
 
 	const formData = await request.formData();
+	const intent = formData.get("intent") as string;
+	const db = getDatabase();
+
+	if (intent === "save-api-key") {
+		const apiKey = formData.get("apiKey") as string;
+		if (apiKey && apiKey !== "••••••••") {
+			await db.setSetting(
+				SETTINGS_KEYS.OPENROUTER_API_KEY,
+				apiKey,
+				"OpenRouter API key",
+			);
+		}
+		return { success: true, message: "API key saved" };
+	}
+
+	if (intent === "delete-api-key") {
+		await db.deleteSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+		// Also disable AI parsing features that depend on it
+		await db.setSetting(
+			SETTINGS_KEYS.AI_PARSING_ENABLED,
+			"false",
+			"Enable AI-assisted parsing",
+		);
+		return { success: true, message: "API key deleted" };
+	}
+
 	const primary = formData.get("primaryLanguage") as string;
 	const secondary = formData.get("secondaryLanguage") as string;
 
@@ -72,16 +100,19 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
-	const { defaults } = loaderData;
+	const { defaults, apiKey: serverApiKey, hasApiKey } = loaderData;
 	const { t } = useTranslation();
 	const { supportedLanguages, languageNames } = useLanguage();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 
+	const [apiKey, setApiKey] = useState(serverApiKey);
+
 	useEffect(() => {
 		if (actionData?.success) {
-			toast.success(t("settings.general.saved"));
+			const msg = actionData.message || t("settings.general.saved");
+			toast.success(msg);
 		} else if (actionData?.error) {
 			toast.error(t("settings.general.error"));
 		}
@@ -97,6 +128,7 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				<div className="space-y-6">
+					{/* Language Settings */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
@@ -161,6 +193,55 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 										? t("settings.common.saving")
 										: t("settings.common.save")}
 								</Button>
+							</Form>
+						</CardContent>
+					</Card>
+
+					{/* OpenRouter API Key */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<span className="material-symbols-outlined">key</span>
+								OpenRouter API Key
+							</CardTitle>
+							<CardDescription>
+								Required for AI features (Parsing, Analytics)
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<Form method="post" className="space-y-4">
+								<input type="hidden" name="intent" value="save-api-key" />
+								<div className="flex gap-2">
+									<Input
+										name="apiKey"
+										type="password"
+										value={apiKey}
+										onChange={(e) => setApiKey(e.target.value)}
+										placeholder="sk-or-v1-..."
+										className="font-mono"
+									/>
+									<Button type="submit" disabled={isSubmitting}>
+										{isSubmitting
+											? t("settings.common.saving")
+											: t("settings.common.save")}
+									</Button>
+									{hasApiKey && (
+										<Form method="post">
+											<input
+												type="hidden"
+												name="intent"
+												value="delete-api-key"
+											/>
+											<Button
+												type="submit"
+												variant="destructive"
+												disabled={isSubmitting}
+											>
+												{t("settings.common.delete")}
+											</Button>
+										</Form>
+									)}
+								</div>
 							</Form>
 						</CardContent>
 					</Card>

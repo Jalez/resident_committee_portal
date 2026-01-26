@@ -86,18 +86,6 @@ export async function action({ request }: Route.ActionArgs) {
 	const db = getDatabase();
 
 	try {
-		if (intent === "save-api-key") {
-			const apiKey = formData.get("apiKey") as string;
-			if (apiKey && apiKey !== "••••••••") {
-				await db.setSetting(
-					SETTINGS_KEYS.OPENROUTER_API_KEY,
-					apiKey,
-					"OpenRouter API key for AI parsing",
-				);
-			}
-			return { success: true, message: "API key saved" };
-		}
-
 		if (intent === "save-ai-settings") {
 			const aiEnabled = formData.get("aiEnabled") === "true";
 			const aiModel = formData.get("aiModel") as string;
@@ -134,16 +122,6 @@ export async function action({ request }: Route.ActionArgs) {
 			return { success: true, message: "Keywords saved" };
 		}
 
-		if (intent === "delete-api-key") {
-			await db.deleteSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
-			await db.setSetting(
-				SETTINGS_KEYS.AI_PARSING_ENABLED,
-				"false",
-				"Enable AI-assisted parsing",
-			);
-			return { success: true, message: "API key deleted" };
-		}
-
 		return { error: "Unknown action" };
 	} catch (error) {
 		console.error("[Settings] Error:", error);
@@ -160,7 +138,6 @@ export default function SettingsReimbursements({
 	const actionData = useActionData<typeof action>();
 	const isSubmitting = navigation.state === "submitting";
 
-	const [apiKey, setApiKey] = useState(settings.apiKey);
 	const [aiEnabled, setAiEnabled] = useState(settings.aiEnabled);
 	const [aiModel, setAiModel] = useState(settings.aiModel);
 	const [customApproval, setCustomApproval] = useState(settings.customApproval);
@@ -205,59 +182,28 @@ export default function SettingsReimbursements({
 				</div>
 
 				<div className="space-y-6">
-					{/* Status message */}
-
-					{/* OpenRouter API Key */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<span className="material-symbols-outlined">key</span>
-								{t("settings.reimbursements.api_key_title")}
-							</CardTitle>
-							<CardDescription>
-								{t("settings.reimbursements.api_key_desc")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Form method="post" className="space-y-4">
-								<input type="hidden" name="intent" value="save-api-key" />
-								<div className="flex gap-2">
-									<Input
-										name="apiKey"
-										type="password"
-										value={apiKey}
-										onChange={(e) => setApiKey(e.target.value)}
-										placeholder="sk-or-v1-..."
-										className="font-mono"
-									/>
-									<Button type="submit" disabled={isSubmitting}>
-										{isSubmitting
-											? t("settings.common.saving")
-											: t("settings.common.save")}
-									</Button>
-									{settings.hasApiKey && (
-										<Form method="post">
-											<input
-												type="hidden"
-												name="intent"
-												value="delete-api-key"
-											/>
-											<Button
-												type="submit"
-												variant="destructive"
-												disabled={isSubmitting}
-											>
-												{t("settings.common.delete")}
-											</Button>
-										</Form>
-									)}
-								</div>
-							</Form>
-						</CardContent>
-					</Card>
+					{/* API Key missing warning */}
+					{!settings.hasApiKey && (
+						<Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20">
+							<CardHeader>
+								<CardTitle className="text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+									<span className="material-symbols-outlined">warning</span>
+									AI Features Disabled
+								</CardTitle>
+								<CardDescription className="text-yellow-700 dark:text-yellow-300">
+									You need to configure the OpenRouter API Key in General Settings to use AI features.
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<Button variant="outline" asChild>
+									<a href="/settings/general">Go to General Settings</a>
+								</Button>
+							</CardContent>
+						</Card>
+					)}
 
 					{/* AI Model Selection */}
-					<Card>
+					<Card className={!settings.hasApiKey ? "opacity-50 pointer-events-none" : ""}>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<span className="material-symbols-outlined">smart_toy</span>
@@ -348,12 +294,6 @@ export default function SettingsReimbursements({
 											</p>
 										</div>
 									</>
-								)}
-
-								{!settings.hasApiKey && (
-									<p className="text-sm text-muted-foreground italic">
-										{t("settings.reimbursements.no_api_key_msg")}
-									</p>
 								)}
 
 								<Button
