@@ -35,7 +35,12 @@ import { requirePermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
-import { isEmailConfigured, sendReimbursementEmail } from "~/lib/email.server";
+import {
+	buildMinutesAttachment,
+	buildReceiptAttachments,
+	isEmailConfigured,
+	sendReimbursementEmail,
+} from "~/lib/email.server";
 import {
 	getMinutesByYear,
 	getOrCreateReceiptsFolder,
@@ -335,21 +340,31 @@ export async function action({ request }: Route.ActionArgs) {
 		const purchase = await db.createPurchase(newPurchase);
 		purchaseId = purchase.id;
 
-		// Send email with receipt links (fire-and-forget to avoid timeout on Vercel Hobby plan)
-		sendReimbursementEmail(
-			{
-				itemName: description,
-				itemValue: amount,
-				purchaserName,
-				bankAccount,
-				minutesReference:
-					minutesName || minutesId || "Ei määritetty / Not specified",
-				minutesUrl,
-				notes,
-				receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-			},
-			purchase.id,
-		)
+		// Send email with minutes + receipt attachments (fire-and-forget to avoid timeout on Vercel Hobby plan)
+		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
+		const minutesAttachmentPromise = buildMinutesAttachment(
+			minutesId,
+			minutesName,
+		);
+		Promise.all([minutesAttachmentPromise, receiptAttachmentsPromise])
+			.then(([minutesAttachment, receiptAttachments]) =>
+				sendReimbursementEmail(
+					{
+						itemName: description,
+						itemValue: amount,
+						purchaserName,
+						bankAccount,
+						minutesReference:
+							minutesName || minutesId || "Ei määritetty / Not specified",
+						minutesUrl,
+						notes,
+						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+					},
+					purchase.id,
+					minutesAttachment || undefined,
+					receiptAttachments,
+				),
+			)
 			.then(async (emailResult) => {
 				if (emailResult.success) {
 					await db.updatePurchase(purchase.id, {

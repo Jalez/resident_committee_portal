@@ -11,6 +11,7 @@
  */
 
 import { Resend } from "resend";
+import { getFileAsBase64 } from "./google.server";
 
 interface EmailConfig {
 	resendApiKey: string;
@@ -157,16 +158,17 @@ export async function parseReimbursementReply(
 }
 
 /**
- * Send reimbursement request email with receipt links and optional minutes attachment
+ * Send reimbursement request email with receipt links and optional attachments
  * Now returns message ID for tracking replies
  *
- * Receipt files are now stored in Google Drive and sent as links instead of attachments
- * to avoid Vercel serverless function timeout issues with large files.
+ * Receipt files are stored in Google Drive and attached when available.
+ * Links remain as a fallback for recipients that prefer to open in Drive.
  */
 export async function sendReimbursementEmail(
 	data: ReimbursementEmailData,
 	purchaseId: string,
 	minutesFile?: EmailAttachment,
+	receiptFiles?: EmailAttachment[],
 ): Promise<SendEmailResult> {
 	if (!emailConfig.recipientEmail) {
 		console.error("[sendReimbursementEmail] Missing RECIPIENT_EMAIL");
@@ -225,6 +227,15 @@ export async function sendReimbursementEmail(
 			});
 		}
 
+		if (receiptFiles && receiptFiles.length > 0) {
+			for (const receipt of receiptFiles) {
+				attachments.push({
+					filename: receipt.name,
+					content: receipt.content,
+				});
+			}
+		}
+
 		const { data: responseData, error } = await resend.emails.send({
 			from: emailConfig.senderEmail,
 			to: emailConfig.recipientEmail,
@@ -252,6 +263,85 @@ export async function sendReimbursementEmail(
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
+	}
+}
+
+/**
+ * Build attachments for receipt links by downloading files from Google Drive
+ */
+export async function buildReceiptAttachments(
+	receiptLinks?: ReceiptLink[],
+): Promise<EmailAttachment[]> {
+	if (!receiptLinks || receiptLinks.length === 0) {
+		return [];
+	}
+
+	const attachments = await Promise.all(
+		receiptLinks.map(async (receipt) => {
+			try {
+				const content = await getFileAsBase64(receipt.id);
+				if (!content) {
+					console.warn(
+						`[buildReceiptAttachments] Failed to download receipt: ${receipt.id}`,
+					);
+					return null;
+				}
+				return {
+					name: receipt.name,
+					type: "application/octet-stream",
+					content,
+				};
+			} catch (error) {
+				console.error(
+					`[buildReceiptAttachments] Error downloading receipt ${receipt.id}:`,
+					error,
+				);
+				return null;
+			}
+		}),
+	);
+
+	return attachments.filter((a): a is EmailAttachment => a !== null);
+}
+
+/**
+ * Build attachment for minutes file by downloading from Google Drive
+ */
+export async function buildMinutesAttachment(
+	minutesId?: string | null,
+	minutesName?: string | null,
+): Promise<EmailAttachment | null> {
+	if (!minutesId) {
+		return null;
+	}
+
+	try {
+		const content = await getFileAsBase64(minutesId);
+		if (!content) {
+			console.warn(
+				`[buildMinutesAttachment] Failed to download minutes: ${minutesId}`,
+			);
+			return null;
+		}
+
+		const baseName = minutesName?.trim()
+			? minutesName.trim()
+			: `minutes-${minutesId}`;
+		const filename = baseName.toLowerCase().endsWith(".pdf")
+			? baseName
+			: `${baseName}.pdf`;
+
+		return {
+			name: filename,
+			type: "application/pdf",
+			content,
+		};
+	} catch (error) {
+		console.error(
+			`[buildMinutesAttachment] Error downloading minutes ${minutesId}:`,
+			error,
+		);
+		return null;
 	}
 }
 
