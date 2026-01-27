@@ -42,7 +42,6 @@ import {
 	sendReimbursementEmail,
 } from "~/lib/email.server";
 import {
-	getMinutesByYear,
 	getOrCreateReceiptsFolder,
 	getReceiptsByYear,
 	uploadReceiptToDrive,
@@ -146,19 +145,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		),
 	].sort();
 
-	// Get recent minutes for dropdown
-	const minutesByYear = await getMinutesByYear();
-	const recentMinutes = minutesByYear
-		.flatMap((year) =>
-			year.files.map((file) => ({
-				id: file.id,
-				name: file.name,
-				url: file.url,
-				year: year.year,
-			})),
-		)
-		.slice(0, 20);
-
 	// Get receipts for picker
 	const receiptsByYear = await getReceiptsByYear();
 	const currentYearReceipts = receiptsByYear.find(
@@ -168,7 +154,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		currentYear: new Date().getFullYear(),
-		recentMinutes,
+		recentMinutes: [],
 		emailConfigured: isEmailConfigured(),
 		// Pre-fill data
 		prefill: {
@@ -340,13 +326,16 @@ export async function action({ request }: Route.ActionArgs) {
 		const purchase = await db.createPurchase(newPurchase);
 		purchaseId = purchase.id;
 
-		// Send email with minutes + receipt attachments (fire-and-forget to avoid timeout on Vercel Hobby plan)
+		// Send email with minutes + receipt attachments in background
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
 		const minutesAttachmentPromise = buildMinutesAttachment(
 			minutesId,
 			minutesName,
 		);
-		Promise.all([minutesAttachmentPromise, receiptAttachmentsPromise])
+		const emailTask = Promise.all([
+			minutesAttachmentPromise,
+			receiptAttachmentsPromise,
+		])
 			.then(([minutesAttachment, receiptAttachments]) =>
 				sendReimbursementEmail(
 					{
@@ -382,6 +371,7 @@ export async function action({ request }: Route.ActionArgs) {
 					emailError: error instanceof Error ? error.message : "Unknown error",
 				});
 			});
+		await emailTask;
 	}
 
 	const newTransaction: DbNewTransaction = {

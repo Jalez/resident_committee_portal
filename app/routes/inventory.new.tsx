@@ -29,7 +29,6 @@ import {
 	sendReimbursementEmail,
 } from "~/lib/email.server";
 import {
-	getMinutesByYear,
 	getOrCreateReceiptsFolder,
 	getReceiptsByYear,
 	uploadReceiptToDrive,
@@ -50,18 +49,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const db = getDatabase();
 	const t = await i18next.getFixedT(request, "common");
 	const metaTitle = t("inventory.form.title_new");
-
-	// Get recent minutes for dropdown
-	const minutesByYear = await getMinutesByYear();
-	const recentMinutes = minutesByYear
-		.flatMap((year) =>
-			year.files.map((file) => ({
-				id: file.id,
-				name: file.name,
-				year: year.year,
-			})),
-		)
-		.slice(0, 20);
 
 	// Get recent transactions for duplicate detection
 	const currentYear = new Date().getFullYear();
@@ -97,7 +84,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	return {
 		siteConfig: SITE_CONFIG,
-		recentMinutes,
+		recentMinutes: [],
 		recentTransactions,
 		emailConfigured: isEmailConfigured(),
 		currentYear,
@@ -254,10 +241,13 @@ export async function action({ request }: Route.ActionArgs) {
 			const purchase = await db.createPurchase(newPurchase);
 			purchaseId = purchase.id;
 
-			// Send email with minutes + receipt attachments (fire-and-forget)
+			// Send email with minutes + receipt attachments in background
 			const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
 			const minutesAttachmentPromise = buildMinutesAttachment(minutesId, null);
-			Promise.all([minutesAttachmentPromise, receiptAttachmentsPromise])
+			const emailTask = Promise.all([
+				minutesAttachmentPromise,
+				receiptAttachmentsPromise,
+			])
 				.then(([minutesAttachment, receiptAttachments]) =>
 					sendReimbursementEmail(
 						{
@@ -293,6 +283,7 @@ export async function action({ request }: Route.ActionArgs) {
 							error instanceof Error ? error.message : "Unknown error",
 					});
 				});
+			await emailTask;
 		}
 
 		// Create treasury transaction (no longer directly linked - use junction table)

@@ -25,9 +25,14 @@ export interface MinuteFile {
 
 export interface ReceiptsByYear {
 	year: string;
+	files: {
+		id: string;
+		name: string;
+		url: string;
+		createdTime: string;
+	}[];
 	folderUrl: string;
 	folderId: string;
-	files: { id: string; name: string; url: string; createdTime: string }[];
 }
 
 export interface ReimbursementFormProps {
@@ -81,8 +86,12 @@ export function ReimbursementForm({
 	required = true,
 }: ReimbursementFormProps) {
 	const fetcher = useFetcher();
+	const minutesFetcher = useFetcher<{ minutes: MinuteFile[] }>();
 	const ensureFolderFetcher = useFetcher();
 	const [selectedReceipts, setSelectedReceipts] = useState<ReceiptLink[]>([]);
+	const [minutesOptions, setMinutesOptions] = useState<MinuteFile[]>(
+		recentMinutes,
+	);
 	const [selectedMinutes, setSelectedMinutes] = useState<MinuteFile | null>(
 		recentMinutes[0] || null,
 	);
@@ -90,6 +99,7 @@ export function ReimbursementForm({
 	const [descriptionValue, setDescriptionValue] = useState(description);
 	const [currentFolderUrl, setCurrentFolderUrl] = useState(receiptsFolderUrl);
 	const { t } = useTranslation();
+	const isMinutesLoading = minutesFetcher.state !== "idle";
 
 	// Ensure receipts folder exists on mount
 	useEffect(() => {
@@ -124,6 +134,23 @@ export function ReimbursementForm({
 	useEffect(() => {
 		setDescriptionValue(description);
 	}, [description]);
+
+	// Load minutes asynchronously
+	useEffect(() => {
+		if (minutesOptions.length === 0 && minutesFetcher.state === "idle") {
+			minutesFetcher.load("/api/minutes?limit=20");
+		}
+	}, [minutesFetcher, minutesFetcher.state, minutesOptions.length]);
+
+	// Update minutes options when data arrives
+	useEffect(() => {
+		if (minutesFetcher.state === "idle" && minutesFetcher.data?.minutes) {
+			setMinutesOptions(minutesFetcher.data.minutes);
+			if (!selectedMinutes && minutesFetcher.data.minutes.length > 0) {
+				setSelectedMinutes(minutesFetcher.data.minutes[0]);
+			}
+		}
+	}, [minutesFetcher.data, minutesFetcher.state, selectedMinutes]);
 
 	// Handle receipt upload completion
 	useEffect(() => {
@@ -249,28 +276,37 @@ export function ReimbursementForm({
 				<Label htmlFor="minutesId">
 					{t("treasury.new_reimbursement.minutes")} {required && "*"}
 				</Label>
-				<Select
-					name="minutesId"
-					defaultValue={recentMinutes[0]?.id || ""}
-					required={required}
-					onValueChange={(value) => {
-						const selected = recentMinutes.find((m) => m.id === value);
-						setSelectedMinutes(selected || null);
-					}}
-				>
-					<SelectTrigger>
-						<SelectValue
-							placeholder={t("treasury.new_reimbursement.select_minutes")}
-						/>
-					</SelectTrigger>
-					<SelectContent>
-						{recentMinutes.map((minute) => (
-							<SelectItem key={minute.id} value={minute.id}>
-								{minute.name} ({minute.year})
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				{minutesOptions.length === 0 && isMinutesLoading ? (
+					<div className="rounded-md border border-input bg-muted/20 px-3 py-2 text-sm text-muted-foreground animate-pulse">
+						{t(
+							"treasury.new_reimbursement.loading_minutes",
+							"Loading minutes...",
+						)}
+					</div>
+				) : (
+					<Select
+						name="minutesId"
+						value={selectedMinutes?.id || ""}
+						required={required}
+						onValueChange={(value) => {
+							const selected = minutesOptions.find((m) => m.id === value);
+							setSelectedMinutes(selected || null);
+						}}
+					>
+						<SelectTrigger>
+							<SelectValue
+								placeholder={t("treasury.new_reimbursement.select_minutes")}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							{minutesOptions.map((minute) => (
+								<SelectItem key={minute.id} value={minute.id}>
+									{minute.name} ({minute.year})
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				)}
 				{/* Hidden inputs for minutes metadata */}
 				<input
 					type="hidden"
