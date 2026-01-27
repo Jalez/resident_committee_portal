@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, redirect, useNavigate } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { ReimbursementForm } from "~/components/treasury/reimbursement-form";
+import {
+	type MinuteFile,
+	ReimbursementForm,
+} from "~/components/treasury/reimbursement-form";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
@@ -84,7 +87,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	return {
 		siteConfig: SITE_CONFIG,
-		recentMinutes: [],
+		recentMinutes: [] as MinuteFile[],
 		recentTransactions,
 		emailConfigured: isEmailConfigured(),
 		currentYear,

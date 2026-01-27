@@ -15,6 +15,7 @@ export default [
 	),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
 	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
+	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
 	route("treasury/new", "routes/treasury.new.tsx"),
 	route("minutes", "routes/minutes.tsx"),
 	route("inventory", "routes/inventory.tsx"),
@@ -39,6 +40,7 @@ export default [
 	route("analytics", "routes/analytics.tsx"),
 
 	// API Routes
+	route("api/minutes", "routes/api.minutes.tsx"),
 	route("api/analytics/export", "routes/api.analytics.export.tsx"),
 	route("api/analytics/analyze", "routes/api.analytics.analyze.tsx"),
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),

@@ -10,7 +10,10 @@ import {
 } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { ReimbursementForm } from "~/components/treasury/reimbursement-form";
+import {
+	type MinuteFile,
+	ReimbursementForm,
+} from "~/components/treasury/reimbursement-form";
 import { TransactionItemList } from "~/components/treasury/transaction-item-list";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -154,7 +157,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		currentYear: new Date().getFullYear(),
-		recentMinutes: [],
+		recentMinutes: [] as MinuteFile[],
 		emailConfigured: isEmailConfigured(),
 		// Pre-fill data
 		prefill: {
