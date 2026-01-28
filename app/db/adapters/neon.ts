@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, isNull, notInArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
@@ -526,6 +526,18 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(transactions.purchaseId, purchaseId))
 			.limit(1);
 		return result[0] ?? null;
+	}
+
+	async getExpenseTransactionsWithoutReimbursement(): Promise<Transaction[]> {
+		return this.db
+			.select()
+			.from(transactions)
+			.where(
+				and(
+					eq(transactions.type, "expense"),
+					isNull(transactions.purchaseId),
+				),
+			);
 	}
 
 	async createTransaction(transaction: NewTransaction): Promise<Transaction> {

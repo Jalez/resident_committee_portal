@@ -111,6 +111,8 @@ export interface DatabaseAdapter {
 	getTransactionsByYear(year: number): Promise<Transaction[]>;
 	getAllTransactions(): Promise<Transaction[]>;
 	getTransactionByPurchaseId(purchaseId: string): Promise<Transaction | null>;
+	/** Get expense transactions that don't have a linked purchase (reimbursement) */
+	getExpenseTransactionsWithoutReimbursement(): Promise<Transaction[]>;
 	createTransaction(transaction: NewTransaction): Promise<Transaction>;
 	updateTransaction(
 		id: string,
