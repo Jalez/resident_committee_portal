@@ -1,4 +1,6 @@
-import { Link, useSearchParams } from "react-router";
+import { Link, useFetcher, useSearchParams } from "react-router";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
@@ -11,6 +13,7 @@ import {
 } from "~/components/ui/table";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db";
+import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.breakdown";
 
@@ -24,6 +27,13 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+	// Require treasury_breakdown:read permission - throw 404 to hide route
+	try {
+		await requirePermission(request, "treasury_breakdown:read", getDatabase);
+	} catch (_error) {
+		throw new Response("Not Found", { status: 404 });
+	}
+
 	const db = getDatabase();
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
@@ -86,6 +96,81 @@ export async function loader({ request }: Route.LoaderArgs) {
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "~/contexts/language-context";
 
+/**
+ * Import button component with file input
+ */
+function ImportButton({ year }: { year: number }) {
+	const { t } = useTranslation();
+	const fetcher = useFetcher();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [isImporting, setIsImporting] = useState(false);
+
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		setIsImporting(true);
+
+		const formData = new FormData();
+		formData.append("file", file);
+		formData.append("year", String(year));
+
+		try {
+			const response = await fetch("/api/treasury/import", {
+				method: "POST",
+				body: formData,
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				toast.success(
+					t("treasury.breakdown.import_success", { count: result.imported })
+				);
+				// Reload the page to show new transactions
+				window.location.reload();
+			} else {
+				toast.error(result.error || t("treasury.breakdown.import_error"));
+			}
+		} catch (_error) {
+			toast.error(t("treasury.breakdown.import_error"));
+		} finally {
+			setIsImporting(false);
+			// Reset the file input
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
+		}
+	};
+
+	return (
+		<>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept=".csv,.xlsx,.xls"
+				className="hidden"
+				onChange={handleFileChange}
+			/>
+			<button
+				type="button"
+				onClick={() => fileInputRef.current?.click()}
+				className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+				title={t("treasury.breakdown.import")}
+				disabled={isImporting}
+			>
+				{isImporting ? (
+					<span className="material-symbols-outlined text-xl animate-spin">
+						progress_activity
+					</span>
+				) : (
+					<span className="material-symbols-outlined text-xl">upload</span>
+				)}
+			</button>
+		</>
+	);
+}
+
 export default function TreasuryBreakdown({
 	loaderData,
 }: Route.ComponentProps) {
@@ -93,7 +178,9 @@ export default function TreasuryBreakdown({
 		loaderData;
 	const [_searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission } = useUser();
-	const canEdit = hasPermission("treasury:edit");
+	const canEdit = hasPermission("transactions:update");
+	const canExport = hasPermission("treasury:export");
+	const canImport = hasPermission("treasury:import");
 	const { t, i18n } = useTranslation();
 	const { isInfoReel } = useLanguage();
 
@@ -153,8 +240,13 @@ export default function TreasuryBreakdown({
 							</div>
 						)}
 
+						{/* Import Button - only visible if user has permission */}
+						{canImport && (
+							<ImportButton year={year} />
+						)}
+
 						{/* Export Button - only visible if user has permission */}
-						{hasPermission("treasury:read") && (
+						{canExport && (
 							<a
 								href={`/api/treasury/export?year=${year}`}
 								download={`transactions-${year}.csv`}
@@ -268,7 +360,7 @@ export default function TreasuryBreakdown({
 										{canEdit && (
 											<TableCell>
 												<Link
-													to={`/treasury/breakdown/${transaction.id}/edit`}
+													to={`/treasury/transactions/${transaction.id}/edit`}
 													className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
 												>
 													<span className="material-symbols-outlined text-base">
