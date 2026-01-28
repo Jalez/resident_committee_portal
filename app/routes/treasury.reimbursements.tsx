@@ -254,11 +254,12 @@ export default function BudgetReimbursements({
 							{t("treasury.reimbursements.title")}
 						</h1>
 					</div>
-					<Link to="/treasury/reimbursement/new">
-						<Button>
-							<span className="material-symbols-outlined mr-2">add</span>
-							{t("treasury.reimbursements.new")}
-						</Button>
+					<Link
+						to="/treasury/reimbursement/new"
+						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+						title={t("treasury.reimbursements.new")}
+					>
+						<span className="material-symbols-outlined text-xl">add</span>
 					</Link>
 				</div>
 
@@ -493,7 +494,7 @@ export default function BudgetReimbursements({
 														{/* Link Transaction button - only show for unlinked purchases */}
 														{!purchase.hasLinkedTransaction && (
 															<Link
-																to={`/treasury/new?linkPurchase=${purchase.id}`}
+																to={`/treasury/transactions/new?linkPurchase=${purchase.id}`}
 															>
 																<Button
 																	type="button"
