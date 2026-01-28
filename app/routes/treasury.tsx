@@ -118,7 +118,8 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		languages,
 	} = loaderData;
 	const { hasPermission } = useUser();
-	const canWrite = hasPermission("treasury:write");
+	const canReadBreakdown = hasPermission("treasury_breakdown:read");
+	const canReadTransactions = hasPermission("transactions:read");
 
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;
@@ -138,8 +139,8 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		},
 	];
 
-	// QR Panel
-	const RightContent = (
+	// QR Panel - only show if user can access breakdown
+	const RightContent = canReadBreakdown ? (
 		<QRPanel
 			qrUrl={`/treasury/breakdown?year=${selectedYear}`}
 			title={
@@ -153,26 +154,34 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 				</h2>
 			}
 		/>
-	);
+	) : null;
 
 	// Build action items array based on permissions
 	const actionItems = [
-		{
-			href: `/treasury/breakdown?year=${selectedYear}`,
-			icon: "table_chart",
-			labelPrimary: t("treasury.actions.breakdown", { lng: languages.primary }),
-			labelSecondary: t("treasury.actions.breakdown", {
-				lng: languages.secondary,
-			}),
-		},
-		{
-			href: `/treasury/transactions?year=${selectedYear}`,
-			icon: "list_alt",
-			labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
-			labelSecondary: t("treasury.actions.transactions", {
-				lng: languages.secondary,
-			}),
-		},
+		...(canReadBreakdown
+			? [
+					{
+						href: `/treasury/breakdown?year=${selectedYear}`,
+						icon: "table_chart",
+						labelPrimary: t("treasury.actions.breakdown", { lng: languages.primary }),
+						labelSecondary: t("treasury.actions.breakdown", {
+							lng: languages.secondary,
+						}),
+					},
+				]
+			: []),
+		...(canReadTransactions
+			? [
+					{
+						href: `/treasury/transactions?year=${selectedYear}`,
+						icon: "list_alt",
+						labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
+						labelSecondary: t("treasury.actions.transactions", {
+							lng: languages.secondary,
+						}),
+					},
+				]
+			: []),
 		...(hasPermission("reimbursements:read")
 			? [
 					{
@@ -182,18 +191,6 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 							lng: languages.primary,
 						}),
 						labelSecondary: t("treasury.actions.reimbursements", {
-							lng: languages.secondary,
-						}),
-					},
-				]
-			: []),
-		...(canWrite
-			? [
-					{
-						href: "/treasury/new",
-						icon: "add",
-						labelPrimary: t("treasury.actions.add", { lng: languages.primary }),
-						labelSecondary: t("treasury.actions.add", {
 							lng: languages.secondary,
 						}),
 					},
@@ -262,14 +259,18 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">
 									{t("treasury.transactions_count", {
 										count: transactionCount,
-									})}{" "}
-									—
-									<Link
-										to={`/treasury/breakdown?year=${selectedYear}`}
-										className="text-primary hover:underline ml-1"
-									>
-										{t("treasury.view_breakdown")}
-									</Link>
+								})}
+								{canReadBreakdown && (
+									<>
+										{" "}—
+										<Link
+											to={`/treasury/breakdown?year=${selectedYear}`}
+											className="text-primary hover:underline ml-1"
+										>
+											{t("treasury.view_breakdown")}
+										</Link>
+									</>
+								)}
 								</p>
 							</div>
 						</>
@@ -281,7 +282,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 							<p className="text-xl font-bold text-gray-500 dark:text-gray-400 mb-2">
 								{t("treasury.no_transactions")}
 							</p>
-							<p className="text-gray-400 dark:text-gray-500 mb-4">
+							<p className="text-gray-400 dark:text-gray-500">
 								{isInfoReel ? (
 									<>
 										{t("treasury.no_transactions_desc", {
@@ -298,15 +299,6 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 									t("treasury.no_transactions_desc", { year: selectedYear })
 								)}
 							</p>
-							{canWrite && (
-								<Link
-									to="/treasury/new"
-									className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors"
-								>
-									<span className="material-symbols-outlined">add</span>
-									{t("treasury.add_transaction")}
-								</Link>
-							)}
 						</div>
 					)}
 				</ContentArea>
