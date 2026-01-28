@@ -269,7 +269,7 @@ export function useInventoryColumns({
 								className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-mono bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
 							>
 								<Link
-									to={`/treasury/breakdown/${link.transaction.id}/edit`}
+									to={`/treasury/transactions/${link.transaction.id}/edit`}
 									className="hover:underline"
 									onClick={(e) => e.stopPropagation()}
 									title={link.transaction.description}

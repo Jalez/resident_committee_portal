@@ -295,7 +295,7 @@ export function InventoryProvider({
 			type: "expense",
 			category: "inventory",
 		});
-		navigate(`/treasury/new?${params.toString()}`);
+		navigate(`/treasury/transactions/new?${params.toString()}`);
 	}, [selectedIds, items, navigate]);
 
 	const resetAddRow = useCallback(() => {
