@@ -11,13 +11,13 @@ export default [
 	route("treasury/breakdown", "routes/treasury.breakdown.tsx"),
 	route("treasury/transactions", "routes/treasury.transactions.tsx"),
 	route(
-		"treasury/breakdown/:transactionId/edit",
-		"routes/treasury.breakdown.$transactionId.edit.tsx",
+		"treasury/transactions/:transactionId/edit",
+		"routes/treasury.transactions.$transactionId.edit.tsx",
 	),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
 	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
 	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
-	route("treasury/new", "routes/treasury.new.tsx"),
+	route("treasury/transactions/new", "routes/treasury.transactions.new.tsx"),
 	route("minutes", "routes/minutes.tsx"),
 	route("inventory", "routes/inventory.tsx"),
 	route("inventory/new", "routes/inventory.new.tsx"),
@@ -48,5 +48,6 @@ export default [
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),
 	route("api/webhooks/resend", "routes/api.webhooks.resend.tsx"),
 	route("api/treasury/export", "routes/api.treasury.export.tsx"),
+	route("api/treasury/import", "routes/api.treasury.import.tsx"),
 	route("api/set-language", "routes/api.set-language.ts"),
 ] satisfies RouteConfig;
