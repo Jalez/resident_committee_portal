@@ -692,7 +692,7 @@ function InventoryTablePage({
 				};
 			});
 			setTransactionItems(transactionItems);
-			navigate("/treasury/new");
+			navigate("/treasury/transactions/new");
 		}
 	};
 
@@ -718,7 +718,7 @@ function InventoryTablePage({
 		setPendingItemSelections([]);
 		setSelectedIds([]);
 		// Navigate to the edit page
-		navigate(`/treasury/breakdown/${transaction.id}/edit?addItems=true`);
+		navigate(`/treasury/transactions/${transaction.id}/edit?addItems=true`);
 	};
 
 	// Handlers for unlink operations
