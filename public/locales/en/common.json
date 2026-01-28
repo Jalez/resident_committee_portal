@@ -96,7 +96,7 @@
 			"header": "New Transaction",
 			"details_header": "Transaction Details",
 			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
-			"request_reimbursement": "Request Reimbursement",
+			"request_reimbursement": "Create Reimbursement Request",
 			"reimbursement_help": "Check if you want to request reimbursement from the allowance.",
 			"link_existing_reimbursement": "Link to Existing Reimbursement",
 			"link_existing_help": "Select an existing reimbursement request to link this transaction to.",
@@ -104,7 +104,7 @@
 			"no_link": "Don't link",
 			"or": "or",
 			"submit": "Add",
-			"submit_and_request": "Add & Request Reimbursement"
+			"submit_and_request": "Add & Create Reimbursement Request"
 		},
 		"form": {
 			"type": "Type",
@@ -127,7 +127,6 @@
 		"categories": {
 			"inventory": "Inventory",
 			"snacks": "Snacks",
-			"supplies": "Supplies",
 			"event": "Event",
 			"other": "Other",
 			"grant": "Grant",
@@ -195,7 +194,17 @@
 			"error": "Error",
 			"email_warning": "⚠️ Email sending is not configured. Request will be saved but email won't be sent.",
 			"location_placeholder": "E.g. Club room",
-			"category_placeholder": "E.g. Kitchen"
+			"category_placeholder": "E.g. Kitchen",
+			"link_existing_transaction": "Link to Existing Transaction",
+			"link_existing_transaction_help": "Select an existing expense transaction to link this reimbursement request to.",
+			"select_transaction_placeholder": "Select transaction...",
+			"create_new": "Create new transaction",
+			"linked_transaction_info": "This reimbursement will be linked to the selected transaction. The transaction details will be used.",
+			"reimbursement_details": "Reimbursement Details",
+			"transaction_section_title": "Transaction",
+			"create_transaction": "Also create a transaction entry",
+			"create_transaction_help": "Check this to create an expense transaction record for this reimbursement.",
+			"no_link": "Don't link to existing transaction"
 		},
 		"breakdown": {
 			"title": "Treasury Breakdown",
@@ -212,6 +221,9 @@
 			"amount": "Amount",
 			"public_info": "This is public information",
 			"export": "Export CSV",
+			"import": "Import CSV",
+			"import_success": "Imported {{count}} transactions",
+			"import_error": "Import failed",
 			"edit": {
 				"title": "Edit Transaction",
 				"subtitle": "Edit Transaction",

@@ -92,14 +92,14 @@
 			"add": "Lisää"
 		},
 		"new": {
-			"title": "Uusi tapahtuma",
-			"header": "Uusi tapahtuma",
-			"details_header": "Tapahtuman tiedot",
-			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen tapahtumaan.",
-			"request_reimbursement": "Hae kulukorvausta",
+			"title": "Uusi transaktio",
+			"header": "Uusi transaktio",
+			"details_header": "Transaktion tiedot",
+			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
+			"request_reimbursement": "Tee kulukorvaushakemus",
 			"reimbursement_help": "Valitse jos haluat hakea kulukorvausta tästä menosta määrärahasta.",
 			"link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
-			"link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä tapahtuma linkitetään.",
+			"link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä transaktio linkitetään.",
 			"select_reimbursement_placeholder": "Valitse kulukorvaus...",
 			"no_link": "Älä linkitä",
 			"or": "tai",
@@ -127,7 +127,6 @@
 		"categories": {
 			"inventory": "Tavarat",
 			"snacks": "Eväät",
-			"supplies": "Tarvikkeet",
 			"event": "Tapahtuma",
 			"other": "Muu",
 			"grant": "Avustus",
@@ -138,7 +137,7 @@
 		"transactions": {
 			"title": "Transaktiot",
 			"back": "Takaisin",
-			"new": "Uusi tapahtuma",
+			"new": "Uusi transaktio",
 			"all": "Kaikki",
 			"status": "Tila",
 			"reimbursement_status": "Kulukorvaus",
@@ -195,7 +194,17 @@
 			"error": "Virhe",
 			"email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
 			"location_placeholder": "Esim. Kerhohuone",
-			"category_placeholder": "Esim. Keittiö"
+			"category_placeholder": "Esim. Keittiö",
+			"link_existing_transaction": "Liitä olemassa olevaan tapahtumaan",
+			"link_existing_transaction_help": "Valitse olemassa oleva menontapahtuma, johon tämä kulukorvaus liitetään.",
+			"select_transaction_placeholder": "Valitse tapahtuma...",
+			"create_new": "Luo uusi tapahtuma",
+			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun tapahtumaan. Tapahtuman tietoja käytetään.",
+			"reimbursement_details": "Kulukorvauksen tiedot",
+			"transaction_section_title": "Tapahtuma",
+			"create_transaction": "Luo myös tapahtumakirjaus",
+			"create_transaction_help": "Valitse tämä luodaksesi menokirjauksen tälle kulukorvaukselle.",
+			"no_link": "Älä liitä olemassa olevaan tapahtumaan"
 		},
 		"breakdown": {
 			"title": "Rahastoerittely",
@@ -212,6 +221,9 @@
 			"amount": "Summa",
 			"public_info": "Tämä on julkista tietoa",
 			"export": "Lataa CSV",
+			"import": "Tuo CSV",
+			"import_success": "Tuotu {{count}} tapahtumaa",
+			"import_error": "Tuonti epäonnistui",
 			"edit": {
 				"title": "Muokkaa tapahtumaa",
 				"subtitle": "Edit Transaction",
@@ -347,7 +359,7 @@
 			"add_treasury_label": "Lisää rahastotapahtuma",
 			"add_treasury_desc": "Valitse jos haluat luoda menon rahaston erittelyyn tämän hankinnan perusteella.",
 			"duplicate_warning": "Mahdollinen duplikaatti: {{examples}}. Varmista, ettei samanlaista tapahtumaa ole jo lisätty.",
-			"request_reimbursement_label": "Hae kulukorvausta",
+			"request_reimbursement_label": "Tee kulukorvaushakemus",
 			"request_reimbursement_desc": "Valitse jos haluat hakea kulukorvausta määrärahasta."
 		},
 		"modals": {
