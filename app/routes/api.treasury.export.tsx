@@ -3,11 +3,11 @@ import { requirePermission } from "~/lib/auth.server";
 import type { Route } from "./+types/api.treasury.export";
 
 /**
- * Export treasury transactions as CSV (requires treasury:view permission)
+ * Export treasury transactions as CSV (requires treasury:export permission)
  */
 export async function loader({ request }: Route.LoaderArgs) {
-	// Requires treasury:read permission
-	await requirePermission(request, "treasury:read", getDatabase);
+	// Requires treasury:export permission
+	await requirePermission(request, "treasury:export", getDatabase);
 
 	const db = getDatabase();
 	const url = new URL(request.url);
