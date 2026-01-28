@@ -300,16 +300,17 @@ export async function action({ request }: Route.ActionArgs) {
 
 	// Check if linking to an existing purchase (reimbursement request)
 	const isLinkingToExisting = !!linkPurchaseId;
+	const shouldRequestReimbursement = requestReimbursement && !isLinkingToExisting;
 
 	// Determine status based on reimbursement request or linking to existing
-	const status = requestReimbursement || isLinkingToExisting ? "pending" : "complete";
+	const status = shouldRequestReimbursement || isLinkingToExisting ? "pending" : "complete";
 	const reimbursementStatus =
-		requestReimbursement || isLinkingToExisting ? "requested" : "not_requested";
+		shouldRequestReimbursement || isLinkingToExisting ? "requested" : "not_requested";
 
 	// Create purchase record if reimbursement requested, or use existing purchase
 	let purchaseId: string | null = isLinkingToExisting ? linkPurchaseId : null;
 
-	if (requestReimbursement) {
+	if (shouldRequestReimbursement) {
 		const purchaserName = formData.get("purchaserName") as string;
 		const bankAccount = formData.get("bankAccount") as string;
 		const minutesId = formData.get("minutesId") as string;
