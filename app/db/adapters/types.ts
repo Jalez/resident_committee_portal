@@ -98,6 +98,8 @@ export interface DatabaseAdapter {
 	getPurchases(): Promise<Purchase[]>;
 	getPurchaseById(id: string): Promise<Purchase | null>;
 	getPurchasesByInventoryItem(inventoryItemId: string): Promise<Purchase[]>;
+	/** Get purchases that don't have a linked transaction */
+	getPurchasesWithoutTransactions(): Promise<Purchase[]>;
 	createPurchase(purchase: NewPurchase): Promise<Purchase>;
 	updatePurchase(
 		id: string,

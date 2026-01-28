@@ -11,7 +11,12 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
-import { getDatabase, type NewInventoryItem, type NewPurchase } from "~/db";
+import {
+	getDatabase,
+	type NewInventoryItem,
+	type NewPurchase,
+	type NewTransaction,
+} from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -182,6 +187,25 @@ export async function action({ request }: Route.ActionArgs) {
 	};
 
 	const purchase = await db.createPurchase(newPurchase);
+
+	// Auto-create linked transaction for this reimbursement request
+	const newTransaction: NewTransaction = {
+		type: "expense",
+		amount,
+		description,
+		category: addToInventory ? "inventory" : "other",
+		date: new Date(), // Use purchase creation date
+		year: currentYear,
+		status: "pending",
+		reimbursementStatus: "requested",
+		purchaseId: purchase.id,
+	};
+	const transaction = await db.createTransaction(newTransaction);
+
+	// Link inventory item to transaction if created
+	if (inventoryItemId) {
+		await db.linkInventoryItemToTransaction(inventoryItemId, transaction.id, 1);
+	}
 
 	// Send email with minutes + receipt attachments in background
 	const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);

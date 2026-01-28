@@ -87,7 +87,8 @@
 		"add_transaction": "Add Transaction",
 		"actions": {
 			"breakdown": "Breakdown",
-			"reimbursements": "Reimbursements",
+			"transactions": "Transactions",
+			"reimbursements": "Reimbursement Requests",
 			"add": "Add"
 		},
 		"new": {
@@ -97,6 +98,11 @@
 			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
 			"request_reimbursement": "Request Reimbursement",
 			"reimbursement_help": "Check if you want to request reimbursement from the allowance.",
+			"link_existing_reimbursement": "Link to Existing Reimbursement",
+			"link_existing_help": "Select an existing reimbursement request to link this transaction to.",
+			"select_reimbursement_placeholder": "Select reimbursement...",
+			"no_link": "Don't link",
+			"or": "or",
 			"submit": "Add",
 			"submit_and_request": "Add & Request Reimbursement"
 		},
@@ -129,8 +135,18 @@
 			"event_income": "Event Income",
 			"membership": "Membership Fees"
 		},
+		"transactions": {
+			"title": "Transactions",
+			"back": "Back",
+			"new": "New Transaction",
+			"all": "All",
+			"status": "Status",
+			"reimbursement_status": "Reimbursement",
+			"total_income": "Total Income",
+			"total_expenses": "Total Expenses"
+		},
 		"reimbursements": {
-			"title": "Reimbursements",
+			"title": "Reimbursement Requests",
 			"back": "Back",
 			"new": "New",
 			"status": "Status",
@@ -142,6 +158,7 @@
 			"reply_received": "Reply Received",
 			"delete_confirm": "Are you sure you want to delete this reimbursement?",
 			"use_as_template": "Use as template",
+			"link_transaction": "Link transaction",
 			"access_denied": "Access denied",
 			"all": "All",
 			"statuses": {

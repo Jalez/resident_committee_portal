@@ -458,6 +458,22 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(purchases.inventoryItemId, inventoryItemId));
 	}
 
+	async getPurchasesWithoutTransactions(): Promise<Purchase[]> {
+		// Get all purchases, then filter out those that have a linked transaction
+		const allPurchases = await this.db.select().from(purchases);
+		const linkedPurchaseIds = await this.db
+			.select({ purchaseId: transactions.purchaseId })
+			.from(transactions);
+
+		const linkedIds = new Set(
+			linkedPurchaseIds
+				.map((t) => t.purchaseId)
+				.filter(Boolean) as string[],
+		);
+
+		return allPurchases.filter((p) => !linkedIds.has(p.id));
+	}
+
 	async createPurchase(purchase: NewPurchase): Promise<Purchase> {
 		const result = await this.db.insert(purchases).values(purchase).returning();
 		return result[0];
@@ -513,6 +529,18 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async createTransaction(transaction: NewTransaction): Promise<Transaction> {
+		// Validate: if purchaseId is provided, ensure no other transaction links to it
+		if (transaction.purchaseId) {
+			const existingLink = await this.getTransactionByPurchaseId(
+				transaction.purchaseId,
+			);
+			if (existingLink) {
+				throw new Error(
+					`Purchase ${transaction.purchaseId} is already linked to transaction ${existingLink.id}`,
+				);
+			}
+		}
+
 		const result = await this.db
 			.insert(transactions)
 			.values(transaction)

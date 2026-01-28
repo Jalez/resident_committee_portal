@@ -165,6 +165,14 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 				lng: languages.secondary,
 			}),
 		},
+		{
+			href: `/treasury/transactions?year=${selectedYear}`,
+			icon: "list_alt",
+			labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
+			labelSecondary: t("treasury.actions.transactions", {
+				lng: languages.secondary,
+			}),
+		},
 		...(hasPermission("reimbursements:read")
 			? [
 					{

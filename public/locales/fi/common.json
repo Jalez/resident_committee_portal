@@ -87,7 +87,8 @@
 		"add_transaction": "Lisää tapahtuma",
 		"actions": {
 			"breakdown": "Erittely",
-			"reimbursements": "Kulukorvaukset",
+			"transactions": "Transaktiovirta",
+			"reimbursements": "Kulukorvaushakemukset",
 			"add": "Lisää"
 		},
 		"new": {
@@ -97,6 +98,11 @@
 			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen tapahtumaan.",
 			"request_reimbursement": "Hae kulukorvausta",
 			"reimbursement_help": "Valitse jos haluat hakea kulukorvausta tästä menosta määrärahasta.",
+			"link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
+			"link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä tapahtuma linkitetään.",
+			"select_reimbursement_placeholder": "Valitse kulukorvaus...",
+			"no_link": "Älä linkitä",
+			"or": "tai",
 			"submit": "Lisää",
 			"submit_and_request": "Lisää ja hae korvausta"
 		},
@@ -129,8 +135,18 @@
 			"event_income": "Tapahtumatulo",
 			"membership": "Jäsenmaksut"
 		},
+		"transactions": {
+			"title": "Transaktiot",
+			"back": "Takaisin",
+			"new": "Uusi tapahtuma",
+			"all": "Kaikki",
+			"status": "Tila",
+			"reimbursement_status": "Kulukorvaus",
+			"total_income": "Tulot yhteensä",
+			"total_expenses": "Menot yhteensä"
+		},
 		"reimbursements": {
-			"title": "Kulukorvaukset",
+			"title": "Kulukorvaushakemukset",
 			"back": "Takaisin",
 			"new": "Uusi",
 			"status": "Tila",
@@ -142,6 +158,7 @@
 			"reply_received": "Vastaus vastaanotettu",
 			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
 			"use_as_template": "Käytä pohjana",
+			"link_transaction": "Linkitä tapahtuma",
 			"access_denied": "Ei käyttöoikeutta",
 			"all": "Kaikki",
 			"statuses": {
@@ -186,7 +203,7 @@
 			"income": "Tulot",
 			"expenses": "Menot",
 			"balance": "Saldo",
-			"transactions": "Tapahtumat",
+			"transactions": "Transaktiot",
 			"no_transactions": "Ei tapahtumia tälle vuodelle",
 			"date": "Päivä",
 			"description": "Kuvaus",

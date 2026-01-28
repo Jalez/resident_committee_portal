@@ -65,10 +65,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const inventoryItems = await db.getInventoryItems();
 	const itemsMap = new Map(inventoryItems.map((item) => [item.id, item]));
 
+	// Check which purchases have linked transactions
+	const purchasesWithLinkedTransactions = new Set<string>();
+	for (const purchase of purchases) {
+		const linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
+		if (linkedTransaction) {
+			purchasesWithLinkedTransactions.add(purchase.id);
+		}
+	}
+
 	// Enrich purchases
 	const enrichedPurchases = purchases.map((p) => ({
 		...p,
 		inventoryItem: p.inventoryItemId ? itemsMap.get(p.inventoryItemId) : null,
+		hasLinkedTransaction: purchasesWithLinkedTransactions.has(p.id),
 	}));
 
 	// Get unique years from purchases
@@ -143,6 +153,16 @@ export async function action({ request }: Route.ActionArgs) {
 	} else if (actionType === "delete" && purchaseId) {
 		// Deleting requires delete permission
 		await requirePermission(request, "reimbursements:delete", getDatabase);
+
+		// Decline linked transaction before deleting purchase
+		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
+		if (linkedTransaction) {
+			await db.updateTransaction(linkedTransaction.id, {
+				status: "declined",
+				reimbursementStatus: "declined",
+			});
+		}
+
 		await db.deletePurchase(purchaseId);
 	}
 
@@ -349,6 +369,7 @@ export default function BudgetReimbursements({
 									(
 										purchase: Purchase & {
 											inventoryItem?: InventoryItem | null;
+											hasLinkedTransaction: boolean;
 										},
 									) => {
 										// Use type assertion to ensure status is a valid key, fallback to pending color if not
@@ -469,6 +490,24 @@ export default function BudgetReimbursements({
 												</TableCell>
 												<TableCell>
 													<div className="flex gap-1">
+														{/* Link Transaction button - only show for unlinked purchases */}
+														{!purchase.hasLinkedTransaction && (
+															<Link
+																to={`/treasury/new?linkPurchase=${purchase.id}`}
+															>
+																<Button
+																	type="button"
+																	variant="ghost"
+																	size="icon"
+																	className="text-blue-500 hover:text-blue-700 h-8 w-8"
+																	title={t("treasury.reimbursements.link_transaction")}
+																>
+																	<span className="material-symbols-outlined text-lg">
+																		link
+																	</span>
+																</Button>
+															</Link>
+														)}
 														<Button
 															type="button"
 															variant="ghost"

@@ -9,6 +9,7 @@ export default [
 	route("social/new", "routes/social.new.tsx"),
 	route("treasury", "routes/treasury.tsx"),
 	route("treasury/breakdown", "routes/treasury.breakdown.tsx"),
+	route("treasury/transactions", "routes/treasury.transactions.tsx"),
 	route(
 		"treasury/breakdown/:transactionId/edit",
 		"routes/treasury.breakdown.$transactionId.edit.tsx",
