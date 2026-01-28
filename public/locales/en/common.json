@@ -480,7 +480,7 @@
 			"color_label": "Color",
 			"desc_label": "Description",
 			"list_title": "Roles ({{count}})",
-			"system": "System",
+			"system": "System Role",
 			"permissions_count": "{{count}} permissions",
 			"delete_title": "Delete Role",
 			"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",

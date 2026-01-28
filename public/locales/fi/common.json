@@ -482,7 +482,7 @@
 			"color_label": "Väri",
 			"desc_label": "Kuvaus",
 			"list_title": "Roolit ({{count}})",
-			"system": "Järjestelmär",
+			"system": "Järjestelmärooli",
 			"permissions_count": "{{count}} oikeutta",
 			"delete_title": "Poista rooli",
 			"delete_confirm": "Haluatko varmasti poistaa roolin \"{{name}}\"? Tätä toimintoa ei voi peruuttaa.",

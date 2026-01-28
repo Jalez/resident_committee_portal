@@ -481,7 +481,7 @@
 			"color_label": "Färg",
 			"desc_label": "Beskrivning",
 			"list_title": "Roller ({{count}})",
-			"system": "System",
+			"system": "Systemroll",
 			"permissions_count": "{{count}} behörigheter",
 			"delete_title": "Ta bort roll",
 			"delete_confirm": "Är du säker på att du vill ta bort rollen \"{{name}}\"? Detta kan inte ångras.",
