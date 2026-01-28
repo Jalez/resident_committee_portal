@@ -26,6 +26,7 @@ import {
 	TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useInfoReel } from "~/contexts/info-reel-context";
+import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
 import { NAV_ITEMS } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
@@ -42,6 +43,7 @@ export function Navigation({
 	const location = useLocation();
 	const pathname = location.pathname;
 	const { isInfoReel, fillProgress, opacity } = useInfoReel();
+	const { primaryLanguage, secondaryLanguage } = useLanguage();
 	const { user, hasPermission, hasAnyPermission } = useUser();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const { t } = useTranslation();
@@ -93,12 +95,12 @@ export function Navigation({
 		const isAnimating = isActive && isInfoReel;
 
 		// Resolve labels
-		// If InfoReel: Primary = FI, Secondary = EN
+		// If InfoReel: Primary = user primary language, Secondary = user secondary language
 		// If Normal: Primary = Current Language
 		const primaryLabel = isInfoReel
-			? t(item.i18nKey, { lng: "fi" })
+			? t(item.i18nKey, { lng: primaryLanguage })
 			: t(item.i18nKey);
-		const secondaryLabel = t(item.i18nKey, { lng: "en" });
+		const secondaryLabel = t(item.i18nKey, { lng: secondaryLanguage });
 
 		return (
 			<Link
@@ -156,13 +158,18 @@ export function Navigation({
 		allNavItems.find((item) => item.path === pathname);
 	const isHomePage = pathname === "/";
 
-	// Mobile menu label - originally showed "FI / EN" format
-	// Refactoring to use translation keys
-	const mobileMenuLabel = isHomePage
-		? `${t("nav.menu", { lng: "fi" })} / ${t("nav.menu", { lng: "en" })}`
-		: currentNavItem
-			? `${t(currentNavItem.i18nKey, { lng: "fi" })} / ${t(currentNavItem.i18nKey, { lng: "en" })}`
-			: `${t("nav.menu", { lng: "fi" })} / ${t("nav.menu", { lng: "en" })}`;
+	// Mobile menu label
+	const mobileMenuLabel = isInfoReel
+		? isHomePage
+			? `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
+			: currentNavItem
+				? `${t(currentNavItem.i18nKey, { lng: primaryLanguage })} / ${t(currentNavItem.i18nKey, { lng: secondaryLanguage })}`
+				: `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
+		: isHomePage
+			? t("nav.menu")
+			: currentNavItem
+				? t(currentNavItem.i18nKey)
+				: t("nav.menu");
 
 	const mobileMenuIcon = isHomePage ? "menu" : currentNavItem?.icon || "menu";
 
@@ -291,7 +298,7 @@ export function Navigation({
 											</span>
 										</Link>
 									)}
-									{hasPermission("settings:analytics") && (
+										{hasPermission("settings:analytics") && (
 										<Link
 											to="/settings/analytics"
 											onClick={() => setMobileMenuOpen(false)}
@@ -307,7 +314,7 @@ export function Navigation({
 												bar_chart
 											</span>
 											<span className="text-sm font-bold">
-												Analytics
+													{t("nav.analytics")}
 											</span>
 										</Link>
 									)}
@@ -369,9 +376,9 @@ export function Navigation({
 					const isActive = pathname === item.path;
 					const isAnimating = isActive && isInfoReel;
 					const primaryLabel = isInfoReel
-						? t(item.i18nKey, { lng: "fi" })
+						? t(item.i18nKey, { lng: primaryLanguage })
 						: t(item.i18nKey);
-					const secondaryLabel = t(item.i18nKey, { lng: "en" });
+					const secondaryLabel = t(item.i18nKey, { lng: secondaryLanguage });
 
 					return (
 						<Tooltip key={item.path}>
@@ -434,9 +441,9 @@ export function Navigation({
 							>
 								{isInfoReel ? (
 									<>
-										<span>{t(item.i18nKey, { lng: "fi" })}</span>
+										<span>{t(item.i18nKey, { lng: primaryLanguage })}</span>
 										<span className="text-muted-foreground ml-1">
-											/ {t(item.i18nKey, { lng: "en" })}
+											/ {t(item.i18nKey, { lng: secondaryLanguage })}
 										</span>
 									</>
 								) : (
@@ -558,7 +565,7 @@ export function Navigation({
 											bar_chart
 										</span>
 										<div>
-											<p className="font-medium">Analytics</p>
+												<p className="font-medium">{t("nav.analytics")}</p>
 										</div>
 									</Link>
 								</DropdownMenuItem>
