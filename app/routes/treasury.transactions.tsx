@@ -13,6 +13,7 @@ import {
 import { useUser } from "~/contexts/user-context";
 import { useLanguage } from "~/contexts/language-context";
 import { getDatabase, type Transaction } from "~/db";
+import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.transactions";
 
@@ -26,6 +27,13 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+	// Require transactions:read permission - throw 404 to hide route
+	try {
+		await requirePermission(request, "transactions:read", getDatabase);
+	} catch (_error) {
+		throw new Response("Not Found", { status: 404 });
+	}
+
 	const db = getDatabase();
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
@@ -89,8 +97,8 @@ export default function TreasuryTransactions({
 		loaderData;
 	const [_searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission } = useUser();
-	const canEdit = hasPermission("treasury:edit");
-	const canWrite = hasPermission("treasury:write");
+	const canEdit = hasPermission("transactions:update");
+	const canWrite = hasPermission("transactions:write");
 	const { t, i18n } = useTranslation();
 	const { isInfoReel } = useLanguage();
 
@@ -167,7 +175,7 @@ export default function TreasuryTransactions({
 						{/* Add new transaction button */}
 						{canWrite && (
 							<Link
-								to="/treasury/new"
+								to="/treasury/transactions/new"
 								className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 								title={t("treasury.transactions.new")}
 							>
@@ -308,7 +316,7 @@ export default function TreasuryTransactions({
 										{canEdit && (
 											<TableCell>
 												<Link
-													to={`/treasury/breakdown/${transaction.id}/edit`}
+													to={`/treasury/transactions/${transaction.id}/edit`}
 													className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
 												>
 													<span className="material-symbols-outlined text-base">
