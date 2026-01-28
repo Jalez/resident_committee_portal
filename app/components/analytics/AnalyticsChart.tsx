@@ -19,6 +19,13 @@ import {
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -57,11 +64,21 @@ export function AnalyticsChart({
     const [chartType, setChartType] = useState<"pie" | "bar">("pie");
     const [aiData, setAiData] = useState<Array<{ name: string; value: number }> | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isDesktop, setIsDesktop] = useState(true);
 
     // Reset AI data when column changes
     useEffect(() => {
         setAiData(null);
     }, [selectedColumnIndex, sheetData?.headers]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const mediaQuery = window.matchMedia("(min-width: 768px)");
+        const handleChange = () => setIsDesktop(mediaQuery.matches);
+        handleChange();
+        mediaQuery.addEventListener("change", handleChange);
+        return () => mediaQuery.removeEventListener("change", handleChange);
+    }, []);
 
     // Generate chart data from selected column
     const chartData = useMemo(() => {
@@ -86,6 +103,13 @@ export function AnalyticsChart({
     const handleAnalyze = async () => {
         if (!sheetData?.allRows) return;
         setIsAnalyzing(true);
+        setAiData(null);
+        const tipTimeout = setTimeout(() => {
+            toast.message(
+                "Thinking models may take longer to resolve requests. If problem persists, refresh and try again or try another model.",
+                { duration: 7000 },
+            );
+        }, 7000);
 
         try {
             const header = sheetData.headers[selectedColumnIndex];
@@ -114,6 +138,7 @@ export function AnalyticsChart({
             console.error("Analysis failed", error);
             toast.error("Analysis failed. Please try again.");
         } finally {
+            clearTimeout(tipTimeout);
             setIsAnalyzing(false);
         }
     };
@@ -121,7 +146,11 @@ export function AnalyticsChart({
     if (!sheetData) return null;
 
     const selectedHeader = sheetData.headers[selectedColumnIndex];
-    const isTextColumn = chartData.length > 5; // Heuristic for text column
+    const isTextColumn =
+        sheetData.allRows?.some((row) => {
+            const value = row[selectedHeader];
+            return typeof value === "string" && value.trim().length > 20;
+        }) ?? false;
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -145,48 +174,95 @@ export function AnalyticsChart({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    {isTextColumn && (
-                        <Button
-                            variant={aiData ? "outline" : "default"}
-                            size="sm"
-                            onClick={handleAnalyze}
-                            disabled={isAnalyzing}
-                            className="h-8 text-xs"
-                        >
-                            {isAnalyzing ? (
-                                <>
-                                    <span className="material-symbols-outlined animate-spin text-[14px] mr-2">
-                                        refresh
-                                    </span>
-                                    Analyzing...
-                                </>
-                            ) : (
-                                <>
-                                    <span className="material-symbols-outlined text-[14px] mr-2">
-                                        {aiData ? "refresh" : "auto_awesome"}
-                                    </span>
-                                    {aiData ? "Re-analyze" : "Analyze with AI"}
-                                </>
+                    {isDesktop ? (
+                        <div className="inline-flex items-center gap-2 rounded-md border border-input bg-background p-1">
+                            {isTextColumn && (
+                                <Button
+                                    variant={aiData ? "outline" : "default"}
+                                    size="sm"
+                                    onClick={handleAnalyze}
+                                    disabled={isAnalyzing}
+                                    className="h-8 text-xs"
+                                >
+                                    {isAnalyzing ? (
+                                        <>
+                                            <span className="material-symbols-outlined animate-spin text-[14px] mr-2">
+                                                refresh
+                                            </span>
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-[14px] mr-2">
+                                                {aiData ? "refresh" : "auto_awesome"}
+                                            </span>
+                                            {aiData ? "Re-analyze" : "Analyze with AI"}
+                                        </>
+                                    )}
+                                </Button>
                             )}
-                        </Button>
+                            <Select
+                                value={chartType}
+                                onValueChange={(v) => setChartType(v as "pie" | "bar")}
+                            >
+                                <SelectTrigger className="h-8 w-24">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="pie">Pie</SelectItem>
+                                    <SelectItem value="bar">Bar</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                    <span className="material-symbols-outlined text-[18px]">
+                                        more_vert
+                                    </span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                                {isTextColumn && (
+                                    <DropdownMenuItem
+                                        onSelect={(event) => {
+                                            event.preventDefault();
+                                            handleAnalyze();
+                                        }}
+                                        disabled={isAnalyzing}
+                                    >
+                                        <span className="material-symbols-outlined text-[16px] mr-2">
+                                            {aiData ? "refresh" : "auto_awesome"}
+                                        </span>
+                                        {isAnalyzing
+                                            ? "Analyzing..."
+                                            : aiData
+                                                ? "Re-analyze"
+                                                : "Analyze with AI"}
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onSelect={() => setChartType("pie")}
+                                    className={cn(chartType === "pie" && "font-semibold")}
+                                >
+                                    Pie
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => setChartType("bar")}
+                                    className={cn(chartType === "bar" && "font-semibold")}
+                                >
+                                    Bar
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     )}
-                    <Select
-                        value={chartType}
-                        onValueChange={(v) => setChartType(v as "pie" | "bar")}
-                    >
-                        <SelectTrigger className="w-24">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="pie">Pie</SelectItem>
-                            <SelectItem value="bar">Bar</SelectItem>
-                        </SelectContent>
-                    </Select>
                 </div>
             </div>
 
             {chartData.length > 0 ? (
-                <div className="h-72 w-full">
+                <div className="h-72 w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                         {chartType === "pie" ? (
                             <PieChart>
@@ -215,7 +291,8 @@ export function AnalyticsChart({
                                         boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                                     }}
                                 />
-                                <Legend
+                                {isDesktop && (
+                                    <Legend
                                     layout="vertical"
                                     verticalAlign="middle"
                                     align="right"
@@ -226,7 +303,8 @@ export function AnalyticsChart({
                                         overflowY: "auto",
                                         paddingRight: "10px",
                                     }}
-                                />
+                                    />
+                                )}
                             </PieChart>
                         ) : (
                             <BarChart data={chartData} layout="vertical">
