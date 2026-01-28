@@ -27,7 +27,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const validTexts = texts.filter((t) => typeof t === "string" && t.trim().length > 0);
 
         if (validTexts.length === 0) {
-            return { data: [] };
+            return { error: "No data to analyze" };
         }
 
         const db = getDatabase();
@@ -47,6 +47,10 @@ export async function action({ request }: ActionFunctionArgs) {
         return { data: analysis };
     } catch (error) {
         console.error("AI Analysis failed:", error);
-        return { error: "Analysis failed" };
+        const message =
+            error instanceof Error && error.message
+                ? "Analysis failed: " + error.message
+                : "Analysis failed";
+        return { error: message };
     }
 }
