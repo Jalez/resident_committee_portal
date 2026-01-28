@@ -74,24 +74,46 @@ export const PERMISSIONS = {
 
 	// Treasury
 	"treasury:read": {
-		description: "View treasury and transactions",
-		descriptionFi: "Näytä kassa ja tapahtumat",
+		description: "View treasury overview",
+		descriptionFi: "Näytä kassan yleiskuva",
 		category: "Treasury",
 	},
-	"treasury:write": {
+	"treasury_breakdown:read": {
+		description: "View treasury breakdown",
+		descriptionFi: "Näytä kassan erittely",
+		category: "Treasury",
+	},
+	"treasury:export": {
+		description: "Export treasury data to CSV",
+		descriptionFi: "Vie kassatiedot CSV-tiedostoon",
+		category: "Treasury",
+	},
+	"treasury:import": {
+		description: "Import treasury data from file",
+		descriptionFi: "Tuo kassatiedot tiedostosta",
+		category: "Treasury",
+	},
+
+	// Transactions
+	"transactions:read": {
+		description: "View transaction list",
+		descriptionFi: "Näytä tapahtumalista",
+		category: "Transactions",
+	},
+	"transactions:write": {
 		description: "Create transactions",
 		descriptionFi: "Luo tapahtumia",
-		category: "Treasury",
+		category: "Transactions",
 	},
-	"treasury:edit": {
+	"transactions:update": {
 		description: "Edit transactions",
 		descriptionFi: "Muokkaa tapahtumia",
-		category: "Treasury",
+		category: "Transactions",
 	},
-	"treasury:delete": {
+	"transactions:delete": {
 		description: "Delete transactions",
 		descriptionFi: "Poista tapahtumia",
-		category: "Treasury",
+		category: "Transactions",
 	},
 
 	// Reimbursements
