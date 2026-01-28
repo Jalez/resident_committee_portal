@@ -31,6 +31,7 @@ interface AnalyticsTableProps {
     columnUniqueValues: Record<string, string[]>;
     activeChartColumn: number;
     onColumnSelect: (index: number) => void;
+    hiddenQuestions?: string[];
 }
 
 export function AnalyticsTable({
@@ -41,16 +42,23 @@ export function AnalyticsTable({
     columnUniqueValues,
     activeChartColumn,
     onColumnSelect,
+    hiddenQuestions = [],
 }: AnalyticsTableProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const [visibleColumns, setVisibleColumns] = useState<Set<number>>(new Set());
 
     // Initialize/Reset visible columns when headers change
+    // Exclude columns that match hidden questions
     useEffect(() => {
         if (sheetData?.headers) {
-            setVisibleColumns(new Set(sheetData.headers.map((_, i) => i)));
+            const hiddenSet = new Set(hiddenQuestions.map((q) => q.toLowerCase()));
+            const visible = sheetData.headers
+                .map((header, i) => ({ header, i }))
+                .filter(({ header }) => !hiddenSet.has(header.toLowerCase()))
+                .map(({ i }) => i);
+            setVisibleColumns(new Set(visible));
         }
-    }, [sheetData?.headers.length]);
+    }, [sheetData?.headers.length, hiddenQuestions]);
 
     // Toggle column visibility
     const toggleColumnVisibility = (index: number) => {

@@ -15,6 +15,7 @@ export const SETTINGS_KEYS = {
 	APPROVAL_KEYWORDS: "approval_keywords",
 	REJECTION_KEYWORDS: "rejection_keywords",
 	ANALYTICS_AI_MODEL: "analytics_ai_model",
+	ANALYTICS_HIDDEN_QUESTIONS: "analytics_hidden_questions",
 } as const;
 
 // Default keywords (Finnish + English)
@@ -137,15 +138,17 @@ Example response format:
 		const result = JSON.parse(jsonStr);
 
 		if (Array.isArray(result)) {
-			return result.map(item => ({
+			return result.map((item) => ({
 				name: String(item.name),
-				value: Number(item.value)
+				value: Number(item.value),
 			}));
 		}
-		return [];
+		throw new Error("Invalid AI response format");
 	} catch (error) {
 		console.error("[OpenRouter] AI analysis error:", error);
-		return [];
+		throw error instanceof Error
+			? error
+			: new Error("AI analysis failed");
 	}
 }
 

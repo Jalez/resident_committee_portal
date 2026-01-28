@@ -12,6 +12,8 @@ import {
     CardHeader,
     CardTitle,
 } from "~/components/ui/card";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
     Select,
@@ -22,6 +24,10 @@ import {
 } from "~/components/ui/select";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import {
+    getAnalyticsSheets,
+    getSheetData,
+} from "~/lib/google.server";
 import {
     getAvailableModels,
     type OpenRouterModel,
@@ -40,9 +46,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     await requirePermission(request, "settings:analytics", getDatabase);
 
     const db = getDatabase();
-    const [apiKey, analyticsModel] = await Promise.all([
+    const [apiKey, analyticsModel, hiddenQuestionsJson] = await Promise.all([
         db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
         db.getSetting(SETTINGS_KEYS.ANALYTICS_AI_MODEL),
+        db.getSetting(SETTINGS_KEYS.ANALYTICS_HIDDEN_QUESTIONS),
     ]);
 
     let models: OpenRouterModel[] = [];
@@ -50,11 +57,41 @@ export async function loader({ request }: Route.LoaderArgs) {
         models = await getAvailableModels(apiKey);
     }
 
+    // Parse hidden questions from JSON
+    let hiddenQuestions: string[] = [];
+    if (hiddenQuestionsJson) {
+        try {
+            hiddenQuestions = JSON.parse(hiddenQuestionsJson);
+        } catch {
+            // Invalid JSON, ignore
+        }
+    }
+
+    // Fetch all sheets and their headers to build unique questions list
+    const sheets = await getAnalyticsSheets();
+    const allQuestions = new Set<string>();
+
+    // Fetch headers from each sheet (uses caching, so this is efficient)
+    await Promise.all(
+        sheets.map(async (sheet) => {
+            const sheetData = await getSheetData(sheet.id);
+            if (sheetData?.headers) {
+                for (const header of sheetData.headers) {
+                    if (header.trim()) {
+                        allQuestions.add(header);
+                    }
+                }
+            }
+        }),
+    );
+
     return {
         apiKey: apiKey ? "••••••••" : "",
         hasApiKey: !!apiKey,
         analyticsModel: analyticsModel || "",
         models,
+        hiddenQuestions,
+        allQuestions: Array.from(allQuestions).sort(),
     };
 }
 
@@ -77,11 +114,21 @@ export async function action({ request }: Route.ActionArgs) {
         return { success: true, message: "Analytics settings saved" };
     }
 
+    if (intent === "save-hidden-questions") {
+        const hiddenQuestionsJson = formData.get("hiddenQuestions") as string;
+        await db.setSetting(
+            SETTINGS_KEYS.ANALYTICS_HIDDEN_QUESTIONS,
+            hiddenQuestionsJson,
+            "Questions that are hidden by default in analytics table columns",
+        );
+        return { success: true, message: "Hidden questions saved" };
+    }
+
     return { error: "Unknown action" };
 }
 
 export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) {
-    const { hasApiKey, analyticsModel: serverModel, models } = loaderData;
+    const { hasApiKey, analyticsModel: serverModel, models, hiddenQuestions: serverHiddenQuestions, allQuestions } = loaderData;
     const { t } = useTranslation();
     const navigation = useNavigation();
     const actionData = useActionData<typeof action>();
@@ -89,6 +136,8 @@ export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) 
 
     const [model, setModel] = useState(serverModel);
     const [sortBy, setSortBy] = useState<"price" | "name">("price");
+    const [hiddenQuestions, setHiddenQuestions] = useState<Set<string>>(new Set(serverHiddenQuestions));
+    const [questionFilter, setQuestionFilter] = useState("");
 
     useEffect(() => {
         if (actionData) {
@@ -210,6 +259,95 @@ export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) 
 
                                 <Button type="submit" disabled={isSubmitting || !hasApiKey}>
                                     {isSubmitting ? "Saving..." : "Save Settings"}
+                                </Button>
+                            </Form>
+                        </CardContent>
+                    </Card>
+
+                    {/* Hidden Questions Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <span className="material-symbols-outlined">visibility_off</span>
+                                Hidden Questions
+                            </CardTitle>
+                            <CardDescription>
+                                Select questions that should be hidden by default when viewing analytics. 
+                                These columns will be unchecked in the "Columns" dropdown across all sheets.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Form method="post" className="space-y-4">
+                                <input type="hidden" name="intent" value="save-hidden-questions" />
+                                <input
+                                    type="hidden"
+                                    name="hiddenQuestions"
+                                    value={JSON.stringify(Array.from(hiddenQuestions))}
+                                />
+
+                                {allQuestions.length > 0 ? (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label>Filter questions</Label>
+                                            <Input
+                                                placeholder="Search questions..."
+                                                value={questionFilter}
+                                                onChange={(e) => setQuestionFilter(e.target.value)}
+                                                className="max-w-sm"
+                                            />
+                                        </div>
+
+                                        <div className="border rounded-lg max-h-80 overflow-y-auto">
+                                            <div className="p-2 space-y-1">
+                                                {allQuestions
+                                                    .filter((q) =>
+                                                        q.toLowerCase().includes(questionFilter.toLowerCase()),
+                                                    )
+                                                    .map((question) => (
+                                                        <div
+                                                            key={question}
+                                                            className="flex items-start gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                                                        >
+                                                            <Checkbox
+                                                                id={`q-${question}`}
+                                                                checked={hiddenQuestions.has(question)}
+                                                                onCheckedChange={(checked) => {
+                                                                    setHiddenQuestions((prev) => {
+                                                                        const newSet = new Set(prev);
+                                                                        if (checked) {
+                                                                            newSet.add(question);
+                                                                        } else {
+                                                                            newSet.delete(question);
+                                                                        }
+                                                                        return newSet;
+                                                                    });
+                                                                }}
+                                                                className="mt-0.5"
+                                                            />
+                                                            <label
+                                                                htmlFor={`q-${question}`}
+                                                                className="text-sm cursor-pointer flex-1 leading-tight"
+                                                            >
+                                                                {question}
+                                                            </label>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        </div>
+
+                                        <p className="text-xs text-muted-foreground">
+                                            {hiddenQuestions.size} question{hiddenQuestions.size !== 1 ? "s" : ""} selected to hide •{" "}
+                                            {allQuestions.length} total question{allQuestions.length !== 1 ? "s" : ""} found across all sheets
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        No analytics sheets found. Questions will appear here once you have sheets in your analytics folder.
+                                    </p>
+                                )}
+
+                                <Button type="submit" disabled={isSubmitting || allQuestions.length === 0}>
+                                    {isSubmitting ? "Saving..." : "Save Hidden Questions"}
                                 </Button>
                             </Form>
                         </CardContent>

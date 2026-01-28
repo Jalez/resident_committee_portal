@@ -9,6 +9,7 @@ import {
     type AnalyticsSheet,
     type SheetData,
 } from "~/lib/google.server";
+import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import type { Route } from "./+types/analytics";
 import { AnalyticsHeader } from "~/components/analytics/AnalyticsHeader";
 import { AnalyticsChart } from "~/components/analytics/AnalyticsChart";
@@ -50,6 +51,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     const canExport = authUser.permissions.some(
         (p) => p === "forms:export" || p === "*",
     );
+
+    // Fetch hidden questions setting
+    const db = getDatabase();
+    const hiddenQuestionsJson = await db.getSetting(SETTINGS_KEYS.ANALYTICS_HIDDEN_QUESTIONS);
+    let hiddenQuestions: string[] = [];
+    if (hiddenQuestionsJson) {
+        try {
+            hiddenQuestions = JSON.parse(hiddenQuestionsJson);
+        } catch {
+            // Invalid JSON, ignore
+        }
+    }
 
     const url = new URL(request.url);
     const sheetId = url.searchParams.get("sheetId");
@@ -139,6 +152,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         currentPage: page,
         pageSize,
         canExport,
+        hiddenQuestions,
     };
 }
 
@@ -156,6 +170,7 @@ export default function Analytics({ loaderData }: Route.ComponentProps) {
         currentPage,
         pageSize,
         canExport,
+        hiddenQuestions,
     } = loaderData;
     const [activeChartColumn, setActiveChartColumn] = useState<number>(0);
 
@@ -229,6 +244,7 @@ export default function Analytics({ loaderData }: Route.ComponentProps) {
                         columnUniqueValues={columnUniqueValues}
                         activeChartColumn={activeChartColumn}
                         onColumnSelect={setActiveChartColumn}
+                        hiddenQuestions={hiddenQuestions}
                     />
                 </>
             )}
