@@ -76,6 +76,10 @@
 		"title": "Kassa {{year}}",
 		"year": "År",
 		"select_year": "Välj år...",
+			"success": {
+				"transaction_created": "Transaktionen skapad",
+				"reimbursement_requested": "Ersättningsbegäran skickad"
+			},
 		"view_breakdown": "Se detaljer",
 		"balance": "Saldo",
 		"income": "Inkomster",

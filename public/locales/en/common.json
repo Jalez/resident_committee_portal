@@ -95,7 +95,9 @@
 			"title": "New Transaction",
 			"header": "New Transaction",
 			"details_header": "Transaction Details",
+			"inventory_title": "Add to Inventory",
 			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
+			"inventory_empty": "No items selected.",
 			"request_reimbursement": "Create Reimbursement Request",
 			"reimbursement_help": "Check if you want to request reimbursement from the allowance.",
 			"link_existing_reimbursement": "Link to Existing Reimbursement",
@@ -105,6 +107,10 @@
 			"or": "or",
 			"submit": "Add",
 			"submit_and_request": "Add & Create Reimbursement Request"
+		},
+		"success": {
+			"transaction_created": "Transaction created",
+			"reimbursement_requested": "Reimbursement request sent"
 		},
 		"form": {
 			"type": "Type",

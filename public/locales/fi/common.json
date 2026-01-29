@@ -77,6 +77,10 @@
 		"title": "Rahasto {{year}}",
 		"year": "Vuosi",
 		"select_year": "Valitse vuosi...",
+			"success": {
+				"transaction_created": "Tapahtuma lisätty",
+				"reimbursement_requested": "Kulukorvaushakemus lähetetty"
+			},
 		"view_breakdown": "Katso erittely",
 		"balance": "Saldo",
 		"income": "Tulot",

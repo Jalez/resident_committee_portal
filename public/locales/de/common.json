@@ -54,6 +54,10 @@
 		"title": "Profil",
 		"update_success": "Profil aktualisiert!",
 		"email_label": "E-Mail",
+			"success": {
+				"transaction_created": "Transaktion erstellt",
+				"reimbursement_requested": "Erstattungsanfrage gesendet"
+			},
 		"email_help": "E-Mail kann nicht geändert werden",
 		"name_label": "Name",
 		"apartment_label": "Wohnungsnummer",

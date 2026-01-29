@@ -54,6 +54,10 @@
 		"reimbursement": {
 			"subject": "Solicitud de Reembolso",
 			"title": "Solicitud de Reembolso",
+			"success": {
+				"transaction_created": "Transacción creada",
+				"reimbursement_requested": "Solicitud de reembolso enviada"
+			},
 			"item": "Artículo",
 			"amount": "Importe",
 			"purchaser": "Comprador",
