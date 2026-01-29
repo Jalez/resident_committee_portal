@@ -1,14 +1,18 @@
 import { XIcon } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useFetcher, useRevalidator } from "react-router";
 import { LanguageSwitcher } from "~/components/language-switcher";
 import { Button } from "~/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import {
@@ -30,6 +34,8 @@ import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
 import { NAV_ITEMS } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
+import { useRouteLoaderData } from "react-router";
+import type { loader as rootLoader } from "~/root";
 
 interface NavigationProps {
 	className?: string;
@@ -43,10 +49,41 @@ export function Navigation({
 	const location = useLocation();
 	const pathname = location.pathname;
 	const { isInfoReel, fillProgress, opacity } = useInfoReel();
-	const { primaryLanguage, secondaryLanguage } = useLanguage();
+	const { primaryLanguage, secondaryLanguage, supportedLanguages, languageNames } = useLanguage();
 	const { user, hasPermission, hasAnyPermission } = useUser();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const { t } = useTranslation();
+	const [mobileMessagesOpen, setMobileMessagesOpen] = useState(false);
+	const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
+	const { t, i18n } = useTranslation();
+	const fetcher = useFetcher();
+	const revalidator = useRevalidator();
+	const rootData = useRouteLoaderData<typeof rootLoader>("root");
+	const unreadMessageCount = rootData?.unreadMessageCount || 0;
+	const unreadMessages = rootData?.unreadMessages || [];
+
+	// Function to mark one or more messages as read
+	const markMessagesAsRead = useCallback(
+		async (messageIds: string[]) => {
+			if (messageIds.length === 0) return;
+			try {
+				const response = await fetch("/api/messages/mark-read", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ messageIds }),
+				});
+				if (response.ok) {
+					revalidator.revalidate();
+				}
+			} catch (error) {
+				console.error("Failed to mark messages as read:", error);
+			}
+		},
+		[revalidator],
+	);
+
+
 
 	// Check if profile menu should be shown (user is logged in, not guest)
 	const showProfileMenu = user && user.userId !== "guest";
@@ -207,9 +244,6 @@ export function Navigation({
 							</SheetTitle>
 						</SheetHeader>
 						<nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
-							{/* Language Switcher Mobile */}
-							<LanguageSwitcher variant="standalone" />
-
 							{navItems.map((item) => renderNavItem(item, true))}
 
 							{/* Settings in mobile menu */}
@@ -345,6 +379,224 @@ export function Navigation({
 											{t("nav.edit_profile")}
 										</span>
 									</Link>
+									{/* Messages submenu in mobile menu */}
+									<div>
+										<button
+											type="button"
+											onClick={() => setMobileMessagesOpen(!mobileMessagesOpen)}
+											className={cn(
+												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
+												"hover:bg-primary/10 hover:text-primary",
+												pathname === "/messages"
+													? "text-primary bg-primary/10"
+													: "text-gray-500 dark:text-gray-400",
+											)}
+										>
+											<span className="material-symbols-outlined text-2xl">
+												mail
+											</span>
+											<span className="text-sm font-bold flex-1">
+												{t("nav.messages")}
+											</span>
+											{unreadMessageCount > 0 && (
+												<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
+													{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+												</span>
+											)}
+											<span
+												className={cn(
+													"material-symbols-outlined text-lg transition-transform",
+													mobileMessagesOpen && "rotate-90",
+												)}
+											>
+												chevron_right
+											</span>
+										</button>
+							{mobileMessagesOpen && (
+											<div className="pl-4 space-y-1">
+												{unreadMessages.length === 0 ? (
+													<div className="px-4 py-2 text-sm text-muted-foreground">
+														{t("messages.empty")}
+													</div>
+												) : (
+													<>
+														{unreadMessages.map((message) => (
+															<div
+																key={message.id}
+																className="flex items-start gap-2 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
+															>
+																<div className="min-w-0 flex-1 flex flex-col gap-1">
+																	<p className="font-medium text-sm line-clamp-1">
+																		{message.title}
+																	</p>
+																	<p className="text-xs text-muted-foreground line-clamp-2">
+																		{message.content}
+																	</p>
+																	<p className="text-xs text-muted-foreground">
+																		{new Date(message.createdAt).toLocaleDateString(
+																			i18n.language === "fi" ? "fi-FI" : "en-US",
+																			{
+																				month: "short",
+																				day: "numeric",
+																				hour: "2-digit",
+																				minute: "2-digit",
+																			},
+																		)}
+																	</p>
+																</div>
+																<div className="flex flex-col items-end gap-1 shrink-0">
+																	<Link
+																		to="/messages"
+																		onClick={() => setMobileMenuOpen(false)}
+																		className="text-xs text-primary hover:underline"
+																	>
+																		{t("messages.view")}
+																	</Link>
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="sm"
+																		className="h-8 px-2 text-xs"
+																		onClick={(e) => {
+																			e.preventDefault();
+																			markMessagesAsRead([message.id]);
+																		}}
+																	>
+																		{t("messages.mark_as_read")}
+																	</Button>
+																</div>
+															</div>
+														))}
+													</>
+												)}
+												{/* See all - always at bottom, matches desktop styling */}
+												<div className="border-t border-border mt-2 pt-2">
+													<Link
+														to="/messages"
+														onClick={() => setMobileMenuOpen(false)}
+														className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg hover:bg-primary/10 text-primary text-sm font-medium transition-colors"
+													>
+														{t("messages.see_all")}
+													</Link>
+												</div>
+											</div>
+										)}
+									</div>
+									{/* Language Switcher Mobile - under profile when logged in */}
+									<div>
+										<button
+											type="button"
+											onClick={() => setMobileLanguageOpen(!mobileLanguageOpen)}
+											className={cn(
+												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full text-left",
+												"hover:bg-primary/10 hover:text-primary",
+												"text-gray-500 dark:text-gray-400",
+											)}
+										>
+											<span className="material-symbols-outlined text-2xl">
+												translate
+											</span>
+											<span className="text-sm font-bold flex-1">
+												{t("lang.label")}
+											</span>
+											<span
+												className={cn(
+													"material-symbols-outlined text-lg transition-transform",
+													mobileLanguageOpen && "rotate-90",
+												)}
+											>
+												chevron_right
+											</span>
+										</button>
+										{mobileLanguageOpen && (
+											<div className="pl-4 space-y-1">
+												<div className="px-4 py-2">
+													<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+														{t("settings.general.primary_language")}
+													</p>
+													{supportedLanguages.map((lang) => (
+														<button
+															type="button"
+															key={`primary-${lang}`}
+															onClick={() => {
+																i18n.changeLanguage(lang);
+																fetcher.submit(
+																	{ language: lang, type: "primary" },
+																	{ method: "post", action: "/api/set-language" },
+																);
+															}}
+															className={cn(
+																"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+																i18n.language === lang && "bg-primary/10 text-primary",
+															)}
+														>
+															<span>{languageNames[lang] || lang}</span>
+															{i18n.language === lang && (
+																<span className="material-symbols-outlined text-sm">
+																	check
+																</span>
+															)}
+														</button>
+													))}
+												</div>
+												<div className="px-4 py-2">
+													<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+														{t("settings.general.secondary_language")}
+													</p>
+													{supportedLanguages.map((lang) => (
+														<button
+															type="button"
+															key={`secondary-${lang}`}
+															onClick={() => {
+																fetcher.submit(
+																	{ language: lang, type: "secondary" },
+																	{ method: "post", action: "/api/set-language" },
+																);
+																setTimeout(() => {
+																	revalidator.revalidate();
+																}, 100);
+															}}
+															className={cn(
+																"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+																secondaryLanguage === lang && "bg-primary/10 text-primary",
+															)}
+														>
+															<span>{languageNames[lang] || lang}</span>
+															{secondaryLanguage === lang && (
+																<span className="material-symbols-outlined text-sm">
+																	check
+																</span>
+															)}
+														</button>
+													))}
+													<button
+														type="button"
+														key="secondary-none"
+														onClick={() => {
+															fetcher.submit(
+																{ language: "none", type: "secondary" },
+																{ method: "post", action: "/api/set-language" },
+															);
+															setTimeout(() => {
+																revalidator.revalidate();
+															}, 100);
+														}}
+														className={cn(
+															"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+															secondaryLanguage === "none" && "bg-primary/10 text-primary",
+														)}
+													>
+														<span>{t("settings.common.none")}</span>
+														{secondaryLanguage === "none" && (
+															<span className="material-symbols-outlined text-sm">
+																check
+															</span>
+														)}
+													</button>
+												</div>
+											</div>
+										)}
+									</div>
 									<Link
 										to="/auth/logout"
 										onClick={() => setMobileMenuOpen(false)}
@@ -358,6 +610,10 @@ export function Navigation({
 										</span>
 									</Link>
 								</div>
+							)}
+							{/* Language Switcher Mobile - for guests */}
+							{!showProfileMenu && !isInfoReel && (
+								<LanguageSwitcher variant="standalone" />
 							)}
 						</nav>
 					</SheetContent>
@@ -603,6 +859,13 @@ export function Navigation({
 									</span>
 								</div>
 
+								{/* Unread messages badge */}
+								{unreadMessageCount > 0 && (
+									<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
+										{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+									</span>
+								)}
+
 								{/* Dropdown indicator */}
 								<span className="material-symbols-outlined text-sm opacity-60 hidden lg:block">
 									expand_more
@@ -623,6 +886,120 @@ export function Navigation({
 									</div>
 								</Link>
 							</DropdownMenuItem>
+							{/* Messages Submenu */}
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger className="cursor-pointer relative">
+									<span className="material-symbols-outlined text-lg">
+										mail
+									</span>
+									<div className="flex-1">
+										<Link to="/messages" className="font-medium block">{t("nav.messages")}</Link>
+									</div>
+									{unreadMessageCount > 0 && (
+										<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full mr-2">
+											{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+										</span>
+									)}
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="w-80">
+									<DropdownMenuLabel>
+										{t("nav.messages")}
+										{unreadMessageCount > 0 && (
+											<span className="ml-2 text-xs text-muted-foreground">
+												({t("messages.unread_count", { count: unreadMessageCount })})
+											</span>
+										)}
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									{unreadMessages.length === 0 ? (
+										<DropdownMenuItem disabled className="text-muted-foreground">
+											{t("messages.empty")}
+										</DropdownMenuItem>
+									) : (
+										<>
+											{unreadMessages.map((message) => (
+												<DropdownMenuItem
+													key={message.id}
+													className="flex flex-col items-start gap-1 py-3"
+													onSelect={(e) => e.preventDefault()}
+												>
+													<div className="flex w-full items-start gap-2">
+														<div className="min-w-0 flex-1">
+															<p className="font-medium text-sm line-clamp-1">
+																{message.title}
+															</p>
+															<p className="text-xs text-muted-foreground line-clamp-2">
+																{message.content}
+															</p>
+															<p className="text-xs text-muted-foreground mt-1">
+																{new Date(message.createdAt).toLocaleDateString(
+																	i18n.language === "fi" ? "fi-FI" : "en-US",
+																	{
+																		month: "short",
+																		day: "numeric",
+																		hour: "2-digit",
+																		minute: "2-digit",
+																	},
+																)}
+															</p>
+														</div>
+														<div className="flex items-center gap-1 shrink-0">
+															<Link
+																to="/messages"
+																onClick={(e) => e.stopPropagation()}
+																className="text-xs text-primary hover:underline"
+															>
+																{t("messages.view")}
+															</Link>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																className="h-8 px-2 text-xs"
+																onClick={(e) => {
+																	e.preventDefault();
+																	e.stopPropagation();
+																	markMessagesAsRead([message.id]);
+																}}
+															>
+																{t("messages.mark_as_read")}
+															</Button>
+														</div>
+													</div>
+												</DropdownMenuItem>
+											))}
+												<>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem asChild>
+														<Link
+															to="/messages"
+															className="flex items-center justify-center gap-2 cursor-pointer text-primary"
+														>
+															<span className="text-sm font-medium">
+																{t("messages.see_all")}
+															</span>
+														</Link>
+													</DropdownMenuItem>
+												</>
+										</>
+									)}
+									{unreadMessageCount === 0 && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem asChild>
+												<Link
+													to="/messages"
+													className="flex items-center justify-center gap-2 cursor-pointer"
+												>
+													<span className="text-sm font-medium">
+														{t("messages.see_all")}
+													</span>
+												</Link>
+											</DropdownMenuItem>
+										</>
+									)}
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
 							<DropdownMenuSeparator />
 							<LanguageSwitcher variant="submenu" />
 							<DropdownMenuSeparator />

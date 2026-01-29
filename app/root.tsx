@@ -60,12 +60,36 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// This avoids needing to preload all language files on the client
 	const languageNames = await getLanguageNames();
 
+	// Get unread message count and messages for authenticated users
+	let unreadMessageCount = 0;
+	let unreadMessages: Array<{ id: string; title: string; content: string; createdAt: Date; relatedPurchaseId: string | null }> = [];
+	if (user && user.userId !== "guest") {
+		const db = getDatabase();
+		unreadMessageCount = await db.getUnreadMessageCount(user.userId);
+		if (unreadMessageCount > 0) {
+			// Fetch unread messages (limit to 5 for the dropdown)
+			const allMessages = await db.getMessagesByUserId(user.userId, 100);
+			unreadMessages = allMessages
+				.filter((msg) => !msg.read)
+				.slice(0, 5)
+				.map((msg) => ({
+					id: msg.id,
+					title: msg.title,
+					content: msg.content,
+					createdAt: msg.createdAt,
+					relatedPurchaseId: msg.relatedPurchaseId,
+				}));
+		}
+	}
+
 	return {
 		user,
 		siteConfig: SITE_CONFIG,
 		locale,
 		supportedLanguages,
 		languageNames,
+		unreadMessageCount,
+		unreadMessages,
 	};
 }
 
@@ -129,7 +153,7 @@ function ContentFader({ children }: { children: React.ReactNode }) {
 
 	return (
 		<div
-			className="flex-1 w-full overflow-y-auto transition-opacity duration-100"
+			className="w-full transition-opacity duration-100 pb-8"
 			style={isInfoReel ? { opacity } : undefined}
 		>
 			{children}
@@ -180,8 +204,8 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 	const { t } = useTranslation();
 
 	return (
-		<div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
-			<div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0">
+		<div className="flex flex-col min-h-screen bg-background text-foreground">
+			<div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0 sticky top-0">
 				<header className="flex items-center justify-center px-4 pb-2">
 					<div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
 						<span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
@@ -224,6 +248,8 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+	const { t } = useTranslation();
+
 	// Check if this is a configuration/setup error (database, env vars, connection issues)
 	const isConfigError =
 		error instanceof Error &&
@@ -245,17 +271,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 						</span>
 					</div>
 					<h1 className="text-2xl font-bold text-foreground">
-						Setup Required / Asetukset tarvitaan
+						{t("app.setup_required")}
 					</h1>
 					<p className="text-muted-foreground">
-						It looks like the app isn't configured yet. Please check your
-						environment variables.
-					</p>
-					<p className="text-sm text-muted-foreground">
-						Sovellusta ei ole vielä määritetty. Tarkista ympäristömuuttujat.
+						{t("app.setup_message")}
 					</p>
 					<div className="bg-muted p-4 rounded-lg text-left space-y-2">
-						<p className="text-sm font-medium">Error details:</p>
+						<p className="text-sm font-medium">{t("app.error_details")}:</p>
 						<code className="text-xs text-destructive block overflow-auto">
 							{error.message}
 						</code>
@@ -265,12 +287,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 						className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
 					>
 						<span className="material-symbols-outlined">arrow_forward</span>
-						Open Setup Guide
+						{t("app.open_setup")}
 					</a>
 					<p className="text-xs text-muted-foreground">
-						Or copy <code className="bg-muted px-1 rounded">.env.template</code>{" "}
-						to <code className="bg-muted px-1 rounded">.env</code> and configure
-						your settings.
+						{t("app.copy_env")}
 					</p>
 				</div>
 			</main>
