@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { and, eq, isNull, notInArray } from "drizzle-orm";
+import { and, eq, isNull, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
@@ -535,7 +535,10 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(
 				and(
 					eq(transactions.type, "expense"),
-					isNull(transactions.purchaseId),
+					or(
+						isNull(transactions.purchaseId),
+						eq(transactions.reimbursementStatus, "declined"),
+					),
 				),
 			);
 	}
