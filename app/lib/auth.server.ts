@@ -280,6 +280,106 @@ export async function requireAnyPermission(
 	return user;
 }
 
+/**
+ * Check if user can edit/delete their own item
+ * Returns true if user has the self permission AND the item's createdBy matches user's userId
+ */
+export function canEditSelf(
+	user: AuthenticatedUser,
+	itemCreatedBy: string | null | undefined,
+	selfPermission: string,
+): boolean {
+	if (!itemCreatedBy) {
+		// Items without createdBy (existing records) cannot be edited with self permissions
+		return false;
+	}
+	return (
+		hasPermission(user, selfPermission) && itemCreatedBy === user.userId
+	);
+}
+
+/**
+ * Check if user can delete their own item
+ * Returns true if user has the self permission AND the item's createdBy matches user's userId
+ */
+export function canDeleteSelf(
+	user: AuthenticatedUser,
+	itemCreatedBy: string | null | undefined,
+	selfPermission: string,
+): boolean {
+	if (!itemCreatedBy) {
+		// Items without createdBy (existing records) cannot be deleted with self permissions
+		return false;
+	}
+	return (
+		hasPermission(user, selfPermission) && itemCreatedBy === user.userId
+	);
+}
+
+/**
+ * Require user to have either general permission OR self permission with ownership
+ */
+export async function requirePermissionOrSelf(
+	request: Request,
+	generalPermission: string,
+	selfPermission: string,
+	itemCreatedBy: string | null | undefined,
+	getDatabase: () => RBACDatabaseAdapter,
+): Promise<AuthenticatedUser> {
+	const user = await getAuthenticatedUser(request, getDatabase);
+
+	if (!user) {
+		throw new Response("Unauthorized", { status: 401 });
+	}
+
+	// Check general permission first
+	if (hasPermission(user, generalPermission)) {
+		return user;
+	}
+
+	// Check self permission with ownership
+	if (canEditSelf(user, itemCreatedBy, selfPermission)) {
+		return user;
+	}
+
+	throw new Response(
+		`Forbidden - Missing permission: ${generalPermission} or ${selfPermission} (with ownership)`,
+		{ status: 403 },
+	);
+}
+
+/**
+ * Require user to have either general delete permission OR self delete permission with ownership
+ */
+export async function requireDeletePermissionOrSelf(
+	request: Request,
+	generalPermission: string,
+	selfPermission: string,
+	itemCreatedBy: string | null | undefined,
+	getDatabase: () => RBACDatabaseAdapter,
+): Promise<AuthenticatedUser> {
+	const user = await getAuthenticatedUser(request, getDatabase);
+
+	if (!user) {
+		throw new Response("Unauthorized", { status: 401 });
+	}
+
+	// Check general permission first
+	if (hasPermission(user, generalPermission)) {
+		return user;
+	}
+
+	// Check self permission with ownership
+	if (canDeleteSelf(user, itemCreatedBy, selfPermission)) {
+		return user;
+	}
+
+	throw new Response(
+		`Forbidden - Missing permission: ${generalPermission} or ${selfPermission} (with ownership)`,
+		{ status: 403 },
+	);
+}
+
 // ============================================
 // GOOGLE OAUTH 2.0
 // ============================================

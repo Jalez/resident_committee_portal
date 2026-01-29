@@ -413,7 +413,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 											([category, perms]) => (
 												<div key={category}>
 													<h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-														{category}
+														{t(`permissions.categories.${category}`)}
 													</h4>
 													<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
 														{perms.map((perm) => (
@@ -435,10 +435,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 																		{perm.name}
 																	</p>
 																	<p className="text-xs text-gray-500">
-																		{perm.definition.descriptionFi}
-																	</p>
-																	<p className="text-xs text-gray-400">
-																		{perm.definition.description}
+																		{t(perm.definition.translationKey)}
 																	</p>
 																</div>
 															</label>

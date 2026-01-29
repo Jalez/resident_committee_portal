@@ -5,17 +5,29 @@
  * Use these constants throughout the app for type safety and consistency.
  *
  * IMPORTANT: To add a new permission:
- * 1. Add the permission definition below (key + description + category)
- * 2. Assign it to roles via the admin UI or update scripts/seed-rbac.ts
+ * 1. Add the permission definition below (key + translationKey + category)
+ * 2. Add translations to all locale files in public/locales/{lang}/common.json
+ * 3. Assign it to roles via the admin UI or update scripts/seed-rbac.ts
  *
  * Permission format: "resource:action" or "resource:action:scope"
  * Examples: "inventory:write", "profile:read:own"
  */
 
 export interface PermissionDefinition {
-	description: string;
-	descriptionFi: string;
+	translationKey: string;
 	category: string;
+}
+
+/**
+ * Convert a permission name to its translation key
+ * Example: "users:read" -> "permissions.users.read"
+ * Example: "profile:read:own" -> "permissions.profile.read.own"
+ */
+export function getPermissionTranslationKey(
+	permissionName: PermissionName,
+): string {
+	// Convert colons to dots and prepend "permissions."
+	return `permissions.${permissionName.replace(/:/g, ".")}`;
 }
 
 /**
@@ -25,254 +37,225 @@ export interface PermissionDefinition {
 export const PERMISSIONS = {
 	// Users
 	"users:read": {
-		description: "View user list",
-		descriptionFi: "Näytä käyttäjälista",
+		translationKey: "permissions.users.read",
 		category: "Users",
 	},
 	"users:write": {
-		description: "Create and update users",
-		descriptionFi: "Luo ja muokkaa käyttäjiä",
+		translationKey: "permissions.users.write",
 		category: "Users",
 	},
 	"users:delete": {
-		description: "Delete users",
-		descriptionFi: "Poista käyttäjiä",
+		translationKey: "permissions.users.delete",
 		category: "Users",
 	},
 	"users:manage_roles": {
-		description: "Assign roles to users",
-		descriptionFi: "Määritä rooleja käyttäjille",
+		translationKey: "permissions.users.manage_roles",
 		category: "Users",
 	},
 
 	// Inventory
 	"inventory:read": {
-		description: "View inventory items",
-		descriptionFi: "Näytä inventaariotavarat",
+		translationKey: "permissions.inventory.read",
 		category: "Inventory",
 	},
 	"inventory:write": {
-		description: "Create and edit inventory items",
-		descriptionFi: "Luo ja muokkaa inventaariotavaroita",
+		translationKey: "permissions.inventory.write",
 		category: "Inventory",
 	},
 	"inventory:delete": {
-		description: "Delete inventory items",
-		descriptionFi: "Poista inventaariotavaroita",
+		translationKey: "permissions.inventory.delete",
 		category: "Inventory",
 	},
 	"inventory:export": {
-		description: "Export inventory to CSV",
-		descriptionFi: "Vie inventaario CSV-tiedostoon",
+		translationKey: "permissions.inventory.export",
 		category: "Inventory",
 	},
 	"inventory:import": {
-		description: "Import inventory from file",
-		descriptionFi: "Tuo inventaario tiedostosta",
+		translationKey: "permissions.inventory.import",
 		category: "Inventory",
 	},
 
 	// Treasury
 	"treasury:read": {
-		description: "View treasury overview",
-		descriptionFi: "Näytä kassan yleiskuva",
+		translationKey: "permissions.treasury.read",
 		category: "Treasury",
 	},
 	"treasury_breakdown:read": {
-		description: "View treasury breakdown",
-		descriptionFi: "Näytä kassan erittely",
+		translationKey: "permissions.treasury_breakdown.read",
 		category: "Treasury",
 	},
 	"treasury:export": {
-		description: "Export treasury data to CSV",
-		descriptionFi: "Vie kassatiedot CSV-tiedostoon",
+		translationKey: "permissions.treasury.export",
 		category: "Treasury",
 	},
 	"treasury:import": {
-		description: "Import treasury data from file",
-		descriptionFi: "Tuo kassatiedot tiedostosta",
+		translationKey: "permissions.treasury.import",
 		category: "Treasury",
 	},
 
 	// Transactions
 	"transactions:read": {
-		description: "View transaction list",
-		descriptionFi: "Näytä tapahtumalista",
+		translationKey: "permissions.transactions.read",
 		category: "Transactions",
 	},
 	"transactions:write": {
-		description: "Create transactions",
-		descriptionFi: "Luo tapahtumia",
+		translationKey: "permissions.transactions.write",
 		category: "Transactions",
 	},
 	"transactions:update": {
-		description: "Edit transactions",
-		descriptionFi: "Muokkaa tapahtumia",
+		translationKey: "permissions.transactions.update",
 		category: "Transactions",
 	},
 	"transactions:delete": {
-		description: "Delete transactions",
-		descriptionFi: "Poista tapahtumia",
+		translationKey: "permissions.transactions.delete",
+		category: "Transactions",
+	},
+	"transactions:update-self": {
+		translationKey: "permissions.transactions.update-self",
+		category: "Transactions",
+	},
+	"transactions:delete-self": {
+		translationKey: "permissions.transactions.delete-self",
 		category: "Transactions",
 	},
 
 	// Reimbursements
 	"reimbursements:read": {
-		description: "View reimbursement requests",
-		descriptionFi: "Näytä korvausvaatimukset",
+		translationKey: "permissions.reimbursements.read",
 		category: "Reimbursements",
 	},
 	"reimbursements:write": {
-		description: "Create reimbursement requests",
-		descriptionFi: "Luo korvausvaatimuksia",
+		translationKey: "permissions.reimbursements.write",
 		category: "Reimbursements",
 	},
-	"reimbursements:approve": {
-		description: "Approve/reject reimbursements",
-		descriptionFi: "Hyväksy/hylkää korvausvaatimuksia",
+	"reimbursements:update": {
+		translationKey: "permissions.reimbursements.update",
 		category: "Reimbursements",
 	},
 	"reimbursements:delete": {
-		description: "Delete reimbursement requests",
-		descriptionFi: "Poista korvausvaatimuksia",
+		translationKey: "permissions.reimbursements.delete",
+		category: "Reimbursements",
+	},
+	"reimbursements:update-self": {
+		translationKey: "permissions.reimbursements.update-self",
+		category: "Reimbursements",
+	},
+	"reimbursements:delete-self": {
+		translationKey: "permissions.reimbursements.delete-self",
 		category: "Reimbursements",
 	},
 
 	// Purchases
 	"purchases:read": {
-		description: "View all purchase requests",
-		descriptionFi: "Näytä kaikki ostopyynnöt",
+		translationKey: "permissions.purchases.read",
 		category: "Purchases",
 	},
 	"purchases:manage": {
-		description: "Update purchase status",
-		descriptionFi: "Päivitä ostopyynnön tila",
+		translationKey: "permissions.purchases.manage",
 		category: "Purchases",
 	},
 	"purchases:delete": {
-		description: "Delete purchase requests",
-		descriptionFi: "Poista ostopyyntöjä",
+		translationKey: "permissions.purchases.delete",
 		category: "Purchases",
 	},
 
 	// Submissions
 	"submissions:read": {
-		description: "View contact form submissions",
-		descriptionFi: "Näytä yhteydenottolomakkeet",
+		translationKey: "permissions.submissions.read",
 		category: "Submissions",
 	},
 	"submissions:write": {
-		description: "Update submission status",
-		descriptionFi: "Päivitä yhteydenoton tila",
+		translationKey: "permissions.submissions.write",
 		category: "Submissions",
 	},
 	"submissions:delete": {
-		description: "Delete submissions",
-		descriptionFi: "Poista yhteydenottoja",
+		translationKey: "permissions.submissions.delete",
 		category: "Submissions",
 	},
 
 	// Social Links
 	"social:read": {
-		description: "View social links",
-		descriptionFi: "Näytä some-linkit",
+		translationKey: "permissions.social.read",
 		category: "Social",
 	},
 	"social:write": {
-		description: "Create and edit social links",
-		descriptionFi: "Luo ja muokkaa some-linkkejä",
+		translationKey: "permissions.social.write",
 		category: "Social",
 	},
 	"social:delete": {
-		description: "Delete social links",
-		descriptionFi: "Poista some-linkkejä",
+		translationKey: "permissions.social.delete",
 		category: "Social",
 	},
 
 	// Minutes
 	"minutes:read": {
-		description: "View and download minutes",
-		descriptionFi: "Näytä ja lataa pöytäkirjat",
+		translationKey: "permissions.minutes.read",
 		category: "Minutes",
 	},
 	"minutes:guide": {
-		description: "View naming convention guide",
-		descriptionFi: "Näytä nimeämiskäytäntöohje",
+		translationKey: "permissions.minutes.guide",
 		category: "Minutes",
 	},
 
 	// Events
 	"events:read": {
-		description: "View calendar events",
-		descriptionFi: "Näytä kalenteritapahtumat",
+		translationKey: "permissions.events.read",
 		category: "Events",
 	},
 
 	// Forms
 	"forms:read": {
-		description: "View form responses and analytics",
-		descriptionFi: "Näytä lomaketiedot ja analytiikka",
+		translationKey: "permissions.forms.read",
 		category: "Forms",
 	},
 	"forms:export": {
-		description: "Export form data to CSV",
-		descriptionFi: "Vie lomaketiedot CSV-tiedostoon",
+		translationKey: "permissions.forms.export",
 		category: "Forms",
 	},
 
 	// Profile
 	"profile:read:own": {
-		description: "View own profile",
-		descriptionFi: "Näytä oma profiili",
+		translationKey: "permissions.profile.read.own",
 		category: "Profile",
 	},
 	"profile:write:own": {
-		description: "Edit own profile",
-		descriptionFi: "Muokkaa omaa profiilia",
+		translationKey: "permissions.profile.write.own",
 		category: "Profile",
 	},
 
 	// Roles (meta-permission)
 	"roles:read": {
-		description: "View roles and permissions",
-		descriptionFi: "Näytä roolit ja oikeudet",
+		translationKey: "permissions.roles.read",
 		category: "Roles",
 	},
 	"roles:write": {
-		description: "Create and edit roles",
-		descriptionFi: "Luo ja muokkaa rooleja",
+		translationKey: "permissions.roles.write",
 		category: "Roles",
 	},
 	"roles:delete": {
-		description: "Delete roles",
-		descriptionFi: "Poista rooleja",
+		translationKey: "permissions.roles.delete",
 		category: "Roles",
 	},
 
 	// Settings (access to configuration pages)
 	"settings:general": {
-		description: "Access general settings",
-		descriptionFi: "Pääsy yleisiin asetuksiin",
+		translationKey: "permissions.settings.general",
 		category: "Settings",
 	},
 	"settings:users": {
-		description: "Access user management settings",
-		descriptionFi: "Pääsy käyttäjähallinnan asetuksiin",
+		translationKey: "permissions.settings.users",
 		category: "Settings",
 	},
 	"settings:roles": {
-		description: "Access role management settings",
-		descriptionFi: "Pääsy roolihallinnan asetuksiin",
+		translationKey: "permissions.settings.roles",
 		category: "Settings",
 	},
 	"settings:reimbursements": {
-		description: "Access reimbursement settings (AI, keywords)",
-		descriptionFi: "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
+		translationKey: "permissions.settings.reimbursements",
 		category: "Settings",
 	},
 	"settings:analytics": {
-		description: "Access analytics settings (AI models)",
-		descriptionFi: "Pääsy analytiikka-asetuksiin (tekoälymallit)",
+		translationKey: "permissions.settings.analytics",
 		category: "Settings",
 	},
 } as const;

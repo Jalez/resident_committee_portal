@@ -77,6 +77,7 @@ const DEFAULT_ROLES = [
 			"transactions:delete",
 			"reimbursements:read",
 			"reimbursements:write",
+			"reimbursements:update",
 			"reimbursements:delete",
 			"submissions:read",
 			"submissions:write",
