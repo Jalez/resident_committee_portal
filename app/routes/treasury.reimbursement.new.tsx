@@ -116,7 +116,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "reimbursements:write", getDatabase);
+	const user = await requirePermission(request, "reimbursements:write", getDatabase);
 	const db = getDatabase();
 	const formData = await request.formData();
 
@@ -259,6 +259,7 @@ export async function action({ request }: Route.ActionArgs) {
 			status: "pending",
 			year,
 			emailSent: false,
+			createdBy: user.userId,
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
@@ -335,6 +336,7 @@ export async function action({ request }: Route.ActionArgs) {
 			status: "pending",
 			year,
 			emailSent: false,
+			createdBy: user.userId,
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
@@ -350,6 +352,7 @@ export async function action({ request }: Route.ActionArgs) {
 			status: "pending",
 			reimbursementStatus: "requested",
 			purchaseId: purchase.id,
+			createdBy: user.userId,
 		};
 		const transaction = await db.createTransaction(newTransaction);
 		transactionId = transaction.id;
@@ -433,7 +436,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 		// Create purchase (reimbursement request) without linked transaction
 		const newPurchase: NewPurchase = {
-			description: `Reimbursement request from ${purchaserName}`,
+			description: `${purchaserName}`,
 			amount: "0",
 			purchaserName,
 			bankAccount,
@@ -443,6 +446,7 @@ export async function action({ request }: Route.ActionArgs) {
 			status: "pending",
 			year: currentYear,
 			emailSent: false,
+			createdBy: user.userId,
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
@@ -460,7 +464,7 @@ export async function action({ request }: Route.ActionArgs) {
 			.then(([minutesAttachment, receiptAttachments]) =>
 				sendReimbursementEmail(
 					{
-						itemName: newPurchase.description || `Reimbursement request from ${purchaserName}`,
+						itemName: newPurchase.description || `${purchaserName}`,
 						itemValue: newPurchase.amount,
 						purchaserName,
 						bankAccount,

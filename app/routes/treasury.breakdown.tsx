@@ -177,10 +177,20 @@ export default function TreasuryBreakdown({
 	const { year, transactions, totalExpenses, totalIncome, balance, years } =
 		loaderData;
 	const [_searchParams, setSearchParams] = useSearchParams();
-	const { hasPermission } = useUser();
-	const canEdit = hasPermission("transactions:update");
+	const { hasPermission, user } = useUser();
+	const canEditGeneral = hasPermission("transactions:update");
+	const canEditSelf = hasPermission("transactions:update-self");
 	const canExport = hasPermission("treasury:export");
 	const canImport = hasPermission("treasury:import");
+	
+	// Helper to check if user can edit a specific transaction
+	const canEditTransaction = (transaction: Transaction) => {
+		if (canEditGeneral) return true;
+		if (canEditSelf && transaction.createdBy && user && transaction.createdBy === user.userId) {
+			return true;
+		}
+		return false;
+	};
 	const { t, i18n } = useTranslation();
 	const { isInfoReel } = useLanguage();
 
@@ -314,7 +324,7 @@ export default function TreasuryBreakdown({
 									<TableHead className="text-right">
 										{t("treasury.breakdown.amount")}
 									</TableHead>
-									{canEdit && <TableHead className="w-16"></TableHead>}
+									{(canEditGeneral || canEditSelf) && <TableHead className="w-16"></TableHead>}
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -357,7 +367,7 @@ export default function TreasuryBreakdown({
 											{transaction.type === "expense" ? "-" : "+"}
 											{formatCurrency(transaction.amount)}
 										</TableCell>
-										{canEdit && (
+										{canEditTransaction(transaction) && (
 											<TableCell>
 												<Link
 													to={`/treasury/transactions/${transaction.id}/edit`}

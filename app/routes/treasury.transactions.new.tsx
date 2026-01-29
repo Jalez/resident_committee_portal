@@ -150,24 +150,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Get purchases without linked transactions (for linking selector)
 	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
 
-	// Check if linking to existing purchase via URL param
-	const linkPurchaseId = url.searchParams.get("linkPurchase") || "";
-	let prefillFromPurchase: {
-		amount: string;
-		description: string;
-		date: string;
-	} | null = null;
-	if (linkPurchaseId) {
-		const purchase = unlinkedPurchases.find((p) => p.id === linkPurchaseId);
-		if (purchase) {
-			prefillFromPurchase = {
-				amount: purchase.amount,
-				description: purchase.description || "",
-				date: new Date(purchase.createdAt).toISOString().split("T")[0],
-			};
-		}
-	}
-
 	return {
 		siteConfig: SITE_CONFIG,
 		currentYear: new Date().getFullYear(),
@@ -175,13 +157,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 		emailConfigured: isEmailConfigured(),
 		// Pre-fill data
 		prefill: {
-			amount: prefillFromPurchase?.amount || prefillAmount,
-			description: prefillFromPurchase?.description || prefillDescription,
+			amount: prefillAmount,
+			description: prefillDescription,
 			type: prefillType || "expense",
 			category: prefillCategory,
 			itemIds: itemSelections.map((s) => s.itemId).join(","),
-			linkPurchaseId,
-			date: prefillFromPurchase?.date || "",
+			linkPurchaseId: "",
+			date: "",
 		},
 		linkedItems,
 		// Inventory picker data - now includes availableQuantity
@@ -197,7 +179,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "transactions:write", getDatabase);
+	const user = await requirePermission(request, "transactions:write", getDatabase);
 	const db = getDatabase();
 
 	const formData = await request.formData();
@@ -341,6 +323,7 @@ export async function action({ request }: Route.ActionArgs) {
 			status: "pending",
 			year,
 			emailSent: false,
+			createdBy: user.userId,
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
@@ -403,6 +386,7 @@ export async function action({ request }: Route.ActionArgs) {
 		status,
 		reimbursementStatus,
 		purchaseId,
+		createdBy: user.userId,
 	};
 
 	const transaction = await db.createTransaction(newTransaction);
@@ -506,10 +490,8 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 
 	const [requestReimbursement, setRequestReimbursement] = useState(false);
-	const [selectedPurchaseId, setSelectedPurchaseId] = useState(
-		prefill.linkPurchaseId || "",
-	);
-	const isLinkingToExisting = !!selectedPurchaseId;
+	const [selectedPurchaseId, setSelectedPurchaseId] = useState("");
+
 
 	// Handle selection change - uncheck checkbox when selecting existing purchase
 	const handlePurchaseSelectionChange = (id: string) => {
@@ -690,7 +672,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
+			<div className="w-full max-w-2xl mx-auto px-4 pb-8">
 				<PageHeader title={t("treasury.new.header")} />
 
 				<Form method="post" encType="multipart/form-data" className="space-y-6">

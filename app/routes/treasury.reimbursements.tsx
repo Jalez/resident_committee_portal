@@ -25,7 +25,11 @@ import {
 	type Purchase,
 	type PurchaseStatus,
 } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import {
+	requirePermission,
+	requireDeletePermissionOrSelf,
+} from "~/lib/auth.server";
+import { createReimbursementStatusNotification } from "~/lib/notifications.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements";
@@ -67,12 +71,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const inventoryItems = await db.getInventoryItems();
 	const itemsMap = new Map(inventoryItems.map((item) => [item.id, item]));
 
-	// Check which purchases have linked transactions
+	// Check which purchases have linked transactions and create map of purchase ID to transaction ID
 	const purchasesWithLinkedTransactions = new Set<string>();
+	const purchaseTransactionMap = new Map<string, string>();
 	for (const purchase of purchases) {
 		const linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
 		if (linkedTransaction) {
 			purchasesWithLinkedTransactions.add(purchase.id);
+			purchaseTransactionMap.set(purchase.id, linkedTransaction.id);
 		}
 	}
 
@@ -105,6 +111,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		purchases: enrichedPurchases,
+		purchaseTransactionMap: Object.fromEntries(purchaseTransactionMap),
 		years,
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
@@ -119,11 +126,26 @@ export async function action({ request }: Route.ActionArgs) {
 	const purchaseId = formData.get("purchaseId") as string;
 
 	if (actionType === "updateStatus" && purchaseId) {
-		// Updating status requires approve permission
-		await requirePermission(request, "reimbursements:approve", getDatabase);
+		// Updating status requires update permission
+		await requirePermission(request, "reimbursements:update", getDatabase);
 
 		const newStatus = formData.get("status") as PurchaseStatus;
 		await db.updatePurchase(purchaseId, { status: newStatus });
+
+		// Get purchase to check createdBy for notification
+		const purchase = await db.getPurchaseById(purchaseId);
+		if (purchase) {
+			// Send notification if status changed to approved/rejected/reimbursed
+			if (newStatus === "approved" || newStatus === "rejected" || newStatus === "reimbursed") {
+				// Use "approved" for both approved and reimbursed status
+				const notificationStatus = newStatus === "rejected" ? "rejected" : "approved";
+				await createReimbursementStatusNotification(
+					purchase,
+					notificationStatus,
+					db,
+				);
+			}
+		}
 
 		// Also update the linked transaction's reimbursementStatus and status
 		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
@@ -153,8 +175,20 @@ export async function action({ request }: Route.ActionArgs) {
 			});
 		}
 	} else if (actionType === "delete" && purchaseId) {
-		// Deleting requires delete permission
-		await requirePermission(request, "reimbursements:delete", getDatabase);
+		// Get purchase to check createdBy for self-delete permission
+		const purchase = await db.getPurchaseById(purchaseId);
+		if (!purchase) {
+			return { success: false, error: "Purchase not found" };
+		}
+
+		// Check delete permission with self-delete support
+		await requireDeletePermissionOrSelf(
+			request,
+			"reimbursements:delete",
+			"reimbursements:delete-self",
+			purchase.createdBy,
+			getDatabase,
+		);
 
 		// Decline linked transaction before deleting purchase
 		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
@@ -184,7 +218,7 @@ const statusColors = {
 export default function BudgetReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { purchases, years, currentYear, currentStatus, totals } = loaderData;
+	const { purchases, purchaseTransactionMap, years, currentYear, currentStatus, totals } = loaderData;
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isStaff =
@@ -369,6 +403,7 @@ export default function BudgetReimbursements({
 									</TableHead>
 									<TableHead>{t("treasury.reimbursements.amount")}</TableHead>
 									<TableHead>{t("treasury.reimbursements.status")}</TableHead>
+									<TableHead>{t("treasury.reimbursements.transaction")}</TableHead>
 									<TableHead title={t("treasury.reimbursements.email_sent")}>
 										📧
 									</TableHead>
@@ -399,12 +434,30 @@ export default function BudgetReimbursements({
 											"—";
 										const canApprove =
 											rootData?.user?.permissions?.includes(
-												"reimbursements:approve",
+												"reimbursements:update",
 											) || rootData?.user?.permissions?.includes("*");
-										const canDelete =
+										const canDeleteGeneral =
 											rootData?.user?.permissions?.includes(
 												"reimbursements:delete",
 											) || rootData?.user?.permissions?.includes("*");
+										const canDeleteSelf =
+											rootData?.user?.permissions?.includes(
+												"reimbursements:delete-self",
+											) &&
+											purchase.createdBy &&
+											rootData?.user?.userId === purchase.createdBy;
+										const canDelete = canDeleteGeneral || canDeleteSelf;
+										const canUpdateGeneral =
+											rootData?.user?.permissions?.includes(
+												"reimbursements:update",
+											) || rootData?.user?.permissions?.includes("*");
+										const canUpdateSelf =
+											rootData?.user?.permissions?.includes(
+												"reimbursements:update-self",
+											) &&
+											purchase.createdBy &&
+											rootData?.user?.userId === purchase.createdBy;
+										const canUpdate = canUpdateGeneral || canUpdateSelf;
 
 										return (
 											<TableRow key={purchase.id}>
@@ -470,6 +523,21 @@ export default function BudgetReimbursements({
 													)}
 												</TableCell>
 												<TableCell>
+													{purchaseTransactionMap[purchase.id] ? (
+														<Link
+															to={`/treasury/transactions/${purchaseTransactionMap[purchase.id]}`}
+															className="inline-flex items-center text-primary hover:underline"
+															title={t("treasury.reimbursements.view_transaction")}
+														>
+															<span className="material-symbols-outlined text-lg">
+																link
+															</span>
+														</Link>
+													) : (
+														<span className="text-gray-400">—</span>
+													)}
+												</TableCell>
+												<TableCell>
 													{purchase.emailSent ? (
 														<span
 															className="text-green-600"
@@ -507,19 +575,18 @@ export default function BudgetReimbursements({
 												<TableCell>
 													<div className="flex gap-1">
 														{/* Link Transaction button - only show for unlinked purchases */}
-														{!purchase.hasLinkedTransaction && (
-															<Link
-																to={`/treasury/transactions/new?linkPurchase=${purchase.id}`}
-															>
+
+														{canUpdate && (
+															<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
 																<Button
 																	type="button"
 																	variant="ghost"
 																	size="icon"
-																	className="text-blue-500 hover:text-blue-700 h-8 w-8"
-																	title={t("treasury.reimbursements.link_transaction")}
+																	className="text-gray-500 hover:text-primary h-8 w-8"
+																	title={t("treasury.reimbursements.edit.title")}
 																>
 																	<span className="material-symbols-outlined text-lg">
-																		link
+																		edit
 																	</span>
 																</Button>
 															</Link>

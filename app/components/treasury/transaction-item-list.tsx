@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { InventoryPicker } from "~/components/inventory-picker";
 import { Button } from "~/components/ui/button";
 import {
@@ -51,6 +52,7 @@ export function TransactionItemList({
 	onAddNewItem,
 	showTotal = true,
 }: TransactionItemListProps) {
+	const { t } = useTranslation();
 	const [pickerOpen, setPickerOpen] = useState(false);
 
 	// Calculate total
@@ -115,13 +117,13 @@ export function TransactionItemList({
 					<p className="text-sm text-gray-500 mt-1">
 						{items.length === 0
 							? emptyMessage
-							: `${items.length} tavaraa valittu / items selected`}
+							: t("treasury.new.items_selected", { count: items.length })}
 					</p>
 				</div>
 				{showTotal && totalValue > 0 && (
 					<div className="text-right">
 						<span className="block text-sm font-medium text-gray-500">
-							Yhteensä / Total
+							{t("treasury.new.total")}
 						</span>
 						<span className="text-lg font-bold text-primary">
 							{totalValue.toFixed(2).replace(".", ",")} €
@@ -192,16 +194,15 @@ export function TransactionItemList({
 					>
 						<span className="material-symbols-outlined mr-2">add_circle</span>
 						{items.length > 0
-							? "Muokkaa valintaa / Edit Selection"
-							: "Valitse tavarat / Select Items"}
+							? t("treasury.new.edit_selection")
+							: t("treasury.new.select_items")}
 					</Button>
 				</DialogTrigger>
 				<DialogContent className="max-w-4xl h-[80vh] flex flex-col p-6">
 					<DialogHeader>
-						<DialogTitle>Valitse tavarat / Select Items</DialogTitle>
+						<DialogTitle>{t("treasury.new.select_items")}</DialogTitle>
 						<DialogDescription>
-							{description ||
-								"Valitse listalta tai lisää uusi tavara. / Select from list or add new."}
+							{description || t("treasury.new.inventory_desc")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="flex-1 overflow-auto min-h-0 -mx-2 px-2">
@@ -217,7 +218,9 @@ export function TransactionItemList({
 						/>
 					</div>
 					<div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
-						<Button onClick={() => setPickerOpen(false)}>Valmis / Done</Button>
+						<Button onClick={() => setPickerOpen(false)}>
+							{t("receipts.done")}
+						</Button>
 					</div>
 				</DialogContent>
 			</Dialog>

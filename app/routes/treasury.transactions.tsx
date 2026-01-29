@@ -96,9 +96,19 @@ export default function TreasuryTransactions({
 	const { year, transactions, totalExpenses, totalIncome, years, statuses, currentStatus, totalCount } =
 		loaderData;
 	const [_searchParams, setSearchParams] = useSearchParams();
-	const { hasPermission } = useUser();
-	const canEdit = hasPermission("transactions:update");
+	const { hasPermission, user } = useUser();
+	const canEditGeneral = hasPermission("transactions:update");
+	const canEditSelf = hasPermission("transactions:update-self");
 	const canWrite = hasPermission("transactions:write");
+	
+	// Helper to check if user can edit a specific transaction
+	const canEditTransaction = (transaction: Transaction) => {
+		if (canEditGeneral) return true;
+		if (canEditSelf && transaction.createdBy && user && transaction.createdBy === user.userId) {
+			return true;
+		}
+		return false;
+	};
 	const { t, i18n } = useTranslation();
 	const { isInfoReel } = useLanguage();
 
@@ -250,7 +260,7 @@ export default function TreasuryTransactions({
 									<TableHead className="text-right">
 										{t("treasury.breakdown.amount")}
 									</TableHead>
-									{canEdit && <TableHead className="w-16"></TableHead>}
+									{(canEditGeneral || canEditSelf) && <TableHead className="w-16"></TableHead>}
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -313,7 +323,7 @@ export default function TreasuryTransactions({
 											{transaction.type === "expense" ? "-" : "+"}
 											{formatCurrency(transaction.amount)}
 										</TableCell>
-										{canEdit && (
+										{canEditTransaction(transaction) && (
 											<TableCell>
 												<Link
 													to={`/treasury/transactions/${transaction.id}/edit`}

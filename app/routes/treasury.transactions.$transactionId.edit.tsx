@@ -52,7 +52,11 @@ import {
 	type Transaction,
 	type TransactionStatus,
 } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import {
+	requirePermissionOrSelf,
+	requireDeletePermissionOrSelf,
+	type AuthenticatedUser,
+} from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
@@ -87,7 +91,6 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	await requirePermission(request, "transactions:update", getDatabase);
 	const db = getDatabase();
 
 	const transactions = await db.getAllTransactions();
@@ -96,6 +99,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	if (!transaction) {
 		throw new Response("Not Found", { status: 404 });
 	}
+
+	// Check permission with self-edit support
+	await requirePermissionOrSelf(
+		request,
+		"transactions:update",
+		"transactions:update-self",
+		transaction.createdBy,
+		getDatabase,
+	);
 
 	// Get linked purchase if exists
 	let purchase = null;
@@ -157,16 +169,36 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-	await requirePermission(request, "transactions:update", getDatabase);
 	const db = getDatabase();
 
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;
 
-	// Get transaction to preserve year for redirect
+	// Get transaction to preserve year for redirect and check permissions
 	const transactions = await db.getAllTransactions();
 	const transaction = transactions.find((t) => t.id === params.transactionId);
 	const year = transaction?.year || new Date().getFullYear();
+
+	// Get user and check permission with self-edit support (will be re-checked for delete action)
+	let user: AuthenticatedUser;
+	if (actionType === "delete") {
+		// Delete permission check happens in delete handler
+		user = await requireDeletePermissionOrSelf(
+			request,
+			"transactions:delete",
+			"transactions:delete-self",
+			transaction?.createdBy,
+			getDatabase,
+		);
+	} else {
+		user = await requirePermissionOrSelf(
+			request,
+			"transactions:update",
+			"transactions:update-self",
+			transaction?.createdBy,
+			getDatabase,
+		);
+	}
 
 	// Handle createItem action for InventoryPicker
 	if (actionType === "createItem") {
@@ -260,6 +292,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 		if (!transaction) {
 			return { error: "Transaction not found" };
 		}
+
+		// Permission already checked at start of action, user is available
 
 		// Check for linked active inventory items
 		const activeItems = await db.getActiveInventoryItemsForTransaction(
@@ -381,6 +415,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			status: "pending",
 			year,
 			emailSent: false,
+			createdBy: user.userId,
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
@@ -723,7 +758,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
+			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<PageHeader title={t("treasury.breakdown.edit.title")} />
 
 				{/* Error display */}
