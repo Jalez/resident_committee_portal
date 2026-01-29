@@ -38,11 +38,11 @@ export function PageWrapper({ children, className }: PageWrapperProps) {
 	return (
 		<div
 			className={cn(
-				"font-sans text-[#111418] dark:text-gray-100 min-h-full flex flex-col overflow-x-hidden selection:bg-primary/30",
+				"font-sans text-[#111418] dark:text-gray-100 flex flex-col overflow-x-hidden selection:bg-primary/30 min-h-0",
 				className,
 			)}
 		>
-			<div className="flex-1 flex flex-col items-center justify-start">
+			<div className="flex flex-col items-center justify-start w-full min-h-0">
 				{children}
 			</div>
 		</div>
