@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Form,
@@ -6,6 +7,7 @@ import {
 	useRouteLoaderData,
 	useSearchParams,
 } from "react-router";
+import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
@@ -191,6 +193,19 @@ export default function BudgetReimbursements({
 	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const { setTemplate } = useReimbursementTemplate();
+
+	useEffect(() => {
+		const success = searchParams.get("success");
+		if (!success) return;
+		if (success === "reimbursement_requested") {
+			toast.success(t("treasury.success.reimbursement_requested"));
+		} else {
+			toast.success(success);
+		}
+		const nextParams = new URLSearchParams(searchParams);
+		nextParams.delete("success");
+		setSearchParams(nextParams, { replace: true });
+	}, [searchParams, setSearchParams, t]);
 
 	const formatCurrency = (value: number | string) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;

@@ -6,11 +6,29 @@ import {
 	useActionData,
 	useFetcher,
 	useNavigate,
+	useNavigation,
 	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { PageHeader } from "~/components/layout/page-header";
+import {
+	type MinuteFile,
+	ReimbursementForm,
+} from "~/components/treasury/reimbursement-form";
+import {
+	TransactionDetailsForm,
+	type TransactionType,
+} from "~/components/treasury/transaction-details-form";
 import { TransactionItemList } from "~/components/treasury/transaction-item-list";
+import {
+	LinkExistingSelector,
+	purchasesToLinkableItems,
+} from "~/components/treasury/link-existing-selector";
+import { CheckboxOption } from "~/components/treasury/checkbox-option";
+import { Divider } from "~/components/treasury/divider";
+import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
+import { SectionCard } from "~/components/treasury/section-card";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -23,26 +41,38 @@ import {
 	AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import {
 	getDatabase,
 	type InventoryItem,
+	type NewInventoryItem,
+	type NewPurchase,
 	type Purchase,
 	type ReimbursementStatus,
 	type Transaction,
 	type TransactionStatus,
 } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
+import {
+	buildMinutesAttachment,
+	buildReceiptAttachments,
+	isEmailConfigured,
+	sendReimbursementEmail,
+} from "~/lib/email.server";
+import {
+	getOrCreateReceiptsFolder,
+	getReceiptsByYear,
+	uploadReceiptToDrive,
+} from "~/lib/google.server";
+import {
+	getMissingReceiptsError,
+	MISSING_RECEIPTS_ERROR,
+	parseReceiptLinks,
+	RECEIPTS_SECTION_ID,
+} from "~/lib/treasury/receipt-validation";
 import type { Route } from "./+types/treasury.transactions.$transactionId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -94,6 +124,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		),
 	].sort();
 
+	// Get receipts for picker (for new reimbursements)
+	const receiptsByYear = await getReceiptsByYear();
+	const currentYear = new Date().getFullYear();
+	const currentYearReceipts = receiptsByYear.find(
+		(r) => r.year === currentYear.toString(),
+	);
+
+	// Get purchases without linked transactions + include current purchase if linked
+	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
+	// Add current purchase to the list so it appears as selected option
+	if (purchase && !unlinkedPurchases.find((p) => p.id === purchase.id)) {
+		unlinkedPurchases.unshift(purchase);
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		transaction,
@@ -102,6 +146,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		pickerItems,
 		uniqueLocations,
 		uniqueCategories,
+		// New fields for shared components
+		currentYear,
+		recentMinutes: [] as MinuteFile[],
+		emailConfigured: isEmailConfigured(),
+		receiptsByYear,
+		receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
+		unlinkedPurchases,
 	};
 }
 
@@ -116,6 +167,93 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const transactions = await db.getAllTransactions();
 	const transaction = transactions.find((t) => t.id === params.transactionId);
 	const year = transaction?.year || new Date().getFullYear();
+
+	// Handle createItem action for InventoryPicker
+	if (actionType === "createItem") {
+		const name = formData.get("name") as string;
+		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
+		const location = formData.get("location") as string;
+		const category = (formData.get("category") as string) || null;
+		const description = (formData.get("description") as string) || null;
+		const value = (formData.get("value") as string) || "0";
+
+		const newItem: NewInventoryItem = {
+			name,
+			quantity,
+			location,
+			category,
+			description,
+			value,
+			showInInfoReel: false,
+		};
+
+		const item = await db.createInventoryItem(newItem);
+		return {
+			success: true,
+			item,
+			message: "Inventory item created successfully",
+		};
+	}
+
+	// Handle uploadReceipt action for ReceiptPicker
+	if (actionType === "uploadReceipt") {
+		const receiptFile = formData.get("receiptFile") as File;
+		const receiptYear = formData.get("year") as string;
+		const description = formData.get("description") as string;
+
+		if (!receiptFile || receiptFile.size === 0) {
+			return { success: false, error: "No file provided" };
+		}
+
+		// Validate file size
+		if (receiptFile.size > RECEIPT_MAX_SIZE_BYTES) {
+			return { success: false, error: "File too large" };
+		}
+
+		try {
+			const arrayBuffer = await receiptFile.arrayBuffer();
+			const base64Content = Buffer.from(arrayBuffer).toString("base64");
+
+			const result = await uploadReceiptToDrive(
+				{
+					name: receiptFile.name,
+					content: base64Content,
+					mimeType: receiptFile.type,
+				},
+				receiptYear,
+				description,
+			);
+
+			if (result) {
+				return { success: true, receipt: result };
+			}
+			return { success: false, error: "Upload failed" };
+		} catch (error) {
+			console.error("[uploadReceipt] Error:", error);
+			return { success: false, error: "Upload failed" };
+		}
+	}
+
+	// Handle ensureReceiptsFolder action for ReimbursementForm
+	if (actionType === "ensureReceiptsFolder") {
+		const receiptYear = formData.get("year") as string;
+		try {
+			const result = await getOrCreateReceiptsFolder(receiptYear);
+			if (result) {
+				return { success: true, folderUrl: result.folderUrl };
+			}
+			return { success: false, error: "Could not create receipts folder" };
+		} catch (error) {
+			console.error("[ensureReceiptsFolder] Error:", error);
+			return { success: false, error: "Failed to create receipts folder" };
+		}
+	}
+
+	// Handle refreshReceipts action to clear cache
+	if (actionType === "refreshReceipts") {
+		clearCache("RECEIPTS_BY_YEAR");
+		return { success: true };
+	}
 
 	// Handle delete action
 	if (actionType === "delete") {
@@ -199,23 +337,126 @@ export async function action({ request, params }: Route.ActionArgs) {
 		? amountStr.replace(",", ".")
 		: transaction?.amount.toString();
 
+	// Handle purchase linking/creation
+	const linkPurchaseId = formData.get("linkPurchaseId") as string;
+	const requestReimbursement = formData.get("requestReimbursement") === "on";
+	const currentPurchaseId = transaction?.purchaseId || null;
+
+	// Determine if linking to an existing purchase
+	const isLinkingToExisting = !!linkPurchaseId;
+	const shouldRequestReimbursement = requestReimbursement && !isLinkingToExisting;
+
+	// Determine new purchaseId
+	let newPurchaseId: string | null = currentPurchaseId;
+
+	// If linking to different existing purchase
+	if (isLinkingToExisting && linkPurchaseId !== currentPurchaseId) {
+		newPurchaseId = linkPurchaseId;
+	}
+	// If creating new reimbursement
+	else if (shouldRequestReimbursement) {
+		const purchaserName = formData.get("purchaserName") as string;
+		const bankAccount = formData.get("bankAccount") as string;
+		const minutesId = formData.get("minutesId") as string;
+		const minutesName = formData.get("minutesName") as string;
+		const notes = formData.get("notes") as string;
+
+		const receiptLinks = parseReceiptLinks(formData);
+		const receiptError = getMissingReceiptsError(
+			receiptLinks,
+			shouldRequestReimbursement,
+		);
+		if (receiptError) {
+			return { success: false, error: receiptError };
+		}
+
+		const newPurchase: NewPurchase = {
+			description,
+			amount: amount || "0",
+			purchaserName,
+			bankAccount,
+			minutesId,
+			minutesName: minutesName || null,
+			notes: notes || null,
+			status: "pending",
+			year,
+			emailSent: false,
+		};
+
+		const purchase = await db.createPurchase(newPurchase);
+		newPurchaseId = purchase.id;
+
+		// Send email with minutes + receipt attachments in background
+		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
+		const minutesAttachmentPromise = buildMinutesAttachment(
+			minutesId,
+			minutesName,
+		);
+		const emailTask = Promise.all([
+			minutesAttachmentPromise,
+			receiptAttachmentsPromise,
+		])
+			.then(([minutesAttachment, receiptAttachments]) =>
+				sendReimbursementEmail(
+					{
+						itemName: description,
+						itemValue: amount || "0",
+						purchaserName,
+						bankAccount,
+						minutesReference:
+							minutesName || minutesId || "Ei määritetty / Not specified",
+						notes,
+						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+					},
+					purchase.id,
+					minutesAttachment || undefined,
+					receiptAttachments,
+				),
+			)
+			.then(async (emailResult) => {
+				if (emailResult.success) {
+					await db.updatePurchase(purchase.id, {
+						emailSent: true,
+						emailMessageId: emailResult.messageId,
+					});
+				} else {
+					await db.updatePurchase(purchase.id, {
+						emailError: emailResult.error || "Unknown email error",
+					});
+				}
+			})
+			.catch(async (error) => {
+				await db.updatePurchase(purchase.id, {
+					emailError: error instanceof Error ? error.message : "Unknown error",
+				});
+			});
+		await emailTask;
+	}
+
+	// Determine statuses based on purchase
+	const finalStatus = (newPurchaseId && status === "complete") ? "pending" : status;
+	const finalReimbursementStatus = newPurchaseId
+		? (reimbursementStatus === "not_requested" ? "requested" : reimbursementStatus)
+		: reimbursementStatus;
+
 	await db.updateTransaction(params.transactionId, {
-		status,
-		reimbursementStatus,
+		status: finalStatus,
+		reimbursementStatus: finalReimbursementStatus,
 		description,
 		category,
 		amount: amount || "0",
+		purchaseId: newPurchaseId,
 	});
 
 	// If transaction has a linked purchase, update its status too
-	if (transaction?.purchaseId) {
+	if (newPurchaseId) {
 		const purchaseStatus =
-			reimbursementStatus === "approved"
+			finalReimbursementStatus === "approved"
 				? "approved"
-				: reimbursementStatus === "declined"
+				: finalReimbursementStatus === "declined"
 					? "rejected"
 					: "pending";
-		await db.updatePurchase(transaction.purchaseId, { status: purchaseStatus });
+		await db.updatePurchase(newPurchaseId, { status: purchaseStatus });
 	}
 
 	return redirect(`/treasury/breakdown?year=${year}`);
@@ -229,6 +470,12 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		pickerItems,
 		uniqueLocations,
 		uniqueCategories,
+		currentYear,
+		recentMinutes,
+		emailConfigured,
+		receiptsByYear,
+		receiptsFolderUrl,
+		unlinkedPurchases,
 	} = loaderData as {
 		transaction: Transaction;
 		purchase: Purchase | null;
@@ -236,9 +483,28 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		pickerItems: (InventoryItem & { availableQuantity: number })[];
 		uniqueLocations: string[];
 		uniqueCategories: string[];
+		currentYear: number;
+		recentMinutes: MinuteFile[];
+		emailConfigured: boolean;
+		receiptsByYear: Array<{
+			year: string;
+			files: Array<{
+				id: string;
+				name: string;
+				url: string;
+				createdTime: string;
+			}>;
+			folderUrl: string;
+			folderId: string;
+		}>;
+		receiptsFolderUrl: string;
+		unlinkedPurchases: Purchase[];
 	};
 	const navigate = useNavigate();
+	const navigation = useNavigation();
 	const fetcher = useFetcher();
+	const isSubmitting =
+		navigation.state === "submitting" || fetcher.state === "submitting";
 	interface ActionData {
 		success?: boolean;
 		message?: string;
@@ -248,23 +514,63 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 
 	const actionData = useActionData<ActionData>();
 	const [searchParams, setSearchParams] = useSearchParams();
-	const { items: contextItems, isHydrated, clearItems } = useNewTransaction();
+	const { items: contextItems, isHydrated, clearItems, setItems } = useNewTransaction();
 	const { t, i18n } = useTranslation();
 
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+	// Transaction form state (initialized from loaded transaction)
+	const [transactionType, setTransactionType] = useState<TransactionType>(
+		transaction.type as TransactionType,
+	);
+	const [amount, setAmount] = useState(transaction.amount);
+	const [descriptionValue, setDescriptionValue] = useState(
+		transaction.description,
+	);
+	const [category, setCategory] = useState(transaction.category || "");
+	const [dateValue, setDateValue] = useState(
+		new Date(transaction.date).toISOString().split("T")[0],
+	);
+	const [year, setYear] = useState(transaction.year);
+	const [status, setStatus] = useState<TransactionStatus>(transaction.status);
+	const [reimbursementStatus, setReimbursementStatus] =
+		useState<ReimbursementStatus>(
+			transaction.reimbursementStatus || "not_requested",
+		);
+
+	// Purchase linking state
+	const [selectedPurchaseId, setSelectedPurchaseId] = useState(
+		transaction.purchaseId || "",
+	);
+	const [requestReimbursement, setRequestReimbursement] = useState(false);
+	const isLinkingToExisting = !!selectedPurchaseId;
+
+	// Handle selection change - uncheck checkbox when selecting existing purchase
+	const handlePurchaseSelectionChange = (id: string) => {
+		setSelectedPurchaseId(id);
+		if (id) {
+			setRequestReimbursement(false);
+		}
+	};
+
+	// Handle checkbox change - clear selection when checking request reimbursement
+	const handleRequestReimbursementChange = (checked: boolean) => {
+		setRequestReimbursement(checked);
+		if (checked) {
+			setSelectedPurchaseId("");
+		}
+	};
 
 	// Track pending items to add (from context)
 	const [pendingItems, setPendingItems] = useState<
 		{ itemId: string; name: string; quantity: number; unitValue: number }[]
 	>([]);
 
-	// Track editable transaction amount
-	const [transactionAmount, setTransactionAmount] = useState(
-		transaction.amount,
-	);
-
 	// Track if we've already processed the addItems param
 	const hasProcessedAddItems = useRef(false);
+
+	// Generate year options (last 5 years)
+	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 	// Load pending items from context when ?addItems=true
 	useEffect(() => {
@@ -295,7 +601,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	}, [searchParams, contextItems, isHydrated, clearItems, setSearchParams]);
 
 	// Enforce minimum amount based on linked and pending items
-	// If the sum of item values exceeds the current amount, update the amount.
 	useEffect(() => {
 		const linkedTotal = linkedItems.reduce(
 			(sum, item) => sum + parseFloat(item.value || "0") * item.quantity,
@@ -307,9 +612,8 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		);
 		const totalValue = linkedTotal + pendingTotal;
 
-		setTransactionAmount((prev) => {
+		setAmount((prev) => {
 			const current = parseFloat(prev) || 0;
-			// If calculation suggests a higher amount than currently set, bump it up.
 			if (totalValue > current) {
 				return totalValue.toFixed(2);
 			}
@@ -333,10 +637,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		toast.success(t("treasury.breakdown.edit.items_linked_success"));
 	};
 
-	const formatDate = (date: Date | string) => {
-		return new Date(date).toLocaleDateString(i18n.language);
-	};
-
 	const formatCurrency = (value: string | number) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
@@ -357,13 +657,29 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		);
 	};
 
-	// Filter out already linked items from picker
-	const linkedItemIds = new Set(linkedItems.map((i) => i.id));
-	const _availableForLinking = pickerItems.filter(
-		(i) => !linkedItemIds.has(i.id),
-	);
+	// Handler for adding new inventory item from picker
+	const handleAddItem = async (itemData: {
+		name: string;
+		quantity: number;
+		location: string;
+		category?: string;
+		description?: string;
+		value?: string;
+	}): Promise<InventoryItem | null> => {
+		const formData = new FormData();
+		formData.set("_action", "createItem");
+		formData.set("name", itemData.name);
+		formData.set("quantity", itemData.quantity.toString());
+		formData.set("location", itemData.location);
+		formData.set("category", itemData.category || "");
+		formData.set("description", itemData.description || "");
+		formData.set("value", itemData.value || "0");
 
-	// Show toast on success
+		fetcher.submit(formData, { method: "POST" });
+		return null;
+	};
+
+	// Show toast on success/error
 	useEffect(() => {
 		if (
 			fetcher.state === "idle" &&
@@ -376,22 +692,39 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		}
 	}, [fetcher.state, fetcher.data]);
 
-	// Check for error from action (delete validation failure)
-	const deleteError = actionData?.error
-		? t(actionData.error, { names: actionData.linkedItemNames })
+	useEffect(() => {
+		if (actionData && "error" in actionData && actionData.error) {
+			toast.error(
+				typeof actionData.error === "string"
+					? t(actionData.error, { names: actionData.linkedItemNames })
+					: "An error occurred",
+			);
+			if (actionData.error === MISSING_RECEIPTS_ERROR) {
+				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
+				receiptsSection?.focus();
+				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
+			}
+		}
+	}, [actionData, t]);
+
+	// Check for delete error from action
+	const deleteError =
+		actionData?.error === "treasury.breakdown.edit.delete_error_linked"
+			? t(actionData.error, { names: actionData.linkedItemNames })
+			: null;
+
+	// Convert purchases to linkable items
+	const linkablePurchases = purchasesToLinkableItems(unlinkedPurchases);
+
+	// Find selected purchase for display
+	const selectedPurchase = selectedPurchaseId
+		? unlinkedPurchases.find((p) => p.id === selectedPurchaseId)
 		: null;
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("treasury.breakdown.edit.title")}
-					</h1>
-					<p className="text-lg text-gray-500">
-						{t("treasury.breakdown.edit.subtitle")}
-					</p>
-				</div>
+				<PageHeader title={t("treasury.breakdown.edit.title")} />
 
 				{/* Error display */}
 				{deleteError && (
@@ -412,206 +745,43 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 					</div>
 				)}
 
-				<Form method="post" className="space-y-6">
-					{/* Transaction Info (read-only summary) */}
-					<div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 space-y-3">
-						<div className="flex justify-between items-start">
-							<div>
-								<p className="text-sm text-gray-500">
-									{t("treasury.breakdown.date")}
-								</p>
-								<p className="font-mono">{formatDate(transaction.date)}</p>
-							</div>
-							<div className="text-right">
-								<Label
-									htmlFor="amount"
-									className="text-sm text-gray-500 block mb-1"
-								>
-									{t("treasury.breakdown.amount")}
-								</Label>
-								<div className="flex items-center justify-end gap-1">
-									<span
-										className={`font-bold text-lg ${transaction.type === "expense" ? "text-red-600" : "text-green-600"}`}
-									>
-										{transaction.type === "expense" ? "-" : "+"}
-									</span>
-									<Input
-										id="amount"
-										name="amount"
-										value={transactionAmount}
-										onChange={(e) => setTransactionAmount(e.target.value)}
-										className="w-32 text-right font-bold text-lg h-9"
-									/>
-									<span className="text-gray-500 font-bold">€</span>
-								</div>
-							</div>
-						</div>
-						<div>
-							<p className="text-sm text-gray-500">{t("treasury.year")}</p>
-							<p>{transaction.year}</p>
-						</div>
-					</div>
+				<Form method="post" encType="multipart/form-data" className="space-y-6">
+					{/* Hidden fields for form submission */}
+					<input type="hidden" name="linkPurchaseId" value={selectedPurchaseId} />
 
-					{/* Editable Fields */}
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("treasury.breakdown.edit.editable_fields")}
-						</h2>
+					{/* Transaction Details Form - type and year disabled in edit mode */}
+					<TransactionDetailsForm
+						transactionType={transactionType}
+						onTypeChange={setTransactionType}
+						amount={amount}
+						onAmountChange={setAmount}
+						description={descriptionValue}
+						onDescriptionChange={setDescriptionValue}
+						category={category}
+						onCategoryChange={setCategory}
+						date={dateValue}
+						onDateChange={setDateValue}
+						year={year}
+						onYearChange={setYear}
+						yearOptions={yearOptions}
+						showTypeSelector={true}
+						showYearSelector={true}
+						disabled={true}
+					/>
 
-						<div className="space-y-2">
-							<Label htmlFor="description">
-								{t("treasury.breakdown.description")} *
-							</Label>
-							<Input
-								id="description"
-								name="description"
-								required
-								defaultValue={transaction.description}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="category">
-								{t("treasury.breakdown.category")}
-							</Label>
-							<Input
-								id="category"
-								name="category"
-								defaultValue={transaction.category || ""}
-							/>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="status">
-									{t("treasury.breakdown.status")} *
-								</Label>
-								<Select
-									name="status"
-									defaultValue={transaction.status}
-									required
-								>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="complete">
-											<span className="flex items-center gap-2">
-												<span className="w-2 h-2 rounded-full bg-green-500"></span>
-												{t("treasury.breakdown.statuses.complete")}
-											</span>
-										</SelectItem>
-										<SelectItem value="pending">
-											<span className="flex items-center gap-2">
-												<span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-												{t("treasury.breakdown.statuses.pending")}
-											</span>
-										</SelectItem>
-										<SelectItem value="paused">
-											<span className="flex items-center gap-2">
-												<span className="w-2 h-2 rounded-full bg-gray-500"></span>
-												{t("treasury.breakdown.statuses.paused")}
-											</span>
-										</SelectItem>
-										<SelectItem value="declined">
-											<span className="flex items-center gap-2">
-												<span className="w-2 h-2 rounded-full bg-red-500"></span>
-												{t("treasury.breakdown.statuses.declined")}
-											</span>
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="reimbursementStatus">
-									{t("treasury.reimbursements.title")}
-								</Label>
-								<Select
-									name="reimbursementStatus"
-									defaultValue={
-										transaction.reimbursementStatus || "not_requested"
-									}
-								>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="not_requested">
-											{t(
-												"treasury.breakdown.edit.reimbursement_statuses.not_requested",
-											)}
-										</SelectItem>
-										<SelectItem value="requested">
-											{t(
-												"treasury.breakdown.edit.reimbursement_statuses.requested",
-											)}
-										</SelectItem>
-										<SelectItem value="approved">
-											{t(
-												"treasury.breakdown.edit.reimbursement_statuses.approved",
-											)}
-										</SelectItem>
-										<SelectItem value="declined">
-											{t(
-												"treasury.breakdown.edit.reimbursement_statuses.declined",
-											)}
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</div>
-
-					{/* Purchase Info (if linked) */}
-					{purchase && (
-						<div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 space-y-3">
-							<h3 className="font-bold text-blue-800 dark:text-blue-300">
-								{t("treasury.breakdown.edit.linked_reimbursement")}
-							</h3>
-							<div className="grid grid-cols-2 gap-4 text-sm">
-								<div>
-									<p className="text-blue-600 dark:text-blue-400">
-										{t("treasury.breakdown.edit.purchaser")}
-									</p>
-									<p className="font-medium">{purchase.purchaserName}</p>
-								</div>
-								<div>
-									<p className="text-blue-600 dark:text-blue-400">
-										{t("treasury.breakdown.edit.iban")}
-									</p>
-									<p className="font-mono text-xs">{purchase.bankAccount}</p>
-								</div>
-								<div>
-									<p className="text-blue-600 dark:text-blue-400">
-										{t("treasury.breakdown.edit.minutes")}
-									</p>
-									<p className="font-medium">{purchase.minutesId || "—"}</p>
-								</div>
-								<div>
-									<p className="text-blue-600 dark:text-blue-400">
-										{t("treasury.breakdown.edit.email")}
-									</p>
-									<p className="font-medium">
-										{purchase.emailSent
-											? t("treasury.breakdown.edit.email_sent")
-											: t("treasury.breakdown.edit.email_not_sent")}
-									</p>
-								</div>
-							</div>
-						</div>
-					)}
-
-					{/* Linked Inventory Items */}
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-						{/* Pending Items - To be added */}
-						<div className="space-y-4 mb-6">
+					{/* Inventory Items Section - shown when category is "inventory" */}
+					{category === "inventory" && (
+						<div className="space-y-4">
 							<TransactionItemList
 								items={pendingItems}
-								onItemsChange={setPendingItems}
+								onItemsChange={(newItems) => {
+									setPendingItems(newItems);
+									setItems(newItems);
+								}}
 								availableItems={pickerItems}
 								uniqueLocations={uniqueLocations}
 								uniqueCategories={uniqueCategories}
+								onAddNewItem={handleAddItem}
 								title={t("treasury.breakdown.edit.items_to_add")}
 								description={t("treasury.breakdown.edit.items_to_add_desc")}
 								emptyMessage={t("treasury.breakdown.edit.no_items_to_add")}
@@ -633,60 +803,113 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 									</Button>
 								</div>
 							)}
-						</div>
 
-						{linkedItems.length === 0 && pendingItems.length === 0 ? (
-							<p className="text-gray-500 text-sm py-4 text-center">
-								{t("treasury.breakdown.edit.no_linked_items")}
-							</p>
-						) : (
-							<div className="space-y-2">
-								{/* Linked items header? Or strictly separation? */}
-								{linkedItems.length > 0 && (
-									<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4 mb-2">
+							{/* Currently Linked Items */}
+							{linkedItems.length > 0 && (
+								<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+									<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
 										{t("treasury.breakdown.edit.linked_items")}
 									</h3>
-								)}
-								{linkedItems.map((item) => (
-									<div
-										key={item.id}
-										className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
-									>
-										<div className="flex items-center gap-3">
-											<span className="material-symbols-outlined text-gray-400">
-												package_2
-											</span>
-											<div>
-												<p className="font-medium">{item.name}</p>
-												<p className="text-xs text-gray-500">
-													{item.quantity} {t("inventory.unit")} •{" "}
-													{item.location}
-													{item.value && parseFloat(item.value) > 0 && (
-														<span className="ml-2">
-															{formatCurrency(
-																parseFloat(item.value) * item.quantity,
+									<div className="space-y-2">
+										{linkedItems.map((item) => (
+											<div
+												key={item.id}
+												className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
+											>
+												<div className="flex items-center gap-3">
+													<span className="material-symbols-outlined text-gray-400">
+														package_2
+													</span>
+													<div>
+														<p className="font-medium">{item.name}</p>
+														<p className="text-xs text-gray-500">
+															{item.quantity} {t("inventory.unit")} •{" "}
+															{item.location}
+															{item.value && parseFloat(item.value) > 0 && (
+																<span className="ml-2">
+																	{formatCurrency(
+																		parseFloat(item.value) * item.quantity,
+																	)}
+																</span>
 															)}
-														</span>
-													)}
-												</p>
+														</p>
+													</div>
+												</div>
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													onClick={() => handleUnlinkItem(item.id)}
+													className="text-red-600 hover:text-red-700 hover:bg-red-50"
+												>
+													<span className="material-symbols-outlined text-base">
+														link_off
+													</span>
+												</Button>
 											</div>
-										</div>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={() => handleUnlinkItem(item.id)}
-											className="text-red-600 hover:text-red-700 hover:bg-red-50"
-										>
-											<span className="material-symbols-outlined text-base">
-												link_off
-											</span>
-										</Button>
+										))}
 									</div>
-								))}
-							</div>
-						)}
-					</div>
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* Reimbursement Section - Only for expenses */}
+					{transactionType === "expense" && (
+						<SectionCard>
+							{/* Link to existing reimbursement section */}
+							{unlinkedPurchases.length > 0 && (
+								<>
+									<LinkExistingSelector
+										items={linkablePurchases}
+										selectedId={selectedPurchaseId}
+										onSelectionChange={handlePurchaseSelectionChange}
+										label={t("treasury.new.link_existing_reimbursement")}
+										helpText={t("treasury.new.link_existing_help")}
+										placeholder={t("treasury.new.select_reimbursement_placeholder")}
+										noLinkText={t("treasury.new.no_link")}
+									/>
+									{selectedPurchase && (
+										<LinkedItemInfo purchase={selectedPurchase} />
+									)}
+								</>
+							)}
+
+							{/* Divider when both options available */}
+							{unlinkedPurchases.length > 0 && (
+								<Divider translationKey="treasury.new.or" />
+							)}
+
+							{/* Request new reimbursement - always shown */}
+							<CheckboxOption
+								id="requestReimbursement"
+								name="requestReimbursement"
+								checked={requestReimbursement}
+								onCheckedChange={handleRequestReimbursementChange}
+								label={t("treasury.new.request_reimbursement")}
+								helpText={t("treasury.new.reimbursement_help")}
+							>
+									<ReimbursementForm
+										recentMinutes={recentMinutes.map((m) => ({
+											...m,
+											year: m.year.toString(),
+										}))}
+										emailConfigured={emailConfigured}
+										receiptsByYear={receiptsByYear}
+										currentYear={currentYear}
+										receiptsFolderUrl={receiptsFolderUrl}
+										description={descriptionValue}
+										showNotes={true}
+										required={requestReimbursement}
+									/>
+								</CheckboxOption>
+
+							{/* Show linked purchase info if already linked but not selecting a new one */}
+							{purchase && isLinkingToExisting && !selectedPurchaseId && (
+								<LinkedItemInfo purchase={purchase} />
+							)}
+						</SectionCard>
+					)}
 
 					<div className="flex gap-4">
 						<Button
@@ -697,22 +920,19 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 						>
 							{t("treasury.breakdown.edit.cancel")}
 						</Button>
-						<Button
-							type="submit"
-							className="flex-1"
-							onClick={(e) => {
-								if (pendingItems.length > 0) {
-									e.preventDefault();
-									handleLinkPendingItems();
-									// Also submit the form manually if needed, but for now just link items
-									// Ideally we'd do both but fetcher is separate from form
-									// Let's just focus on linking items first as that's the main action for this context
-								}
-							}}
-						>
-							{pendingItems.length > 0
-								? t("treasury.breakdown.edit.save_links")
-								: t("treasury.breakdown.edit.save")}
+						<Button type="submit" className="flex-1" disabled={isSubmitting}>
+							{isSubmitting ? (
+								<span className="flex items-center gap-2">
+									<span className="animate-spin material-symbols-outlined text-sm">
+										progress_activity
+									</span>
+									<span>{t("settings.common.saving")}</span>
+								</span>
+							) : requestReimbursement ? (
+								t("treasury.new.submit_and_request")
+							) : (
+								t("treasury.breakdown.edit.save")
+							)}
 						</Button>
 					</div>
 				</Form>

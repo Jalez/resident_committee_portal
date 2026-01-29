@@ -10,29 +10,25 @@ import {
 } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { PageHeader } from "~/components/layout/page-header";
 import {
 	type MinuteFile,
 	ReimbursementForm,
 } from "~/components/treasury/reimbursement-form";
 import {
 	TransactionDetailsForm,
-	type TransactionType,
 } from "~/components/treasury/transaction-details-form";
 import { TransactionItemList } from "~/components/treasury/transaction-item-list";
 import {
-	TransactionLinkSelector,
+	LinkExistingSelector,
 	purchasesToLinkableItems,
-} from "~/components/treasury/transaction-link-selector";
+} from "~/components/treasury/link-existing-selector";
+import { CheckboxOption } from "~/components/treasury/checkbox-option";
+import { Divider } from "~/components/treasury/divider";
+import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
+import { SectionCard } from "~/components/treasury/section-card";
+
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Label } from "~/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import {
 	type NewTransaction as DbNewTransaction,
@@ -57,6 +53,12 @@ import {
 	getReceiptsByYear,
 	uploadReceiptToDrive,
 } from "~/lib/google.server";
+import {
+	getMissingReceiptsError,
+	MISSING_RECEIPTS_ERROR,
+	parseReceiptLinks,
+	RECEIPTS_SECTION_ID,
+} from "~/lib/treasury/receipt-validation";
 import type { Route } from "./+types/treasury.transactions.new";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -319,13 +321,13 @@ export async function action({ request }: Route.ActionArgs) {
 
 		const notes = formData.get("notes") as string;
 
-		// Parse receipt links from the form (JSON string from ReceiptPicker)
-		const receiptLinksJson = formData.get("receiptLinks") as string;
-		let receiptLinks: { id: string; name: string; url: string }[] = [];
-		try {
-			receiptLinks = receiptLinksJson ? JSON.parse(receiptLinksJson) : [];
-		} catch {
-			receiptLinks = [];
+		const receiptLinks = parseReceiptLinks(formData);
+		const receiptError = getMissingReceiptsError(
+			receiptLinks,
+			shouldRequestReimbursement,
+		);
+		if (receiptError) {
+			return { success: false, error: receiptError };
 		}
 
 		const newPurchase: NewPurchase = {
@@ -435,7 +437,7 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
-	return redirect(`/treasury?year=${year}&success=Transaction created`);
+	return redirect(`/treasury?year=${year}&success=transaction_created`);
 }
 
 export default function NewTransaction({ loaderData }: Route.ComponentProps) {
@@ -508,6 +510,22 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		prefill.linkPurchaseId || "",
 	);
 	const isLinkingToExisting = !!selectedPurchaseId;
+
+	// Handle selection change - uncheck checkbox when selecting existing purchase
+	const handlePurchaseSelectionChange = (id: string) => {
+		setSelectedPurchaseId(id);
+		if (id) {
+			setRequestReimbursement(false);
+		}
+	};
+
+	// Handle checkbox change - clear selection when checking request reimbursement
+	const handleRequestReimbursementChange = (checked: boolean) => {
+		setRequestReimbursement(checked);
+		if (checked) {
+			setSelectedPurchaseId("");
+		}
+	};
 	const [transactionType, setTransactionType] = useState<"income" | "expense">(
 		prefill.type,
 	);
@@ -527,8 +545,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 				setAmount(purchase.amount);
 				setDescriptionValue(purchase.description || "");
 				setDateValue(new Date(purchase.createdAt).toISOString().split("T")[0]);
-				// Disable request reimbursement when linking
-				setRequestReimbursement(false);
 			}
 		}
 	}, [selectedPurchaseId, unlinkedPurchases]);
@@ -540,6 +556,11 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 					? actionData.error
 					: "Failed to create transaction",
 			);
+			if (actionData.error === MISSING_RECEIPTS_ERROR) {
+				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
+				receiptsSection?.focus();
+				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
+			}
 		}
 
 		// Handle fetcher success (inventory item creation)
@@ -659,14 +680,18 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		return null;
 	};
 
+	// Convert purchases to linkable items
+	const linkablePurchases = purchasesToLinkableItems(unlinkedPurchases);
+
+	// Find selected purchase for display
+	const selectedPurchase = selectedPurchaseId
+		? unlinkedPurchases.find((p) => p.id === selectedPurchaseId)
+		: null;
+
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("treasury.new.header")}
-					</h1>
-				</div>
+				<PageHeader title={t("treasury.new.header")} />
 
 				<Form method="post" encType="multipart/form-data" className="space-y-6">
 					{/* Hidden field for selected item IDs */}
@@ -708,7 +733,10 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 								uniqueLocations={uniqueLocations}
 								uniqueCategories={uniqueCategories}
 								onAddNewItem={handleAddItem}
+								title={t("treasury.new.inventory_title")}
 								description={t("treasury.new.inventory_desc")}
+								emptyMessage={t("treasury.new.inventory_empty")}
+
 							/>
 
 							{/* Hidden inputs for form submission */}
@@ -725,108 +753,57 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 
 					{/* Reimbursement Section - Only for expenses */}
 					{transactionType === "expense" && (
-						<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+						<SectionCard>
 							{/* Hidden input for linking to existing purchase */}
 							<input type="hidden" name="linkPurchaseId" value={selectedPurchaseId} />
 
 							{/* Link to existing reimbursement section */}
 							{unlinkedPurchases.length > 0 && (
-								<div className="space-y-3">
-									<Label className="text-base font-bold">
-										{t("treasury.new.link_existing_reimbursement")}
-									</Label>
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										{t("treasury.new.link_existing_help")}
-									</p>
-									<Select
-										value={selectedPurchaseId}
-										onValueChange={(val) => setSelectedPurchaseId(val === "none" ? "" : val)}
-									>
-										<SelectTrigger>
-											<SelectValue
-												placeholder={t("treasury.new.select_reimbursement_placeholder")}
-											/>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="none">
-												{t("treasury.new.no_link")}
-											</SelectItem>
-											{unlinkedPurchases.map((purchase) => (
-												<SelectItem key={purchase.id} value={purchase.id}>
-													<span className="flex items-center gap-2">
-														<span className="font-medium">
-															{purchase.description || purchase.purchaserName}
-														</span>
-														<span className="text-gray-500">—</span>
-														<span className="text-sm text-gray-500">
-															{purchase.amount} €
-														</span>
-													</span>
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-							)}
-
-							{/* Divider when both options available */}
-							{unlinkedPurchases.length > 0 && !isLinkingToExisting && (
-								<div className="relative py-2">
-									<div className="absolute inset-0 flex items-center">
-										<div className="w-full border-t border-gray-200 dark:border-gray-700" />
-									</div>
-									<div className="relative flex justify-center text-xs uppercase">
-										<span className="bg-white dark:bg-gray-800 px-2 text-gray-500">
-											{t("treasury.new.or")}
-										</span>
-									</div>
-								</div>
-							)}
-
-							{/* Request new reimbursement - disabled when linking to existing */}
-							{!isLinkingToExisting && (
 								<>
-									<div className="flex items-center gap-3">
-										<Checkbox
-											id="requestReimbursement"
-											name="requestReimbursement"
-											checked={requestReimbursement}
-											onCheckedChange={(checked) =>
-												setRequestReimbursement(checked === true)
-											}
-										/>
-										<Label
-											htmlFor="requestReimbursement"
-											className="text-lg font-bold cursor-pointer"
-										>
-											{t("treasury.new.request_reimbursement")}
-										</Label>
-									</div>
-
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										{t("treasury.new.reimbursement_help")}
-									</p>
-
-									{requestReimbursement && (
-										<div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-											<ReimbursementForm
-												recentMinutes={recentMinutes.map((m) => ({
-													...m,
-													year: m.year.toString(),
-												}))}
-												emailConfigured={emailConfigured}
-												receiptsByYear={receiptsByYear}
-												currentYear={currentYear}
-												receiptsFolderUrl={receiptsFolderUrl}
-												description={descriptionValue}
-												showNotes={true}
-												required={requestReimbursement}
-											/>
-										</div>
+									<LinkExistingSelector
+										items={linkablePurchases}
+										selectedId={selectedPurchaseId}
+										onSelectionChange={handlePurchaseSelectionChange}
+										label={t("treasury.new.link_existing_reimbursement")}
+										helpText={t("treasury.new.link_existing_help")}
+										placeholder={t("treasury.new.select_reimbursement_placeholder")}
+										noLinkText={t("treasury.new.no_link")}
+									/>
+									{selectedPurchase && (
+										<LinkedItemInfo purchase={selectedPurchase} />
 									)}
 								</>
 							)}
-						</div>
+
+							{/* Divider when both options available */}
+							{unlinkedPurchases.length > 0 && (
+								<Divider translationKey="treasury.new.or" />
+							)}
+
+							{/* Request new reimbursement - always shown */}
+							<CheckboxOption
+								id="requestReimbursement"
+								name="requestReimbursement"
+								checked={requestReimbursement}
+								onCheckedChange={handleRequestReimbursementChange}
+								label={t("treasury.new.request_reimbursement")}
+								helpText={t("treasury.new.reimbursement_help")}
+							>
+									<ReimbursementForm
+										recentMinutes={recentMinutes.map((m) => ({
+											...m,
+											year: m.year.toString(),
+										}))}
+										emailConfigured={emailConfigured}
+										receiptsByYear={receiptsByYear}
+										currentYear={currentYear}
+										receiptsFolderUrl={receiptsFolderUrl}
+										description={descriptionValue}
+										showNotes={true}
+										required={requestReimbursement}
+									/>
+								</CheckboxOption>
+						</SectionCard>
 					)}
 
 					<div className="flex gap-4">

@@ -6,6 +6,10 @@ import {
 	type ReceiptLink,
 	ReceiptPicker,
 } from "~/components/treasury/receipt-picker";
+import {
+	hasRequiredReceipts,
+	RECEIPTS_SECTION_ID,
+} from "~/lib/treasury/receipt-validation";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -111,6 +115,7 @@ export function ReimbursementForm({
 	const isMinutesLoading = minutesFetcher.state !== "idle";
 
 	// Ensure receipts folder exists on mount
+	const receiptsValid = hasRequiredReceipts(selectedReceipts, required);
 	useEffect(() => {
 		// Only trigger if we don't already have a valid folder URL
 		if (!receiptsFolderUrl || receiptsFolderUrl === "#") {
@@ -143,7 +148,6 @@ export function ReimbursementForm({
 	useEffect(() => {
 		setDescriptionValue(description);
 	}, [description]);
-
 	// Load minutes asynchronously
 	useEffect(() => {
 		if (minutesOptions.length === 0 && minutesFetcher.state === "idle") {
@@ -227,7 +231,11 @@ export function ReimbursementForm({
 			)}
 
 			{/* Receipt Picker */}
-			<div className="space-y-2">
+			<div
+				id={RECEIPTS_SECTION_ID}
+				tabIndex={-1}
+				className="space-y-2 focus:outline-none"
+			>
 				<Label>
 					{t("treasury.new_reimbursement.receipts")} {required && "*"}
 				</Label>
@@ -247,7 +255,7 @@ export function ReimbursementForm({
 					name="receiptLinks"
 					value={JSON.stringify(selectedReceipts)}
 				/>
-				{required && selectedReceipts.length === 0 && (
+				{!receiptsValid && (
 					<p className="text-xs text-destructive">
 						{t("treasury.new_reimbursement.select_receipt_error")}
 					</p>

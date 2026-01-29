@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import {
 	Form,
 	redirect,
+	useActionData,
 	useFetcher,
 	useNavigate,
 	useNavigation,
 } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { PageHeader } from "~/components/layout/page-header";
 import {
 	type MinuteFile,
 	ReimbursementForm,
@@ -16,12 +18,14 @@ import {
 import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
 import { TransactionItemList } from "~/components/treasury/transaction-item-list";
 import {
-	TransactionLinkSelector,
+	LinkExistingSelector,
 	transactionsToLinkableItems,
-} from "~/components/treasury/transaction-link-selector";
+} from "~/components/treasury/link-existing-selector";
+import { CheckboxOption } from "~/components/treasury/checkbox-option";
+import { Divider } from "~/components/treasury/divider";
+import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
+import { SectionCard } from "~/components/treasury/section-card";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Label } from "~/components/ui/label";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
 import {
@@ -47,6 +51,12 @@ import {
 	getReceiptsByYear,
 	uploadReceiptToDrive,
 } from "~/lib/google.server";
+import {
+	getMissingReceiptsError,
+	MISSING_RECEIPTS_ERROR,
+	parseReceiptLinks,
+	RECEIPTS_SECTION_ID,
+} from "~/lib/treasury/receipt-validation";
 import type { Route } from "./+types/treasury.reimbursement.new";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -212,13 +222,10 @@ export async function action({ request }: Route.ActionArgs) {
 	const notes = formData.get("notes") as string;
 	const currentYear = new Date().getFullYear();
 
-	// Parse receipt links from the form (JSON string from ReceiptPicker)
-	const receiptLinksJson = formData.get("receiptLinks") as string;
-	let receiptLinks: { id: string; name: string; url: string }[] = [];
-	try {
-		receiptLinks = receiptLinksJson ? JSON.parse(receiptLinksJson) : [];
-	} catch {
-		receiptLinks = [];
+	const receiptLinks = parseReceiptLinks(formData);
+	const receiptError = getMissingReceiptsError(receiptLinks, true);
+	if (receiptError) {
+		return { success: false, error: receiptError };
 	}
 
 	let transactionId: string | undefined;
@@ -487,7 +494,7 @@ export async function action({ request }: Route.ActionArgs) {
 		await emailTask;
 	}
 
-	return redirect("/treasury/reimbursements?success=true");
+	return redirect("/treasury/reimbursements?success=reimbursement_requested");
 }
 
 export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
@@ -504,6 +511,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
+	const actionData = useActionData<typeof action>();
 	const { t } = useTranslation();
 	const { template, clearTemplate, isHydrated } = useReimbursementTemplate();
 
@@ -517,6 +525,22 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 
 	// Create new transaction state (checkbox like in transactions.new.tsx)
 	const [createTransaction, setCreateTransaction] = useState(false);
+
+	// Handle selection change - uncheck checkbox when selecting existing transaction
+	const handleTransactionSelectionChange = (id: string) => {
+		setSelectedTransactionId(id);
+		if (id) {
+			setCreateTransaction(false);
+		}
+	};
+
+	// Handle checkbox change - clear selection when checking create transaction
+	const handleCreateTransactionChange = (checked: boolean) => {
+		setCreateTransaction(checked);
+		if (checked) {
+			setSelectedTransactionId("");
+		}
+	};
 
 	// Get items from context (set by inventory page)
 	const { items: contextItems, setItems } = useNewTransaction();
@@ -555,11 +579,24 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 				setCategory(transaction.category || "other");
 				setDateValue(new Date(transaction.date).toISOString().split("T")[0]);
 				setYear(transaction.year);
-				// Disable create transaction when linking
-				setCreateTransaction(false);
 			}
 		}
 	}, [selectedTransactionId, unlinkedTransactions]);
+
+	useEffect(() => {
+		if (actionData && "error" in actionData && actionData.error) {
+			toast.error(
+				typeof actionData.error === "string"
+					? actionData.error
+					: t("treasury.new_reimbursement.error"),
+			);
+			if (actionData.error === MISSING_RECEIPTS_ERROR) {
+				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
+				receiptsSection?.focus();
+				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
+			}
+		}
+	}, [actionData, t]);
 
 	// Pre-fill from template after hydration
 	useEffect(() => {
@@ -619,14 +656,15 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		unlinkedTransactions as (Transaction & { purchaseId: string | null })[],
 	);
 
+	// Find selected transaction for display
+	const selectedTransaction = selectedTransactionId
+		? unlinkedTransactions.find((t) => t.id === selectedTransactionId)
+		: null;
+
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("treasury.new_reimbursement.title")}
-					</h1>
-				</div>
+				<PageHeader title={t("treasury.new_reimbursement.title")} />
 
 				<Form method="post" encType="multipart/form-data" className="space-y-6">
 					{/* Hidden fields */}
@@ -642,7 +680,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 					/>
 
 					{/* Reimbursement Form - handles receipts, purchaser info, minutes, notes - FIRST */}
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+					<SectionCard>
 						<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
 							{t("treasury.new_reimbursement.reimbursement_details")}
 						</h2>
@@ -660,150 +698,102 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 							initialBankAccount={bankAccountValue}
 							initialNotes={notesValue}
 						/>
-					</div>
+					</SectionCard>
 
 					{/* Transaction Section - Link or Create */}
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+					<SectionCard>
 						{/* Hidden input for createTransaction checkbox */}
 						<input type="hidden" name="createTransaction" value={createTransaction ? "on" : ""} />
 
 						{/* Link to existing transaction option */}
 						{unlinkedTransactions.length > 0 && (
-							<TransactionLinkSelector
-								items={linkableItems}
-								selectedId={selectedTransactionId}
-								onSelectionChange={setSelectedTransactionId}
-								label={t("treasury.new_reimbursement.link_existing_transaction")}
-								helpText={t(
-									"treasury.new_reimbursement.link_existing_transaction_help",
-								)}
-								placeholder={t(
-									"treasury.new_reimbursement.select_transaction_placeholder",
-								)}
-								noLinkText={t("treasury.new_reimbursement.no_link")}
-							/>
-						)}
-
-						{/* Divider when both options available */}
-						{unlinkedTransactions.length > 0 && !isLinkingToExisting && (
-							<div className="relative py-2">
-								<div className="absolute inset-0 flex items-center">
-									<div className="w-full border-t border-gray-200 dark:border-gray-700" />
-								</div>
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-white dark:bg-gray-800 px-2 text-gray-500">
-										{t("treasury.new.or")}
-									</span>
-								</div>
-							</div>
-						)}
-
-						{/* Create new transaction checkbox - shown when not linking */}
-						{!isLinkingToExisting && (
 							<>
-								<div className="flex items-center gap-3">
-									<Checkbox
-										id="createTransaction"
-										name="createTransactionCheckbox"
-										checked={createTransaction}
-										onCheckedChange={(checked) =>
-											setCreateTransaction(checked === true)
-										}
+								<LinkExistingSelector
+									items={linkableItems}
+									selectedId={selectedTransactionId}
+									onSelectionChange={handleTransactionSelectionChange}
+									label={t("treasury.new_reimbursement.link_existing_transaction")}
+									helpText={t(
+										"treasury.new_reimbursement.link_existing_transaction_help",
+									)}
+									placeholder={t(
+										"treasury.new_reimbursement.select_transaction_placeholder",
+									)}
+									noLinkText={t("treasury.new_reimbursement.no_link")}
+								/>
+								{selectedTransaction && (
+									<LinkedItemInfo
+										description={descriptionValue}
+										amount={amount}
+										date={dateValue}
+										year={year}
 									/>
-									<Label
-										htmlFor="createTransaction"
-										className="text-lg font-bold cursor-pointer"
-									>
-										{t("treasury.new_reimbursement.create_transaction")}
-									</Label>
-								</div>
-
-								<p className="text-sm text-gray-500 dark:text-gray-400">
-									{t("treasury.new_reimbursement.create_transaction_help")}
-								</p>
-
-								{/* Transaction Details Form - only shown when checkbox is checked */}
-								{createTransaction && (
-									<div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-										<TransactionDetailsForm
-											transactionType="expense"
-											onTypeChange={() => {}}
-											amount={amount}
-											onAmountChange={setAmount}
-											description={descriptionValue}
-											onDescriptionChange={setDescriptionValue}
-											category={category}
-											onCategoryChange={setCategory}
-											date={dateValue}
-											onDateChange={setDateValue}
-											year={year}
-											onYearChange={setYear}
-											yearOptions={yearOptions}
-											showTypeSelector={false}
-											showCard={false}
-										/>
-
-										{/* Inventory Selection Section - shown when category is "inventory" */}
-										{category === "inventory" && (
-											<div className="space-y-4 mt-4">
-												<TransactionItemList
-													items={contextItems}
-													onItemsChange={(newItems) => {
-														setItems(newItems);
-														setSelectedItemIds(newItems.map((i) => i.itemId));
-													}}
-													availableItems={pickerItems}
-													uniqueLocations={uniqueLocations}
-													uniqueCategories={uniqueCategories}
-													onAddNewItem={handleAddItem}
-													description={t("treasury.new.inventory_desc")}
-												/>
-
-												{/* Hidden inputs for form submission */}
-												{contextItems.map((ctxItem) => (
-													<input
-														key={`qty-${ctxItem.itemId}`}
-														type="hidden"
-														name={`itemQuantity_${ctxItem.itemId}`}
-														value={ctxItem.quantity}
-													/>
-												))}
-											</div>
-										)}
-									</div>
 								)}
 							</>
 						)}
 
-						{/* Linked Transaction Info - shown when linking to existing */}
-						{isLinkingToExisting && (
-							<div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700 space-y-3">
-								<p className="text-sm text-gray-600 dark:text-gray-400">
-									{t("treasury.new_reimbursement.linked_transaction_info")}
-								</p>
-								<div className="grid grid-cols-2 gap-4 text-sm">
-									<div>
-										<p className="text-gray-500">
-											{t("treasury.form.description")}
-										</p>
-										<p className="font-medium">{descriptionValue}</p>
-									</div>
-									<div>
-										<p className="text-gray-500">{t("treasury.form.amount")}</p>
-										<p className="font-medium">{amount} €</p>
-									</div>
-									<div>
-										<p className="text-gray-500">{t("treasury.form.date")}</p>
-										<p className="font-medium">{dateValue}</p>
-									</div>
-									<div>
-										<p className="text-gray-500">{t("treasury.form.year")}</p>
-										<p className="font-medium">{year}</p>
-									</div>
-								</div>
-							</div>
+						{/* Divider when both options available */}
+						{unlinkedTransactions.length > 0 && (
+							<Divider translationKey="treasury.new.or" />
 						)}
-					</div>
+
+						{/* Create new transaction checkbox - always shown */}
+						<CheckboxOption
+							id="createTransaction"
+							name="createTransactionCheckbox"
+							checked={createTransaction}
+							onCheckedChange={handleCreateTransactionChange}
+							label={t("treasury.new_reimbursement.create_transaction")}
+							helpText={t("treasury.new_reimbursement.create_transaction_help")}
+						>
+								<TransactionDetailsForm
+									transactionType="expense"
+									onTypeChange={() => {}}
+									amount={amount}
+									onAmountChange={setAmount}
+									description={descriptionValue}
+									onDescriptionChange={setDescriptionValue}
+									category={category}
+									onCategoryChange={setCategory}
+									date={dateValue}
+									onDateChange={setDateValue}
+									year={year}
+									onYearChange={setYear}
+									yearOptions={yearOptions}
+									showTypeSelector={false}
+									showCard={false}
+								/>
+
+								{/* Inventory Selection Section - shown when category is "inventory" */}
+								{category === "inventory" && (
+									<div className="space-y-4 mt-4">
+										<TransactionItemList
+											items={contextItems}
+											onItemsChange={(newItems) => {
+												setItems(newItems);
+												setSelectedItemIds(newItems.map((i) => i.itemId));
+											}}
+											availableItems={pickerItems}
+											uniqueLocations={uniqueLocations}
+											uniqueCategories={uniqueCategories}
+											onAddNewItem={handleAddItem}
+											description={t("treasury.new.inventory_desc")}
+										/>
+
+										{/* Hidden inputs for form submission */}
+										{contextItems.map((ctxItem) => (
+											<input
+												key={`qty-${ctxItem.itemId}`}
+												type="hidden"
+												name={`itemQuantity_${ctxItem.itemId}`}
+												value={ctxItem.quantity}
+											/>
+										))}
+									</div>
+								)}
+							</CheckboxOption>
+
+					</SectionCard>
 
 					<div className="flex gap-4">
 						<Button
