@@ -99,7 +99,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "inventory:write", getDatabase);
+	const user = await requirePermission(request, "inventory:write", getDatabase);
 	const db = getDatabase();
 
 	const formData = await request.formData();
@@ -239,6 +239,7 @@ export async function action({ request }: Route.ActionArgs) {
 				status: "pending",
 				year: currentYear,
 				emailSent: false,
+				createdBy: user.userId,
 			};
 
 			const purchase = await db.createPurchase(newPurchase);
