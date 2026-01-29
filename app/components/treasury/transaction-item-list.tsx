@@ -45,9 +45,9 @@ export function TransactionItemList({
 	availableItems,
 	uniqueLocations,
 	uniqueCategories,
-	title = "Tavarat / Items",
+	title = "Items",
 	description,
-	emptyMessage = "Ei valittuja tavaroita / No items selected",
+	emptyMessage = "No items selected",
 	onAddNewItem,
 	showTotal = true,
 }: TransactionItemListProps) {

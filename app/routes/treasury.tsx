@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import {
 	ContentArea,
 	PageWrapper,
@@ -127,6 +129,20 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 
 	const { t } = useTranslation();
 	const { isInfoReel } = useLanguage();
+	const [searchParams, setSearchParams] = useSearchParams();
+
+	useEffect(() => {
+		const success = searchParams.get("success");
+		if (!success) return;
+		if (success === "transaction_created") {
+			toast.success(t("treasury.success.transaction_created"));
+		} else {
+			toast.success(success);
+		}
+		const nextParams = new URLSearchParams(searchParams);
+		nextParams.delete("success");
+		setSearchParams(nextParams, { replace: true });
+	}, [searchParams, setSearchParams, t]);
 
 	// Configure search fields
 	const searchFields: SearchField[] = [
