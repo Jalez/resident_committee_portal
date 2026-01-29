@@ -11,10 +11,22 @@ export default [
 	route("treasury/breakdown", "routes/treasury.breakdown.tsx"),
 	route("treasury/transactions", "routes/treasury.transactions.tsx"),
 	route(
+		"treasury/transactions/:transactionId",
+		"routes/treasury.transactions.$transactionId.tsx",
+	),
+	route(
 		"treasury/transactions/:transactionId/edit",
 		"routes/treasury.transactions.$transactionId.edit.tsx",
 	),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
+	route(
+		"treasury/reimbursements/:purchaseId",
+		"routes/treasury.reimbursements.$purchaseId.tsx",
+	),
+	route(
+		"treasury/reimbursements/:purchaseId/edit",
+		"routes/treasury.reimbursements.$purchaseId.edit.tsx",
+	),
 	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
 	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
 	route("treasury/transactions/new", "routes/treasury.transactions.new.tsx"),
@@ -28,6 +40,7 @@ export default [
 	route("auth/logout", "routes/auth.logout.tsx"),
 	// User routes
 	route("profile", "routes/profile.tsx"),
+	route("messages", "routes/messages.tsx"),
 	// Staff routes (admin + board_member)
 	route("submissions", "routes/submissions.tsx"),
 	// Settings routes (admin only)
@@ -49,5 +62,6 @@ export default [
 	route("api/webhooks/resend", "routes/api.webhooks.resend.tsx"),
 	route("api/treasury/export", "routes/api.treasury.export.tsx"),
 	route("api/treasury/import", "routes/api.treasury.import.tsx"),
+	route("api/messages/mark-read", "routes/api.messages.mark-read.tsx"),
 	route("api/set-language", "routes/api.set-language.ts"),
 ] satisfies RouteConfig;
