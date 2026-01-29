@@ -10,7 +10,7 @@ import type { Route } from "./+types/api.treasury.import";
  */
 export async function action({ request }: Route.ActionArgs) {
 	// Requires treasury:import permission
-	await requirePermission(request, "treasury:import", getDatabase);
+	const user = await requirePermission(request, "treasury:import", getDatabase);
 
 	const db = getDatabase();
 
@@ -203,6 +203,7 @@ export async function action({ request }: Route.ActionArgs) {
 					category: categoryRaw ? String(categoryRaw).trim() || null : null,
 					status,
 					reimbursementStatus: "not_requested",
+					createdBy: user.userId,
 				};
 
 				transactions.push(transaction);
