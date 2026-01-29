@@ -5,6 +5,7 @@ import {
 	getWebhookSecret,
 	parseReimbursementReply,
 } from "~/lib/email.server";
+import { createReimbursementStatusNotification } from "~/lib/notifications.server";
 import type { Route } from "./+types/api.webhooks.resend";
 
 /**
@@ -216,6 +217,18 @@ async function processEmailEvent(event: ResendEmailReceivedEvent) {
 		// For "unclear", keep current status but mark reply received
 
 		await db.updatePurchase(purchaseId, updateData);
+
+		// Send notification if status changed to approved/rejected
+		if (decision === "approved" || decision === "rejected") {
+			const purchase = await db.getPurchaseById(purchaseId);
+			if (purchase) {
+				await createReimbursementStatusNotification(
+					purchase,
+					decision,
+					db,
+				);
+			}
+		}
 
 		// Also update the linked transaction's reimbursementStatus and status
 		if (decision === "approved" || decision === "rejected") {

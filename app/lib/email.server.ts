@@ -84,7 +84,7 @@ function getTranslation(translations: Record<string, unknown>, key: string): str
 /**
  * Get bilingual text for email (primary / secondary)
  */
-function bilingualText(
+export function bilingualText(
 	primaryLang: string,
 	secondaryLang: string,
 	key: string,
@@ -338,6 +338,109 @@ export async function sendReimbursementEmail(
 		};
 	} catch (error) {
 		console.error("[sendReimbursementEmail] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
+}
+
+/**
+ * Send reimbursement status update email to the user who created the request
+ * Notifies users when their reimbursement requests are approved or declined
+ */
+export async function sendReimbursementStatusEmail(
+	userEmail: string,
+	userPrimaryLanguage: string,
+	userSecondaryLanguage: string,
+	purchaseDescription: string,
+	purchaseAmount: string,
+	status: "approved" | "rejected",
+	purchaseId: string,
+): Promise<SendEmailResult> {
+	// In dev mode, log instead of sending (or send to test email if configured)
+	const isDev = process.env.NODE_ENV !== "production";
+	const testEmail = process.env.TEST_EMAIL;
+
+	if (isDev && !testEmail) {
+		console.log("[sendReimbursementStatusEmail] Dev mode - would send email:", {
+			to: userEmail,
+			status,
+			purchaseDescription,
+			purchaseAmount,
+		});
+		return { success: true, messageId: "dev-mode-logged" };
+	}
+
+	if (!emailConfig.resendApiKey) {
+		console.error("[sendReimbursementStatusEmail] Missing RESEND_API_KEY");
+		return { success: false, error: "Missing RESEND_API_KEY" };
+	}
+
+	// Use test email in dev mode if configured, otherwise use user's email
+	const recipientEmail = isDev && testEmail ? testEmail : userEmail;
+
+	// Helper to get bilingual text using user's language preferences
+	const t = (key: string) => bilingualText(userPrimaryLanguage, userSecondaryLanguage, key);
+
+	try {
+		const resend = new Resend(emailConfig.resendApiKey);
+
+		const statusKey = status === "approved" ? "approved" : "declined";
+		const subject = t(`email.reimbursement_status.${statusKey}.subject`);
+
+		// Build email body
+		const statusColor = status === "approved" ? "#22c55e" : "#ef4444";
+		const statusText = t(`email.reimbursement_status.${statusKey}.title`);
+		const messageText = t(`email.reimbursement_status.${statusKey}.message`);
+
+		const htmlBody = `
+			<h2>${statusText}</h2>
+			<p>${messageText}</p>
+			<table style="border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 16px;">
+				<tr>
+					<td style="padding: 8px; border: 1px solid #ddd;"><strong>${t("email.reimbursement.item")}:</strong></td>
+					<td style="padding: 8px; border: 1px solid #ddd;">${purchaseDescription}</td>
+				</tr>
+				<tr>
+					<td style="padding: 8px; border: 1px solid #ddd;"><strong>${t("email.reimbursement.amount")}:</strong></td>
+					<td style="padding: 8px; border: 1px solid #ddd;">${purchaseAmount} €</td>
+				</tr>
+				<tr>
+					<td style="padding: 8px; border: 1px solid #ddd;"><strong>${t("email.reimbursement_status.status")}:</strong></td>
+					<td style="padding: 8px; border: 1px solid #ddd;">
+						<span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+					</td>
+				</tr>
+			</table>
+			<p style="margin-top: 16px;">
+				<a href="${process.env.SITE_URL || "http://localhost:5173"}/treasury/reimbursements" style="color: #3b82f6; text-decoration: underline;">
+					${t("email.reimbursement_status.view_details")}
+				</a>
+			</p>
+		`;
+
+		const { data: responseData, error } = await resend.emails.send({
+			from: emailConfig.senderEmail,
+			to: recipientEmail,
+			subject,
+			html: htmlBody,
+		});
+
+		if (error) {
+			console.error("[sendReimbursementStatusEmail] Resend Error:", error);
+			return { success: false, error: error.message };
+		}
+
+		console.log(
+			`[sendReimbursementStatusEmail] Successfully sent status email to ${recipientEmail} for purchase ${purchaseId}, messageId: ${responseData?.id}`,
+		);
+		return {
+			success: true,
+			messageId: responseData?.id,
+		};
+	} catch (error) {
+		console.error("[sendReimbursementStatusEmail] Error:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
