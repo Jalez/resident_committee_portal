@@ -153,6 +153,8 @@ export const purchases = pgTable("purchases", {
 	emailReplyContent: text("email_reply_content"), // Store reply for audit/review
 	// Year for treasury association
 	year: integer("year").notNull(),
+	// Creator tracking for self-edit/delete permissions
+	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -210,6 +212,8 @@ export const transactions = pgTable("transactions", {
 		.default("not_requested"),
 	// Links to other entities (inventoryItemId moved to junction table)
 	purchaseId: uuid("purchase_id").references(() => purchases.id),
+	// Creator tracking for self-edit/delete permissions
+	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -299,6 +303,33 @@ export const socialLinks = pgTable("social_links", {
 
 export type SocialLink = typeof socialLinks.$inferSelect;
 export type NewSocialLink = typeof socialLinks.$inferInsert;
+
+/**
+ * Message types for notifications
+ */
+export type MessageType = "reimbursement_approved" | "reimbursement_declined";
+
+/**
+ * Messages table schema
+ * Stores in-app notifications for users
+ */
+export const messages = pgTable("messages", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id")
+		.references(() => users.id)
+		.notNull(),
+	type: text("type").$type<MessageType>().notNull(),
+	title: text("title").notNull(),
+	content: text("content").notNull(),
+	relatedPurchaseId: uuid("related_purchase_id").references(() => purchases.id),
+	read: boolean("read").notNull().default(false),
+	readAt: timestamp("read_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS

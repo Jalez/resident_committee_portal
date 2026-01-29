@@ -2,7 +2,9 @@ import type {
 	AppSetting,
 	InventoryItem,
 	InventoryItemTransaction,
+	Message,
 	NewInventoryItem,
+	NewMessage,
 	NewPurchase,
 	NewRole,
 	NewSocialLink,
@@ -168,4 +170,16 @@ export interface DatabaseAdapter {
 	): Promise<AppSetting>;
 	getAllSettings(): Promise<AppSetting[]>;
 	deleteSetting(key: string): Promise<boolean>;
+
+	// ==================== Message Methods ====================
+	createMessage(message: NewMessage): Promise<Message>;
+	getMessagesByUserId(
+		userId: string,
+		limit?: number,
+		offset?: number,
+	): Promise<Message[]>;
+	getUnreadMessageCount(userId: string): Promise<number>;
+	markMessageAsRead(messageId: string): Promise<Message | null>;
+	markMessageAsUnread(messageId: string): Promise<Message | null>;
+	markAllMessagesAsRead(userId: string): Promise<number>;
 }

@@ -15,6 +15,20 @@
 			"when": 1769472000000,
 			"tag": "0001_add_user_languages",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1738195200000,
+			"tag": "0002_add_created_by_to_transactions_purchases",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1738281600000,
+			"tag": "0003_add_messages_table",
+			"breakpoints": true
 		}
 	]
 }

@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { and, eq, isNull, notInArray, or } from "drizzle-orm";
+import { and, desc, eq, isNull, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
@@ -8,7 +8,10 @@ import {
 	type InventoryItemTransaction,
 	inventoryItems,
 	inventoryItemTransactions,
+	type Message,
+	messages,
 	type NewInventoryItem,
+	type NewMessage,
 	type NewPurchase,
 	type NewRole,
 	type NewSocialLink,
@@ -803,5 +806,70 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(appSettings.key, key))
 			.returning();
 		return result.length > 0;
+	}
+
+	// ==================== Message Methods ====================
+	async createMessage(message: NewMessage): Promise<Message> {
+		const result = await this.db
+			.insert(messages)
+			.values(message)
+			.returning();
+		return result[0];
+	}
+
+	async getMessagesByUserId(
+		userId: string,
+		limit?: number,
+		offset?: number,
+	): Promise<Message[]> {
+		let query = this.db
+			.select()
+			.from(messages)
+			.where(eq(messages.userId, userId))
+			.orderBy(desc(messages.createdAt));
+
+		if (limit !== undefined) {
+			query = query.limit(limit);
+		}
+		if (offset !== undefined) {
+			query = query.offset(offset);
+		}
+
+		return query;
+	}
+
+	async getUnreadMessageCount(userId: string): Promise<number> {
+		const result = await this.db
+			.select()
+			.from(messages)
+			.where(and(eq(messages.userId, userId), eq(messages.read, false)));
+		return result.length;
+	}
+
+	async markMessageAsRead(messageId: string): Promise<Message | null> {
+		const result = await this.db
+			.update(messages)
+			.set({ read: true, readAt: new Date(), updatedAt: new Date() })
+			.where(eq(messages.id, messageId))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async markMessageAsUnread(messageId: string): Promise<Message | null> {
+		const result = await this.db
+			.update(messages)
+			.set({ read: false, readAt: null, updatedAt: new Date() })
+			.where(eq(messages.id, messageId))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async markAllMessagesAsRead(userId: string): Promise<number> {
+		const result = await this.db
+			.update(messages)
+			.set({ read: true, readAt: new Date(), updatedAt: new Date() })
+			.where(and(eq(messages.userId, userId), eq(messages.read, false)))
+			.returning();
+		return result.length;
 	}
 }
