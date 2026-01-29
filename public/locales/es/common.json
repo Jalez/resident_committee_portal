@@ -13,6 +13,7 @@
 		"settings": "Ajustes",
 		"profile": "Perfil",
 		"edit_profile": "Editar perfil",
+		"messages": "Mensajes",
 		"log_out": "Cerrar sesión",
 		"users": "Usuarios",
 		"roles": "Roles",
@@ -68,6 +69,148 @@
 			"attached": "adjunto",
 			"not_specified": "No especificado",
 			"reply_instruction": "Responda a este correo para aprobar o rechazar la solicitud."
+		},
+		"reimbursement_status": {
+			"approved": {
+				"subject": "Solicitud de reembolso aprobada",
+				"title": "Solicitud de reembolso aprobada",
+				"message": "Su solicitud de reembolso ha sido aprobada."
+			},
+			"declined": {
+				"subject": "Solicitud de reembolso rechazada",
+				"title": "Solicitud de reembolso rechazada",
+				"message": "Su solicitud de reembolso ha sido rechazada."
+			},
+			"status": "Estado",
+			"view_details": "Ver detalles"
+		}
+	},
+	"messages": {
+		"title": "Mensajes",
+		"empty": "Aún no hay mensajes nuevos",
+		"date": "Fecha",
+		"content": "Contenido",
+		"mark_as_read": "Marcar como leído",
+		"mark_all_read": "Marcar todos como leídos",
+		"marked_as_read": "Mensaje marcado como leído",
+		"view": "Ver",
+		"view_purchase": "Ver solicitud de reembolso",
+		"unread_count": "{{count}} no leídos",
+		"reimbursement_approved": {
+			"title": "Solicitud de reembolso aprobada",
+			"content": "Su solicitud de reembolso para {description} ({amount} €) ha sido aprobada."
+		},
+		"reimbursement_declined": {
+			"title": "Solicitud de reembolso rechazada",
+			"content": "Su solicitud de reembolso para {description} ({amount} €) ha sido rechazada."
+		},
+		"unknown_item": "Artículo desconocido",
+		"see_all": "Ver todos los mensajes",
+		"select_all": "Seleccionar todo",
+		"selected_count": "{{count}} seleccionados",
+		"mark_selected_read": "Marcar seleccionados como leídos",
+		"mark_selected_unread": "Marcar seleccionados como no leídos",
+		"clear_selection": "Limpiar selección"
+	},
+	"permissions": {
+		"users": {
+			"read": "Ver lista de usuarios",
+			"write": "Crear y actualizar usuarios",
+			"delete": "Eliminar usuarios",
+			"manage_roles": "Asignar roles a usuarios"
+		},
+		"inventory": {
+			"read": "Ver elementos de inventario",
+			"write": "Crear y editar elementos de inventario",
+			"delete": "Eliminar elementos de inventario",
+			"export": "Exportar inventario a CSV",
+			"import": "Importar inventario desde archivo"
+		},
+		"treasury": {
+			"read": "Ver resumen de tesorería",
+			"export": "Exportar datos de tesorería a CSV",
+			"import": "Importar datos de tesorería desde archivo"
+		},
+		"treasury_breakdown": {
+			"read": "Ver desglose de tesorería"
+		},
+		"transactions": {
+			"read": "Ver lista de transacciones",
+			"write": "Crear transacciones",
+			"update": "Editar transacciones",
+			"delete": "Eliminar transacciones",
+			"update-self": "Editar propias transacciones",
+			"delete-self": "Eliminar propias transacciones"
+		},
+		"reimbursements": {
+			"read": "Ver solicitudes de reembolso",
+			"write": "Crear solicitudes de reembolso",
+			"update": "Actualizar y aprobar/rechazar reembolsos",
+			"delete": "Eliminar solicitudes de reembolso",
+			"update-self": "Editar propias solicitudes de reembolso",
+			"delete-self": "Eliminar propias solicitudes de reembolso"
+		},
+		"purchases": {
+			"read": "Ver todas las solicitudes de compra",
+			"manage": "Actualizar estado de compra",
+			"delete": "Eliminar solicitudes de compra"
+		},
+		"submissions": {
+			"read": "Ver envíos de formularios de contacto",
+			"write": "Actualizar estado de envío",
+			"delete": "Eliminar envíos"
+		},
+		"social": {
+			"read": "Ver enlaces sociales",
+			"write": "Crear y editar enlaces sociales",
+			"delete": "Eliminar enlaces sociales"
+		},
+		"minutes": {
+			"read": "Ver y descargar actas",
+			"guide": "Ver guía de convenciones de nomenclatura"
+		},
+		"events": {
+			"read": "Ver eventos del calendario"
+		},
+		"forms": {
+			"read": "Ver respuestas de formularios y análisis",
+			"export": "Exportar datos de formularios a CSV"
+		},
+		"profile": {
+			"read": {
+				"own": "Ver propio perfil"
+			},
+			"write": {
+				"own": "Editar propio perfil"
+			}
+		},
+		"roles": {
+			"read": "Ver roles y permisos",
+			"write": "Crear y editar roles",
+			"delete": "Eliminar roles"
+		},
+		"settings": {
+			"general": "Acceso a configuración general",
+			"users": "Acceso a configuración de gestión de usuarios",
+			"roles": "Acceso a configuración de gestión de roles",
+			"reimbursements": "Acceso a configuración de reembolsos (IA, palabras clave)",
+			"analytics": "Acceso a configuración de análisis (modelos de IA)"
+		},
+		"categories": {
+			"Users": "Usuarios",
+			"Inventory": "Inventario",
+			"Treasury": "Tesorería",
+			"Transactions": "Transacciones",
+			"Reimbursements": "Reembolsos",
+			"Purchases": "Compras",
+			"Submissions": "Envíos",
+			"Social": "Social",
+			"Minutes": "Actas",
+			"Events": "Eventos",
+			"Forms": "Formularios",
+			"Profile": "Perfil",
+			"Roles": "Roles",
+			"Settings": "Configuración"
 		}
 	}
 }

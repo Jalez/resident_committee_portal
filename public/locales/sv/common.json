@@ -13,6 +13,7 @@
 		"settings": "Inställningar",
 		"profile": "Profil",
 		"edit_profile": "Redigera profil",
+		"messages": "Meddelanden",
 		"log_out": "Logga ut",
 		"users": "Användare",
 		"roles": "Roller",
@@ -98,6 +99,10 @@
 			"header": "Ny transaktion",
 			"details_header": "Transaktionsdetaljer",
 			"inventory_desc": "Välj från listan eller lägg till ny. Valda artiklar läggs till i den nya transaktionen.",
+			"items_selected": "{{count}} artiklar valda",
+			"total": "Totalt",
+			"select_items": "Välj artiklar",
+			"edit_selection": "Redigera val",
 			"request_reimbursement": "Begär ersättning",
 			"reimbursement_help": "Markera om du vill begära ersättning från kassan.",
 			"submit": "Lägg till",
@@ -140,6 +145,8 @@
 			"description": "Beskrivning",
 			"purchaser": "Inköpare",
 			"amount": "Belopp",
+			"transaction": "Transaktion",
+			"view_transaction": "Visa transaktion",
 			"email_sent": "E-post skickad",
 			"reply_received": "Svar mottaget",
 			"delete_confirm": "Är du säker på att du vill ta bort detta utlägg?",
@@ -151,6 +158,15 @@
 				"approved": "Godkänd",
 				"reimbursed": "Utbetald",
 				"rejected": "Avvisad"
+			},
+			"edit": {
+				"title": "Redigera utlägg",
+				"reimbursement_details": "Utläggsdetaljer",
+				"resend_reimbursement_request": "Skicka utläggsförfrågan igen",
+				"resend_reimbursement_request_help": "Markera detta för att skicka utläggsförfrågans e-post igen med uppdaterad information.",
+				"cancel": "Avbryt",
+				"save": "Spara",
+				"error": "Ett fel uppstod"
 			}
 		},
 		"new_reimbursement": {
@@ -194,9 +210,16 @@
 			"description": "Beskrivning",
 			"category": "Kategori",
 			"status": "Status",
+			"reimbursement_status": "Ersättningsstatus",
 			"amount": "Belopp",
 			"public_info": "Detta är offentlig information",
 			"export": "Exportera CSV",
+			"statuses": {
+				"complete": "Klar",
+				"pending": "Väntande",
+				"paused": "Pausad",
+				"declined": "Avvisad"
+			},
 			"edit": {
 				"title": "Redigera transaktion",
 				"subtitle": "Redigera transaktion",
@@ -631,6 +654,148 @@
 			"attached": "bifogad",
 			"not_specified": "Ej specificerat",
 			"reply_instruction": "Svara på detta e-postmeddelande för att godkänna eller avvisa begäran."
+		},
+		"reimbursement_status": {
+			"approved": {
+				"subject": "Ersättningsansökan godkänd",
+				"title": "Ersättningsansökan godkänd",
+				"message": "Din ersättningsansökan har godkänts."
+			},
+			"declined": {
+				"subject": "Ersättningsansökan avvisad",
+				"title": "Ersättningsansökan avvisad",
+				"message": "Din ersättningsansökan har avvisats."
+			},
+			"status": "Status",
+			"view_details": "Visa detaljer"
+		}
+	},
+	"messages": {
+		"title": "Meddelanden",
+		"empty": "Inga nya meddelanden ännu",
+		"date": "Datum",
+		"content": "Innehåll",
+		"mark_as_read": "Markera som läst",
+		"mark_all_read": "Markera alla som lästa",
+		"marked_as_read": "Meddelande markerat som läst",
+		"view": "Visa",
+		"view_purchase": "Visa ersättningsansökan",
+		"unread_count": "{{count}} olästa",
+		"reimbursement_approved": {
+			"title": "Ersättningsansökan godkänd",
+			"content": "Din ersättningsansökan för {description} ({amount} €) har godkänts."
+		},
+		"reimbursement_declined": {
+			"title": "Ersättningsansökan avvisad",
+			"content": "Din ersättningsansökan för {description} ({amount} €) har avvisats."
+		},
+		"unknown_item": "Okänt objekt",
+		"see_all": "Visa alla meddelanden",
+		"select_all": "Välj alla",
+		"selected_count": "{{count}} valda",
+		"mark_selected_read": "Markera valda som lästa",
+		"mark_selected_unread": "Markera valda som olästa",
+		"clear_selection": "Rensa val"
+	},
+	"permissions": {
+		"users": {
+			"read": "Visa användarlista",
+			"write": "Skapa och uppdatera användare",
+			"delete": "Ta bort användare",
+			"manage_roles": "Tilldela roller till användare"
+		},
+		"inventory": {
+			"read": "Visa inventarieobjekt",
+			"write": "Skapa och redigera inventarieobjekt",
+			"delete": "Ta bort inventarieobjekt",
+			"export": "Exportera inventarie till CSV",
+			"import": "Importera inventarie från fil"
+		},
+		"treasury": {
+			"read": "Visa kassaöversikt",
+			"export": "Exportera kassadata till CSV",
+			"import": "Importera kassadata från fil"
+		},
+		"treasury_breakdown": {
+			"read": "Visa kassaavdelning"
+		},
+		"transactions": {
+			"read": "Visa transaktionslista",
+			"write": "Skapa transaktioner",
+			"update": "Redigera transaktioner",
+			"delete": "Ta bort transaktioner",
+			"update-self": "Redigera egna transaktioner",
+			"delete-self": "Ta bort egna transaktioner"
+		},
+		"reimbursements": {
+			"read": "Visa ersättningsförfrågningar",
+			"write": "Skapa ersättningsförfrågningar",
+			"update": "Uppdatera och godkänna/avvisa ersättningar",
+			"delete": "Ta bort ersättningsförfrågningar",
+			"update-self": "Redigera egna ersättningsförfrågningar",
+			"delete-self": "Ta bort egna ersättningsförfrågningar"
+		},
+		"purchases": {
+			"read": "Visa alla köpförfrågningar",
+			"manage": "Uppdatera köpstatus",
+			"delete": "Ta bort köpförfrågningar"
+		},
+		"submissions": {
+			"read": "Visa kontaktformulär",
+			"write": "Uppdatera inlämningsstatus",
+			"delete": "Ta bort inlämningar"
+		},
+		"social": {
+			"read": "Visa sociala länkar",
+			"write": "Skapa och redigera sociala länkar",
+			"delete": "Ta bort sociala länkar"
+		},
+		"minutes": {
+			"read": "Visa och ladda ner protokoll",
+			"guide": "Visa namngivningskonventionsguide"
+		},
+		"events": {
+			"read": "Visa kalenderhändelser"
+		},
+		"forms": {
+			"read": "Visa formulärsvar och analys",
+			"export": "Exportera formulärdata till CSV"
+		},
+		"profile": {
+			"read": {
+				"own": "Visa egen profil"
+			},
+			"write": {
+				"own": "Redigera egen profil"
+			}
+		},
+		"roles": {
+			"read": "Visa roller och behörigheter",
+			"write": "Skapa och redigera roller",
+			"delete": "Ta bort roller"
+		},
+		"settings": {
+			"general": "Åtkomst till allmänna inställningar",
+			"users": "Åtkomst till användarhanteringsinställningar",
+			"roles": "Åtkomst till rollhanteringsinställningar",
+			"reimbursements": "Åtkomst till ersättningsinställningar (AI, nyckelord)",
+			"analytics": "Åtkomst till analysinställningar (AI-modeller)"
+		},
+		"categories": {
+			"Users": "Användare",
+			"Inventory": "Inventarie",
+			"Treasury": "Kassa",
+			"Transactions": "Transaktioner",
+			"Reimbursements": "Ersättningar",
+			"Purchases": "Köp",
+			"Submissions": "Inlämningar",
+			"Social": "Social",
+			"Minutes": "Protokoll",
+			"Events": "Händelser",
+			"Forms": "Formulär",
+			"Profile": "Profil",
+			"Roles": "Roller",
+			"Settings": "Inställningar"
 		}
 	}
 }

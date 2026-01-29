@@ -7,12 +7,13 @@
 		"open_setup": "Open Setup Guide",
 		"copy_env": "Or copy .env.template to .env and configure your settings."
 	},
-	"nav": {
+		"nav": {
 		"menu": "Menu",
 		"navigation": "Navigation",
 		"settings": "Settings",
 		"profile": "Profile",
 		"edit_profile": "Edit profile",
+		"messages": "Messages",
 		"log_out": "Log out",
 		"users": "Users",
 		"roles": "Roles",
@@ -98,6 +99,10 @@
 			"inventory_title": "Add to Inventory",
 			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
 			"inventory_empty": "No items selected.",
+			"items_selected": "{{count}} items selected",
+			"total": "Total",
+			"select_items": "Select Items",
+			"edit_selection": "Edit Selection",
 			"request_reimbursement": "Create Reimbursement Request",
 			"reimbursement_help": "Check if you want to request reimbursement from the allowance.",
 			"link_existing_reimbursement": "Link to Existing Reimbursement",
@@ -159,6 +164,8 @@
 			"description": "Description",
 			"purchaser": "Purchaser",
 			"amount": "Amount",
+			"transaction": "Transaction",
+			"view_transaction": "View Transaction",
 			"email_sent": "Email Sent",
 			"reply_received": "Reply Received",
 			"delete_confirm": "Are you sure you want to delete this reimbursement?",
@@ -171,6 +178,18 @@
 				"approved": "Approved",
 				"reimbursed": "Paid",
 				"rejected": "Rejected"
+			},
+			"view": {
+				"title": "View Reimbursement"
+			},
+			"edit": {
+				"title": "Edit Reimbursement",
+				"reimbursement_details": "Reimbursement Details",
+				"resend_reimbursement_request": "Resend Reimbursement Request",
+				"resend_reimbursement_request_help": "Check this to resend the reimbursement request email with updated information.",
+				"cancel": "Cancel",
+				"save": "Save",
+				"error": "An error occurred"
 			}
 		},
 		"new_reimbursement": {
@@ -224,12 +243,22 @@
 			"description": "Description",
 			"category": "Category",
 			"status": "Status",
+			"reimbursement_status": "Reimbursement Status",
 			"amount": "Amount",
 			"public_info": "This is public information",
 			"export": "Export CSV",
 			"import": "Import CSV",
 			"import_success": "Imported {{count}} transactions",
 			"import_error": "Import failed",
+			"statuses": {
+				"complete": "Complete",
+				"pending": "Pending",
+				"paused": "Paused",
+				"declined": "Declined"
+			},
+			"view": {
+				"title": "View Transaction"
+			},
 			"edit": {
 				"title": "Edit Transaction",
 				"subtitle": "Edit Transaction",
@@ -662,6 +691,148 @@
 			"attached": "attached",
 			"not_specified": "Not specified",
 			"reply_instruction": "Reply to this email to approve or reject the request."
+		},
+		"reimbursement_status": {
+			"approved": {
+				"subject": "Reimbursement Request Approved",
+				"title": "Reimbursement Approved",
+				"message": "Your reimbursement request has been approved."
+			},
+			"declined": {
+				"subject": "Reimbursement Request Declined",
+				"title": "Reimbursement Declined",
+				"message": "Your reimbursement request has been declined."
+			},
+			"status": "Status",
+			"view_details": "View Details"
+		}
+	},
+	"messages": {
+		"title": "Messages",
+		"empty": "No new messages yet",
+		"date": "Date",
+		"content": "Content",
+		"mark_as_read": "Mark as read",
+		"mark_all_read": "Mark all as read",
+		"marked_as_read": "Message marked as read",
+		"view": "View",
+		"view_purchase": "View Purchase",
+		"unread_count": "{{count}} unread",
+		"reimbursement_approved": {
+			"title": "Reimbursement Approved",
+			"content": "Your reimbursement request for {description} ({amount} €) has been approved."
+		},
+		"reimbursement_declined": {
+			"title": "Reimbursement Declined",
+			"content": "Your reimbursement request for {description} ({amount} €) has been declined."
+		},
+		"unknown_item": "Unknown item",
+		"see_all": "See all messages",
+		"select_all": "Select all",
+		"selected_count": "{{count}} selected",
+		"mark_selected_read": "Mark selected as read",
+		"mark_selected_unread": "Mark selected as unread",
+		"clear_selection": "Clear selection"
+	},
+	"permissions": {
+		"users": {
+			"read": "View user list",
+			"write": "Create and update users",
+			"delete": "Delete users",
+			"manage_roles": "Assign roles to users"
+		},
+		"inventory": {
+			"read": "View inventory items",
+			"write": "Create and edit inventory items",
+			"delete": "Delete inventory items",
+			"export": "Export inventory to CSV",
+			"import": "Import inventory from file"
+		},
+		"treasury": {
+			"read": "View treasury overview",
+			"export": "Export treasury data to CSV",
+			"import": "Import treasury data from file"
+		},
+		"treasury_breakdown": {
+			"read": "View treasury breakdown"
+		},
+		"transactions": {
+			"read": "View transaction list",
+			"write": "Create transactions",
+			"update": "Edit transactions",
+			"delete": "Delete transactions",
+			"update-self": "Edit own transactions",
+			"delete-self": "Delete own transactions"
+		},
+		"reimbursements": {
+			"read": "View reimbursement requests",
+			"write": "Create reimbursement requests",
+			"update": "Update and approve/reject reimbursements",
+			"delete": "Delete reimbursement requests",
+			"update-self": "Edit own reimbursement requests",
+			"delete-self": "Delete own reimbursement requests"
+		},
+		"purchases": {
+			"read": "View all purchase requests",
+			"manage": "Update purchase status",
+			"delete": "Delete purchase requests"
+		},
+		"submissions": {
+			"read": "View contact form submissions",
+			"write": "Update submission status",
+			"delete": "Delete submissions"
+		},
+		"social": {
+			"read": "View social links",
+			"write": "Create and edit social links",
+			"delete": "Delete social links"
+		},
+		"minutes": {
+			"read": "View and download minutes",
+			"guide": "View naming convention guide"
+		},
+		"events": {
+			"read": "View calendar events"
+		},
+		"forms": {
+			"read": "View form responses and analytics",
+			"export": "Export form data to CSV"
+		},
+		"profile": {
+			"read": {
+				"own": "View own profile"
+			},
+			"write": {
+				"own": "Edit own profile"
+			}
+		},
+		"roles": {
+			"read": "View roles and permissions",
+			"write": "Create and edit roles",
+			"delete": "Delete roles"
+		},
+		"settings": {
+			"general": "Access general settings",
+			"users": "Access user management settings",
+			"roles": "Access role management settings",
+			"reimbursements": "Access reimbursement settings (AI, keywords)",
+			"analytics": "Access analytics settings (AI models)"
+		},
+		"categories": {
+			"Users": "Users",
+			"Inventory": "Inventory",
+			"Treasury": "Treasury",
+			"Transactions": "Transactions",
+			"Reimbursements": "Reimbursements",
+			"Purchases": "Purchases",
+			"Submissions": "Submissions",
+			"Social": "Social",
+			"Minutes": "Minutes",
+			"Events": "Events",
+			"Forms": "Forms",
+			"Profile": "Profile",
+			"Roles": "Roles",
+			"Settings": "Settings"
 		}
 	}
 }

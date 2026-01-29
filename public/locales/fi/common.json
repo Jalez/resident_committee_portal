@@ -13,6 +13,7 @@
 		"settings": "Asetukset",
 		"profile": "Profiili",
 		"edit_profile": "Muokkaa profiilia",
+		"messages": "Viestit",
 		"log_out": "Kirjaudu ulos",
 		"users": "Käyttäjät",
 		"roles": "Roolit",
@@ -100,6 +101,10 @@
 			"header": "Uusi transaktio",
 			"details_header": "Transaktion tiedot",
 			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
+			"items_selected": "{{count}} tavaraa valittu",
+			"total": "Yhteensä",
+			"select_items": "Valitse tavarat",
+			"edit_selection": "Muokkaa valintaa",
 			"request_reimbursement": "Tee kulukorvaushakemus",
 			"reimbursement_help": "Valitse jos haluat hakea kulukorvausta tästä menosta määrärahasta.",
 			"link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
@@ -157,6 +162,8 @@
 			"description": "Kuvaus",
 			"purchaser": "Ostaja",
 			"amount": "Summa",
+			"transaction": "Tapahtuma",
+			"view_transaction": "Näytä tapahtuma",
 			"email_sent": "Sähköposti lähetetty",
 			"reply_received": "Vastaus vastaanotettu",
 			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
@@ -169,6 +176,18 @@
 				"approved": "Hyväksytty",
 				"reimbursed": "Maksettu",
 				"rejected": "Hylätty"
+			},
+			"view": {
+				"title": "Näytä kulukorvaus"
+			},
+			"edit": {
+				"title": "Muokkaa kulukorvausta",
+				"reimbursement_details": "Kulukorvauksen tiedot",
+				"resend_reimbursement_request": "Lähetä kulukorvauspyyntö uudelleen",
+				"resend_reimbursement_request_help": "Valitse tämä lähettääksesi kulukorvauspyynnön sähköpostin uudelleen päivitettyjen tietojen kanssa.",
+				"cancel": "Peruuta",
+				"save": "Tallenna",
+				"error": "Tapahtui virhe"
 			}
 		},
 		"new_reimbursement": {
@@ -199,16 +218,16 @@
 			"email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
 			"location_placeholder": "Esim. Kerhohuone",
 			"category_placeholder": "Esim. Keittiö",
-			"link_existing_transaction": "Liitä olemassa olevaan tapahtumaan",
-			"link_existing_transaction_help": "Valitse olemassa oleva menontapahtuma, johon tämä kulukorvaus liitetään.",
-			"select_transaction_placeholder": "Valitse tapahtuma...",
-			"create_new": "Luo uusi tapahtuma",
-			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun tapahtumaan. Tapahtuman tietoja käytetään.",
+			"link_existing_transaction": "Liitä olemassa olevaan transaktioon",
+			"link_existing_transaction_help": "Valitse olemassa oleva transaktio, johon tämä kulukorvaus liitetään.",
+			"select_transaction_placeholder": "Valitse transaktio...",
+			"create_new": "Luo uusi transaktio",
+			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
 			"reimbursement_details": "Kulukorvauksen tiedot",
-			"transaction_section_title": "Tapahtuma",
-			"create_transaction": "Luo myös tapahtumakirjaus",
-			"create_transaction_help": "Valitse tämä luodaksesi menokirjauksen tälle kulukorvaukselle.",
-			"no_link": "Älä liitä olemassa olevaan tapahtumaan"
+			"transaction_section_title": "Transaktio",
+			"create_transaction": "Luo myös transaktiokirjaus",
+			"create_transaction_help": "Valitse tämä luodaksesi transaktiokirjauksen tälle kulukorvaukselle.",
+			"no_link": "Älä liitä olemassa olevaan transaktioon"
 		},
 		"breakdown": {
 			"title": "Rahastoerittely",
@@ -222,12 +241,22 @@
 			"description": "Kuvaus",
 			"category": "Kategoria",
 			"status": "Tila",
+			"reimbursement_status": "Kulukorvauksen tila",
 			"amount": "Summa",
 			"public_info": "Tämä on julkista tietoa",
 			"export": "Lataa CSV",
 			"import": "Tuo CSV",
 			"import_success": "Tuotu {{count}} tapahtumaa",
 			"import_error": "Tuonti epäonnistui",
+			"statuses": {
+				"complete": "Valmis",
+				"pending": "Odottaa",
+				"paused": "Keskeytetty",
+				"declined": "Hylätty"
+			},
+			"view": {
+				"title": "Näytä tapahtuma"
+			},
 			"edit": {
 				"title": "Muokkaa tapahtumaa",
 				"subtitle": "Edit Transaction",
@@ -662,6 +691,148 @@
 			"attached": "liitteenä",
 			"not_specified": "Ei määritetty",
 			"reply_instruction": "Vastaa tähän viestiin hyväksyäksesi tai hylätäksesi pyynnön."
+		},
+		"reimbursement_status": {
+			"approved": {
+				"subject": "Korvausvaatimus hyväksytty",
+				"title": "Korvausvaatimus hyväksytty",
+				"message": "Korvausvaatimuksesi on hyväksytty."
+			},
+			"declined": {
+				"subject": "Korvausvaatimus hylätty",
+				"title": "Korvausvaatimus hylätty",
+				"message": "Korvausvaatimuksesi on hylätty."
+			},
+			"status": "Tila",
+			"view_details": "Näytä tiedot"
+		}
+	},
+	"messages": {
+		"title": "Viestit",
+		"empty": "Ei uusia viestejä vielä",
+		"date": "Päivämäärä",
+		"content": "Sisältö",
+		"mark_as_read": "Merkitse luetuksi",
+		"mark_all_read": "Merkitse kaikki luetuksi",
+		"marked_as_read": "Viesti merkitty luetuksi",
+		"view": "Näytä",
+		"view_purchase": "Näytä korvausvaatimus",
+		"unread_count": "{{count}} lukematonta",
+		"reimbursement_approved": {
+			"title": "Korvausvaatimus hyväksytty",
+			"content": "Korvausvaatimuksesi kohteesta {description} ({amount} €) on hyväksytty."
+		},
+		"reimbursement_declined": {
+			"title": "Korvausvaatimus hylätty",
+			"content": "Korvausvaatimuksesi kohteesta {description} ({amount} €) on hylätty."
+		},
+		"unknown_item": "Tuntematon tavara",
+		"see_all": "Näytä kaikki viestit",
+		"select_all": "Valitse kaikki",
+		"selected_count": "{{count}} valittu",
+		"mark_selected_read": "Merkitse valitut luetuksi",
+		"mark_selected_unread": "Merkitse valitut lukemattomiksi",
+		"clear_selection": "Tyhjennä valinta"
+	},
+	"permissions": {
+		"users": {
+			"read": "Näytä käyttäjälista",
+			"write": "Luo ja muokkaa käyttäjiä",
+			"delete": "Poista käyttäjiä",
+			"manage_roles": "Määritä rooleja käyttäjille"
+		},
+		"inventory": {
+			"read": "Näytä inventaariotavarat",
+			"write": "Luo ja muokkaa inventaariotavaroita",
+			"delete": "Poista inventaariotavaroita",
+			"export": "Vie inventaario CSV-tiedostoon",
+			"import": "Tuo inventaario tiedostosta"
+		},
+		"treasury": {
+			"read": "Näytä kassan yleiskuva",
+			"export": "Vie kassatiedot CSV-tiedostoon",
+			"import": "Tuo kassatiedot tiedostosta"
+		},
+		"treasury_breakdown": {
+			"read": "Näytä kassan erittely"
+		},
+		"transactions": {
+			"read": "Näytä tapahtumalista",
+			"write": "Luo tapahtumia",
+			"update": "Muokkaa tapahtumia",
+			"delete": "Poista tapahtumia",
+			"update-self": "Muokkaa omia tapahtumia",
+			"delete-self": "Poista omia tapahtumia"
+		},
+		"reimbursements": {
+			"read": "Näytä korvausvaatimukset",
+			"write": "Luo korvausvaatimuksia",
+			"update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
+			"delete": "Poista korvausvaatimuksia",
+			"update-self": "Muokkaa omia korvausvaatimuksia",
+			"delete-self": "Poista omia korvausvaatimuksia"
+		},
+		"purchases": {
+			"read": "Näytä kaikki ostopyynnöt",
+			"manage": "Päivitä ostopyynnön tila",
+			"delete": "Poista ostopyyntöjä"
+		},
+		"submissions": {
+			"read": "Näytä yhteydenottolomakkeet",
+			"write": "Päivitä yhteydenoton tila",
+			"delete": "Poista yhteydenottoja"
+		},
+		"social": {
+			"read": "Näytä some-linkit",
+			"write": "Luo ja muokkaa some-linkkejä",
+			"delete": "Poista some-linkkejä"
+		},
+		"minutes": {
+			"read": "Näytä ja lataa pöytäkirjat",
+			"guide": "Näytä nimeämiskäytäntöohje"
+		},
+		"events": {
+			"read": "Näytä kalenteritapahtumat"
+		},
+		"forms": {
+			"read": "Näytä lomaketiedot ja analytiikka",
+			"export": "Vie lomaketiedot CSV-tiedostoon"
+		},
+		"profile": {
+			"read": {
+				"own": "Näytä oma profiili"
+			},
+			"write": {
+				"own": "Muokkaa omaa profiilia"
+			}
+		},
+		"roles": {
+			"read": "Näytä roolit ja oikeudet",
+			"write": "Luo ja muokkaa rooleja",
+			"delete": "Poista rooleja"
+		},
+		"settings": {
+			"general": "Pääsy yleisiin asetuksiin",
+			"users": "Pääsy käyttäjähallinnan asetuksiin",
+			"roles": "Pääsy roolihallinnan asetuksiin",
+			"reimbursements": "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
+			"analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)"
+		},
+		"categories": {
+			"Users": "Käyttäjät",
+			"Inventory": "Inventaario",
+			"Treasury": "Kassa",
+			"Transactions": "Tapahtumat",
+			"Reimbursements": "Kulukorvaukset",
+			"Purchases": "Ostot",
+			"Submissions": "Yhteydenotot",
+			"Social": "Sosiaalinen",
+			"Minutes": "Pöytäkirjat",
+			"Events": "Tapahtumat",
+			"Forms": "Lomakkeet",
+			"Profile": "Profiili",
+			"Roles": "Roolit",
+			"Settings": "Asetukset"
 		}
 	}
 }

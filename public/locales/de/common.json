@@ -13,6 +13,7 @@
 		"settings": "Einstellungen",
 		"profile": "Profil",
 		"edit_profile": "Profil bearbeiten",
+		"messages": "Nachrichten",
 		"log_out": "Abmelden",
 		"users": "Benutzer",
 		"roles": "Rollen",
@@ -104,6 +105,148 @@
 			"attached": "angehängt",
 			"not_specified": "Nicht angegeben",
 			"reply_instruction": "Antworten Sie auf diese E-Mail, um den Antrag zu genehmigen oder abzulehnen."
+		},
+		"reimbursement_status": {
+			"approved": {
+				"subject": "Erstattungsantrag genehmigt",
+				"title": "Erstattungsantrag genehmigt",
+				"message": "Ihr Erstattungsantrag wurde genehmigt."
+			},
+			"declined": {
+				"subject": "Erstattungsantrag abgelehnt",
+				"title": "Erstattungsantrag abgelehnt",
+				"message": "Ihr Erstattungsantrag wurde abgelehnt."
+			},
+			"status": "Status",
+			"view_details": "Details anzeigen"
+		}
+	},
+	"messages": {
+		"title": "Nachrichten",
+		"empty": "Noch keine neuen Nachrichten",
+		"date": "Datum",
+		"content": "Inhalt",
+		"mark_as_read": "Als gelesen markieren",
+		"mark_all_read": "Alle als gelesen markieren",
+		"marked_as_read": "Nachricht als gelesen markiert",
+		"view": "Anzeigen",
+		"view_purchase": "Erstattungsantrag anzeigen",
+		"unread_count": "{{count}} ungelesen",
+		"reimbursement_approved": {
+			"title": "Erstattungsantrag genehmigt",
+			"content": "Ihr Erstattungsantrag für {description} ({amount} €) wurde genehmigt."
+		},
+		"reimbursement_declined": {
+			"title": "Erstattungsantrag abgelehnt",
+			"content": "Ihr Erstattungsantrag für {description} ({amount} €) wurde abgelehnt."
+		},
+		"unknown_item": "Unbekannter Artikel",
+		"see_all": "Alle Nachrichten anzeigen",
+		"select_all": "Alle auswählen",
+		"selected_count": "{{count}} ausgewählt",
+		"mark_selected_read": "Ausgewählte als gelesen markieren",
+		"mark_selected_unread": "Ausgewählte als ungelesen markieren",
+		"clear_selection": "Auswahl löschen"
+	},
+	"permissions": {
+		"users": {
+			"read": "Benutzerliste anzeigen",
+			"write": "Benutzer erstellen und aktualisieren",
+			"delete": "Benutzer löschen",
+			"manage_roles": "Rollen Benutzern zuweisen"
+		},
+		"inventory": {
+			"read": "Inventargegenstände anzeigen",
+			"write": "Inventargegenstände erstellen und bearbeiten",
+			"delete": "Inventargegenstände löschen",
+			"export": "Inventar nach CSV exportieren",
+			"import": "Inventar aus Datei importieren"
+		},
+		"treasury": {
+			"read": "Kassenübersicht anzeigen",
+			"export": "Kassendaten nach CSV exportieren",
+			"import": "Kassendaten aus Datei importieren"
+		},
+		"treasury_breakdown": {
+			"read": "Kassenaufschlüsselung anzeigen"
+		},
+		"transactions": {
+			"read": "Transaktionsliste anzeigen",
+			"write": "Transaktionen erstellen",
+			"update": "Transaktionen bearbeiten",
+			"delete": "Transaktionen löschen",
+			"update-self": "Eigene Transaktionen bearbeiten",
+			"delete-self": "Eigene Transaktionen löschen"
+		},
+		"reimbursements": {
+			"read": "Erstattungsanträge anzeigen",
+			"write": "Erstattungsanträge erstellen",
+			"update": "Erstattungen aktualisieren und genehmigen/ablehnen",
+			"delete": "Erstattungsanträge löschen",
+			"update-self": "Eigene Erstattungsanträge bearbeiten",
+			"delete-self": "Eigene Erstattungsanträge löschen"
+		},
+		"purchases": {
+			"read": "Alle Kaufanfragen anzeigen",
+			"manage": "Kaufstatus aktualisieren",
+			"delete": "Kaufanfragen löschen"
+		},
+		"submissions": {
+			"read": "Kontaktformularübermittlungen anzeigen",
+			"write": "Übermittlungsstatus aktualisieren",
+			"delete": "Übermittlungen löschen"
+		},
+		"social": {
+			"read": "Soziale Links anzeigen",
+			"write": "Soziale Links erstellen und bearbeiten",
+			"delete": "Soziale Links löschen"
+		},
+		"minutes": {
+			"read": "Protokolle anzeigen und herunterladen",
+			"guide": "Namenskonventionsleitfaden anzeigen"
+		},
+		"events": {
+			"read": "Kalenderereignisse anzeigen"
+		},
+		"forms": {
+			"read": "Formularantworten und Analysen anzeigen",
+			"export": "Formulardaten nach CSV exportieren"
+		},
+		"profile": {
+			"read": {
+				"own": "Eigenes Profil anzeigen"
+			},
+			"write": {
+				"own": "Eigenes Profil bearbeiten"
+			}
+		},
+		"roles": {
+			"read": "Rollen und Berechtigungen anzeigen",
+			"write": "Rollen erstellen und bearbeiten",
+			"delete": "Rollen löschen"
+		},
+		"settings": {
+			"general": "Zugriff auf allgemeine Einstellungen",
+			"users": "Zugriff auf Benutzerverwaltungseinstellungen",
+			"roles": "Zugriff auf Rollenverwaltungseinstellungen",
+			"reimbursements": "Zugriff auf Erstattungseinstellungen (KI, Schlüsselwörter)",
+			"analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)"
+		},
+		"categories": {
+			"Users": "Benutzer",
+			"Inventory": "Inventar",
+			"Treasury": "Kasse",
+			"Transactions": "Transaktionen",
+			"Reimbursements": "Erstattungen",
+			"Purchases": "Käufe",
+			"Submissions": "Einreichungen",
+			"Social": "Sozial",
+			"Minutes": "Protokolle",
+			"Events": "Veranstaltungen",
+			"Forms": "Formulare",
+			"Profile": "Profil",
+			"Roles": "Rollen",
+			"Settings": "Einstellungen"
 		}
 	}
 }
