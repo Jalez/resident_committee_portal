@@ -1,23 +1,29 @@
-import { and, desc, eq, isNull, notInArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
 	type AppSetting,
 	appSettings,
+	type Faq,
+	faq,
 	type InventoryItem,
 	type InventoryItemTransaction,
 	inventoryItems,
 	inventoryItemTransactions,
 	type Message,
 	messages,
+	type NewFaq,
 	type NewInventoryItem,
 	type NewMessage,
+	type NewNews,
 	type NewPurchase,
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
 	type NewTransaction,
 	type NewUser,
+	type News,
+	news,
 	type Purchase,
 	purchases,
 	type Role,
@@ -746,6 +752,90 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
+	// ==================== News Methods ====================
+	async getNews(): Promise<News[]> {
+		return this.db
+			.select()
+			.from(news)
+			.orderBy(desc(news.createdAt));
+	}
+
+	async getNewsById(id: string): Promise<News | null> {
+		const result = await this.db
+			.select()
+			.from(news)
+			.where(eq(news.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async createNews(item: NewNews): Promise<News> {
+		const result = await this.db.insert(news).values(item).returning();
+		return result[0];
+	}
+
+	async updateNews(
+		id: string,
+		data: Partial<Omit<NewNews, "id">>,
+	): Promise<News | null> {
+		const result = await this.db
+			.update(news)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(news.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deleteNews(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(news)
+			.where(eq(news.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	// ==================== FAQ Methods ====================
+	async getFaqs(): Promise<Faq[]> {
+		return this.db
+			.select()
+			.from(faq)
+			.orderBy(asc(faq.sortOrder), desc(faq.createdAt));
+	}
+
+	async getFaqById(id: string): Promise<Faq | null> {
+		const result = await this.db
+			.select()
+			.from(faq)
+			.where(eq(faq.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async createFaq(item: NewFaq): Promise<Faq> {
+		const result = await this.db.insert(faq).values(item).returning();
+		return result[0];
+	}
+
+	async updateFaq(
+		id: string,
+		data: Partial<Omit<NewFaq, "id">>,
+	): Promise<Faq | null> {
+		const result = await this.db
+			.update(faq)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(faq.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deleteFaq(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(faq)
+			.where(eq(faq.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
 	// ==================== App Settings Methods ====================
 	async getSetting(key: string): Promise<string | null> {
 		const result = await this.db
@@ -807,19 +897,19 @@ export class PostgresAdapter implements DatabaseAdapter {
 		limit?: number,
 		offset?: number,
 	): Promise<Message[]> {
-		let query = this.db
+		const query = this.db
 			.select()
 			.from(messages)
 			.where(eq(messages.userId, userId))
-			.orderBy(desc(messages.createdAt));
+			.orderBy(desc(messages.createdAt))
+			.$dynamic();
 
 		if (limit !== undefined) {
-			query = query.limit(limit);
+			return query.limit(limit).offset(offset ?? 0);
 		}
 		if (offset !== undefined) {
-			query = query.offset(offset);
+			return query.offset(offset);
 		}
-
 		return query;
 	}
 
