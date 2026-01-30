@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { data, Form, redirect } from "react-router";
+import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
+import { Switch } from "~/components/ui/switch";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -41,6 +44,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 			apartmentNumber: user.apartmentNumber,
 			roleName: role?.name || "Unknown",
 			createdAt: user.createdAt,
+			localOllamaEnabled: user.localOllamaEnabled,
+			localOllamaUrl: user.localOllamaUrl,
 		},
 	};
 }
@@ -62,11 +67,15 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const name = formData.get("name") as string;
 	const apartmentNumber = formData.get("apartmentNumber") as string;
+	const localOllamaEnabled = formData.get("localOllamaEnabled") === "true";
+	const localOllamaUrl = (formData.get("localOllamaUrl") as string) || "http://localhost:11434";
 
 	// Update user profile (language is now managed via the navbar language switcher)
 	await db.updateUser(user.id, {
 		name: name || user.name,
 		apartmentNumber: apartmentNumber || null,
+		localOllamaEnabled,
+		localOllamaUrl,
 	});
 
 	return data({ success: true });
@@ -78,6 +87,40 @@ export default function Profile({
 }: Route.ComponentProps) {
 	const { user } = loaderData;
 	const { t, i18n } = useTranslation();
+	const [localOllamaEnabled, setLocalOllamaEnabled] = useState(user.localOllamaEnabled);
+	const [localOllamaUrl, setLocalOllamaUrl] = useState(user.localOllamaUrl);
+	const [testingConnection, setTestingConnection] = useState(false);
+	const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
+
+	// Reset connection status when URL changes
+	useEffect(() => {
+		setConnectionStatus("idle");
+	}, [localOllamaUrl]);
+
+	const testConnection = async () => {
+		setTestingConnection(true);
+		setConnectionStatus("idle");
+		try {
+			const response = await fetch(`${localOllamaUrl}/api/tags`, {
+				method: "GET",
+				headers: { "Accept": "application/json" },
+			});
+			if (response.ok) {
+				const data = await response.json();
+				const modelCount = data.models?.length || 0;
+				setConnectionStatus("success");
+				toast.success(t("profile.local_ai.connection_success", { count: modelCount }));
+			} else {
+				setConnectionStatus("error");
+				toast.error(t("profile.local_ai.connection_failed"));
+			}
+		} catch (error) {
+			setConnectionStatus("error");
+			toast.error(t("profile.local_ai.connection_error"));
+		} finally {
+			setTestingConnection(false);
+		}
+	};
 
 	return (
 		<PageWrapper>
@@ -170,6 +213,95 @@ export default function Profile({
 									})}
 								</span>
 							</div>
+						</div>
+
+						{/* Local AI Settings Section */}
+						<div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+							<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+								{t("profile.local_ai.title")}
+							</h2>
+							<p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+								{t("profile.local_ai.description")}
+							</p>
+							
+							{/* Enable Local AI Toggle */}
+							<div className="flex items-center justify-between py-3">
+								<div className="flex flex-col">
+									<Label htmlFor="localOllamaEnabled" className="font-medium">
+										{t("profile.local_ai.enable_label")}
+									</Label>
+									<span className="text-xs text-gray-500 dark:text-gray-400">
+										{t("profile.local_ai.enable_help")}
+									</span>
+								</div>
+								<Switch
+									id="localOllamaEnabled"
+									checked={localOllamaEnabled}
+									onCheckedChange={setLocalOllamaEnabled}
+								/>
+								<input
+									type="hidden"
+									name="localOllamaEnabled"
+									value={localOllamaEnabled ? "true" : "false"}
+								/>
+							</div>
+
+							{/* Ollama URL (shown when enabled) */}
+							{localOllamaEnabled && (
+								<div className="space-y-4 mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+									<div>
+										<Label htmlFor="localOllamaUrl" className="mb-2">
+											{t("profile.local_ai.url_label")}
+										</Label>
+										<div className="flex gap-2">
+											<input
+												type="url"
+												id="localOllamaUrl"
+												name="localOllamaUrl"
+												value={localOllamaUrl}
+												onChange={(e) => setLocalOllamaUrl(e.target.value)}
+												placeholder="http://localhost:11434"
+												className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+											/>
+											<Button
+												type="button"
+												variant="outline"
+												onClick={testConnection}
+												disabled={testingConnection}
+												className="shrink-0"
+											>
+												{testingConnection ? (
+													<span className="material-symbols-outlined animate-spin">progress_activity</span>
+												) : connectionStatus === "success" ? (
+													<span className="material-symbols-outlined text-green-500">check_circle</span>
+												) : connectionStatus === "error" ? (
+													<span className="material-symbols-outlined text-red-500">error</span>
+												) : (
+													<span className="material-symbols-outlined">wifi_find</span>
+												)}
+												<span className="ml-2">{t("profile.local_ai.test_connection")}</span>
+											</Button>
+										</div>
+										<p className="mt-1 text-xs text-gray-500">
+											{t("profile.local_ai.url_help")}
+										</p>
+									</div>
+
+									{/* CORS Help */}
+									<div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+										<div className="flex gap-2">
+											<span className="material-symbols-outlined text-amber-600 dark:text-amber-400 shrink-0">info</span>
+											<div className="text-xs text-amber-700 dark:text-amber-300">
+												<p className="font-medium mb-1">{t("profile.local_ai.cors_title")}</p>
+												<p>{t("profile.local_ai.cors_help")}</p>
+												<code className="block mt-2 p-2 bg-amber-100 dark:bg-amber-900/40 rounded text-[11px] font-mono">
+													OLLAMA_ORIGINS=* ollama serve
+												</code>
+											</div>
+										</div>
+									</div>
+								</div>
+							)}
 						</div>
 
 						{/* Submit Button */}
