@@ -22,6 +22,8 @@
 		"events": "Veranstaltungen",
 		"treasury": "Kasse",
 		"minutes": "Protokolle",
+		"news": "Nachrichten",
+		"faq": "FAQ",
 		"inventory": "Inventar",
 		"social": "Sozial",
 		"login": "Anmelden",
@@ -89,6 +91,36 @@
 			"edit": "Bearbeiten",
 			"free": "Frei",
 			"none": "Keine"
+		},
+		"news": {
+			"title": "Nachrichteneinstellungen",
+			"ai_disabled_title": "KI-Funktionen deaktiviert",
+			"ai_disabled_desc": "Bitte konfigurieren Sie den OpenRouter API-Schlüssel zuerst in den Allgemeinen Einstellungen.",
+			"go_to_general": "Zu Allgemeinen Einstellungen",
+			"ai_model_title": "KI-Nachrichtenmodell",
+			"ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von Nachrichten zwischen Primär- und Sekundärsprache.",
+			"sort_by": "Sortieren nach",
+			"price": "Preis",
+			"name": "Name",
+			"select_model": "Modell auswählen",
+			"select_model_placeholder": "Modell auswählen...",
+			"showing_models": "{{count}} von {{total}} Modellen",
+			"save": "Einstellungen speichern"
+		},
+		"faqs": {
+			"title": "FAQ-Einstellungen",
+			"ai_disabled_title": "KI-Funktionen deaktiviert",
+			"ai_disabled_desc": "Bitte konfigurieren Sie den OpenRouter API-Schlüssel zuerst in den Allgemeinen Einstellungen.",
+			"go_to_general": "Zu Allgemeinen Einstellungen",
+			"ai_model_title": "KI-FAQ-Modell",
+			"ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von FAQ-Einträgen zwischen Primär- und Sekundärsprache.",
+			"sort_by": "Sortieren nach",
+			"price": "Preis",
+			"name": "Name",
+			"select_model": "Modell auswählen",
+			"select_model_placeholder": "Modell auswählen...",
+			"showing_models": "{{count}} von {{total}} Modellen",
+			"save": "Einstellungen speichern"
 		}
 	},
 	"email": {
@@ -140,6 +172,19 @@
 			"title": "Erstattungsantrag abgelehnt",
 			"content": "Ihr Erstattungsantrag für {description} ({amount} €) wurde abgelehnt."
 		},
+		"news_published": {
+			"title": "Neue Nachricht",
+			"content": "Neue Nachricht: {title}"
+		},
+		"ai_news_translation_failed": {
+			"title": "Nachrichtenübersetzung fehlgeschlagen",
+			"content": "KI-Übersetzung der Nachricht fehlgeschlagen. Einstellungen prüfen und erneut versuchen."
+		},
+		"ai_faq_translation_failed": {
+			"title": "FAQ-Übersetzung fehlgeschlagen",
+			"content": "KI-Übersetzung der FAQ fehlgeschlagen. Einstellungen prüfen und erneut versuchen."
+		},
+		"view_news": "Nachricht anzeigen",
 		"unknown_item": "Unbekannter Artikel",
 		"see_all": "Alle Nachrichten anzeigen",
 		"select_all": "Alle auswählen",
@@ -147,6 +192,61 @@
 		"mark_selected_read": "Ausgewählte als gelesen markieren",
 		"mark_selected_unread": "Ausgewählte als ungelesen markieren",
 		"clear_selection": "Auswahl löschen"
+	},
+	"news": {
+		"title": "Nachrichten",
+		"add": "Nachricht hinzufügen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"empty": "Noch keine Nachrichten.",
+		"no_results": "Keine Ergebnisse für Ihre Suche.",
+		"search_placeholder": "Nachrichten suchen...",
+		"confirm_delete": "Möchten Sie diese Nachricht wirklich löschen?",
+		"new_title": "Neue Nachricht",
+		"edit_title": "Nachricht bearbeiten",
+		"save": "Speichern",
+		"cancel": "Abbrechen",
+		"form": {
+			"title": "Titel",
+			"title_placeholder": "Nachrichtentitel",
+			"summary": "Zusammenfassung",
+			"summary_placeholder": "Kurze Zusammenfassung (optional)",
+			"content": "Inhalt",
+			"content_placeholder": "Nachrichteninhalt",
+			"default_language": "Standardsprache ({{language}})",
+			"secondary_language": "Zweitsprache ({{language}})"
+		},
+		"translate_with_ai": "Mit KI übersetzen:",
+		"translating": "Übersetzen...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Frage hinzufügen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"empty": "Noch keine Fragen.",
+		"no_results": "Keine Ergebnisse für Ihre Suche.",
+		"search_placeholder": "FAQ durchsuchen...",
+		"confirm_delete": "Möchten Sie diese Frage wirklich löschen?",
+		"new_title": "Neue Frage",
+		"edit_title": "Frage bearbeiten",
+		"save": "Speichern",
+		"cancel": "Abbrechen",
+		"form": {
+			"question": "Frage",
+			"question_placeholder": "Frage eingeben",
+			"answer": "Antwort",
+			"answer_placeholder": "Antwort eingeben",
+			"sort_order": "Sortierreihenfolge",
+			"default_language": "Standardsprache ({{language}})",
+			"secondary_language": "Zweitsprache ({{language}})"
+		},
+		"translate_with_ai": "Mit KI übersetzen:",
+		"translating": "Übersetzen...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
 	},
 	"permissions": {
 		"users": {
@@ -225,12 +325,26 @@
 			"write": "Rollen erstellen und bearbeiten",
 			"delete": "Rollen löschen"
 		},
+		"news": {
+			"read": "Nachrichten anzeigen",
+			"write": "Nachrichten erstellen",
+			"update": "Nachrichten bearbeiten",
+			"delete": "Nachrichten löschen"
+		},
+		"faq": {
+			"read": "FAQ anzeigen",
+			"write": "FAQ-Einträge erstellen",
+			"update": "FAQ-Einträge bearbeiten",
+			"delete": "FAQ-Einträge löschen"
+		},
 		"settings": {
 			"general": "Zugriff auf allgemeine Einstellungen",
 			"users": "Zugriff auf Benutzerverwaltungseinstellungen",
 			"roles": "Zugriff auf Rollenverwaltungseinstellungen",
 			"reimbursements": "Zugriff auf Erstattungseinstellungen (KI, Schlüsselwörter)",
-			"analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)"
+			"analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)",
+			"news": "Zugriff auf Nachrichteneinstellungen (KI-Übersetzungsmodell)",
+			"faqs": "Zugriff auf FAQ-Einstellungen (KI-Übersetzungsmodell)"
 		},
 		"categories": {
 			"Users": "Benutzer",
@@ -243,6 +357,8 @@
 			"Social": "Sozial",
 			"Minutes": "Protokolle",
 			"Events": "Veranstaltungen",
+			"News": "Nachrichten",
+			"FAQ": "FAQ",
 			"Forms": "Formulare",
 			"Profile": "Profil",
 			"Roles": "Rollen",

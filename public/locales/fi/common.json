@@ -7,7 +7,7 @@
 		"open_setup": "Avaa asennusopas",
 		"copy_env": "Tai kopioi .env.template tiedostoon .env ja määritä asetukset."
 	},
-	"nav": {
+		"nav": {
 		"menu": "Valikko",
 		"navigation": "Navigointi",
 		"settings": "Asetukset",
@@ -22,6 +22,8 @@
 		"events": "Tapahtumat",
 		"treasury": "Rahasto",
 		"minutes": "Pöytäkirjat",
+		"news": "Uutiset",
+		"faq": "UKK",
 		"inventory": "Tavaraluettelo",
 		"social": "Some",
 		"analytics": "Analytiikka",
@@ -488,7 +490,47 @@
 		"apartment_help": "Asuntonumeroa käytetään äänestysten validointiin",
 		"role_label": "Rooli",
 		"member_since_label": "Jäsen alkaen",
-		"save_changes": "Tallenna muutokset"
+		"save_changes": "Tallenna muutokset",
+		"local_ai": {
+			"title": "Paikalliset tekoälymallit",
+			"description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
+			"enabled": "Ota paikalliset tekoälymallit käyttöön",
+			"enable_label": "Ota paikalliset tekoälymallit käyttöön",
+			"enable_help": "Salli sivujen käyttää paikallista Ollama-instanssia käännöksiin.",
+			"url_label": "Ollama URL",
+			"url_placeholder": "http://localhost:11434",
+			"url_help": "URL johon Ollama on käynnistetty. Oletus: http://localhost:11434",
+			"test_connection": "Testaa yhteyttä",
+			"testing": "Testataan...",
+			"connection_success": "Yhteys onnistui! Löydettiin {{count}} mallia.",
+			"connection_failed": "Yhteys epäonnistui. Varmista, että Ollama on käynnissä ja CORS on käytössä.",
+			"connection_error": "Yhteysvirhe",
+			"cors_title": "Selainkäyttö (CORS)",
+			"cors_help": "Selainyhteyksiä varten käynnistä Ollama: OLLAMA_ORIGINS=* ollama serve"
+		}
+	},
+	"local_ai": {
+		"model_selector": {
+			"label": "Paikallinen malli",
+			"placeholder": "Valitse malli...",
+			"loading": "Ladataan...",
+			"not_connected": "Ei yhteyttä Ollamaan",
+			"no_models": "Malleja ei löytynyt",
+			"connection_failed": "Yhteys epäonnistui",
+			"connection_error": "Yhteysvirhe",
+			"select_model": "Valitse malli",
+			"disabled": "Pois käytöstä",
+			"model_count": "{{count}} mallia"
+		},
+		"translate": {
+			"button_tooltip": "{{source}} → {{target}} (Käännä)",
+			"tooltip": "Käännä paikallisella tekoälyllä",
+			"translating": "Käännetään...",
+			"input_not_found": "Lähde- tai kohdekenttää ei löytynyt",
+			"empty_source": "Lähdekenttä on tyhjä",
+			"success": "Käännös valmis",
+			"failed": "Käännös epäonnistui: {{error}}"
+		}
 	},
 	"settings": {
 		"general": {
@@ -536,6 +578,36 @@
 			"additional_rejection": "Lisää hylkäyssanoja",
 			"rejection_placeholder": "hylätty, peruttu (pilkulla erotettuna)",
 			"save_keywords": "Tallenna avainsanat"
+		},
+		"news": {
+			"title": "Uutisasetukset",
+			"ai_disabled_title": "Tekoälyominaisuudet pois käytöstä",
+			"ai_disabled_desc": "Määritä OpenRouter API -avain yleisasetuksissa ensin.",
+			"go_to_general": "Siirry yleisasetuksiin",
+			"ai_model_title": "Tekoäly-uutismalli",
+			"ai_model_desc": "Valitse tekoälymalli, jota käytetään uutisten kääntämiseen ensi- ja toisen kielen välillä.",
+			"sort_by": "Järjestä",
+			"price": "Hinta",
+			"name": "Nimi",
+			"select_model": "Valitse malli",
+			"select_model_placeholder": "Valitse malli...",
+			"showing_models": "Näytetään {{count}} / {{total}} mallia",
+			"save": "Tallenna asetukset"
+		},
+		"faqs": {
+			"title": "UKK-asetukset",
+			"ai_disabled_title": "Tekoälyominaisuudet pois käytöstä",
+			"ai_disabled_desc": "Määritä OpenRouter API -avain yleisasetuksissa ensin.",
+			"go_to_general": "Siirry yleisasetuksiin",
+			"ai_model_title": "Tekoäly-UKK-malli",
+			"ai_model_desc": "Valitse tekoälymalli, jota käytetään UKK-rivien kääntämiseen ensi- ja toisen kielen välillä.",
+			"sort_by": "Järjestä",
+			"price": "Hinta",
+			"name": "Nimi",
+			"select_model": "Valitse malli",
+			"select_model_placeholder": "Valitse malli...",
+			"showing_models": "Näytetään {{count}} / {{total}} mallia",
+			"save": "Tallenna asetukset"
 		},
 		"roles": {
 			"title": "Roolihallinta",
@@ -677,6 +749,61 @@
 			"placeholder": "Hae nimellä..."
 		}
 	},
+	"news": {
+		"title": "Uutiset",
+		"add": "Lisää uutinen",
+		"edit": "Muokkaa",
+		"delete": "Poista",
+		"empty": "Ei uutisia vielä.",
+		"no_results": "Ei tuloksia haulla.",
+		"search_placeholder": "Etsi uutisia...",
+		"confirm_delete": "Haluatko varmasti poistaa tämän uutisen?",
+		"new_title": "Uusi uutinen",
+		"edit_title": "Muokkaa uutista",
+		"save": "Tallenna",
+		"cancel": "Peruuta",
+		"form": {
+			"title": "Otsikko",
+			"title_placeholder": "Uutisen otsikko",
+			"summary": "Yhteenveto",
+			"summary_placeholder": "Lyhyt yhteenveto (valinnainen)",
+			"content": "Sisältö",
+			"content_placeholder": "Uutisen teksti",
+			"default_language": "Oletuskieli ({{language}})",
+			"secondary_language": "Toinen kieli ({{language}})"
+		},
+		"translate_with_ai": "Käännä tekoälyllä:",
+		"translating": "Käännetään...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "Usein kysytyt kysymykset",
+		"add": "Lisää kysymys",
+		"edit": "Muokkaa",
+		"delete": "Poista",
+		"empty": "Ei kysymyksiä vielä.",
+		"no_results": "Ei tuloksia haulla.",
+		"search_placeholder": "Etsi UKK...",
+		"confirm_delete": "Haluatko varmasti poistaa tämän kysymyksen?",
+		"new_title": "Uusi kysymys",
+		"edit_title": "Muokkaa kysymystä",
+		"save": "Tallenna",
+		"cancel": "Peruuta",
+		"form": {
+			"question": "Kysymys",
+			"question_placeholder": "Kirjoita kysymys",
+			"answer": "Vastaus",
+			"answer_placeholder": "Kirjoita vastaus",
+			"sort_order": "Järjestysnumero",
+			"default_language": "Oletuskieli ({{language}})",
+			"secondary_language": "Toinen kieli ({{language}})"
+		},
+		"translate_with_ai": "Käännä tekoälyllä:",
+		"translating": "Käännetään...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
 	"email": {
 		"reimbursement": {
 			"subject": "Kulukorvaus pyyntö",
@@ -709,7 +836,7 @@
 	},
 	"messages": {
 		"title": "Viestit",
-		"empty": "Ei uusia viestejä vielä",
+		"empty": "Ei uusia viestejä",
 		"date": "Päivämäärä",
 		"content": "Sisältö",
 		"mark_as_read": "Merkitse luetuksi",
@@ -726,6 +853,19 @@
 			"title": "Korvausvaatimus hylätty",
 			"content": "Korvausvaatimuksesi kohteesta {description} ({amount} €) on hylätty."
 		},
+		"news_published": {
+			"title": "Uusi uutinen",
+			"content": "Uusi uutinen: {title}"
+		},
+		"ai_news_translation_failed": {
+			"title": "Uutisten käännös epäonnistui",
+			"content": "Tekoälykäännös uutiselle epäonnistui. Tarkista asetukset ja yritä uudelleen."
+		},
+		"ai_faq_translation_failed": {
+			"title": "UKK-käännös epäonnistui",
+			"content": "Tekoälykäännös UKK:lle epäonnistui. Tarkista asetukset ja yritä uudelleen."
+		},
+		"view_news": "Näytä uutinen",
 		"unknown_item": "Tuntematon tavara",
 		"see_all": "Näytä kaikki viestit",
 		"select_all": "Valitse kaikki",
@@ -794,6 +934,18 @@
 		"events": {
 			"read": "Näytä kalenteritapahtumat"
 		},
+		"news": {
+			"read": "Näytä uutiset",
+			"write": "Luo uutisia",
+			"update": "Muokkaa uutisia",
+			"delete": "Poista uutisia"
+		},
+		"faq": {
+			"read": "Näytä UKK",
+			"write": "Luo UKK-kohtia",
+			"update": "Muokkaa UKK-kohtia",
+			"delete": "Poista UKK-kohtia"
+		},
 		"forms": {
 			"read": "Näytä lomaketiedot ja analytiikka",
 			"export": "Vie lomaketiedot CSV-tiedostoon"
@@ -816,7 +968,9 @@
 			"users": "Pääsy käyttäjähallinnan asetuksiin",
 			"roles": "Pääsy roolihallinnan asetuksiin",
 			"reimbursements": "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
-			"analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)"
+			"analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)",
+			"news": "Pääsy uutisasetuksiin (AI-käännösmalli)",
+			"faqs": "Pääsy UKK-asetuksiin (AI-käännösmalli)"
 		},
 		"categories": {
 			"Users": "Käyttäjät",
@@ -829,6 +983,8 @@
 			"Social": "Sosiaalinen",
 			"Minutes": "Pöytäkirjat",
 			"Events": "Tapahtumat",
+			"News": "Uutiset",
+			"FAQ": "UKK",
 			"Forms": "Lomakkeet",
 			"Profile": "Profiili",
 			"Roles": "Roolit",

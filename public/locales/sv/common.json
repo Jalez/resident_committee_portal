@@ -22,6 +22,8 @@
 		"events": "Evenemang",
 		"treasury": "Kassa",
 		"minutes": "Protokoll",
+		"news": "Nyheter",
+		"faq": "Vanliga frågor",
 		"inventory": "Inventarier",
 		"social": "Socialt",
 		"login": "Logga in",
@@ -500,6 +502,36 @@
 			"rejection_placeholder": "avvisad, avbruten (kommateckenseparerad)",
 			"save_keywords": "Spara nyckelord"
 		},
+		"news": {
+			"title": "Nyhetsinställningar",
+			"ai_disabled_title": "AI-funktioner inaktiverade",
+			"ai_disabled_desc": "Konfigurera OpenRouter API-nyckeln i Allmänna inställningar först.",
+			"go_to_general": "Gå till Allmänna inställningar",
+			"ai_model_title": "AI-nyhetsmodell",
+			"ai_model_desc": "Välj AI-modell som används för att översätta nyheter mellan primärt och sekundärt språk.",
+			"sort_by": "Sortera efter",
+			"price": "Pris",
+			"name": "Namn",
+			"select_model": "Välj modell",
+			"select_model_placeholder": "Välj en modell...",
+			"showing_models": "Visar {{count}} av {{total}} modeller",
+			"save": "Spara inställningar"
+		},
+		"faqs": {
+			"title": "FAQ-inställningar",
+			"ai_disabled_title": "AI-funktioner inaktiverade",
+			"ai_disabled_desc": "Konfigurera OpenRouter API-nyckeln i Allmänna inställningar först.",
+			"go_to_general": "Gå till Allmänna inställningar",
+			"ai_model_title": "AI-FAQ-modell",
+			"ai_model_desc": "Välj AI-modell som används för att översätta FAQ-poster mellan primärt och sekundärt språk.",
+			"sort_by": "Sortera efter",
+			"price": "Pris",
+			"name": "Namn",
+			"select_model": "Välj modell",
+			"select_model_placeholder": "Välj en modell...",
+			"showing_models": "Visar {{count}} av {{total}} modeller",
+			"save": "Spara inställningar"
+		},
 		"roles": {
 			"title": "Rollhantering",
 			"create_new_title": "Skapa ny roll",
@@ -640,6 +672,61 @@
 			"placeholder": "Sök på namn..."
 		}
 	},
+	"news": {
+		"title": "Nyheter",
+		"add": "Lägg till nyhet",
+		"edit": "Redigera",
+		"delete": "Ta bort",
+		"empty": "Inga nyheter än.",
+		"no_results": "Inga resultat för sökningen.",
+		"search_placeholder": "Sök nyheter...",
+		"confirm_delete": "Är du säker på att du vill ta bort denna nyhet?",
+		"new_title": "Ny nyhet",
+		"edit_title": "Redigera nyhet",
+		"save": "Spara",
+		"cancel": "Avbryt",
+		"form": {
+			"title": "Rubrik",
+			"title_placeholder": "Nyhetsrubrik",
+			"summary": "Sammanfattning",
+			"summary_placeholder": "Kort sammanfattning (valfritt)",
+			"content": "Innehåll",
+			"content_placeholder": "Nyhetsinnehåll",
+			"default_language": "Standardspråk ({{language}})",
+			"secondary_language": "Sekundärt språk ({{language}})"
+		},
+		"translate_with_ai": "Översätt med AI:",
+		"translating": "Översätter...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "Vanliga frågor",
+		"add": "Lägg till fråga",
+		"edit": "Redigera",
+		"delete": "Ta bort",
+		"empty": "Inga frågor än.",
+		"no_results": "Inga resultat för sökningen.",
+		"search_placeholder": "Sök vanliga frågor...",
+		"confirm_delete": "Är du säker på att du vill ta bort denna fråga?",
+		"new_title": "Ny fråga",
+		"edit_title": "Redigera fråga",
+		"save": "Spara",
+		"cancel": "Avbryt",
+		"form": {
+			"question": "Fråga",
+			"question_placeholder": "Ange fråga",
+			"answer": "Svar",
+			"answer_placeholder": "Ange svar",
+			"sort_order": "Sorteringsordning",
+			"default_language": "Standardspråk ({{language}})",
+			"secondary_language": "Sekundärt språk ({{language}})"
+		},
+		"translate_with_ai": "Översätt med AI:",
+		"translating": "Översätter...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
 	"email": {
 		"reimbursement": {
 			"subject": "Ersättningsbegäran",
@@ -689,6 +776,19 @@
 			"title": "Ersättningsansökan avvisad",
 			"content": "Din ersättningsansökan för {description} ({amount} €) har avvisats."
 		},
+		"news_published": {
+			"title": "Ny nyhet",
+			"content": "Ny nyhet: {title}"
+		},
+		"ai_news_translation_failed": {
+			"title": "Nyhetsöversättning misslyckades",
+			"content": "AI-översättning av nyhet misslyckades. Kontrollera inställningarna och försök igen."
+		},
+		"ai_faq_translation_failed": {
+			"title": "FAQ-översättning misslyckades",
+			"content": "AI-översättning av FAQ misslyckades. Kontrollera inställningarna och försök igen."
+		},
+		"view_news": "Visa nyhet",
 		"unknown_item": "Okänt objekt",
 		"see_all": "Visa alla meddelanden",
 		"select_all": "Välj alla",
@@ -757,6 +857,18 @@
 		"events": {
 			"read": "Visa kalenderhändelser"
 		},
+		"news": {
+			"read": "Visa nyheter",
+			"write": "Skapa nyheter",
+			"update": "Redigera nyheter",
+			"delete": "Ta bort nyheter"
+		},
+		"faq": {
+			"read": "Visa vanliga frågor",
+			"write": "Skapa FAQ-poster",
+			"update": "Redigera FAQ-poster",
+			"delete": "Ta bort FAQ-poster"
+		},
 		"forms": {
 			"read": "Visa formulärsvar och analys",
 			"export": "Exportera formulärdata till CSV"
@@ -779,7 +891,9 @@
 			"users": "Åtkomst till användarhanteringsinställningar",
 			"roles": "Åtkomst till rollhanteringsinställningar",
 			"reimbursements": "Åtkomst till ersättningsinställningar (AI, nyckelord)",
-			"analytics": "Åtkomst till analysinställningar (AI-modeller)"
+			"analytics": "Åtkomst till analysinställningar (AI-modeller)",
+			"news": "Åtkomst till nyhetsinställningar (AI-översättningsmodell)",
+			"faqs": "Åtkomst till FAQ-inställningar (AI-översättningsmodell)"
 		},
 		"categories": {
 			"Users": "Användare",
@@ -792,6 +906,8 @@
 			"Social": "Social",
 			"Minutes": "Protokoll",
 			"Events": "Händelser",
+			"News": "Nyheter",
+			"FAQ": "Vanliga frågor",
 			"Forms": "Formulär",
 			"Profile": "Profil",
 			"Roles": "Roller",

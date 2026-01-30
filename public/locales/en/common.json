@@ -22,6 +22,8 @@
 		"events": "Events",
 		"treasury": "Treasury",
 		"minutes": "Minutes",
+		"news": "News",
+		"faq": "FAQ",
 		"inventory": "Inventory",
 		"social": "Social",
 		"analytics": "Analytics",
@@ -488,7 +490,47 @@
 		"apartment_help": "Used for validating votes",
 		"role_label": "Role",
 		"member_since_label": "Member since",
-		"save_changes": "Save Changes"
+		"save_changes": "Save Changes",
+		"local_ai": {
+			"title": "Local AI Models",
+			"description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
+			"enabled": "Enable local AI models",
+			"enable_label": "Enable local AI models",
+			"enable_help": "Allow pages to use your local Ollama instance for translations.",
+			"url_label": "Ollama URL",
+			"url_placeholder": "http://localhost:11434",
+			"url_help": "The URL where Ollama is running. Default: http://localhost:11434",
+			"test_connection": "Test Connection",
+			"testing": "Testing...",
+			"connection_success": "Connection successful! Found {{count}} models.",
+			"connection_failed": "Connection failed. Make sure Ollama is running and CORS is enabled.",
+			"connection_error": "Connection error",
+			"cors_title": "Browser access (CORS)",
+			"cors_help": "For browser access, start Ollama with: OLLAMA_ORIGINS=* ollama serve"
+		}
+	},
+	"local_ai": {
+		"model_selector": {
+			"label": "Local Model",
+			"placeholder": "Select model...",
+			"loading": "Loading...",
+			"not_connected": "Not connected to Ollama",
+			"no_models": "No models found",
+			"connection_failed": "Connection failed",
+			"connection_error": "Connection error",
+			"select_model": "Select model",
+			"disabled": "Disabled",
+			"model_count": "{{count}} models"
+		},
+		"translate": {
+			"button_tooltip": "{{source}} → {{target}} (Translate)",
+			"tooltip": "Translate with local AI",
+			"translating": "Translating...",
+			"input_not_found": "Source or target field not found",
+			"empty_source": "Source field is empty",
+			"success": "Translation complete",
+			"failed": "Translation failed: {{error}}"
+		}
 	},
 	"settings": {
 		"general": {
@@ -536,6 +578,36 @@
 			"additional_rejection": "Additional Rejection Keywords",
 			"rejection_placeholder": "refused, cancelled (comma-separated)",
 			"save_keywords": "Save Keywords"
+		},
+		"news": {
+			"title": "News Settings",
+			"ai_disabled_title": "AI Features Disabled",
+			"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
+			"go_to_general": "Go to General Settings",
+			"ai_model_title": "AI News Model",
+			"ai_model_desc": "Select the AI model used for translating news between primary and secondary languages.",
+			"sort_by": "Sort by",
+			"price": "Price",
+			"name": "Name",
+			"select_model": "Select model",
+			"select_model_placeholder": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models",
+			"save": "Save Settings"
+		},
+		"faqs": {
+			"title": "FAQ Settings",
+			"ai_disabled_title": "AI Features Disabled",
+			"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
+			"go_to_general": "Go to General Settings",
+			"ai_model_title": "AI FAQ Model",
+			"ai_model_desc": "Select the AI model used for translating FAQ entries between primary and secondary languages.",
+			"sort_by": "Sort by",
+			"price": "Price",
+			"name": "Name",
+			"select_model": "Select model",
+			"select_model_placeholder": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models",
+			"save": "Save Settings"
 		},
 		"roles": {
 			"title": "Role Management",
@@ -677,6 +749,61 @@
 			"placeholder": "Search by name..."
 		}
 	},
+	"news": {
+		"title": "News",
+		"add": "Add news",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No news yet.",
+		"no_results": "No results for your search.",
+		"search_placeholder": "Search news...",
+		"confirm_delete": "Are you sure you want to delete this news item?",
+		"new_title": "News",
+		"edit_title": "Edit news",
+		"save": "Save",
+		"cancel": "Cancel",
+		"form": {
+			"title": "Title",
+			"title_placeholder": "News title",
+			"summary": "Summary",
+			"summary_placeholder": "Short summary (optional)",
+			"content": "Content",
+			"content_placeholder": "News content",
+			"default_language": "Default language ({{language}})",
+			"secondary_language": "Secondary language ({{language}})"
+		},
+		"translate_with_ai": "Translate with AI:",
+		"translating": "Translating...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Add question",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No questions yet.",
+		"no_results": "No results for your search.",
+		"search_placeholder": "Search FAQ...",
+		"confirm_delete": "Are you sure you want to delete this question?",
+		"new_title": "New question",
+		"edit_title": "Edit question",
+		"save": "Save",
+		"cancel": "Cancel",
+		"form": {
+			"question": "Question",
+			"question_placeholder": "Enter question",
+			"answer": "Answer",
+			"answer_placeholder": "Enter answer",
+			"sort_order": "Sort order",
+			"default_language": "Default language ({{language}})",
+			"secondary_language": "Secondary language ({{language}})"
+		},
+		"translate_with_ai": "Translate with AI:",
+		"translating": "Translating...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
 	"email": {
 		"reimbursement": {
 			"subject": "Reimbursement Request",
@@ -726,6 +853,19 @@
 			"title": "Reimbursement Declined",
 			"content": "Your reimbursement request for {description} ({amount} €) has been declined."
 		},
+		"news_published": {
+			"title": "News",
+			"content": "{title}"
+		},
+		"ai_news_translation_failed": {
+			"title": "News translation failed",
+			"content": "AI translation for news failed. Check settings and try again."
+		},
+		"ai_faq_translation_failed": {
+			"title": "FAQ translation failed",
+			"content": "AI translation for FAQ failed. Check settings and try again."
+		},
+		"view_news": "View news",
 		"unknown_item": "Unknown item",
 		"see_all": "See all messages",
 		"select_all": "Select all",
@@ -794,6 +934,18 @@
 		"events": {
 			"read": "View calendar events"
 		},
+		"news": {
+			"read": "View news",
+			"write": "Create news",
+			"update": "Edit news",
+			"delete": "Delete news"
+		},
+		"faq": {
+			"read": "View FAQ",
+			"write": "Create FAQ entries",
+			"update": "Edit FAQ entries",
+			"delete": "Delete FAQ entries"
+		},
 		"forms": {
 			"read": "View form responses and analytics",
 			"export": "Export form data to CSV"
@@ -816,7 +968,9 @@
 			"users": "Access user management settings",
 			"roles": "Access role management settings",
 			"reimbursements": "Access reimbursement settings (AI, keywords)",
-			"analytics": "Access analytics settings (AI models)"
+			"analytics": "Access analytics settings (AI models)",
+			"news": "Access news settings (AI translation model)",
+			"faqs": "Access FAQ settings (AI translation model)"
 		},
 		"categories": {
 			"Users": "Users",
@@ -829,6 +983,8 @@
 			"Social": "Social",
 			"Minutes": "Minutes",
 			"Events": "Events",
+			"News": "News",
+			"FAQ": "FAQ",
 			"Forms": "Forms",
 			"Profile": "Profile",
 			"Roles": "Roles",

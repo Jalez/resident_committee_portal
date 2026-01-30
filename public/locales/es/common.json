@@ -22,6 +22,8 @@
 		"events": "Eventos",
 		"treasury": "Tesorería",
 		"minutes": "Actas",
+		"news": "Noticias",
+		"faq": "FAQ",
 		"inventory": "Inventario",
 		"social": "Social",
 		"login": "Iniciar sesión",
@@ -104,6 +106,19 @@
 			"title": "Solicitud de reembolso rechazada",
 			"content": "Su solicitud de reembolso para {description} ({amount} €) ha sido rechazada."
 		},
+		"news_published": {
+			"title": "Nueva noticia",
+			"content": "Nueva noticia: {title}"
+		},
+		"ai_news_translation_failed": {
+			"title": "Traducción de noticia fallida",
+			"content": "La traducción por IA de la noticia falló. Compruebe la configuración e inténtelo de nuevo."
+		},
+		"ai_faq_translation_failed": {
+			"title": "Traducción de FAQ fallida",
+			"content": "La traducción por IA del FAQ falló. Compruebe la configuración e inténtelo de nuevo."
+		},
+		"view_news": "Ver noticia",
 		"unknown_item": "Artículo desconocido",
 		"see_all": "Ver todos los mensajes",
 		"select_all": "Seleccionar todo",
@@ -111,6 +126,98 @@
 		"mark_selected_read": "Marcar seleccionados como leídos",
 		"mark_selected_unread": "Marcar seleccionados como no leídos",
 		"clear_selection": "Limpiar selección"
+	},
+	"news": {
+		"title": "Noticias",
+		"add": "Añadir noticia",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"empty": "Aún no hay noticias.",
+		"no_results": "No hay resultados para su búsqueda.",
+		"search_placeholder": "Buscar noticias...",
+		"confirm_delete": "¿Está seguro de que desea eliminar esta noticia?",
+		"new_title": "Nueva noticia",
+		"edit_title": "Editar noticia",
+		"save": "Guardar",
+		"cancel": "Cancelar",
+		"form": {
+			"title": "Título",
+			"title_placeholder": "Título de la noticia",
+			"summary": "Resumen",
+			"summary_placeholder": "Resumen corto (opcional)",
+			"content": "Contenido",
+			"content_placeholder": "Contenido de la noticia",
+			"default_language": "Idioma predeterminado ({{language}})",
+			"secondary_language": "Idioma secundario ({{language}})"
+		},
+		"translate_with_ai": "Traducir con IA:",
+		"translating": "Traduciendo...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Añadir pregunta",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"empty": "Aún no hay preguntas.",
+		"no_results": "No hay resultados para su búsqueda.",
+		"search_placeholder": "Buscar FAQ...",
+		"confirm_delete": "¿Está seguro de que desea eliminar esta pregunta?",
+		"new_title": "Nueva pregunta",
+		"edit_title": "Editar pregunta",
+		"save": "Guardar",
+		"cancel": "Cancelar",
+		"form": {
+			"question": "Pregunta",
+			"question_placeholder": "Introduzca la pregunta",
+			"answer": "Respuesta",
+			"answer_placeholder": "Introduzca la respuesta",
+			"sort_order": "Orden",
+			"default_language": "Idioma predeterminado ({{language}})",
+			"secondary_language": "Idioma secundario ({{language}})"
+		},
+		"translate_with_ai": "Traducir con IA:",
+		"translating": "Traduciendo...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"settings": {
+		"common": {
+			"save": "Guardar",
+			"saving": "Guardando...",
+			"free": "Gratis"
+		},
+		"news": {
+			"title": "Ajustes de noticias",
+			"ai_disabled_title": "Funciones de IA desactivadas",
+			"ai_disabled_desc": "Configure la clave API de OpenRouter en Ajustes generales primero.",
+			"go_to_general": "Ir a Ajustes generales",
+			"ai_model_title": "Modelo de IA para noticias",
+			"ai_model_desc": "Seleccione el modelo de IA para traducir noticias entre idioma primario y secundario.",
+			"sort_by": "Ordenar por",
+			"price": "Precio",
+			"name": "Nombre",
+			"select_model": "Seleccionar modelo",
+			"select_model_placeholder": "Seleccione un modelo...",
+			"showing_models": "Mostrando {{count}} de {{total}} modelos",
+			"save": "Guardar ajustes"
+		},
+		"faqs": {
+			"title": "Ajustes de FAQ",
+			"ai_disabled_title": "Funciones de IA desactivadas",
+			"ai_disabled_desc": "Configure la clave API de OpenRouter en Ajustes generales primero.",
+			"go_to_general": "Ir a Ajustes generales",
+			"ai_model_title": "Modelo de IA para FAQ",
+			"ai_model_desc": "Seleccione el modelo de IA para traducir entradas FAQ entre idioma primario y secundario.",
+			"sort_by": "Ordenar por",
+			"price": "Precio",
+			"name": "Nombre",
+			"select_model": "Seleccionar modelo",
+			"select_model_placeholder": "Seleccione un modelo...",
+			"showing_models": "Mostrando {{count}} de {{total}} modelos",
+			"save": "Guardar ajustes"
+		}
 	},
 	"permissions": {
 		"users": {
@@ -189,12 +296,26 @@
 			"write": "Crear y editar roles",
 			"delete": "Eliminar roles"
 		},
+		"news": {
+			"read": "Ver noticias",
+			"write": "Crear noticias",
+			"update": "Editar noticias",
+			"delete": "Eliminar noticias"
+		},
+		"faq": {
+			"read": "Ver FAQ",
+			"write": "Crear entradas FAQ",
+			"update": "Editar entradas FAQ",
+			"delete": "Eliminar entradas FAQ"
+		},
 		"settings": {
 			"general": "Acceso a configuración general",
 			"users": "Acceso a configuración de gestión de usuarios",
 			"roles": "Acceso a configuración de gestión de roles",
 			"reimbursements": "Acceso a configuración de reembolsos (IA, palabras clave)",
-			"analytics": "Acceso a configuración de análisis (modelos de IA)"
+			"analytics": "Acceso a configuración de análisis (modelos de IA)",
+			"news": "Acceso a configuración de noticias (modelo de traducción IA)",
+			"faqs": "Acceso a configuración de FAQ (modelo de traducción IA)"
 		},
 		"categories": {
 			"Users": "Usuarios",
@@ -207,6 +328,8 @@
 			"Social": "Social",
 			"Minutes": "Actas",
 			"Events": "Eventos",
+			"News": "Noticias",
+			"FAQ": "FAQ",
 			"Forms": "Formularios",
 			"Profile": "Perfil",
 			"Roles": "Roles",
