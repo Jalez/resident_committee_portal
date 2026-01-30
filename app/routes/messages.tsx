@@ -390,6 +390,14 @@ export default function Messages({ loaderData }: Route.ComponentProps) {
 													{t("messages.view_purchase")}
 												</Link>
 											)}
+											{message.relatedNewsId && (
+												<Link
+													to={`/news/${message.relatedNewsId}/edit`}
+													className="text-primary hover:underline text-sm"
+												>
+													{t("messages.view_news")}
+												</Link>
+											)}
 											{!message.read && (
 												<Form method="post" className="inline-block">
 													<input
