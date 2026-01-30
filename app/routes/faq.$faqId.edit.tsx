@@ -1,0 +1,398 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Form, redirect, useNavigate, useFetcher } from "react-router";
+import { toast } from "sonner";
+import { LocalModelSelector } from "~/components/local-model-selector";
+import { PageWrapper } from "~/components/layout/page-layout";
+import { TranslateFieldButton } from "~/components/translate-field-button";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Textarea } from "~/components/ui/textarea";
+import { getDatabase } from "~/db";
+import { getLanguageNames } from "~/lib/language-names.server";
+import {
+	getAuthenticatedUser,
+	getGuestContext,
+	requirePermission,
+} from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
+import { SITE_CONFIG } from "~/lib/config.server";
+import { useUser } from "~/contexts/user-context";
+import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import { translateFaq } from "~/lib/translate.server";
+import type { Route } from "./+types/faq.$faqId.edit";
+
+export function meta({ data }: Route.MetaArgs) {
+	return [
+		{
+			title: `${data?.siteConfig?.name || "Portal"} - ${data?.item?.question ?? "FAQ"}`,
+		},
+		{ name: "robots", content: "noindex" },
+	];
+}
+
+export async function loader({ request, params }: Route.LoaderArgs) {
+	const authUser = await getAuthenticatedUser(request, getDatabase);
+	let permissions: string[];
+	if (authUser) {
+		permissions = authUser.permissions;
+	} else {
+		const guestContext = await getGuestContext(() => getDatabase());
+		permissions = guestContext.permissions;
+	}
+	const canRead = permissions.some((p) => p === "faq:read" || p === "*");
+	if (!canRead) {
+		throw new Response("Not Found", { status: 404 });
+	}
+	const db = getDatabase();
+	const item = await db.getFaqById(params.faqId);
+	if (!item) {
+		throw new Response("Not Found", { status: 404 });
+	}
+	const [systemLanguages, languageNames] = await Promise.all([
+		getSystemLanguageDefaults(),
+		getLanguageNames(),
+	]);
+	const primaryLabel = languageNames[systemLanguages.primary] ?? systemLanguages.primary;
+	const secondaryLabel = languageNames[systemLanguages.secondary] ?? systemLanguages.secondary;
+	return {
+		siteConfig: SITE_CONFIG,
+		item,
+		systemLanguages,
+		primaryLabel,
+		secondaryLabel,
+	};
+}
+
+export async function action({ request, params }: Route.ActionArgs) {
+	await requirePermission(request, "faq:update", getDatabase);
+	const db = getDatabase();
+	const formData = await request.formData();
+	const actionType = formData.get("_action") as string;
+
+	if (actionType === "translate") {
+		const direction = formData.get("direction") as "to_secondary" | "to_primary";
+		if (direction !== "to_secondary" && direction !== "to_primary") {
+			return { error: "Invalid direction", translationFailed: true };
+		}
+		const [apiKey, model] = await Promise.all([
+			db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
+			db.getSetting(SETTINGS_KEYS.FAQ_AI_MODEL),
+		]);
+		if (!apiKey || !model) {
+			return {
+				error: "AI translation not configured. Set API key and model in Settings → FAQ.",
+				translationFailed: true,
+			};
+		}
+		const item = await db.getFaqById(params.faqId);
+		if (!item) {
+			return { error: "FAQ not found", translationFailed: true };
+		}
+		const [systemLanguages, languageNames] = await Promise.all([
+			getSystemLanguageDefaults(),
+			getLanguageNames(),
+		]);
+		const sourceLang = languageNames[systemLanguages.primary] ?? systemLanguages.primary;
+		const targetLang = languageNames[systemLanguages.secondary] ?? systemLanguages.secondary;
+		try {
+			if (direction === "to_secondary") {
+				const result = await translateFaq(
+					{ question: item.question, answer: item.answer },
+					sourceLang,
+					targetLang,
+					apiKey,
+					model,
+				);
+				return {
+					translated: {
+						direction: "to_secondary" as const,
+						questionSecondary: result.question,
+						answerSecondary: result.answer,
+					},
+				};
+			}
+			const result = await translateFaq(
+				{
+					question: item.questionSecondary ?? item.question,
+					answer: item.answerSecondary ?? item.answer,
+				},
+				targetLang,
+				sourceLang,
+				apiKey,
+				model,
+			);
+			return {
+				translated: {
+					direction: "to_primary" as const,
+					question: result.question,
+					answer: result.answer,
+				},
+			};
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Translation failed";
+			return { error: message, translationFailed: true };
+		}
+	}
+
+	const question = (formData.get("question") as string)?.trim();
+	const answer = (formData.get("answer") as string)?.trim();
+	const questionSecondary = (formData.get("questionSecondary") as string)?.trim() || null;
+	const answerSecondary = (formData.get("answerSecondary") as string)?.trim() || null;
+	const sortOrder = parseInt((formData.get("sortOrder") as string) || "0", 10);
+	if (!question || !answer) {
+		return { error: "Question and answer are required (default language)" };
+	}
+	await db.updateFaq(params.faqId, {
+		question,
+		answer,
+		questionSecondary,
+		answerSecondary,
+		sortOrder,
+	});
+	return redirect("/faq");
+}
+
+export default function FaqEdit({ loaderData }: Route.ComponentProps) {
+	const { item, primaryLabel, secondaryLabel, systemLanguages } = loaderData;
+	const { t, i18n } = useTranslation();
+	const navigate = useNavigate();
+	const { hasPermission } = useUser();
+	const canUpdate = hasPermission("faq:update");
+	const translateFetcher = useFetcher<typeof action>();
+	const translated = translateFetcher.data?.translated;
+	const [localModel, setLocalModel] = useState<string | null>(null);
+	const isTranslating =
+		translateFetcher.state === "submitting" || translateFetcher.state === "loading";
+	const useSecondary =
+		systemLanguages.secondary && i18n.language === systemLanguages.secondary;
+	const displayQuestion = useSecondary && item.questionSecondary
+		? item.questionSecondary
+		: item.question;
+	const displayAnswer = useSecondary && item.answerSecondary
+		? item.answerSecondary
+		: item.answer;
+
+	useEffect(() => {
+		if (translateFetcher.data?.error) {
+			toast.error(translateFetcher.data.error);
+		}
+	}, [translateFetcher.data?.error]);
+
+	const primaryDefaults =
+		translated?.direction === "to_primary" && translated
+			? { question: translated.question, answer: translated.answer }
+			: { question: item.question, answer: item.answer };
+	const secondaryDefaults =
+		translated?.direction === "to_secondary" && translated
+			? {
+					questionSecondary: translated.questionSecondary,
+					answerSecondary: translated.answerSecondary,
+				}
+			: {
+					questionSecondary: item.questionSecondary ?? "",
+					answerSecondary: item.answerSecondary ?? "",
+				};
+
+	return (
+		<PageWrapper>
+			<div className="w-full max-w-2xl mx-auto px-4">
+				<div className="flex items-center gap-4 mb-8">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => navigate("/faq")}
+						className="h-10 w-10"
+					>
+						<span className="material-symbols-outlined">arrow_back</span>
+					</Button>
+					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
+						{canUpdate ? t("faq.edit_title") : displayQuestion}
+					</h1>
+				</div>
+				{canUpdate ? (
+					<Form method="post" className="space-y-6">
+						{/* Local Model Selector */}
+						<LocalModelSelector onModelChange={setLocalModel} />
+
+						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
+							<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+								{t("faq.translate_with_ai")}
+							</span>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={isTranslating}
+								onClick={() =>
+									translateFetcher.submit(
+										{ _action: "translate", direction: "to_secondary" },
+										{ method: "post" },
+									)
+								}
+							>
+								{isTranslating
+									? t("faq.translating")
+									: t("faq.translate_primary_to_secondary", {
+											primary: primaryLabel,
+											secondary: secondaryLabel,
+										})}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={isTranslating}
+								onClick={() =>
+									translateFetcher.submit(
+										{ _action: "translate", direction: "to_primary" },
+										{ method: "post" },
+									)
+								}
+							>
+								{isTranslating
+									? t("faq.translating")
+									: t("faq.translate_secondary_to_primary", {
+											primary: primaryLabel,
+											secondary: secondaryLabel,
+										})}
+							</Button>
+						</div>
+						<div
+							key={translated?.direction === "to_primary" ? "primary-translated" : "primary"}
+							className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6"
+						>
+							<h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+								{t("faq.form.default_language", { language: primaryLabel })}
+							</h2>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="question">{t("faq.form.question")} *</Label>
+									<TranslateFieldButton
+										model={localModel}
+										sourceInputId="questionSecondary"
+										targetInputId="question"
+										sourceLanguage={secondaryLabel}
+										targetLanguage={primaryLabel}
+										direction="reverse"
+									/>
+								</div>
+								<Input
+									id="question"
+									name="question"
+									required
+									defaultValue={primaryDefaults.question}
+									placeholder={t("faq.form.question_placeholder")}
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="answer">{t("faq.form.answer")} *</Label>
+									<TranslateFieldButton
+										model={localModel}
+										sourceInputId="answerSecondary"
+										targetInputId="answer"
+										sourceLanguage={secondaryLabel}
+										targetLanguage={primaryLabel}
+										direction="reverse"
+									/>
+								</div>
+								<Textarea
+									id="answer"
+									name="answer"
+									required
+									rows={6}
+									defaultValue={primaryDefaults.answer}
+									placeholder={t("faq.form.answer_placeholder")}
+									className="min-h-[120px]"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="sortOrder">{t("faq.form.sort_order")}</Label>
+								<Input
+									id="sortOrder"
+									name="sortOrder"
+									type="number"
+									defaultValue={item.sortOrder}
+									placeholder="0"
+								/>
+							</div>
+						</div>
+						<div
+							key={
+								translated?.direction === "to_secondary"
+									? "secondary-translated"
+									: "secondary"
+							}
+							className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6"
+						>
+							<h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+								{t("faq.form.secondary_language", { language: secondaryLabel })}
+							</h2>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="questionSecondary">{t("faq.form.question")}</Label>
+									<TranslateFieldButton
+										model={localModel}
+										sourceInputId="question"
+										targetInputId="questionSecondary"
+										sourceLanguage={primaryLabel}
+										targetLanguage={secondaryLabel}
+										direction="forward"
+									/>
+								</div>
+								<Input
+									id="questionSecondary"
+									name="questionSecondary"
+									defaultValue={secondaryDefaults.questionSecondary}
+									placeholder={t("faq.form.question_placeholder")}
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="answerSecondary">{t("faq.form.answer")}</Label>
+									<TranslateFieldButton
+										model={localModel}
+										sourceInputId="answer"
+										targetInputId="answerSecondary"
+										sourceLanguage={primaryLabel}
+										targetLanguage={secondaryLabel}
+										direction="forward"
+									/>
+								</div>
+								<Textarea
+									id="answerSecondary"
+									name="answerSecondary"
+									rows={6}
+									defaultValue={secondaryDefaults.answerSecondary}
+									placeholder={t("faq.form.answer_placeholder")}
+									className="min-h-[120px]"
+								/>
+							</div>
+						</div>
+						<div className="flex gap-4">
+							<Button type="submit">{t("faq.save")}</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => navigate("/faq")}
+							>
+								{t("faq.cancel")}
+							</Button>
+						</div>
+					</Form>
+				) : (
+					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+						<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+							{displayQuestion}
+						</h2>
+						<div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+							{displayAnswer}
+						</div>
+					</div>
+				)}
+			</div>
+		</PageWrapper>
+	);
+}
