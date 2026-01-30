@@ -62,6 +62,9 @@ export interface AuthenticatedUser extends SessionData {
 	// Language preferences
 	primaryLanguage: string;
 	secondaryLanguage: string;
+	// Local AI model preferences
+	localOllamaEnabled: boolean;
+	localOllamaUrl: string;
 }
 
 export async function createSession(data: SessionData): Promise<string> {
@@ -113,6 +116,8 @@ interface RBACDatabaseAdapter {
 		roleId: string;
 		primaryLanguage: string;
 		secondaryLanguage: string;
+		localOllamaEnabled: boolean;
+		localOllamaUrl: string;
 	} | null>;
 	getUserPermissions: (userId: string) => Promise<string[]>;
 	getRoleByName: (
@@ -199,6 +204,8 @@ export async function getAuthenticatedUser(
 		permissions,
 		primaryLanguage: dbUser.primaryLanguage,
 		secondaryLanguage: dbUser.secondaryLanguage,
+		localOllamaEnabled: dbUser.localOllamaEnabled,
+		localOllamaUrl: dbUser.localOllamaUrl,
 	};
 }
 

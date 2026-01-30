@@ -13,6 +13,9 @@ export interface ClientUser {
 	permissions: string[];
 	primaryLanguage: string;
 	secondaryLanguage: string;
+	// Local AI model preferences
+	localOllamaEnabled: boolean;
+	localOllamaUrl: string;
 }
 
 interface UserContextValue {
