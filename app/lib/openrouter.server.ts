@@ -16,6 +16,8 @@ export const SETTINGS_KEYS = {
 	REJECTION_KEYWORDS: "rejection_keywords",
 	ANALYTICS_AI_MODEL: "analytics_ai_model",
 	ANALYTICS_HIDDEN_QUESTIONS: "analytics_hidden_questions",
+	NEWS_AI_MODEL: "news_ai_model",
+	FAQ_AI_MODEL: "faq_ai_model",
 } as const;
 
 // Default keywords (Finnish + English)
