@@ -35,6 +35,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 			permissions: authUser.permissions,
 			primaryLanguage: authUser.primaryLanguage,
 			secondaryLanguage: authUser.secondaryLanguage,
+			localOllamaEnabled: authUser.localOllamaEnabled,
+			localOllamaUrl: authUser.localOllamaUrl,
 		};
 	} else {
 		// Guest user - get Guest role permissions and default languages
@@ -50,6 +52,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 			permissions: guestPermissions,
 			primaryLanguage: languages.primary,
 			secondaryLanguage: languages.secondary,
+			localOllamaEnabled: false,
+			localOllamaUrl: "http://localhost:11434",
 		};
 	}
 
@@ -62,7 +66,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Get unread message count and messages for authenticated users
 	let unreadMessageCount = 0;
-	let unreadMessages: Array<{ id: string; title: string; content: string; createdAt: Date; relatedPurchaseId: string | null }> = [];
+	let unreadMessages: Array<{ id: string; title: string; content: string; createdAt: Date; relatedPurchaseId: string | null; relatedNewsId: string | null }> = [];
 	if (user && user.userId !== "guest") {
 		const db = getDatabase();
 		unreadMessageCount = await db.getUnreadMessageCount(user.userId);
@@ -78,6 +82,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 					content: msg.content,
 					createdAt: msg.createdAt,
 					relatedPurchaseId: msg.relatedPurchaseId,
+					relatedNewsId: msg.relatedNewsId,
 				}));
 		}
 	}
