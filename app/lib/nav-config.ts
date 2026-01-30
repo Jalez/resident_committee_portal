@@ -32,6 +32,18 @@ export const NAV_ITEMS: NavItem[] = [
 		permission: "minutes:read",
 	},
 	{
+		path: "/news",
+		icon: "newspaper",
+		i18nKey: "nav.news",
+		permission: "news:read",
+	},
+	{
+		path: "/faq",
+		icon: "help",
+		i18nKey: "nav.faq",
+		permission: "faq:read",
+	},
+	{
 		path: "/inventory",
 		icon: "inventory_2",
 		i18nKey: "nav.inventory",
@@ -73,6 +85,8 @@ export const INFO_REEL_ELIGIBLE_PATHS = [
 	"/events",
 	"/treasury",
 	"/minutes",
+	"/news",
+	"/faq",
 	"/inventory",
 	"/social",
 ];

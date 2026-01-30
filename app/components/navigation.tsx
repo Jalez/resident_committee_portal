@@ -96,6 +96,8 @@ export function Navigation({
 			"settings:roles",
 			"settings:reimbursements",
 			"settings:analytics",
+			"settings:news",
+			"settings:faqs",
 			"settings:general",
 		]);
 
@@ -352,6 +354,46 @@ export function Navigation({
 											</span>
 										</Link>
 									)}
+									{hasPermission("settings:news") && (
+										<Link
+											to="/settings/news"
+											onClick={() => setMobileMenuOpen(false)}
+											className={cn(
+												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+												"hover:bg-primary/10 hover:text-primary",
+												pathname === "/settings/news"
+													? "text-primary bg-primary/10"
+													: "text-gray-500 dark:text-gray-400",
+											)}
+										>
+											<span className="material-symbols-outlined text-2xl">
+												article
+											</span>
+											<span className="text-sm font-bold">
+												{t("nav.news")}
+											</span>
+										</Link>
+									)}
+									{hasPermission("settings:faqs") && (
+										<Link
+											to="/settings/faqs"
+											onClick={() => setMobileMenuOpen(false)}
+											className={cn(
+												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+												"hover:bg-primary/10 hover:text-primary",
+												pathname === "/settings/faqs"
+													? "text-primary bg-primary/10"
+													: "text-gray-500 dark:text-gray-400",
+											)}
+										>
+											<span className="material-symbols-outlined text-2xl">
+												help
+											</span>
+											<span className="text-sm font-bold">
+												{t("nav.faq")}
+											</span>
+										</Link>
+									)}
 								</div>
 							)}
 
@@ -423,16 +465,16 @@ export function Navigation({
 														{unreadMessages.map((message) => (
 															<div
 																key={message.id}
-																className="flex items-start gap-2 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
+																className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-colors"
 															>
-																<div className="min-w-0 flex-1 flex flex-col gap-1">
+																<div className="min-w-0 flex-1 flex flex-col gap-1.5">
 																	<p className="font-medium text-sm line-clamp-1">
 																		{message.title}
 																	</p>
-																	<p className="text-xs text-muted-foreground line-clamp-2">
+																	<p className="text-xs text-muted-foreground line-clamp-3">
 																		{message.content}
 																	</p>
-																	<p className="text-xs text-muted-foreground">
+																	<p className="text-xs text-muted-foreground mt-0.5">
 																		{new Date(message.createdAt).toLocaleDateString(
 																			i18n.language === "fi" ? "fi-FI" : "en-US",
 																			{
@@ -444,24 +486,29 @@ export function Navigation({
 																		)}
 																	</p>
 																</div>
-																<div className="flex flex-col items-end gap-1 shrink-0">
-																	<Link
-																		to="/messages"
-																		onClick={() => setMobileMenuOpen(false)}
-																		className="text-xs text-primary hover:underline"
-																	>
-																		{t("messages.view")}
-																	</Link>
+																<div className="flex flex-col items-end gap-2 shrink-0">
+																	{message.relatedNewsId && (
+																		<Link
+																			to={`/news/${message.relatedNewsId}/edit`}
+																			onClick={() => setMobileMenuOpen(false)}
+																			className="text-xs text-primary hover:underline whitespace-nowrap"
+																		>
+																			{t("messages.view_news")}
+																		</Link>
+																	)}
 																	<Button
 																		type="button"
-																		variant="ghost"
+																		variant="outline"
 																		size="sm"
-																		className="h-8 px-2 text-xs"
+																		className="h-8 px-2 text-xs flex items-center gap-1 shrink-0"
 																		onClick={(e) => {
 																			e.preventDefault();
 																			markMessagesAsRead([message.id]);
 																		}}
 																	>
+																		<span className="material-symbols-outlined text-base">
+																			done
+																		</span>
 																		{t("messages.mark_as_read")}
 																	</Button>
 																</div>
@@ -826,6 +873,36 @@ export function Navigation({
 									</Link>
 								</DropdownMenuItem>
 							)}
+							{hasPermission("settings:news") && (
+								<DropdownMenuItem asChild>
+									<Link
+										to="/settings/news"
+										className="flex items-center gap-2 cursor-pointer"
+									>
+										<span className="material-symbols-outlined text-lg">
+											article
+										</span>
+										<div>
+											<p className="font-medium">{t("nav.news")}</p>
+										</div>
+									</Link>
+								</DropdownMenuItem>
+							)}
+							{hasPermission("settings:faqs") && (
+								<DropdownMenuItem asChild>
+									<Link
+										to="/settings/faqs"
+										className="flex items-center gap-2 cursor-pointer"
+									>
+										<span className="material-symbols-outlined text-lg">
+											help
+										</span>
+										<div>
+											<p className="font-medium">{t("nav.faq")}</p>
+										</div>
+									</Link>
+								</DropdownMenuItem>
+							)}
 						</DropdownMenuContent>
 					</DropdownMenu>
 				)}
@@ -901,7 +978,7 @@ export function Navigation({
 										</span>
 									)}
 								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="w-80">
+								<DropdownMenuSubContent className="w-96 max-h-[min(24rem,70vh)] overflow-y-auto">
 									<DropdownMenuLabel>
 										{t("nav.messages")}
 										{unreadMessageCount > 0 && (
@@ -920,18 +997,18 @@ export function Navigation({
 											{unreadMessages.map((message) => (
 												<DropdownMenuItem
 													key={message.id}
-													className="flex flex-col items-start gap-1 py-3"
+													className="py-0 pr-0 focus:bg-transparent"
 													onSelect={(e) => e.preventDefault()}
 												>
-													<div className="flex w-full items-start gap-2">
-														<div className="min-w-0 flex-1">
+													<div className="flex w-full items-start gap-3 py-3 pr-2">
+														<div className="min-w-0 flex-1 flex flex-col gap-1.5">
 															<p className="font-medium text-sm line-clamp-1">
 																{message.title}
 															</p>
-															<p className="text-xs text-muted-foreground line-clamp-2">
+															<p className="text-xs text-muted-foreground line-clamp-3">
 																{message.content}
 															</p>
-															<p className="text-xs text-muted-foreground mt-1">
+															<p className="text-xs text-muted-foreground mt-0.5">
 																{new Date(message.createdAt).toLocaleDateString(
 																	i18n.language === "fi" ? "fi-FI" : "en-US",
 																	{
@@ -943,25 +1020,30 @@ export function Navigation({
 																)}
 															</p>
 														</div>
-														<div className="flex items-center gap-1 shrink-0">
-															<Link
-																to="/messages"
-																onClick={(e) => e.stopPropagation()}
-																className="text-xs text-primary hover:underline"
-															>
-																{t("messages.view")}
-															</Link>
+														<div className="flex flex-col items-end gap-2 shrink-0">
+															{message.relatedNewsId && (
+																<Link
+																	to={`/news/${message.relatedNewsId}/edit`}
+																	onClick={(e) => e.stopPropagation()}
+																	className="text-xs text-primary hover:underline whitespace-nowrap"
+																>
+																	{t("messages.view_news")}
+																</Link>
+															)}
 															<Button
 																type="button"
-																variant="ghost"
+																variant="outline"
 																size="sm"
-																className="h-8 px-2 text-xs"
+																className="h-8 px-2 text-xs flex items-center gap-1 shrink-0"
 																onClick={(e) => {
 																	e.preventDefault();
 																	e.stopPropagation();
 																	markMessagesAsRead([message.id]);
 																}}
 															>
+																<span className="material-symbols-outlined text-base">
+																	done
+																</span>
 																{t("messages.mark_as_read")}
 															</Button>
 														</div>
