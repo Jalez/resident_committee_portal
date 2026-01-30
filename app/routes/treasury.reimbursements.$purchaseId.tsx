@@ -3,6 +3,7 @@ import { Link, useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
+import { type MinuteFile } from "~/components/treasury/reimbursement-form";
 import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
 import { SectionCard } from "~/components/treasury/section-card";
 import { Button } from "~/components/ui/button";

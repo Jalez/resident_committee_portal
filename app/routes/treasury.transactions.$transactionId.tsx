@@ -6,6 +6,7 @@ import {
 	TransactionDetailsForm,
 	type TransactionType,
 } from "~/components/treasury/transaction-details-form";
+import { type MinuteFile } from "~/components/treasury/reimbursement-form";
 import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
 import { SectionCard } from "~/components/treasury/section-card";
 import { Button } from "~/components/ui/button";
