@@ -82,6 +82,14 @@ function getTranslation(translations: Record<string, unknown>, key: string): str
 }
 
 /**
+ * Get translation in a single language (for in-app messages, etc.)
+ */
+export function primaryText(lang: string, key: string): string {
+	const translations = loadTranslations(lang);
+	return getTranslation(translations, key);
+}
+
+/**
  * Get bilingual text for email (primary / secondary)
  */
 export function bilingualText(
