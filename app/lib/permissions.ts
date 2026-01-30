@@ -203,6 +203,42 @@ export const PERMISSIONS = {
 		category: "Events",
 	},
 
+	// News
+	"news:read": {
+		translationKey: "permissions.news.read",
+		category: "News",
+	},
+	"news:write": {
+		translationKey: "permissions.news.write",
+		category: "News",
+	},
+	"news:update": {
+		translationKey: "permissions.news.update",
+		category: "News",
+	},
+	"news:delete": {
+		translationKey: "permissions.news.delete",
+		category: "News",
+	},
+
+	// FAQ
+	"faq:read": {
+		translationKey: "permissions.faq.read",
+		category: "FAQ",
+	},
+	"faq:write": {
+		translationKey: "permissions.faq.write",
+		category: "FAQ",
+	},
+	"faq:update": {
+		translationKey: "permissions.faq.update",
+		category: "FAQ",
+	},
+	"faq:delete": {
+		translationKey: "permissions.faq.delete",
+		category: "FAQ",
+	},
+
 	// Forms
 	"forms:read": {
 		translationKey: "permissions.forms.read",
@@ -256,6 +292,14 @@ export const PERMISSIONS = {
 	},
 	"settings:analytics": {
 		translationKey: "permissions.settings.analytics",
+		category: "Settings",
+	},
+	"settings:news": {
+		translationKey: "permissions.settings.news",
+		category: "Settings",
+	},
+	"settings:faqs": {
+		translationKey: "permissions.settings.faqs",
 		category: "Settings",
 	},
 } as const;
