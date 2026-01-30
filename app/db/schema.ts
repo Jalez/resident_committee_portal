@@ -59,6 +59,9 @@ export const users = pgTable("users", {
 	// Language preferences
 	primaryLanguage: text("primary_language").notNull().default("fi"),
 	secondaryLanguage: text("secondary_language").notNull().default("en"),
+	// Local AI model preferences
+	localOllamaEnabled: boolean("local_ollama_enabled").notNull().default(false),
+	localOllamaUrl: text("local_ollama_url").notNull().default("http://localhost:11434"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -305,9 +308,52 @@ export type SocialLink = typeof socialLinks.$inferSelect;
 export type NewSocialLink = typeof socialLinks.$inferInsert;
 
 /**
+ * News table schema
+ * Stores news stories for the portal
+ */
+export const news = pgTable("news", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	title: text("title").notNull(),
+	summary: text("summary"),
+	content: text("content").notNull(),
+	titleSecondary: text("title_secondary"),
+	summarySecondary: text("summary_secondary"),
+	contentSecondary: text("content_secondary"),
+	createdBy: uuid("created_by").references(() => users.id),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type News = typeof news.$inferSelect;
+export type NewNews = typeof news.$inferInsert;
+
+/**
+ * FAQ table schema
+ * Stores frequently asked questions
+ */
+export const faq = pgTable("faq", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	question: text("question").notNull(),
+	answer: text("answer").notNull(),
+	questionSecondary: text("question_secondary"),
+	answerSecondary: text("answer_secondary"),
+	sortOrder: integer("sort_order").notNull().default(0),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Faq = typeof faq.$inferSelect;
+export type NewFaq = typeof faq.$inferInsert;
+
+/**
  * Message types for notifications
  */
-export type MessageType = "reimbursement_approved" | "reimbursement_declined";
+export type MessageType =
+	| "reimbursement_approved"
+	| "reimbursement_declined"
+	| "news_published"
+	| "ai_news_translation_failed"
+	| "ai_faq_translation_failed";
 
 /**
  * Messages table schema
@@ -322,6 +368,7 @@ export const messages = pgTable("messages", {
 	title: text("title").notNull(),
 	content: text("content").notNull(),
 	relatedPurchaseId: uuid("related_purchase_id").references(() => purchases.id),
+	relatedNewsId: uuid("related_news_id").references(() => news.id),
 	read: boolean("read").notNull().default(false),
 	readAt: timestamp("read_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),

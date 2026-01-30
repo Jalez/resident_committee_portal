@@ -29,6 +29,27 @@
 			"when": 1738281600000,
 			"tag": "0003_add_messages_table",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1738368000000,
+			"tag": "0004_add_news_faq_and_message_news",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1738454400000,
+			"tag": "0005_add_news_faq_secondary_language",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1738540800000,
+			"tag": "0006_add_local_ollama_settings",
+			"breakpoints": true
 		}
 	]
 }

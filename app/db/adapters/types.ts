@@ -1,16 +1,20 @@
 import type {
 	AppSetting,
+	Faq,
 	InventoryItem,
 	InventoryItemTransaction,
 	Message,
+	NewFaq,
 	NewInventoryItem,
 	NewMessage,
+	NewNews,
 	NewPurchase,
 	NewRole,
 	NewSocialLink,
 	NewSubmission,
 	NewTransaction,
 	NewUser,
+	News,
 	Purchase,
 	Role,
 	SocialLink,
@@ -160,6 +164,26 @@ export interface DatabaseAdapter {
 		data: Partial<Omit<NewSocialLink, "id">>,
 	): Promise<SocialLink | null>;
 	deleteSocialLink(id: string): Promise<boolean>;
+
+	// ==================== News Methods ====================
+	getNews(): Promise<News[]>;
+	getNewsById(id: string): Promise<News | null>;
+	createNews(item: NewNews): Promise<News>;
+	updateNews(
+		id: string,
+		data: Partial<Omit<NewNews, "id">>,
+	): Promise<News | null>;
+	deleteNews(id: string): Promise<boolean>;
+
+	// ==================== FAQ Methods ====================
+	getFaqs(): Promise<Faq[]>;
+	getFaqById(id: string): Promise<Faq | null>;
+	createFaq(item: NewFaq): Promise<Faq>;
+	updateFaq(
+		id: string,
+		data: Partial<Omit<NewFaq, "id">>,
+	): Promise<Faq | null>;
+	deleteFaq(id: string): Promise<boolean>;
 
 	// ==================== App Settings Methods ====================
 	getSetting(key: string): Promise<string | null>;
