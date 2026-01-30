@@ -31,6 +31,12 @@ export default [
 	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
 	route("treasury/transactions/new", "routes/treasury.transactions.new.tsx"),
 	route("minutes", "routes/minutes.tsx"),
+	route("news", "routes/news.tsx"),
+	route("news/new", "routes/news.new.tsx"),
+	route("news/:newsId/edit", "routes/news.$newsId.edit.tsx"),
+	route("faq", "routes/faq.tsx"),
+	route("faq/new", "routes/faq.new.tsx"),
+	route("faq/:faqId/edit", "routes/faq.$faqId.edit.tsx"),
 	route("inventory", "routes/inventory.tsx"),
 	route("inventory/new", "routes/inventory.new.tsx"),
 	route("inventory/:itemId/edit", "routes/inventory.$itemId.edit.tsx"),
@@ -49,6 +55,8 @@ export default [
 	route("settings/roles", "routes/settings.roles.tsx"),
 	route("settings/reimbursements", "routes/settings.reimbursements.tsx"),
 	route("settings/analytics", "routes/settings.analytics.tsx"),
+	route("settings/news", "routes/settings.news.tsx"),
+	route("settings/faqs", "routes/settings.faqs.tsx"),
 
 	// Analytics
 	route("analytics", "routes/analytics.tsx"),
