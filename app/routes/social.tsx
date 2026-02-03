@@ -93,6 +93,17 @@ export async function action({ request }: Route.ActionArgs) {
 	} else if (actionType === "delete") {
 		const id = formData.get("id") as string;
 		await db.deleteSocialLink(id);
+	} else if (actionType === "setPrimary") {
+		const id = formData.get("id") as string;
+		await db.setPrimarySocialLink(id);
+	} else if (actionType === "clearPrimary") {
+		// Clear primary by setting isPrimary to false for all
+		const links = await db.getSocialLinks();
+		for (const link of links) {
+			if (link.isPrimary) {
+				await db.updateSocialLink(link.id, { isPrimary: false });
+			}
+		}
 	}
 
 	return { success: true };
@@ -365,6 +376,35 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 								{/* Staff actions */}
 								{canWrite && !isInfoReel && (
 									<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+										{/* Set/Unset Primary */}
+										<Form method="post" className="inline">
+											<input
+												type="hidden"
+												name="_action"
+												value={channel.isPrimary ? "clearPrimary" : "setPrimary"}
+											/>
+											<input type="hidden" name="id" value={channel.id} />
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon"
+												className={cn(
+													"h-8 w-8",
+													channel.isPrimary
+														? "text-yellow-500 hover:text-gray-400"
+														: "text-gray-400 hover:text-yellow-500"
+												)}
+												title={
+													channel.isPrimary
+														? t("social.clear_primary")
+														: t("social.set_primary")
+												}
+											>
+												<span className="material-symbols-outlined text-xl">
+													{channel.isPrimary ? "star" : "star_outline"}
+												</span>
+											</Button>
+										</Form>
 										<Button
 											type="button"
 											variant="ghost"

@@ -37,7 +37,19 @@ export async function action({ request }: Route.ActionArgs) {
 		color: (formData.get("color") as string) || "bg-blue-500",
 		sortOrder: parseInt(formData.get("sortOrder") as string, 10) || 0,
 		isActive: formData.get("isActive") === "on",
+		isPrimary: formData.get("isPrimary") === "on",
 	};
+
+	// If setting as primary, first clear any existing primary
+	if (newLink.isPrimary) {
+		const db = getDatabase();
+		const existingLinks = await db.getSocialLinks();
+		for (const link of existingLinks) {
+			if (link.isPrimary) {
+				await db.updateSocialLink(link.id, { isPrimary: false });
+			}
+		}
+	}
 
 	await db.createSocialLink(newLink);
 
@@ -183,6 +195,17 @@ export default function SocialNew() {
 								{t("social.form.active")}
 								<span className="text-xs text-gray-500 block">
 									{t("social.new.hidden_desc")}
+								</span>
+							</Label>
+						</div>
+
+						{/* Primary */}
+						<div className="flex items-center gap-3">
+							<Checkbox id="isPrimary" name="isPrimary" />
+							<Label htmlFor="isPrimary">
+								{t("social.form.is_primary")}
+								<span className="text-xs text-gray-500 block">
+									{t("social.new.primary_desc")}
 								</span>
 							</Label>
 						</div>
