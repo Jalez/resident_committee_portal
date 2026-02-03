@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, useRouteLoaderData } from "react-router";
+import { maskBankAccount } from "~/lib/mask-bank-account";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
@@ -125,6 +126,10 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 		rootData?.user?.userId === purchase.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
 
+	// Can view full bank account if user can update OR is the creator
+	const isCreator = purchase.createdBy && rootData?.user?.userId === purchase.createdBy;
+	const canViewFullBankAccount = canUpdateGeneral || isCreator;
+
 	const formatCurrency = (value: string | number) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
@@ -183,8 +188,10 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
 									{t("treasury.new_reimbursement.bank_account")}
 								</div>
-								<p className="mt-1 text-gray-900 dark:text-white">
-									{purchase.bankAccount || "—"}
+								<p className="mt-1 text-gray-900 dark:text-white font-mono">
+									{canViewFullBankAccount
+										? (purchase.bankAccount || "—")
+										: maskBankAccount(purchase.bankAccount)}
 								</p>
 							</div>
 							{purchase.notes && (
@@ -222,17 +229,17 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 							/>
 							<TransactionDetailsForm
 								transactionType="expense"
-								onTypeChange={() => {}}
+								onTypeChange={() => { }}
 								amount={linkedTransaction.amount}
-								onAmountChange={() => {}}
+								onAmountChange={() => { }}
 								description={linkedTransaction.description}
-								onDescriptionChange={() => {}}
+								onDescriptionChange={() => { }}
 								category={linkedTransaction.category || "other"}
-								onCategoryChange={() => {}}
+								onCategoryChange={() => { }}
 								date={new Date(linkedTransaction.date).toISOString().split("T")[0]}
-								onDateChange={() => {}}
+								onDateChange={() => { }}
 								year={linkedTransaction.year}
-								onYearChange={() => {}}
+								onYearChange={() => { }}
 								yearOptions={yearOptions}
 								showTypeSelector={false}
 								showCard={false}

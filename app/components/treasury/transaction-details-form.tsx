@@ -56,7 +56,7 @@ export interface TransactionDetailsFormProps {
 	onYearChange?: (year: number) => void;
 	/** Available year options */
 	yearOptions: number[];
-	/** Whether the form fields are disabled */
+	/** Whether to disable type and year selectors (for edit mode) */
 	disabled?: boolean;
 	/** Whether to show the type selector (can be hidden when type is fixed) */
 	showTypeSelector?: boolean;
@@ -156,7 +156,6 @@ export function TransactionDetailsForm({
 						placeholder="0.00"
 						value={amount}
 						onChange={(e) => onAmountChange(e.target.value)}
-						disabled={disabled}
 					/>
 				</div>
 			</div>
@@ -172,7 +171,6 @@ export function TransactionDetailsForm({
 					placeholder={t("treasury.form.description_placeholder")}
 					value={description}
 					onChange={(e) => onDescriptionChange(e.target.value)}
-					disabled={disabled}
 				/>
 			</div>
 
@@ -184,7 +182,6 @@ export function TransactionDetailsForm({
 						value={category}
 						onValueChange={onCategoryChange}
 						required
-						disabled={disabled}
 					>
 						<SelectTrigger>
 							<SelectValue
@@ -209,7 +206,6 @@ export function TransactionDetailsForm({
 						required
 						value={date}
 						onChange={(e) => onDateChange(e.target.value)}
-						disabled={disabled}
 					/>
 				</div>
 			</div>

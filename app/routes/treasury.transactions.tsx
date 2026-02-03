@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
@@ -95,7 +97,7 @@ export default function TreasuryTransactions({
 }: Route.ComponentProps) {
 	const { year, transactions, totalExpenses, totalIncome, years, statuses, currentStatus, totalCount } =
 		loaderData;
-	const [_searchParams, setSearchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
 	const canEditGeneral = hasPermission("transactions:update");
 	const canEditSelf = hasPermission("transactions:update-self");
@@ -120,6 +122,16 @@ export default function TreasuryTransactions({
 	const formatDate = (date: Date | string) => {
 		return new Date(date).toLocaleDateString(i18n.language);
 	};
+
+	useEffect(() => {
+		const success = searchParams.get("success");
+		if (success !== "transaction_deleted") return;
+		toast.success(t("treasury.success.transaction_deleted"));
+		setSearchParams((prev) => {
+			prev.delete("success");
+			return prev;
+		});
+	}, [searchParams, setSearchParams, t]);
 
 	const handleYearChange = (newYear: number) => {
 		setSearchParams((prev) => {

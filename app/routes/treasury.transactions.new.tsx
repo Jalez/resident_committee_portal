@@ -23,6 +23,7 @@ import {
 	LinkExistingSelector,
 	purchasesToLinkableItems,
 } from "~/components/treasury/link-existing-selector";
+import { ReservationLinkSection } from "~/components/treasury/reservation-link-section";
 import { CheckboxOption } from "~/components/treasury/checkbox-option";
 import { Divider } from "~/components/treasury/divider";
 import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
@@ -150,9 +151,25 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Get purchases without linked transactions (for linking selector)
 	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
 
+	// Get open reservations for current year (for linking expenses to reserved funds)
+	const currentYear = new Date().getFullYear();
+	const openReservations = await db.getOpenFundReservationsByYear(currentYear);
+
+	// Enrich reservations with used/remaining amounts
+	const enrichedReservations = [];
+	for (const reservation of openReservations) {
+		const usedAmount = await db.getReservationUsedAmount(reservation.id);
+		const remainingAmount = Number.parseFloat(reservation.amount) - usedAmount;
+		enrichedReservations.push({
+			...reservation,
+			usedAmount,
+			remainingAmount,
+		});
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
-		currentYear: new Date().getFullYear(),
+		currentYear,
 		recentMinutes: [] as MinuteFile[],
 		emailConfigured: isEmailConfigured(),
 		// Pre-fill data
@@ -175,6 +192,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
 		// Unlinked purchases for linking selector
 		unlinkedPurchases,
+		// Open reservations for linking expenses
+		openReservations: enrichedReservations,
 	};
 }
 
@@ -210,6 +229,32 @@ export async function action({ request }: Route.ActionArgs) {
 			item,
 			message: "Inventory item created successfully",
 		};
+	}
+
+	// Handle updateField action for inline editing inventory items
+	if (actionType === "updateField") {
+		const itemId = formData.get("itemId") as string;
+		const field = formData.get("field") as string;
+		const value = formData.get("value") as string;
+
+		if (!itemId || !field) {
+			return { success: false, error: "Missing itemId or field" };
+		}
+
+		// Validate field name
+		const allowedFields = ["name", "quantity", "location", "category", "description", "value"];
+		if (!allowedFields.includes(field)) {
+			return { success: false, error: "Invalid field" };
+		}
+
+		// Parse value based on field type
+		let parsedValue: string | number = value;
+		if (field === "quantity") {
+			parsedValue = parseInt(value, 10) || 1;
+		}
+
+		await db.updateInventoryItem(itemId, { [field]: parsedValue });
+		return { success: true };
 	}
 
 	// Handle uploadReceipt action for ReceiptPicker
@@ -271,6 +316,12 @@ export async function action({ request }: Route.ActionArgs) {
 	if (actionType === "refreshReceipts") {
 		clearCache("RECEIPTS_BY_YEAR");
 		return { success: true };
+	}
+
+	// Guard: if actionType was set but not handled above, return early to prevent fall-through
+	if (actionType) {
+		console.warn(`[Action] Unhandled action type: ${actionType}`);
+		return { success: false, error: `Unhandled action type: ${actionType}` };
 	}
 
 	const type = formData.get("type") as "income" | "expense";
@@ -421,6 +472,26 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
+	// Link to reservation if provided (for expenses from reserved funds)
+	const reservationId = formData.get("reservationId") as string;
+	const reservationAmount = formData.get("reservationAmount") as string;
+	console.log("[DEBUG] Reservation linking:", { reservationId, reservationAmount, type });
+	if (reservationId && type === "expense") {
+		// Verify reservation exists before linking
+		const reservation = await db.getFundReservationById(reservationId);
+		console.log("[DEBUG] Found reservation:", reservation);
+		if (reservation) {
+			// Parse the amount - default to transaction amount if not specified
+			const linkAmount = reservationAmount
+				? reservationAmount.replace(",", ".")
+				: amount.replace(",", ".");
+			console.log("[DEBUG] Linking with amount:", linkAmount);
+			await db.linkTransactionToReservation(transaction.id, reservationId, linkAmount);
+		} else {
+			console.warn(`[DEBUG] Reservation ${reservationId} not found in database, skipping link`);
+		}
+	}
+
 	return redirect(`/treasury?year=${year}&success=transaction_created`);
 }
 
@@ -437,6 +508,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		receiptsByYear,
 		receiptsFolderUrl,
 		unlinkedPurchases,
+		openReservations,
 	} = loaderData ?? {
 		currentYear: new Date().getFullYear(),
 		recentMinutes: [] as Array<{
@@ -477,6 +549,14 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		}>,
 		receiptsFolderUrl: "#",
 		unlinkedPurchases: [] as Purchase[],
+		openReservations: [] as Array<{
+			id: string;
+			name: string;
+			description: string | null;
+			amount: string;
+			year: number;
+			remainingAmount: number;
+		}>,
 	};
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
@@ -491,6 +571,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 
 	const [requestReimbursement, setRequestReimbursement] = useState(false);
 	const [selectedPurchaseId, setSelectedPurchaseId] = useState("");
+	const [selectedReservationId, setSelectedReservationId] = useState("");
 
 
 	// Handle selection change - uncheck checkbox when selecting existing purchase
@@ -626,16 +707,16 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 	const _selectedItemsTotal =
 		contextItems.length > 0
 			? contextItems.reduce(
-					(sum, ctxItem) => sum + ctxItem.quantity * ctxItem.unitValue,
-					0,
-				)
+				(sum, ctxItem) => sum + ctxItem.quantity * ctxItem.unitValue,
+				0,
+			)
 			: selectedItemIds.reduce((sum, id) => {
-					const item = availableItems.find((i) => i.id === id);
-					if (item?.value) {
-						return sum + parseFloat(item.value) * (item.quantity || 1);
-					}
-					return sum;
-				}, 0);
+				const item = availableItems.find((i) => i.id === id);
+				if (item?.value) {
+					return sum + parseFloat(item.value) * (item.quantity || 1);
+				}
+				return sum;
+			}, 0);
 
 	// Handler for adding new inventory item from picker
 	const handleAddItem = async (itemData: {
@@ -660,6 +741,16 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		// The fetcher will trigger a reload
 		fetcher.submit(formData, { method: "POST" });
 		return null;
+	};
+
+	// Handler for inline editing inventory items
+	const handleInlineEdit = (itemId: string, field: string, value: string) => {
+		const formData = new FormData();
+		formData.set("_action", "updateField");
+		formData.set("itemId", itemId);
+		formData.set("field", field);
+		formData.set("value", value);
+		fetcher.submit(formData, { method: "POST" });
 	};
 
 	// Convert purchases to linkable items
@@ -715,9 +806,11 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 								uniqueLocations={uniqueLocations}
 								uniqueCategories={uniqueCategories}
 								onAddNewItem={handleAddItem}
+								onInlineEdit={handleInlineEdit}
 								title={t("treasury.new.inventory_title")}
 								description={t("treasury.new.inventory_desc")}
 								emptyMessage={t("treasury.new.inventory_empty")}
+								hideSelectedList={true}
 
 							/>
 
@@ -731,6 +824,16 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 								/>
 							))}
 						</div>
+					)}
+
+					{/* Fund Reservation Section - Only for expenses when reservations exist */}
+					{transactionType === "expense" && (
+						<ReservationLinkSection
+							openReservations={openReservations}
+							selectedReservationId={selectedReservationId}
+							onSelectionChange={setSelectedReservationId}
+							amount={amount}
+						/>
 					)}
 
 					{/* Reimbursement Section - Only for expenses */}
@@ -752,7 +855,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 										noLinkText={t("treasury.new.no_link")}
 									/>
 									{selectedPurchase && (
-										<LinkedItemInfo purchase={selectedPurchase} />
+										<LinkedItemInfo purchase={selectedPurchase} canViewFullBankAccount={true} />
 									)}
 								</>
 							)}
@@ -771,20 +874,20 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 								label={t("treasury.new.request_reimbursement")}
 								helpText={t("treasury.new.reimbursement_help")}
 							>
-									<ReimbursementForm
-										recentMinutes={recentMinutes.map((m) => ({
-											...m,
-											year: m.year.toString(),
-										}))}
-										emailConfigured={emailConfigured}
-										receiptsByYear={receiptsByYear}
-										currentYear={currentYear}
-										receiptsFolderUrl={receiptsFolderUrl}
-										description={descriptionValue}
-										showNotes={true}
-										required={requestReimbursement}
-									/>
-								</CheckboxOption>
+								<ReimbursementForm
+									recentMinutes={recentMinutes.map((m) => ({
+										...m,
+										year: m.year.toString(),
+									}))}
+									emailConfigured={emailConfigured}
+									receiptsByYear={receiptsByYear}
+									currentYear={currentYear}
+									receiptsFolderUrl={receiptsFolderUrl}
+									description={descriptionValue}
+									showNotes={true}
+									required={requestReimbursement}
+								/>
+							</CheckboxOption>
 						</SectionCard>
 					)}
 

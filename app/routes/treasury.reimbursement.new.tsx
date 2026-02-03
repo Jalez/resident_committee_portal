@@ -149,6 +149,32 @@ export async function action({ request }: Route.ActionArgs) {
 		};
 	}
 
+	// Handle updateField action for inline editing inventory items
+	if (actionType === "updateField") {
+		const itemId = formData.get("itemId") as string;
+		const field = formData.get("field") as string;
+		const value = formData.get("value") as string;
+
+		if (!itemId || !field) {
+			return { success: false, error: "Missing itemId or field" };
+		}
+
+		// Validate field name
+		const allowedFields = ["name", "quantity", "location", "category", "description", "value"];
+		if (!allowedFields.includes(field)) {
+			return { success: false, error: "Invalid field" };
+		}
+
+		// Parse value based on field type
+		let parsedValue: string | number = value;
+		if (field === "quantity") {
+			parsedValue = parseInt(value, 10) || 1;
+		}
+
+		await db.updateInventoryItem(itemId, { [field]: parsedValue });
+		return { success: true };
+	}
+
 	// Handle uploadReceipt action for ReceiptPicker
 	if (actionType === "uploadReceipt") {
 		const receiptFile = formData.get("receiptFile") as File;
@@ -208,6 +234,12 @@ export async function action({ request }: Route.ActionArgs) {
 	if (actionType === "refreshReceipts") {
 		clearCache("RECEIPTS_BY_YEAR");
 		return { success: true };
+	}
+
+	// Guard: if actionType was set but not handled above, return early to prevent fall-through
+	if (actionType) {
+		console.warn(`[Action] Unhandled action type: ${actionType}`);
+		return { success: false, error: `Unhandled action type: ${actionType}` };
 	}
 
 	// Main form submission
@@ -656,6 +688,16 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		return null;
 	};
 
+	// Handler for inline editing inventory items
+	const handleInlineEdit = (itemId: string, field: string, value: string) => {
+		const formData = new FormData();
+		formData.set("_action", "updateField");
+		formData.set("itemId", itemId);
+		formData.set("field", field);
+		formData.set("value", value);
+		fetcher.submit(formData, { method: "POST" });
+	};
+
 	const linkableItems = transactionsToLinkableItems(
 		unlinkedTransactions as (Transaction & { purchaseId: string | null })[],
 	);
@@ -781,6 +823,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 											uniqueLocations={uniqueLocations}
 											uniqueCategories={uniqueCategories}
 											onAddNewItem={handleAddItem}
+											onInlineEdit={handleInlineEdit}
 											description={t("treasury.new.inventory_desc")}
 										/>
 

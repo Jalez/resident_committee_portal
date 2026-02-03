@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, useRouteLoaderData } from "react-router";
+import { maskBankAccount } from "~/lib/mask-bank-account";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
@@ -109,6 +110,13 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		rootData?.user?.userId === transaction.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
 
+	// Can view full bank account if user can update reimbursements OR is the purchase creator
+	const canUpdateReimbursements =
+		rootData?.user?.permissions?.includes("reimbursements:update") ||
+		rootData?.user?.permissions?.includes("*");
+	const isPurchaseCreator = !!(purchase?.createdBy && rootData?.user?.userId === purchase.createdBy);
+	const canViewFullBankAccount = !!(canUpdateReimbursements || isPurchaseCreator);
+
 	const formatCurrency = (value: string | number) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
@@ -136,17 +144,17 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 					{/* Transaction Details Form - all disabled */}
 					<TransactionDetailsForm
 						transactionType={transaction.type as TransactionType}
-						onTypeChange={() => {}}
+						onTypeChange={() => { }}
 						amount={transaction.amount}
-						onAmountChange={() => {}}
+						onAmountChange={() => { }}
 						description={transaction.description}
-						onDescriptionChange={() => {}}
+						onDescriptionChange={() => { }}
 						category={transaction.category || ""}
-						onCategoryChange={() => {}}
+						onCategoryChange={() => { }}
 						date={new Date(transaction.date).toISOString().split("T")[0]}
-						onDateChange={() => {}}
+						onDateChange={() => { }}
 						year={transaction.year}
-						onYearChange={() => {}}
+						onYearChange={() => { }}
 						yearOptions={yearOptions}
 						showTypeSelector={true}
 						showYearSelector={true}
@@ -222,7 +230,7 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 							<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
 								{t("treasury.reimbursements.edit.reimbursement_details")}
 							</h2>
-							<LinkedItemInfo purchase={purchase} />
+							<LinkedItemInfo purchase={purchase} canViewFullBankAccount={canViewFullBankAccount} />
 							<div className="space-y-4">
 								<div>
 									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -236,8 +244,10 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
 										{t("treasury.new_reimbursement.bank_account")}
 									</div>
-									<p className="mt-1 text-gray-900 dark:text-white">
-										{purchase.bankAccount || "—"}
+									<p className="mt-1 text-gray-900 dark:text-white font-mono">
+										{canViewFullBankAccount
+											? (purchase.bankAccount || "—")
+											: maskBankAccount(purchase.bankAccount)}
 									</p>
 								</div>
 								{purchase.notes && (

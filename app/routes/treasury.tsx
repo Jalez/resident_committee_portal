@@ -97,12 +97,24 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const balance = income - expenses;
 
+	// Get open reservations for the selected year to calculate reserved amount
+	const openReservations = await db.getOpenFundReservationsByYear(selectedYear);
+	let totalReserved = 0;
+	for (const reservation of openReservations) {
+		const usedAmount = await db.getReservationUsedAmount(reservation.id);
+		const remainingInReservation = Number.parseFloat(reservation.amount) - usedAmount;
+		totalReserved += remainingInReservation;
+	}
+	const available = balance - totalReserved;
+
 	return {
 		siteConfig: SITE_CONFIG,
 		selectedYear,
 		expenses,
 		income,
 		balance,
+		reserved: totalReserved,
+		available,
 		years: contextYears.length > 0 ? contextYears : [currentRealYear],
 		transactionCount: transactions.length,
 		languages,
@@ -115,6 +127,8 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		expenses,
 		income,
 		balance,
+		reserved,
+		available,
 		years,
 		transactionCount,
 		languages,
@@ -176,41 +190,55 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 	const actionItems = [
 		...(canReadBreakdown
 			? [
-					{
-						href: `/treasury/breakdown?year=${selectedYear}`,
-						icon: "table_chart",
-						labelPrimary: t("treasury.actions.breakdown", { lng: languages.primary }),
-						labelSecondary: t("treasury.actions.breakdown", {
-							lng: languages.secondary,
-						}),
-					},
-				]
+				{
+					href: `/treasury/breakdown?year=${selectedYear}`,
+					icon: "table_chart",
+					labelPrimary: t("treasury.actions.breakdown", { lng: languages.primary }),
+					labelSecondary: t("treasury.actions.breakdown", {
+						lng: languages.secondary,
+					}),
+				},
+			]
 			: []),
 		...(canReadTransactions
 			? [
-					{
-						href: `/treasury/transactions?year=${selectedYear}`,
-						icon: "list_alt",
-						labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
-						labelSecondary: t("treasury.actions.transactions", {
-							lng: languages.secondary,
-						}),
-					},
-				]
+				{
+					href: `/treasury/transactions?year=${selectedYear}`,
+					icon: "list_alt",
+					labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
+					labelSecondary: t("treasury.actions.transactions", {
+						lng: languages.secondary,
+					}),
+				},
+			]
 			: []),
 		...(hasPermission("reimbursements:read")
 			? [
-					{
-						href: "/treasury/reimbursements",
-						icon: "receipt_long",
-						labelPrimary: t("treasury.actions.reimbursements", {
-							lng: languages.primary,
-						}),
-						labelSecondary: t("treasury.actions.reimbursements", {
-							lng: languages.secondary,
-						}),
-					},
-				]
+				{
+					href: "/treasury/reimbursements",
+					icon: "receipt_long",
+					labelPrimary: t("treasury.actions.reimbursements", {
+						lng: languages.primary,
+					}),
+					labelSecondary: t("treasury.actions.reimbursements", {
+						lng: languages.secondary,
+					}),
+				},
+			]
+			: []),
+		...(hasPermission("reservations:read")
+			? [
+				{
+					href: `/treasury/reservations?year=${selectedYear}`,
+					icon: "savings",
+					labelPrimary: t("treasury.actions.reservations", {
+						lng: languages.primary,
+					}),
+					labelSecondary: t("treasury.actions.reservations", {
+						lng: languages.secondary,
+					}),
+				},
+			]
 			: []),
 	];
 
@@ -252,6 +280,28 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 								</p>
 							</div>
 
+							{/* Reserved / Available split - only show if there's reserved amount */}
+							{reserved > 0 && (
+								<div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+									<div>
+										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+											{t("treasury.reserved")}
+										</p>
+										<p className="text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-400">
+											{formatCurrency(reserved)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+											{t("treasury.available")}
+										</p>
+										<p className={`text-2xl lg:text-3xl font-bold ${available >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}>
+											{formatCurrency(available)}
+										</p>
+									</div>
+								</div>
+							)}
+
 							<div className="grid grid-cols-2 gap-4">
 								<div>
 									<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
@@ -275,18 +325,18 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">
 									{t("treasury.transactions_count", {
 										count: transactionCount,
-								})}
-								{canReadBreakdown && (
-									<>
-										{" "}—
-										<Link
-											to={`/treasury/breakdown?year=${selectedYear}`}
-											className="text-primary hover:underline ml-1"
-										>
-											{t("treasury.view_breakdown")}
-										</Link>
-									</>
-								)}
+									})}
+									{canReadBreakdown && (
+										<>
+											{" "}—
+											<Link
+												to={`/treasury/breakdown?year=${selectedYear}`}
+												className="text-primary hover:underline ml-1"
+											>
+												{t("treasury.view_breakdown")}
+											</Link>
+										</>
+									)}
 								</p>
 							</div>
 						</>

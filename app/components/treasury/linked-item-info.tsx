@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Purchase } from "~/db";
+import { maskBankAccount } from "~/lib/mask-bank-account";
 import {
 	Card,
 	CardContent,
@@ -22,6 +23,8 @@ interface LinkedTransactionInfoProps {
 interface LinkedPurchaseInfoProps {
 	/** The linked purchase */
 	purchase: Purchase;
+	/** Whether the user can see the full bank account number */
+	canViewFullBankAccount?: boolean;
 }
 
 /**
@@ -36,7 +39,10 @@ export function LinkedItemInfo(
 
 	// Check if it's transaction info or purchase info
 	if ("purchase" in props) {
-		const { purchase } = props;
+		const { purchase, canViewFullBankAccount = false } = props;
+		const displayBankAccount = canViewFullBankAccount
+			? purchase.bankAccount
+			: maskBankAccount(purchase.bankAccount);
 		return (
 			<Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 mt-4 py-0 gap-0">
 				<CardHeader className="px-4 pt-4 pb-3">
@@ -56,7 +62,7 @@ export function LinkedItemInfo(
 							<p className="text-blue-600 dark:text-blue-400">
 								{t("treasury.breakdown.edit.iban")}
 							</p>
-							<p className="font-mono text-xs">{purchase.bankAccount}</p>
+							<p className="font-mono text-xs">{displayBankAccount}</p>
 						</div>
 						<div className="min-w-[120px]">
 							<p className="text-blue-600 dark:text-blue-400">

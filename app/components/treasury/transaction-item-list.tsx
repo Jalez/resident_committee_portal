@@ -1,15 +1,6 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { InventoryPicker } from "~/components/inventory-picker";
 import { Button } from "~/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import type { InventoryItem } from "~/db";
 
@@ -37,7 +28,10 @@ interface TransactionItemListProps {
 		description?: string;
 		value?: string;
 	}) => Promise<InventoryItem | null>;
+	onInlineEdit?: (itemId: string, field: string, value: string) => void;
 	showTotal?: boolean;
+	/** Hide the separate selected items list and only show items in the picker table */
+	hideSelectedList?: boolean;
 }
 
 export function TransactionItemList({
@@ -50,10 +44,11 @@ export function TransactionItemList({
 	description,
 	emptyMessage = "No items selected",
 	onAddNewItem,
+	onInlineEdit,
 	showTotal = true,
+	hideSelectedList = false,
 }: TransactionItemListProps) {
 	const { t } = useTranslation();
-	const [pickerOpen, setPickerOpen] = useState(false);
 
 	// Calculate total
 	const totalValue = items.reduce(
@@ -132,8 +127,8 @@ export function TransactionItemList({
 				)}
 			</div>
 
-			{/* List */}
-			{items.length > 0 && (
+			{/* List - only show when hideSelectedList is false */}
+			{!hideSelectedList && items.length > 0 && (
 				<div className="space-y-2 border-t border-gray-100 dark:border-gray-700 pt-3">
 					{items.map((item) => (
 						<div
@@ -184,46 +179,20 @@ export function TransactionItemList({
 				</div>
 			)}
 
-			{/* Picker Dialog */}
-			<Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-				<DialogTrigger asChild>
-					<Button
-						type="button"
-						variant="outline"
-						className="w-full border-dashed border-2 py-8 hover:bg-gray-50 dark:hover:bg-gray-800"
-					>
-						<span className="material-symbols-outlined mr-2">add_circle</span>
-						{items.length > 0
-							? t("treasury.new.edit_selection")
-							: t("treasury.new.select_items")}
-					</Button>
-				</DialogTrigger>
-				<DialogContent className="max-w-4xl h-[80vh] flex flex-col p-6">
-					<DialogHeader>
-						<DialogTitle>{t("treasury.new.select_items")}</DialogTitle>
-						<DialogDescription>
-							{description || t("treasury.new.inventory_desc")}
-						</DialogDescription>
-					</DialogHeader>
-					<div className="flex-1 overflow-auto min-h-0 -mx-2 px-2">
-						<InventoryPicker
-							items={availableItems}
-							uniqueLocations={uniqueLocations}
-							uniqueCategories={uniqueCategories}
-							selectedIds={selectedIds}
-							onSelectionChange={handlePickerSelectionChange}
-							onAddItem={onAddNewItem}
-							compact={false}
-							showUnlinkedBadge={true}
-						/>
-					</div>
-					<div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
-						<Button onClick={() => setPickerOpen(false)}>
-							{t("receipts.done")}
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
+			{/* Inline Inventory Picker */}
+			<div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+				<InventoryPicker
+					items={availableItems}
+					uniqueLocations={uniqueLocations}
+					uniqueCategories={uniqueCategories}
+					selectedIds={selectedIds}
+					onSelectionChange={handlePickerSelectionChange}
+					onAddItem={onAddNewItem}
+					onInlineEdit={onInlineEdit}
+					compact={false}
+					showUnlinkedBadge={true}
+				/>
+			</div>
 		</div>
 	);
 }
