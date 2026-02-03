@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useSearchParams, useFetcher, useRevalidator } from "react-router";
+import { toast } from "sonner";
 import {
 	ActionButton,
 	ContentArea,
@@ -7,11 +10,14 @@ import {
 	SplitLayout,
 } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { Button } from "~/components/ui/button";
 import { useLanguage } from "~/contexts/language-context";
+import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
-import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
+import { getAuthenticatedUser, getGuestContext, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getCalendarEvents, getCalendarUrl } from "~/lib/google.server";
+import { CACHE_KEYS, clearCache } from "~/lib/cache.server";
+import { getCalendarEvents, getCalendarUrl, deleteCalendarEvent } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import type { Route } from "./+types/events";
@@ -64,6 +70,15 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const url = new URL(request.url);
 	const titleFilter = url.searchParams.get("title") || "";
+	const forceRefresh =
+		url.searchParams.get("created") === "true" ||
+		url.searchParams.get("updated") === "true";
+
+	if (forceRefresh) {
+		clearCache(CACHE_KEYS.CALENDAR_EVENTS);
+		await queryClient.removeQueries({ queryKey: queryKeys.calendar });
+	}
+
 	// Use ensureQueryData for client-side caching
 	// Returns cached data if fresh, fetches if stale
 	const [calendarItems, calendarUrl] = await Promise.all([
@@ -157,11 +172,99 @@ export async function loader({ request }: Route.LoaderArgs) {
 	};
 }
 
+export async function action({ request }: Route.ActionArgs) {
+	const formData = await request.formData();
+	const actionType = formData.get("_action") as string;
+
+	if (actionType === "delete") {
+		await requirePermission(request, "events:delete", getDatabase);
+		const eventId = formData.get("eventId") as string;
+
+		if (!eventId) {
+			return { error: "No event ID provided" };
+		}
+
+		try {
+			const deleted = await deleteCalendarEvent(eventId);
+			if (!deleted) {
+				return { error: "Failed to delete event" };
+			}
+			// Force refresh: remove calendar query so loader fetches fresh events
+			await queryClient.removeQueries({ queryKey: queryKeys.calendar });
+			return { success: true, deleted: true };
+		} catch (error) {
+			console.error("[events.action] Delete error:", error);
+			return { error: error instanceof Error ? error.message : "Failed to delete event" };
+		}
+	}
+
+	return { error: "Unknown action" };
+}
+
 export default function Events({ loaderData }: Route.ComponentProps) {
 	const { groupedMonths, calendarUrl, filters, hasFilters, languages } =
 		loaderData;
 	const { isInfoReel } = useLanguage();
+	const { hasPermission } = useUser();
 	const { t, i18n } = useTranslation();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const deleteFetcher = useFetcher<typeof action>();
+	const revalidator = useRevalidator();
+	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+	
+	// Track if we've revalidated after delete to prevent multiple revalidations
+	const revalidatedRef = useRef(false);
+
+	const canWrite = hasPermission("events:write");
+	const canUpdate = hasPermission("events:update");
+	const canDelete = hasPermission("events:delete");
+	const hasActions = canUpdate || canDelete;
+
+	// Show success toast when redirected after creating or editing event
+	useEffect(() => {
+		const created = searchParams.get("created") === "true";
+		const updated = searchParams.get("updated") === "true";
+		
+		if (created) {
+			toast.success(t("events.new.success"), { id: "event-created" });
+			setSearchParams((prev) => {
+				prev.delete("created");
+				return prev;
+			}, { replace: true });
+		} else if (updated) {
+			toast.success(t("events.edit.success"), { id: "event-updated" });
+			setSearchParams((prev) => {
+				prev.delete("updated");
+				return prev;
+			}, { replace: true });
+		}
+	}, [searchParams, setSearchParams, t]);
+
+	// Handle delete fetcher response: toast and revalidate once so events list refreshes
+	useEffect(() => {
+		if (deleteFetcher.data?.deleted) {
+			toast.success(t("events.delete.success"), { id: "event-deleted" });
+			setDeleteConfirmId(null);
+			if (!revalidatedRef.current) {
+				revalidatedRef.current = true;
+				revalidator.revalidate();
+			}
+		} else if (deleteFetcher.data?.error) {
+			toast.error(t("events.delete.error"), { id: "event-delete-error" });
+		}
+		// Reset revalidation flag when fetcher becomes idle with no data
+		if (deleteFetcher.state === "idle" && !deleteFetcher.data) {
+			revalidatedRef.current = false;
+		}
+	}, [deleteFetcher.data, deleteFetcher.state, t, revalidator]);
+
+	const handleDelete = (eventId: string) => {
+		revalidatedRef.current = false; // Reset for new delete
+		deleteFetcher.submit(
+			{ _action: "delete", eventId },
+			{ method: "post" }
+		);
+	};
 
 	// Determine current locale for formatting
 	// If language is 'en', force 'en-GB' to avoid 'en-US' (month-first) formatting.
@@ -251,10 +354,19 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		/>
 	);
 
-	// Header actions: Search + Calendar button
+	// Header actions: Search + Calendar button + Add Event
 	const FooterContent = (
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
+			{canWrite && !isInfoReel && (
+				<Link
+					to="/events/new"
+					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+					title={t("events.add_event")}
+				>
+					<span className="material-symbols-outlined text-xl">add</span>
+				</Link>
+			)}
 			{calendarUrl && (
 				<ActionButton
 					href={calendarUrl}
@@ -344,6 +456,62 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 														)}
 													</div>
 												</div>
+												{/* Edit/Delete Actions */}
+												{hasActions && !isInfoReel && (
+													<div className="flex items-center gap-1 ml-2 shrink-0">
+														{deleteConfirmId === event.id ? (
+															<>
+																<Button
+																	variant="destructive"
+																	size="sm"
+																	onClick={() => handleDelete(event.id)}
+																	disabled={deleteFetcher.state !== "idle"}
+																>
+																	{deleteFetcher.state !== "idle" ? (
+																		<span className="material-symbols-outlined animate-spin text-sm">
+																			progress_activity
+																		</span>
+																	) : (
+																		t("settings.common.confirm")
+																	)}
+																</Button>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() => setDeleteConfirmId(null)}
+																>
+																	{t("settings.common.cancel")}
+																</Button>
+															</>
+														) : (
+															<>
+																{canUpdate && (
+																	<Link
+																		to={`/events/${event.id}/edit`}
+																		className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+																		title={t("events.edit.title")}
+																	>
+																		<span className="material-symbols-outlined text-lg">
+																			edit
+																		</span>
+																	</Link>
+																)}
+																{canDelete && (
+																	<button
+																		type="button"
+																		onClick={() => setDeleteConfirmId(event.id)}
+																		className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+																		title={t("events.delete.confirm")}
+																	>
+																		<span className="material-symbols-outlined text-lg">
+																			delete
+																		</span>
+																	</button>
+																)}
+															</>
+														)}
+													</div>
+												)}
 											</li>
 										))}
 									</ul>

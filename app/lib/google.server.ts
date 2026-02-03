@@ -62,7 +62,7 @@ async function getAccessToken(): Promise<string | null> {
 		const payload = {
 			iss: config.serviceAccountEmail,
 			scope:
-				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly",
+				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events",
 			aud: "https://oauth2.googleapis.com/token",
 			iat: now,
 			exp: expiry,
@@ -220,6 +220,366 @@ export async function getCalendarEvents() {
 export function getCalendarUrl() {
 	if (!config.calendarId) return "";
 	return `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(config.calendarId)}`;
+}
+
+/**
+ * Get a single calendar event by ID
+ */
+export async function getCalendarEvent(eventId: string): Promise<{
+	id: string;
+	summary?: string;
+	description?: string;
+	location?: string;
+	start?: { dateTime?: string; date?: string };
+	end?: { dateTime?: string; date?: string };
+	recurrence?: string[];
+	reminders?: {
+		useDefault: boolean;
+		overrides?: { method: string; minutes: number }[];
+	};
+	attendees?: { email: string }[];
+} | null> {
+	if (!config.calendarId) {
+		console.error("[getCalendarEvent] No calendar ID configured");
+		return null;
+	}
+
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[getCalendarEvent] Could not get access token");
+		return null;
+	}
+
+	const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events/${eventId}`;
+
+	try {
+		const res = await fetch(url, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[getCalendarEvent] API Error:", errorText);
+			return null;
+		}
+
+		return await res.json();
+	} catch (error) {
+		console.error("[getCalendarEvent] Error:", error);
+		return null;
+	}
+}
+
+// ============================================
+// CALENDAR EVENT MANAGEMENT
+// ============================================
+
+/**
+ * Calendar event input for creating/updating events
+ */
+export interface CalendarEventInput {
+	title: string;
+	description?: string;
+	location?: string;
+	startDateTime: string; // ISO string for timed events
+	endDateTime: string; // ISO string for timed events
+	startDate?: string; // YYYY-MM-DD for all-day events
+	endDate?: string; // YYYY-MM-DD for all-day events (exclusive)
+	isAllDay?: boolean;
+	// Recurrence
+	recurrence?: {
+		frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+		interval?: number; // Every X days/weeks/months/years
+		count?: number; // Number of occurrences
+		until?: string; // End date (YYYY-MM-DD)
+		byDay?: string[]; // For weekly: ["MO", "TU", "WE", etc.]
+	};
+	// Reminders
+	reminders?: {
+		method: "email" | "popup";
+		minutes: number; // Minutes before event
+	}[];
+	// Attendees
+	attendees?: string[]; // Email addresses
+}
+
+/**
+ * Build RRULE string from recurrence options
+ */
+function buildRRule(recurrence: CalendarEventInput["recurrence"]): string | null {
+	if (!recurrence) return null;
+
+	const parts = [`FREQ=${recurrence.frequency}`];
+
+	if (recurrence.interval && recurrence.interval > 1) {
+		parts.push(`INTERVAL=${recurrence.interval}`);
+	}
+
+	if (recurrence.count) {
+		parts.push(`COUNT=${recurrence.count}`);
+	} else if (recurrence.until) {
+		// Convert YYYY-MM-DD to YYYYMMDD format
+		parts.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
+	}
+
+	if (recurrence.byDay && recurrence.byDay.length > 0) {
+		parts.push(`BYDAY=${recurrence.byDay.join(",")}`);
+	}
+
+	return `RRULE:${parts.join(";")}`;
+}
+
+/**
+ * Create a new calendar event
+ * Supports single events, all-day events, recurring events, reminders, and attendees
+ */
+export async function createCalendarEvent(
+	event: CalendarEventInput,
+): Promise<{ id: string; htmlLink: string } | null> {
+	if (!config.calendarId) {
+		console.error("[createCalendarEvent] No calendar ID configured");
+		return null;
+	}
+
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[createCalendarEvent] Could not get access token");
+		return null;
+	}
+
+	// Build the event body
+	const eventBody: Record<string, unknown> = {
+		summary: event.title,
+	};
+
+	if (event.description) {
+		eventBody.description = event.description;
+	}
+
+	if (event.location) {
+		eventBody.location = event.location;
+	}
+
+	// Handle start/end times
+	if (event.isAllDay && event.startDate) {
+		eventBody.start = { date: event.startDate };
+		eventBody.end = { date: event.endDate || event.startDate };
+	} else {
+		eventBody.start = { dateTime: event.startDateTime, timeZone: "Europe/Helsinki" };
+		eventBody.end = { dateTime: event.endDateTime, timeZone: "Europe/Helsinki" };
+	}
+
+	// Add recurrence if specified
+	if (event.recurrence) {
+		const rrule = buildRRule(event.recurrence);
+		if (rrule) {
+			eventBody.recurrence = [rrule];
+		}
+	}
+
+	// Add reminders if specified
+	if (event.reminders && event.reminders.length > 0) {
+		eventBody.reminders = {
+			useDefault: false,
+			overrides: event.reminders.map((r) => ({
+				method: r.method,
+				minutes: r.minutes,
+			})),
+		};
+	}
+
+	// Add attendees if specified
+	if (event.attendees && event.attendees.length > 0) {
+		eventBody.attendees = event.attendees.map((email) => ({ email }));
+	}
+
+	const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events`;
+
+	try {
+		console.log("[createCalendarEvent] Creating event:", event.title);
+
+		const res = await fetch(url, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(eventBody),
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[createCalendarEvent] API Error:", errorText);
+			return null;
+		}
+
+		const created = await res.json();
+		console.log(`[createCalendarEvent] Created event: ${created.id}`);
+
+		// Clear the calendar cache so new event shows up
+		clearCache(CACHE_KEYS.CALENDAR_EVENTS);
+
+		return {
+			id: created.id,
+			htmlLink: created.htmlLink,
+		};
+	} catch (error) {
+		console.error("[createCalendarEvent] Error:", error);
+		return null;
+	}
+}
+
+/**
+ * Update an existing calendar event
+ */
+export async function updateCalendarEvent(
+	eventId: string,
+	event: Partial<CalendarEventInput>,
+): Promise<{ id: string; htmlLink: string } | null> {
+	if (!config.calendarId) {
+		console.error("[updateCalendarEvent] No calendar ID configured");
+		return null;
+	}
+
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[updateCalendarEvent] Could not get access token");
+		return null;
+	}
+
+	// Build the event body with only provided fields
+	const eventBody: Record<string, unknown> = {};
+
+	if (event.title) {
+		eventBody.summary = event.title;
+	}
+
+	if (event.description !== undefined) {
+		eventBody.description = event.description;
+	}
+
+	if (event.location !== undefined) {
+		eventBody.location = event.location;
+	}
+
+	// Handle start/end times
+	if (event.isAllDay && event.startDate) {
+		eventBody.start = { date: event.startDate };
+		eventBody.end = { date: event.endDate || event.startDate };
+	} else if (event.startDateTime) {
+		eventBody.start = { dateTime: event.startDateTime, timeZone: "Europe/Helsinki" };
+		eventBody.end = { dateTime: event.endDateTime, timeZone: "Europe/Helsinki" };
+	}
+
+	// Add recurrence if specified
+	if (event.recurrence) {
+		const rrule = buildRRule(event.recurrence);
+		if (rrule) {
+			eventBody.recurrence = [rrule];
+		}
+	}
+
+	// Add reminders if specified
+	if (event.reminders !== undefined) {
+		if (event.reminders.length > 0) {
+			eventBody.reminders = {
+				useDefault: false,
+				overrides: event.reminders.map((r) => ({
+					method: r.method,
+					minutes: r.minutes,
+				})),
+			};
+		} else {
+			eventBody.reminders = { useDefault: true };
+		}
+	}
+
+	// Add attendees if specified
+	if (event.attendees !== undefined) {
+		eventBody.attendees = event.attendees.map((email) => ({ email }));
+	}
+
+	const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events/${eventId}`;
+
+	try {
+		console.log("[updateCalendarEvent] Updating event:", eventId);
+
+		const res = await fetch(url, {
+			method: "PATCH",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(eventBody),
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[updateCalendarEvent] API Error:", errorText);
+			return null;
+		}
+
+		const updated = await res.json();
+		console.log(`[updateCalendarEvent] Updated event: ${updated.id}`);
+
+		// Clear the calendar cache
+		clearCache(CACHE_KEYS.CALENDAR_EVENTS);
+
+		return {
+			id: updated.id,
+			htmlLink: updated.htmlLink,
+		};
+	} catch (error) {
+		console.error("[updateCalendarEvent] Error:", error);
+		return null;
+	}
+}
+
+/**
+ * Delete a calendar event
+ */
+export async function deleteCalendarEvent(eventId: string): Promise<boolean> {
+	if (!config.calendarId) {
+		console.error("[deleteCalendarEvent] No calendar ID configured");
+		return false;
+	}
+
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[deleteCalendarEvent] Could not get access token");
+		return false;
+	}
+
+	const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events/${eventId}`;
+
+	try {
+		console.log("[deleteCalendarEvent] Deleting event:", eventId);
+
+		const res = await fetch(url, {
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		});
+
+		if (!res.ok && res.status !== 204) {
+			const errorText = await res.text();
+			console.error("[deleteCalendarEvent] API Error:", errorText);
+			return false;
+		}
+
+		console.log(`[deleteCalendarEvent] Deleted event: ${eventId}`);
+
+		// Clear the calendar cache
+		clearCache(CACHE_KEYS.CALENDAR_EVENTS);
+
+		return true;
+	} catch (error) {
+		console.error("[deleteCalendarEvent] Error:", error);
+		return false;
+	}
 }
 
 // Helper to get the Current Year Folder ID (from PUBLIC root)
@@ -1488,7 +1848,7 @@ async function getServiceAccountAccessToken(): Promise<string | null> {
 		const payload = {
 			iss: config.serviceAccountEmail,
 			scope:
-				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly",
+				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events",
 			aud: "https://oauth2.googleapis.com/token",
 			iat: now,
 			exp: expiry,
