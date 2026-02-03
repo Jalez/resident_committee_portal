@@ -79,6 +79,7 @@ export function DataTable<TData, TValue>({
 					id: "select",
 					header: ({ table }) => (
 						<Checkbox
+							type="button"
 							checked={
 								table.getIsAllPageRowsSelected() ||
 								(table.getIsSomePageRowsSelected() && "indeterminate")
@@ -87,13 +88,16 @@ export function DataTable<TData, TValue>({
 								table.toggleAllPageRowsSelected(!!value)
 							}
 							aria-label="Select all"
+							onClick={(e) => e.stopPropagation()}
 						/>
 					),
 					cell: ({ row }) => (
 						<Checkbox
+							type="button"
 							checked={row.getIsSelected()}
 							onCheckedChange={(value) => row.toggleSelected(!!value)}
 							aria-label="Select row"
+							onClick={(e) => e.stopPropagation()}
 						/>
 					),
 					enableSorting: false,
@@ -159,6 +163,7 @@ export function DataTable<TData, TValue>({
 					<div className="flex items-center gap-2">
 						{onDeleteSelected && (
 							<Button
+								type="button"
 								variant="destructive"
 								size="sm"
 								onClick={handleDeleteSelected}
@@ -252,6 +257,7 @@ export function DataTable<TData, TValue>({
 							</p>
 							<div className="flex items-center gap-2">
 								<Button
+									type="button"
 									variant="outline"
 									size="sm"
 									onClick={() => onPageChange?.(currentPage - 1)}
@@ -263,6 +269,7 @@ export function DataTable<TData, TValue>({
 									Edellinen
 								</Button>
 								<Button
+									type="button"
 									variant="outline"
 									size="sm"
 									onClick={() => onPageChange?.(currentPage + 1)}

@@ -32,9 +32,7 @@ async function hydrate() {
 		hydrateRoot(
 			document,
 			<I18nextProvider i18n={i18next}>
-				<StrictMode>
 					<HydratedRouter />
-				</StrictMode>
 			</I18nextProvider>,
 		);
 	});
