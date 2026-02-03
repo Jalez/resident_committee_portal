@@ -27,7 +27,8 @@
 		"inventory": "Inventarier",
 		"social": "Socialt",
 		"login": "Logga in",
-		"submissions": "Inskickat"
+		"submissions": "Inskickat",
+		"committee_mail": "E-post"
 	},
 	"receipts": {
 		"select_receipts": "Välj kvitton",
@@ -552,7 +553,8 @@
 				"name": "Namn",
 				"email": "E-post",
 				"apartment": "Lägenhet",
-				"role": "Roll",
+				"role": "Huvudroll",
+				"secondary_roles": "Sidoroller",
 				"joined": "Gick med"
 			},
 			"no_users": "Inga användare än",
@@ -561,6 +563,54 @@
 			"cannot_change_super_admin": "Kan inte ändra superadministratörens roll",
 			"update_failed": "Misslyckades att uppdatera roll"
 		}
+	},
+	"committee": {
+		"mail": {
+			"title": "E-post",
+			"description": "Skicka e-post till en roll (mottagare: alla med den rollen som huvud- eller sidoroll).",
+			"not_configured": "E-post är inte konfigurerad. Ställ in SMTP och COMMITTEE_FROM_EMAIL.",
+			"to": "Till (To)",
+			"cc": "Kopia (CC)",
+			"bcc": "Dold kopia (BCC)",
+			"select_role": "Välj roll",
+			"add_role": "Lägg till rollens medlemmar",
+			"add_email": "Lägg till e-post",
+			"add_email_placeholder": "epost@exempel.se",
+			"type_to_add": "Skriv namn eller roll och tryck Tab för att lägga till",
+			"remove": "Ta bort mottagare",
+			"loading": "Laddar...",
+			"recipients": "Mottagare",
+			"no_recipients": "Inga användare har denna roll.",
+			"suggestions": "Förslag",
+			"no_suggestions": "Inga förslag",
+			"role": "Roll",
+			"subject": "Ämne",
+			"subject_placeholder": "E-postens ämne",
+			"body": "Meddelande",
+			"body_placeholder": "Skriv ditt meddelande...",
+			"send": "Skicka",
+			"sending": "Skickar...",
+			"sent_success": "{{count}} meddelande skickat",
+			"sent_partial": "{{success}} skickat, {{fail}} misslyckades"
+		}
+	},
+	"mail": {
+		"inbox": "Inkorg",
+		"sent": "Skickat",
+		"compose": "Nytt meddelande",
+		"drafts": "Utkast",
+		"draft_saved_at": "Utkast sparad {{time}}",
+		"send_tooltip": "Skicka",
+		"no_drafts": "Inga utkast",
+		"no_subject": "(Inget ämne)",
+		"refresh": "Uppdatera",
+		"refreshed": "{{count}} nya meddelanden hämtade",
+		"no_messages": "Inga meddelanden",
+		"from": "Från",
+		"to": "Till",
+		"cc": "Kopia",
+		"date": "Datum",
+		"back": "Tillbaka"
 	},
 	"contact": {
 		"title": "Kontakt",
@@ -894,6 +944,9 @@
 			"analytics": "Åtkomst till analysinställningar (AI-modeller)",
 			"news": "Åtkomst till nyhetsinställningar (AI-översättningsmodell)",
 			"faqs": "Åtkomst till FAQ-inställningar (AI-översättningsmodell)"
+		},
+		"committee": {
+			"email": "Skicka e-post till rollmedlemmar"
 		},
 		"categories": {
 			"Users": "Användare",

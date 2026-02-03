@@ -7,7 +7,7 @@
 		"open_setup": "Avaa asennusopas",
 		"copy_env": "Tai kopioi .env.template tiedostoon .env ja määritä asetukset."
 	},
-		"nav": {
+	"nav": {
 		"menu": "Valikko",
 		"navigation": "Navigointi",
 		"settings": "Asetukset",
@@ -28,7 +28,8 @@
 		"social": "Some",
 		"analytics": "Analytiikka",
 		"login": "Kirjaudu",
-		"submissions": "Yhteydenotot"
+		"submissions": "Yhteydenotot",
+		"committee_mail": "Sähköposti"
 	},
 	"receipts": {
 		"select_receipts": "Valitse kuitit",
@@ -80,14 +81,17 @@
 		"title": "Rahasto {{year}}",
 		"year": "Vuosi",
 		"select_year": "Valitse vuosi...",
-			"success": {
-				"transaction_created": "Tapahtuma lisätty",
-				"reimbursement_requested": "Kulukorvaushakemus lähetetty"
-			},
+		"success": {
+			"transaction_created": "Tapahtuma lisätty",
+			"reimbursement_requested": "Kulukorvaushakemus lähetetty",
+			"transaction_deleted": "Tapahtuma poistettu"
+		},
 		"view_breakdown": "Katso erittely",
 		"balance": "Saldo",
 		"income": "Tulot",
 		"expenses": "Menot",
+		"reserved": "Varattu",
+		"available": "Käytettävissä",
 		"transactions_count": "{{count}} tapahtumaa",
 		"no_transactions": "Ei tapahtumia",
 		"no_transactions_desc": "Vuodelle {{year}} ei ole vielä kirjattu tapahtumia.",
@@ -96,6 +100,7 @@
 			"breakdown": "Erittely",
 			"transactions": "Transaktiovirta",
 			"reimbursements": "Kulukorvaushakemukset",
+			"reservations": "Varaukset",
 			"add": "Lisää"
 		},
 		"new": {
@@ -115,7 +120,11 @@
 			"no_link": "Älä linkitä",
 			"or": "tai",
 			"submit": "Lisää",
-			"submit_and_request": "Lisää ja hae korvausta"
+			"submit_and_request": "Lisää ja hae korvausta",
+			"link_reservation": "Linkitä määrärahavaraukseen",
+			"link_reservation_help": "Valinnainen: Käytä varoja olemassa olevasta varauksesta.",
+			"no_reservation": "Älä käytä varausta",
+			"reservation_note": "Menon summa vähennetään valitusta varauksesta."
 		},
 		"form": {
 			"type": "Tyyppi",
@@ -298,6 +307,75 @@
 					"paused": "Tauolla",
 					"declined": "Hylätty"
 				}
+			}
+		},
+		"reservations": {
+			"title": "Rahastovaraukset",
+			"back": "Takaisin",
+			"new": "Uusi varaus",
+			"name": "Varauksen nimi",
+			"name_placeholder": "Esim. Kitaran hankinta",
+			"description": "Kuvaus",
+			"description_placeholder": "Lisätietoja varauksesta",
+			"amount": "Varattu summa",
+			"used": "Käytetty",
+			"available": "Käytettävissä",
+			"remaining": "Jäljellä",
+			"status": "Tila",
+			"created_by": "Luoja",
+			"created_at": "Luotu",
+			"year": "Vuosi",
+			"statuses": {
+				"open": "Avoinna",
+				"closed": "Suljettu"
+			},
+			"actions": {
+				"view": "Näytä",
+				"edit": "Muokkaa",
+				"delete": "Poista",
+				"close": "Sulje varaus",
+				"reopen": "Avaa uudelleen"
+			},
+			"close_confirm": "Varauksen sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
+			"reopen_confirm": "Avaa tämä varaus uudelleen?",
+			"delete_confirm": "Poista tämä varaus? Tätä ei voi peruuttaa.",
+			"cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
+			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
+			"linked_transactions": "Linkitetyt transaktiot",
+			"no_transactions": "Ei linkitettyjä transaktioita",
+			"deduct_from": "Vähennä varauksesta",
+			"select_reservation": "Valitse varaus...",
+			"no_reservation": "Älä linkitä varaukseen",
+			"deduction_amount": "Vähennyssumma",
+			"available_in_reservation": "Käytettävissä: {{available}}",
+			"exceeds_available": "Summa ylittää varauksen käytettävissä olevat varat",
+			"no_reservations": "Ei varauksia",
+			"no_reservations_desc": "Vuodelle {{year}} ei ole vielä varauksia.",
+			"available_funds": "Käytettävissä olevat varat",
+			"reserved_funds": "Varatut varat",
+			"success": {
+				"created": "Varaus luotu",
+				"updated": "Varaus päivitetty",
+				"deleted": "Varaus poistettu",
+				"closed": "Varaus suljettu",
+				"reopened": "Varaus avattu uudelleen"
+			},
+			"error": {
+				"create_failed": "Varauksen luonti epäonnistui",
+				"update_failed": "Varauksen päivitys epäonnistui",
+				"delete_failed": "Varauksen poisto epäonnistui",
+				"has_transactions": "Varausta ei voi poistaa, koska siihen on linkitetty transaktioita"
+			},
+			"form": {
+				"cancel": "Peruuta",
+				"save": "Tallenna",
+				"create": "Luo varaus"
+			},
+			"view": {
+				"title": "Näytä varaus"
+			},
+			"edit": {
+				"title": "Muokkaa varausta"
 			}
 		}
 	},
@@ -629,7 +707,8 @@
 				"name": "Nimi",
 				"email": "Sähköposti",
 				"apartment": "Asunto",
-				"role": "Rooli",
+				"role": "Päärooli",
+				"secondary_roles": "Sivuroolit",
 				"joined": "Liittynyt"
 			},
 			"no_users": "Ei käyttäjiä vielä",
@@ -638,6 +717,54 @@
 			"cannot_change_super_admin": "Pääkäyttäjän roolia ei voi muuttaa",
 			"update_failed": "Roolin päivitys epäonnistui"
 		}
+	},
+	"committee": {
+		"mail": {
+			"title": "Sähköposti",
+			"description": "Lähetä sähköpostia tietylle roolille (vastaanottajina kaikki, joilla rooli pää- tai sivuroolina).",
+			"not_configured": "Sähköpostilähetys ei ole konfiguroitu. Aseta SMTP- ja COMMITTEE_FROM_EMAIL -ympäristömuuttujat.",
+			"to": "Vastaanottajat (To)",
+			"cc": "Kopio (CC)",
+			"bcc": "Piilokopio (BCC)",
+			"select_role": "Valitse rooli",
+			"add_role": "Lisää roolin jäsenet",
+			"add_email": "Lisää sähköposti",
+			"add_email_placeholder": "sähköposti@esimerkki.fi",
+			"type_to_add": "Kirjoita nimi tai rooli ja paina Tab lisätäksesi",
+			"remove": "Poista vastaanottaja",
+			"loading": "Ladataan...",
+			"recipients": "Vastaanottajat",
+			"no_recipients": "Tällä roolilla ei ole käyttäjiä.",
+			"suggestions": "Ehdotukset",
+			"no_suggestions": "Ei ehdotuksia",
+			"role": "Rooli",
+			"subject": "Aihe",
+			"subject_placeholder": "Sähköpostin aihe",
+			"body": "Viesti",
+			"body_placeholder": "Kirjoita viesti...",
+			"send": "Lähetä",
+			"sending": "Lähetetään...",
+			"sent_success": "{{count}} viesti lähetetty",
+			"sent_partial": "{{success}} lähetetty, {{fail}} epäonnistui"
+		}
+	},
+	"mail": {
+		"inbox": "Saapuneet",
+		"sent": "Lähetetyt",
+		"compose": "Uusi viesti",
+		"drafts": "Luonnokset",
+		"draft_saved_at": "Luonnos tallennettu kello {{time}}",
+		"send_tooltip": "Lähetä",
+		"no_drafts": "Ei luonnoksia",
+		"no_subject": "(Ei aihetta)",
+		"refresh": "Päivitä",
+		"refreshed": "{{count}} uutta viestiä haettu",
+		"no_messages": "Ei viestejä",
+		"from": "Lähettäjä",
+		"to": "Vastaanottaja",
+		"cc": "Kopio",
+		"date": "Päivä",
+		"back": "Takaisin"
 	},
 	"contact": {
 		"title": "Ota yhteyttä",
@@ -687,13 +814,18 @@
 		"delete_confirm": "Poista?",
 		"no_channels": "Ei sosiaalisia kanavia",
 		"add_first": "Lisää ensimmäinen",
+		"primary_badge": "Ensisijainen",
+		"set_primary": "Aseta ensisijaiseksi",
+		"clear_primary": "Poista ensisijaisuus",
 		"form": {
 			"name": "Nimi",
 			"icon": "Ikoni",
 			"url": "URL",
 			"color": "Väri",
 			"sort_order": "Järjestys",
-			"active": "Aktiivinen"
+			"active": "Aktiivinen",
+			"is_primary": "Aseta ensisijaiseksi kanavaksi",
+			"is_primary_help": "Ensisijainen kanava merkitään tähdellä"
 		},
 		"new": {
 			"title": "Uusi some-kanava",
@@ -744,9 +876,74 @@
 		"no_results": "Ei tuloksia",
 		"open_calendar": "Avaa kalenteri",
 		"all_day": "Koko päivä",
+		"add_event": "Lisää tapahtuma",
 		"search": {
 			"label": "Tapahtuma",
 			"placeholder": "Hae nimellä..."
+		},
+		"new": {
+			"title": "Uusi tapahtuma",
+			"header": "Uusi tapahtuma",
+			"basic_info": "Perustiedot",
+			"date_time": "Päivämäärä ja aika",
+			"recurrence": "Toistuvuus",
+			"reminders": "Muistutukset",
+			"attendees": "Osallistujat",
+			"submit": "Luo tapahtuma",
+			"success": "Tapahtuma luotu onnistuneesti!",
+			"error": "Tapahtuman luominen epäonnistui"
+		},
+		"form": {
+			"title": "Otsikko",
+			"title_placeholder": "Tapahtuman nimi",
+			"start_date": "Alkamispäivä",
+			"end_date": "Päättymispäivä",
+			"start_time": "Alkamisaika",
+			"end_time": "Päättymisaika",
+			"all_day": "Koko päivän tapahtuma",
+			"location": "Sijainti",
+			"location_placeholder": "Tapahtuman sijainti (valinnainen)",
+			"description": "Kuvaus",
+			"description_placeholder": "Tapahtuman kuvaus (valinnainen)",
+			"frequency": "Toistuvuus",
+			"interval": "Väli",
+			"recurrence_end": "Toistuminen päättyy",
+			"end_never": "Ei koskaan",
+			"end_after": "Jälkeen",
+			"occurrences": "kertaa",
+			"end_on": "Päivänä",
+			"add_reminder": "Lisää muistutus",
+			"no_reminders": "Ei muistutuksia",
+			"attendees": "Osallistujat",
+			"attendees_placeholder": "Sähköpostiosoitteet (pilkulla erotettu)",
+			"attendees_help": "Syötä osallistujien sähköpostiosoitteet pilkulla erotettuina"
+		},
+		"frequency": {
+			"daily": "Päivittäin",
+			"weekly": "Viikottain",
+			"monthly": "Kuukausittain",
+			"yearly": "Vuosittain"
+		},
+		"reminder": {
+			"popup": "Ponnahdusikkuna",
+			"email": "Sähköposti",
+			"10min": "10 minuuttia ennen",
+			"30min": "30 minuuttia ennen",
+			"1hour": "1 tunti ennen",
+			"1day": "1 päivä ennen",
+			"1week": "1 viikko ennen"
+		},
+		"edit": {
+			"title": "Muokkaa tapahtumaa",
+			"header": "Muokkaa tapahtumaa",
+			"submit": "Tallenna muutokset",
+			"success": "Tapahtuma päivitetty!",
+			"error": "Tapahtuman päivitys epäonnistui"
+		},
+		"delete": {
+			"confirm": "Haluatko varmasti poistaa tämän tapahtuman?",
+			"success": "Tapahtuma poistettu!",
+			"error": "Tapahtuman poisto epäonnistui"
 		}
 	},
 	"news": {
@@ -904,6 +1101,14 @@
 			"update-self": "Muokkaa omia tapahtumia",
 			"delete-self": "Poista omia tapahtumia"
 		},
+		"reservations": {
+			"read": "Näytä rahastovaraukset",
+			"write": "Luo rahastovarauksia",
+			"update": "Muokkaa rahastovarauksia",
+			"delete": "Poista rahastovarauksia",
+			"update-self": "Muokkaa omia rahastovarauksia",
+			"delete-self": "Poista omia rahastovarauksia"
+		},
 		"reimbursements": {
 			"read": "Näytä korvausvaatimukset",
 			"write": "Luo korvausvaatimuksia",
@@ -932,7 +1137,10 @@
 			"guide": "Näytä nimeämiskäytäntöohje"
 		},
 		"events": {
-			"read": "Näytä kalenteritapahtumat"
+			"read": "Näytä kalenteritapahtumat",
+			"write": "Luo kalenteritapahtumia",
+			"update": "Muokkaa kalenteritapahtumia",
+			"delete": "Poista kalenteritapahtumia"
 		},
 		"news": {
 			"read": "Näytä uutiset",
@@ -971,6 +1179,9 @@
 			"analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)",
 			"news": "Pääsy uutisasetuksiin (AI-käännösmalli)",
 			"faqs": "Pääsy UKK-asetuksiin (AI-käännösmalli)"
+		},
+		"committee": {
+			"email": "Lähetä sähköpostia roolin jäsenille"
 		},
 		"categories": {
 			"Users": "Käyttäjät",

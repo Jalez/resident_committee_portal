@@ -7,7 +7,7 @@
 		"open_setup": "Open Setup Guide",
 		"copy_env": "Or copy .env.template to .env and configure your settings."
 	},
-		"nav": {
+	"nav": {
 		"menu": "Menu",
 		"navigation": "Navigation",
 		"settings": "Settings",
@@ -28,7 +28,8 @@
 		"social": "Social",
 		"analytics": "Analytics",
 		"login": "Login",
-		"submissions": "Submissions"
+		"submissions": "Submissions",
+		"committee_mail": "Email"
 	},
 	"receipts": {
 		"select_receipts": "Select Receipts",
@@ -84,6 +85,8 @@
 		"balance": "Balance",
 		"income": "Income",
 		"expenses": "Expenses",
+		"reserved": "Reserved",
+		"available": "Available",
 		"transactions_count": "{{count}} transactions",
 		"no_transactions": "No transactions",
 		"no_transactions_desc": "No transactions recorded for {{year}} yet.",
@@ -92,6 +95,7 @@
 			"breakdown": "Breakdown",
 			"transactions": "Transactions",
 			"reimbursements": "Reimbursement Requests",
+			"reservations": "Reservations",
 			"add": "Add"
 		},
 		"new": {
@@ -113,11 +117,16 @@
 			"no_link": "Don't link",
 			"or": "or",
 			"submit": "Add",
-			"submit_and_request": "Add & Create Reimbursement Request"
+			"submit_and_request": "Add & Create Reimbursement Request",
+			"link_reservation": "Link to Fund Reservation",
+			"link_reservation_help": "Optional: Use funds from an existing reservation.",
+			"no_reservation": "Don't use reservation",
+			"reservation_note": "The expense amount will be deducted from the selected reservation."
 		},
 		"success": {
 			"transaction_created": "Transaction created",
-			"reimbursement_requested": "Reimbursement request sent"
+			"reimbursement_requested": "Reimbursement request sent",
+			"transaction_deleted": "Transaction deleted"
 		},
 		"form": {
 			"type": "Type",
@@ -300,6 +309,75 @@
 					"paused": "Paused",
 					"declined": "Declined"
 				}
+			}
+		},
+		"reservations": {
+			"title": "Fund Reservations",
+			"back": "Back",
+			"new": "New Reservation",
+			"name": "Reservation Name",
+			"name_placeholder": "E.g. Guitar purchase",
+			"description": "Description",
+			"description_placeholder": "Additional details about the reservation",
+			"amount": "Reserved Amount",
+			"used": "Used",
+			"available": "Available",
+			"remaining": "Remaining",
+			"status": "Status",
+			"created_by": "Created By",
+			"created_at": "Created",
+			"year": "Year",
+			"statuses": {
+				"open": "Open",
+				"closed": "Closed"
+			},
+			"actions": {
+				"view": "View",
+				"edit": "Edit",
+				"delete": "Delete",
+				"close": "Close Reservation",
+				"reopen": "Reopen Reservation"
+			},
+			"close_confirm": "Closing this reservation will return {{amount}} to available funds. Continue?",
+			"reopen_confirm": "Reopen this reservation?",
+			"delete_confirm": "Delete this reservation? This action cannot be undone.",
+			"cannot_reduce": "Cannot reduce amount below used amount ({{used}})",
+			"insufficient_funds": "Insufficient available funds. Available: {{available}}",
+			"linked_transactions": "Linked Transactions",
+			"no_transactions": "No transactions linked",
+			"deduct_from": "Deduct from Reservation",
+			"select_reservation": "Select reservation...",
+			"no_reservation": "Don't link to reservation",
+			"deduction_amount": "Deduction Amount",
+			"available_in_reservation": "Available: {{available}} €",
+			"exceeds_available": "Amount exceeds available funds in reservation",
+			"no_reservations": "No reservations",
+			"no_reservations_desc": "No fund reservations for {{year}} yet.",
+			"available_funds": "Available Funds",
+			"reserved_funds": "Reserved Funds",
+			"success": {
+				"created": "Reservation created",
+				"updated": "Reservation updated",
+				"deleted": "Reservation deleted",
+				"closed": "Reservation closed",
+				"reopened": "Reservation reopened"
+			},
+			"error": {
+				"create_failed": "Failed to create reservation",
+				"update_failed": "Failed to update reservation",
+				"delete_failed": "Failed to delete reservation",
+				"has_transactions": "Cannot delete reservation with linked transactions"
+			},
+			"form": {
+				"cancel": "Cancel",
+				"save": "Save",
+				"create": "Create Reservation"
+			},
+			"view": {
+				"title": "View Reservation"
+			},
+			"edit": {
+				"title": "Edit Reservation"
 			}
 		}
 	},
@@ -629,7 +707,8 @@
 				"name": "Name",
 				"email": "Email",
 				"apartment": "Apartment",
-				"role": "Role",
+				"role": "Primary role",
+				"secondary_roles": "Secondary roles",
 				"joined": "Joined"
 			},
 			"no_users": "No users yet",
@@ -638,6 +717,54 @@
 			"cannot_change_super_admin": "Cannot change Super Admin role",
 			"update_failed": "Failed to update role"
 		}
+	},
+	"committee": {
+		"mail": {
+			"title": "Committee Email",
+			"description": "Send email to a role (recipients: everyone with that role as primary or secondary).",
+			"not_configured": "Email is not configured. Set SMTP and COMMITTEE_FROM_EMAIL environment variables.",
+			"to": "To",
+			"cc": "CC",
+			"bcc": "BCC",
+			"select_role": "Select role",
+			"add_role": "Add role's members",
+			"add_email": "Add email",
+			"add_email_placeholder": "email@example.com",
+			"type_to_add": "Type a name or role and press Tab to add",
+			"remove": "Remove recipient",
+			"loading": "Loading...",
+			"recipients": "Recipients",
+			"no_recipients": "No users have this role.",
+			"suggestions": "Suggestions",
+			"no_suggestions": "No suggestions",
+			"role": "Role",
+			"subject": "Subject",
+			"subject_placeholder": "Email subject",
+			"body": "Message",
+			"body_placeholder": "Write your message...",
+			"send": "Send",
+			"sending": "Sending...",
+			"sent_success": "{{count}} message sent",
+			"sent_partial": "{{success}} sent, {{fail}} failed"
+		}
+	},
+	"mail": {
+		"inbox": "Inbox",
+		"sent": "Sent",
+		"compose": "Compose",
+		"drafts": "Drafts",
+		"draft_saved_at": "Draft saved at {{time}}",
+		"send_tooltip": "Send",
+		"no_drafts": "No drafts",
+		"no_subject": "(No subject)",
+		"refresh": "Refresh",
+		"refreshed": "{{count}} new messages fetched",
+		"no_messages": "No messages",
+		"from": "From",
+		"to": "To",
+		"cc": "CC",
+		"date": "Date",
+		"back": "Back"
 	},
 	"contact": {
 		"title": "Contact",
@@ -687,13 +814,18 @@
 		"delete_confirm": "Delete?",
 		"no_channels": "No social channels",
 		"add_first": "Add first",
+		"primary_badge": "Primary",
+		"set_primary": "Set as primary",
+		"clear_primary": "Remove primary",
 		"form": {
 			"name": "Name",
 			"icon": "Icon",
 			"url": "URL",
 			"color": "Color",
 			"sort_order": "Order",
-			"active": "Active"
+			"active": "Active",
+			"is_primary": "Set as primary channel",
+			"is_primary_help": "Primary channel will be marked with a star"
 		},
 		"new": {
 			"title": "New Social Channel",
@@ -744,9 +876,74 @@
 		"no_results": "No results",
 		"open_calendar": "Open Calendar",
 		"all_day": "All Day",
+		"add_event": "Add Event",
 		"search": {
 			"label": "Event",
 			"placeholder": "Search by name..."
+		},
+		"new": {
+			"title": "New Event",
+			"header": "New Event",
+			"basic_info": "Basic Info",
+			"date_time": "Date & Time",
+			"recurrence": "Recurrence",
+			"reminders": "Reminders",
+			"attendees": "Attendees",
+			"submit": "Create Event",
+			"success": "Event created successfully!",
+			"error": "Failed to create event"
+		},
+		"form": {
+			"title": "Title",
+			"title_placeholder": "Event title",
+			"start_date": "Start Date",
+			"end_date": "End Date",
+			"start_time": "Start Time",
+			"end_time": "End Time",
+			"all_day": "All-day event",
+			"location": "Location",
+			"location_placeholder": "Event location (optional)",
+			"description": "Description",
+			"description_placeholder": "Event description (optional)",
+			"frequency": "Frequency",
+			"interval": "Interval",
+			"recurrence_end": "Recurrence ends",
+			"end_never": "Never",
+			"end_after": "After",
+			"occurrences": "occurrences",
+			"end_on": "On date",
+			"add_reminder": "Add reminder",
+			"no_reminders": "No reminders set",
+			"attendees": "Attendees",
+			"attendees_placeholder": "Email addresses (comma separated)",
+			"attendees_help": "Enter attendee email addresses separated by commas"
+		},
+		"frequency": {
+			"daily": "Daily",
+			"weekly": "Weekly",
+			"monthly": "Monthly",
+			"yearly": "Yearly"
+		},
+		"reminder": {
+			"popup": "Popup",
+			"email": "Email",
+			"10min": "10 minutes before",
+			"30min": "30 minutes before",
+			"1hour": "1 hour before",
+			"1day": "1 day before",
+			"1week": "1 week before"
+		},
+		"edit": {
+			"title": "Edit Event",
+			"header": "Edit Event",
+			"submit": "Save Changes",
+			"success": "Event updated!",
+			"error": "Failed to update event"
+		},
+		"delete": {
+			"confirm": "Are you sure you want to delete this event?",
+			"success": "Event deleted!",
+			"error": "Failed to delete event"
 		}
 	},
 	"news": {
@@ -904,6 +1101,14 @@
 			"update-self": "Edit own transactions",
 			"delete-self": "Delete own transactions"
 		},
+		"reservations": {
+			"read": "View fund reservations",
+			"write": "Create fund reservations",
+			"update": "Edit fund reservations",
+			"delete": "Delete fund reservations",
+			"update-self": "Edit own fund reservations",
+			"delete-self": "Delete own fund reservations"
+		},
 		"reimbursements": {
 			"read": "View reimbursement requests",
 			"write": "Create reimbursement requests",
@@ -932,7 +1137,10 @@
 			"guide": "View naming convention guide"
 		},
 		"events": {
-			"read": "View calendar events"
+			"read": "View calendar events",
+			"write": "Create calendar events",
+			"update": "Edit calendar events",
+			"delete": "Delete calendar events"
 		},
 		"news": {
 			"read": "View news",
@@ -971,6 +1179,9 @@
 			"analytics": "Access analytics settings (AI models)",
 			"news": "Access news settings (AI translation model)",
 			"faqs": "Access FAQ settings (AI translation model)"
+		},
+		"committee": {
+			"email": "Send email to role members"
 		},
 		"categories": {
 			"Users": "Users",
