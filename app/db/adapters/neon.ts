@@ -4,15 +4,24 @@ import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
 	appSettings,
+	type CommitteeMailMessage,
+	committeeMailMessages,
 	type Faq,
 	faq,
+	type FundReservation,
+	fundReservations,
 	type InventoryItem,
 	type InventoryItemTransaction,
 	inventoryItems,
 	inventoryItemTransactions,
+	type MailDraft,
+	mailDrafts,
 	type Message,
 	messages,
+	type NewCommitteeMailMessage,
+	type NewMailDraft,
 	type NewFaq,
+	type NewFundReservation,
 	type NewInventoryItem,
 	type NewMessage,
 	type NewNews,
@@ -26,6 +35,8 @@ import {
 	news,
 	type Purchase,
 	purchases,
+	type ReservationTransaction,
+	reservationTransactions,
 	type Role,
 	roles,
 	type SocialLink,
@@ -36,6 +47,7 @@ import {
 	type Transaction,
 	transactions,
 	type User,
+	userSecondaryRoles,
 	users,
 } from "../schema";
 
@@ -193,13 +205,19 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-	// User permissions (fetched directly from role's permissions array)
+	// User permissions (primary role ∪ secondary roles)
 	async getUserPermissions(userId: string): Promise<string[]> {
 		const user = await this.findUserById(userId);
 		if (!user) return [];
 
-		const role = await this.getRoleById(user.roleId);
-		return role?.permissions ?? [];
+		const primaryRole = await this.getRoleById(user.roleId);
+		const secondaryIds = await this.getUserSecondaryRoleIds(userId);
+		const allPerms = [...(primaryRole?.permissions ?? [])];
+		for (const roleId of secondaryIds) {
+			const r = await this.getRoleById(roleId);
+			if (r?.permissions) allPerms.push(...r.permissions);
+		}
+		return [...new Set(allPerms)];
 	}
 
 	async getUserWithRole(
@@ -208,12 +226,74 @@ export class NeonAdapter implements DatabaseAdapter {
 		const user = await this.findUserById(userId);
 		if (!user) return null;
 
-		const role = await this.getRoleById(user.roleId);
+		const primaryRole = await this.getRoleById(user.roleId);
+		const permissions = await this.getUserPermissions(userId);
 		return {
 			...user,
-			roleName: role?.name,
-			permissions: role?.permissions ?? [],
+			roleName: primaryRole?.name,
+			permissions,
 		};
+	}
+
+	async getUserSecondaryRoleIds(userId: string): Promise<string[]> {
+		const rows = await this.db
+			.select({ roleId: userSecondaryRoles.roleId })
+			.from(userSecondaryRoles)
+			.where(eq(userSecondaryRoles.userId, userId));
+		return rows.map((r) => r.roleId);
+	}
+
+	async getAllUserSecondaryRoles(): Promise<
+		{ userId: string; roleId: string }[]
+	> {
+		const rows = await this.db
+			.select({
+				userId: userSecondaryRoles.userId,
+				roleId: userSecondaryRoles.roleId,
+			})
+			.from(userSecondaryRoles);
+		return rows;
+	}
+
+	async setUserSecondaryRoles(userId: string, roleIds: string[]): Promise<void> {
+		await this.db
+			.delete(userSecondaryRoles)
+			.where(eq(userSecondaryRoles.userId, userId));
+		if (roleIds.length > 0) {
+			await this.db.insert(userSecondaryRoles).values(
+				roleIds.map((roleId) => ({ userId, roleId })),
+			);
+		}
+	}
+
+	async getUsersByRoleId(roleId: string): Promise<User[]> {
+		const byPrimary = await this.db
+			.select()
+			.from(users)
+			.where(eq(users.roleId, roleId));
+		const bySecondary = await this.db
+			.select({ user: users })
+			.from(users)
+			.innerJoin(
+				userSecondaryRoles,
+				eq(users.id, userSecondaryRoles.userId),
+			)
+			.where(eq(userSecondaryRoles.roleId, roleId));
+		const seen = new Set<string>();
+		const result: User[] = [];
+		for (const row of byPrimary) {
+			if (!seen.has(row.id)) {
+				seen.add(row.id);
+				result.push(row);
+			}
+		}
+		for (const row of bySecondary) {
+			if (!seen.has(row.user.id)) {
+				seen.add(row.user.id);
+				result.push(row.user);
+			}
+		}
+		return result;
 	}
 
 	// ==================== Inventory Methods ====================
@@ -742,6 +822,15 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
+	async getPrimarySocialLink(): Promise<SocialLink | null> {
+		const result = await this.db
+			.select()
+			.from(socialLinks)
+			.where(eq(socialLinks.isPrimary, true))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
 	async createSocialLink(link: NewSocialLink): Promise<SocialLink> {
 		const result = await this.db.insert(socialLinks).values(link).returning();
 		return result[0];
@@ -765,6 +854,18 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(socialLinks.id, id))
 			.returning();
 		return result.length > 0;
+	}
+
+	async setPrimarySocialLink(id: string): Promise<void> {
+		// First, clear isPrimary from all links
+		await this.db
+			.update(socialLinks)
+			.set({ isPrimary: false, updatedAt: new Date() });
+		// Then set the specified link as primary
+		await this.db
+			.update(socialLinks)
+			.set({ isPrimary: true, updatedAt: new Date() })
+			.where(eq(socialLinks.id, id));
 	}
 
 	// ==================== News Methods ====================
@@ -898,6 +999,96 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
+	// ==================== Committee Mail Methods ====================
+	async insertCommitteeMailMessage(
+		message: NewCommitteeMailMessage,
+	): Promise<CommitteeMailMessage> {
+		const result = await this.db
+			.insert(committeeMailMessages)
+			.values(message)
+			.returning();
+		return result[0];
+	}
+
+	async getCommitteeMailMessages(
+		direction: "sent" | "inbox",
+		limit = 50,
+		offset = 0,
+	): Promise<CommitteeMailMessage[]> {
+		return this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(eq(committeeMailMessages.direction, direction))
+			.orderBy(desc(committeeMailMessages.date))
+			.limit(limit)
+			.offset(offset);
+	}
+
+	async getCommitteeMailMessageById(
+		id: string,
+	): Promise<CommitteeMailMessage | null> {
+		const result = await this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(eq(committeeMailMessages.id, id));
+		return result[0] ?? null;
+	}
+
+	async committeeMailMessageExistsByMessageId(
+		messageId: string,
+	): Promise<boolean> {
+		const result = await this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(eq(committeeMailMessages.messageId, messageId));
+		return result.length > 0;
+	}
+
+	// ==================== Mail Drafts Methods ====================
+	async insertMailDraft(draft: NewMailDraft): Promise<MailDraft> {
+		const result = await this.db
+			.insert(mailDrafts)
+			.values(draft)
+			.returning();
+		return result[0];
+	}
+
+	async updateMailDraft(
+		id: string,
+		data: Partial<Omit<NewMailDraft, "id" | "createdAt">>,
+	): Promise<MailDraft | null> {
+		const result = await this.db
+			.update(mailDrafts)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(mailDrafts.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async getMailDrafts(limit = 50): Promise<MailDraft[]> {
+		return this.db
+			.select()
+			.from(mailDrafts)
+			.orderBy(desc(mailDrafts.updatedAt))
+			.limit(limit);
+	}
+
+	async getMailDraftById(id: string): Promise<MailDraft | null> {
+		const result = await this.db
+			.select()
+			.from(mailDrafts)
+			.where(eq(mailDrafts.id, id));
+		return result[0] ?? null;
+	}
+
+	async deleteMailDraft(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(mailDrafts)
+			.where(eq(mailDrafts.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
 	// ==================== Message Methods ====================
 	async createMessage(message: NewMessage): Promise<Message> {
 		const result = await this.db
@@ -961,5 +1152,207 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(and(eq(messages.userId, userId), eq(messages.read, false)))
 			.returning();
 		return result.length;
+	}
+
+	// ==================== Fund Reservation Methods ====================
+	async getFundReservations(): Promise<FundReservation[]> {
+		return this.db
+			.select()
+			.from(fundReservations)
+			.orderBy(desc(fundReservations.createdAt));
+	}
+
+	async getFundReservationsByYear(year: number): Promise<FundReservation[]> {
+		return this.db
+			.select()
+			.from(fundReservations)
+			.where(eq(fundReservations.year, year))
+			.orderBy(desc(fundReservations.createdAt));
+	}
+
+	async getFundReservationById(id: string): Promise<FundReservation | null> {
+		const result = await this.db
+			.select()
+			.from(fundReservations)
+			.where(eq(fundReservations.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getOpenFundReservationsByYear(year: number): Promise<FundReservation[]> {
+		return this.db
+			.select()
+			.from(fundReservations)
+			.where(
+				and(
+					eq(fundReservations.year, year),
+					eq(fundReservations.status, "open"),
+				),
+			)
+			.orderBy(desc(fundReservations.createdAt));
+	}
+
+	async createFundReservation(
+		reservation: NewFundReservation,
+	): Promise<FundReservation> {
+		const result = await this.db
+			.insert(fundReservations)
+			.values(reservation)
+			.returning();
+		return result[0];
+	}
+
+	async updateFundReservation(
+		id: string,
+		data: Partial<Omit<NewFundReservation, "id">>,
+	): Promise<FundReservation | null> {
+		const result = await this.db
+			.update(fundReservations)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(fundReservations.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deleteFundReservation(id: string): Promise<boolean> {
+		// Check if there are linked transactions
+		const links = await this.db
+			.select()
+			.from(reservationTransactions)
+			.where(eq(reservationTransactions.reservationId, id));
+
+		if (links.length > 0) {
+			return false; // Cannot delete if there are linked transactions
+		}
+
+		const result = await this.db
+			.delete(fundReservations)
+			.where(eq(fundReservations.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	async linkTransactionToReservation(
+		transactionId: string,
+		reservationId: string,
+		amount: string,
+	): Promise<ReservationTransaction> {
+		const result = await this.db
+			.insert(reservationTransactions)
+			.values({
+				transactionId,
+				reservationId,
+				amount,
+			})
+			.returning();
+		return result[0];
+	}
+
+	async unlinkTransactionFromReservation(
+		transactionId: string,
+		reservationId: string,
+	): Promise<boolean> {
+		const result = await this.db
+			.delete(reservationTransactions)
+			.where(
+				and(
+					eq(reservationTransactions.transactionId, transactionId),
+					eq(reservationTransactions.reservationId, reservationId),
+				),
+			)
+			.returning();
+		return result.length > 0;
+	}
+
+	async getReservationTransactions(
+		reservationId: string,
+	): Promise<{ transaction: Transaction; amount: string }[]> {
+		const links = await this.db
+			.select()
+			.from(reservationTransactions)
+			.where(eq(reservationTransactions.reservationId, reservationId));
+
+		if (links.length === 0) return [];
+
+		const result: { transaction: Transaction; amount: string }[] = [];
+		for (const link of links) {
+			const txResult = await this.db
+				.select()
+				.from(transactions)
+				.where(eq(transactions.id, link.transactionId))
+				.limit(1);
+			if (txResult[0]) {
+				result.push({
+					transaction: txResult[0],
+					amount: link.amount,
+				});
+			}
+		}
+
+		return result;
+	}
+
+	async getReservationUsedAmount(reservationId: string): Promise<number> {
+		const links = await this.db
+			.select()
+			.from(reservationTransactions)
+			.where(eq(reservationTransactions.reservationId, reservationId));
+
+		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
+	}
+
+	async getAvailableFundsForYear(year: number): Promise<number> {
+		// Get all transactions for the year
+		const yearTransactions = await this.getTransactionsByYear(year);
+
+		// Filter out pending/declined reimbursements (same logic as treasury.tsx)
+		const validTransactions = yearTransactions.filter(
+			(t) =>
+				!t.reimbursementStatus ||
+				t.reimbursementStatus === "not_requested" ||
+				t.reimbursementStatus === "approved",
+		);
+
+		// Calculate balance
+		const income = validTransactions
+			.filter((t) => t.type === "income")
+			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+		const expenses = validTransactions
+			.filter((t) => t.type === "expense")
+			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+		const balance = income - expenses;
+
+		// Get open reservations for the year
+		const openReservations = await this.getOpenFundReservationsByYear(year);
+
+		// Calculate total reserved (reservation amount - used amount)
+		let totalReserved = 0;
+		for (const reservation of openReservations) {
+			const usedAmount = await this.getReservationUsedAmount(reservation.id);
+			const remainingReserved = parseFloat(reservation.amount) - usedAmount;
+			totalReserved += Math.max(0, remainingReserved);
+		}
+
+		return balance - totalReserved;
+	}
+
+	async getReservationForTransaction(
+		transactionId: string,
+	): Promise<{ reservation: FundReservation; amount: string } | null> {
+		const link = await this.db
+			.select()
+			.from(reservationTransactions)
+			.where(eq(reservationTransactions.transactionId, transactionId))
+			.limit(1);
+
+		if (link.length === 0) return null;
+
+		const reservation = await this.getFundReservationById(link[0].reservationId);
+		if (!reservation) return null;
+
+		return {
+			reservation,
+			amount: link[0].amount,
+		};
 	}
 }

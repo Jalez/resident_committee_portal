@@ -83,6 +83,10 @@ const DEFAULT_ROLES = [
 			"reimbursements:write",
 			"reimbursements:update",
 			"reimbursements:delete",
+			"reservations:read",
+			"reservations:write",
+			"reservations:update",
+			"reservations:delete",
 			"submissions:read",
 			"submissions:write",
 			"social:read",
@@ -101,6 +105,7 @@ const DEFAULT_ROLES = [
 			"faq:delete",
 			"settings:news",
 			"settings:faqs",
+			"committee:email",
 		],
 	},
 	{

@@ -76,6 +76,13 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.submissions",
 		permission: "submissions:read",
 	},
+	// Mail (direct communication) - requires committee:email
+	{
+		path: "/mail",
+		icon: "send",
+		i18nKey: "nav.committee_mail",
+		permission: "committee:email",
+	},
 ];
 
 // Routes that should be included in info reel when user has permission

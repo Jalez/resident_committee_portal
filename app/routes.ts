@@ -4,6 +4,8 @@ export default [
 	route("setup", "routes/_setup.tsx"),
 	index("routes/home.tsx"),
 	route("events", "routes/events.tsx"),
+	route("events/new", "routes/events.new.tsx"),
+	route("events/:eventId/edit", "routes/events.$eventId.edit.tsx"),
 	route("contact", "routes/contact.tsx"),
 	route("social", "routes/social.tsx"),
 	route("social/new", "routes/social.new.tsx"),
@@ -29,6 +31,16 @@ export default [
 	),
 	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
 	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
+	route("treasury/reservations", "routes/treasury.reservations.tsx"),
+	route("treasury/reservations/new", "routes/treasury.reservations.new.tsx"),
+	route(
+		"treasury/reservations/:reservationId",
+		"routes/treasury.reservations.$reservationId.tsx",
+	),
+	route(
+		"treasury/reservations/:reservationId/edit",
+		"routes/treasury.reservations.$reservationId.edit.tsx",
+	),
 	route("treasury/transactions/new", "routes/treasury.transactions.new.tsx"),
 	route("minutes", "routes/minutes.tsx"),
 	route("news", "routes/news.tsx"),
@@ -49,6 +61,13 @@ export default [
 	route("messages", "routes/messages.tsx"),
 	// Staff routes (admin + board_member)
 	route("submissions", "routes/submissions.tsx"),
+	route("mail", "routes/mail.tsx", [
+		index("routes/mail._index.tsx"),
+		route("new", "routes/mail.new.redirect.tsx"),
+		route("drafts", "routes/mail.drafts.tsx"),
+		route(":messageId", "routes/mail.$messageId.tsx"),
+	]),
+	route("committee/mail", "routes/committee.mail.redirect.tsx"),
 	// Settings routes (admin only)
 	route("settings/general", "routes/settings.general.tsx"),
 	route("settings/users", "routes/settings.users.tsx"),

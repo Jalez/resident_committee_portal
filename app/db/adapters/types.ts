@@ -1,10 +1,16 @@
 import type {
 	AppSetting,
+	CommitteeMailMessage,
+	MailDraft,
 	Faq,
+	FundReservation,
 	InventoryItem,
 	InventoryItemTransaction,
 	Message,
+	NewCommitteeMailMessage,
+	NewMailDraft,
 	NewFaq,
+	NewFundReservation,
 	NewInventoryItem,
 	NewMessage,
 	NewNews,
@@ -16,6 +22,7 @@ import type {
 	NewUser,
 	News,
 	Purchase,
+	ReservationTransaction,
 	Role,
 	SocialLink,
 	Submission,
@@ -55,11 +62,19 @@ export interface DatabaseAdapter {
 	): Promise<Role | null>;
 	deleteRole(id: string): Promise<boolean>;
 
-	// User permissions (fetched from user's role)
+	// User permissions (fetched from user's primary + secondary roles)
 	getUserPermissions(userId: string): Promise<string[]>;
 	getUserWithRole(
 		userId: string,
 	): Promise<(User & { roleName?: string; permissions: string[] }) | null>;
+	/** Secondary role IDs for a user */
+	getUserSecondaryRoleIds(userId: string): Promise<string[]>;
+	/** All user–secondary role pairs (for bulk display) */
+	getAllUserSecondaryRoles(): Promise<{ userId: string; roleId: string }[]>;
+	/** Replace user's secondary roles with the given role IDs */
+	setUserSecondaryRoles(userId: string, roleIds: string[]): Promise<void>;
+	/** Users who have this role as primary OR secondary (deduplicated) */
+	getUsersByRoleId(roleId: string): Promise<User[]>;
 
 	// ==================== Inventory Methods ====================
 	getInventoryItems(): Promise<InventoryItem[]>;
@@ -158,12 +173,14 @@ export interface DatabaseAdapter {
 	// ==================== Social Link Methods ====================
 	getSocialLinks(): Promise<SocialLink[]>;
 	getSocialLinkById(id: string): Promise<SocialLink | null>;
+	getPrimarySocialLink(): Promise<SocialLink | null>;
 	createSocialLink(link: NewSocialLink): Promise<SocialLink>;
 	updateSocialLink(
 		id: string,
 		data: Partial<Omit<NewSocialLink, "id">>,
 	): Promise<SocialLink | null>;
 	deleteSocialLink(id: string): Promise<boolean>;
+	setPrimarySocialLink(id: string): Promise<void>;
 
 	// ==================== News Methods ====================
 	getNews(): Promise<News[]>;
@@ -195,6 +212,33 @@ export interface DatabaseAdapter {
 	getAllSettings(): Promise<AppSetting[]>;
 	deleteSetting(key: string): Promise<boolean>;
 
+	// ==================== Committee Mail Methods ====================
+	insertCommitteeMailMessage(
+		message: NewCommitteeMailMessage,
+	): Promise<CommitteeMailMessage>;
+	getCommitteeMailMessages(
+		direction: "sent" | "inbox",
+		limit?: number,
+		offset?: number,
+	): Promise<CommitteeMailMessage[]>;
+	getCommitteeMailMessageById(
+		id: string,
+	): Promise<CommitteeMailMessage | null>;
+	/** Check if a message with this message_id (inbox) already exists */
+	committeeMailMessageExistsByMessageId(
+		messageId: string,
+	): Promise<boolean>;
+
+	// ==================== Mail Drafts Methods ====================
+	insertMailDraft(draft: NewMailDraft): Promise<MailDraft>;
+	updateMailDraft(
+		id: string,
+		data: Partial<Omit<NewMailDraft, "id" | "createdAt">>,
+	): Promise<MailDraft | null>;
+	getMailDrafts(limit?: number): Promise<MailDraft[]>;
+	getMailDraftById(id: string): Promise<MailDraft | null>;
+	deleteMailDraft(id: string): Promise<boolean>;
+
 	// ==================== Message Methods ====================
 	createMessage(message: NewMessage): Promise<Message>;
 	getMessagesByUserId(
@@ -206,4 +250,46 @@ export interface DatabaseAdapter {
 	markMessageAsRead(messageId: string): Promise<Message | null>;
 	markMessageAsUnread(messageId: string): Promise<Message | null>;
 	markAllMessagesAsRead(userId: string): Promise<number>;
+
+	// ==================== Fund Reservation Methods ====================
+	/** Get all fund reservations */
+	getFundReservations(): Promise<FundReservation[]>;
+	/** Get fund reservations for a specific year */
+	getFundReservationsByYear(year: number): Promise<FundReservation[]>;
+	/** Get a single fund reservation by ID */
+	getFundReservationById(id: string): Promise<FundReservation | null>;
+	/** Get open fund reservations for a year (for transaction linking) */
+	getOpenFundReservationsByYear(year: number): Promise<FundReservation[]>;
+	/** Create a new fund reservation */
+	createFundReservation(reservation: NewFundReservation): Promise<FundReservation>;
+	/** Update a fund reservation */
+	updateFundReservation(
+		id: string,
+		data: Partial<Omit<NewFundReservation, "id">>,
+	): Promise<FundReservation | null>;
+	/** Delete a fund reservation (only if no linked transactions) */
+	deleteFundReservation(id: string): Promise<boolean>;
+	/** Link a transaction to a reservation with a specific deduction amount */
+	linkTransactionToReservation(
+		transactionId: string,
+		reservationId: string,
+		amount: string,
+	): Promise<ReservationTransaction>;
+	/** Unlink a transaction from a reservation */
+	unlinkTransactionFromReservation(
+		transactionId: string,
+		reservationId: string,
+	): Promise<boolean>;
+	/** Get all transactions linked to a reservation */
+	getReservationTransactions(
+		reservationId: string,
+	): Promise<{ transaction: Transaction; amount: string }[]>;
+	/** Get the total used amount for a reservation */
+	getReservationUsedAmount(reservationId: string): Promise<number>;
+	/** Calculate available funds for a year (balance - open reservation amounts) */
+	getAvailableFundsForYear(year: number): Promise<number>;
+	/** Get reservation linked to a transaction (if any) */
+	getReservationForTransaction(
+		transactionId: string,
+	): Promise<{ reservation: FundReservation; amount: string } | null>;
 }

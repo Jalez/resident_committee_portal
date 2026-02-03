@@ -119,6 +119,32 @@ export const PERMISSIONS = {
 		category: "Transactions",
 	},
 
+	// Fund Reservations
+	"reservations:read": {
+		translationKey: "permissions.reservations.read",
+		category: "Reservations",
+	},
+	"reservations:write": {
+		translationKey: "permissions.reservations.write",
+		category: "Reservations",
+	},
+	"reservations:update": {
+		translationKey: "permissions.reservations.update",
+		category: "Reservations",
+	},
+	"reservations:delete": {
+		translationKey: "permissions.reservations.delete",
+		category: "Reservations",
+	},
+	"reservations:update-self": {
+		translationKey: "permissions.reservations.update-self",
+		category: "Reservations",
+	},
+	"reservations:delete-self": {
+		translationKey: "permissions.reservations.delete-self",
+		category: "Reservations",
+	},
+
 	// Reimbursements
 	"reimbursements:read": {
 		translationKey: "permissions.reimbursements.read",
@@ -200,6 +226,18 @@ export const PERMISSIONS = {
 	// Events
 	"events:read": {
 		translationKey: "permissions.events.read",
+		category: "Events",
+	},
+	"events:write": {
+		translationKey: "permissions.events.write",
+		category: "Events",
+	},
+	"events:update": {
+		translationKey: "permissions.events.update",
+		category: "Events",
+	},
+	"events:delete": {
+		translationKey: "permissions.events.delete",
 		category: "Events",
 	},
 
@@ -301,6 +339,12 @@ export const PERMISSIONS = {
 	"settings:faqs": {
 		translationKey: "permissions.settings.faqs",
 		category: "Settings",
+	},
+
+	// Committee email (direct communication)
+	"committee:email": {
+		translationKey: "permissions.committee.email",
+		category: "Committee",
 	},
 } as const;
 

@@ -5,6 +5,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
 
@@ -68,6 +69,31 @@ export const users = pgTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+/**
+ * User secondary roles (many-to-many)
+ * A user has one primary role (users.roleId) and optionally multiple secondary roles.
+ * Permissions = primary role permissions ∪ secondary role permissions.
+ */
+export const userSecondaryRoles = pgTable(
+	"user_secondary_roles",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		roleId: uuid("role_id")
+			.references(() => roles.id, { onDelete: "cascade" })
+			.notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(t) => ({
+		userSecondaryRolesUserRoleUnique: unique().on(t.userId, t.roleId),
+	}),
+);
+
+export type UserSecondaryRole = typeof userSecondaryRoles.$inferSelect;
+export type NewUserSecondaryRole = typeof userSecondaryRoles.$inferInsert;
 
 /**
  * Inventory item status for lifecycle tracking
@@ -300,6 +326,7 @@ export const socialLinks = pgTable("social_links", {
 	color: text("color").notNull(), // Tailwind class e.g. "bg-blue-500"
 	sortOrder: integer("sort_order").notNull().default(0),
 	isActive: boolean("is_active").notNull().default(true),
+	isPrimary: boolean("is_primary").notNull().default(false),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -377,6 +404,112 @@ export const messages = pgTable("messages", {
 
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
+
+// ============================================
+// COMMITTEE MAIL (sent / inbox)
+// ============================================
+
+export type CommitteeMailDirection = "sent" | "inbox";
+
+/**
+ * Committee mail messages (sent and received at committee mailbox).
+ * Stored when sending via Nodemailer or when fetching inbox via IMAP.
+ */
+export const committeeMailMessages = pgTable("committee_mail_messages", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	direction: text("direction").$type<CommitteeMailDirection>().notNull(),
+	fromAddress: text("from_address").notNull(),
+	fromName: text("from_name"),
+	toJson: text("to_json").notNull(), // JSON array of { email, name? }
+	ccJson: text("cc_json"), // JSON array or null
+	bccJson: text("bcc_json"), // JSON array or null
+	subject: text("subject").notNull(),
+	bodyHtml: text("body_html").notNull(),
+	bodyText: text("body_text"), // optional plain text (inbox)
+	date: timestamp("date").notNull(),
+	messageId: text("message_id"), // for IMAP threading / dedupe
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CommitteeMailMessage = typeof committeeMailMessages.$inferSelect;
+export type NewCommitteeMailMessage = typeof committeeMailMessages.$inferInsert;
+
+// ============================================
+// MAIL DRAFTS (unsent compose)
+// ============================================
+
+/**
+ * Mail drafts – unsent compose content, saved so refresh does not lose it.
+ */
+export const mailDrafts = pgTable("mail_drafts", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	toJson: text("to_json").notNull(), // JSON array of { email, name? }
+	ccJson: text("cc_json"),
+	bccJson: text("bcc_json"),
+	subject: text("subject"),
+	body: text("body"),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type MailDraft = typeof mailDrafts.$inferSelect;
+export type NewMailDraft = typeof mailDrafts.$inferInsert;
+
+// ============================================
+// FUND RESERVATIONS
+// ============================================
+
+/**
+ * Reservation status values
+ * - open: Funds are reserved and can be used
+ * - closed: Reservation is closed, unused funds returned to available
+ */
+export type ReservationStatus = "open" | "closed";
+
+/**
+ * Fund reservations table schema
+ * Allows reserving treasury funds for specific purposes (e.g., "Guitar purchase")
+ * Reservations are year-scoped and support partial deductions via transactions
+ */
+export const fundReservations = pgTable("fund_reservations", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(), // e.g., "Guitar purchase"
+	description: text("description"), // Additional details
+	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Reserved amount
+	year: integer("year").notNull(), // Year the reservation applies to
+	status: text("status")
+		.$type<ReservationStatus>()
+		.notNull()
+		.default("open"),
+	// Creator tracking for self-edit/delete permissions
+	createdBy: uuid("created_by").references(() => users.id),
+	// Timestamps
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type FundReservation = typeof fundReservations.$inferSelect;
+export type NewFundReservation = typeof fundReservations.$inferInsert;
+
+/**
+ * Junction table for reservation-transaction links
+ * Tracks which transactions deduct from which reservations and by how much
+ * Supports partial deductions (transaction amount can be less than reservation amount)
+ */
+export const reservationTransactions = pgTable("reservation_transactions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	reservationId: uuid("reservation_id")
+		.references(() => fundReservations.id, { onDelete: "cascade" })
+		.notNull(),
+	transactionId: uuid("transaction_id")
+		.references(() => transactions.id, { onDelete: "cascade" })
+		.notNull(),
+	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Deducted amount
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ReservationTransaction = typeof reservationTransactions.$inferSelect;
+export type NewReservationTransaction = typeof reservationTransactions.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS

@@ -27,18 +27,27 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	const db = getDatabase();
-	const [users, roles] = await Promise.all([
+	const [users, roles, secondaryRows] = await Promise.all([
 		db.getAllUsers(),
 		db.getAllRoles(),
+		db.getAllUserSecondaryRoles(),
 	]);
 
-	// Enrich users with role info
+	const secondaryByUser = new Map<string, string[]>();
+	for (const row of secondaryRows) {
+		const list = secondaryByUser.get(row.userId) ?? [];
+		list.push(row.roleId);
+		secondaryByUser.set(row.userId, list);
+	}
+
+	// Enrich users with role info and secondary role IDs
 	const usersWithRoles = users.map((user) => {
 		const userRole = roles.find((r) => r.id === user.roleId);
 		return {
 			...user,
 			roleName: userRole?.name || "Unknown",
 			roleColor: userRole?.color || "bg-gray-500",
+			secondaryRoleIds: secondaryByUser.get(user.id) ?? [],
 			isSuperAdmin: isAdmin(user.email),
 		};
 	});
@@ -61,6 +70,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const userId = formData.get("userId") as string;
 	const roleId = formData.get("roleId") as string;
+	const secondaryRoleIds = (formData.getAll("secondaryRoleIds") as string[]).filter(
+		Boolean,
+	);
 
 	if (!userId || !roleId) {
 		return { success: false, error: "missing_fields" };
@@ -76,6 +88,7 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 
 		await db.updateUser(userId, { roleId });
+		await db.setUserSecondaryRoles(userId, secondaryRoleIds);
 
 		return { success: true };
 	} catch (error) {
@@ -119,6 +132,9 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 										{t("settings.users.headers.role")}
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+										{t("settings.users.headers.secondary_roles")}
+									</th>
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
 										{t("settings.users.headers.joined")}
 									</th>
 								</tr>
@@ -127,7 +143,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 								{users.length === 0 ? (
 									<tr>
 										<td
-											colSpan={5}
+											colSpan={6}
 											className="px-4 py-12 text-center text-gray-500"
 										>
 											{t("settings.users.no_users")}
@@ -155,6 +171,7 @@ interface UserRowProps {
 		roleId: string;
 		roleName: string;
 		roleColor: string;
+		secondaryRoleIds: string[];
 		apartmentNumber: string | null;
 		createdAt: Date;
 		isSuperAdmin?: boolean;
@@ -221,6 +238,14 @@ function UserRow({ user, roles }: UserRowProps) {
 				) : (
 					<fetcher.Form method="post">
 						<input type="hidden" name="userId" value={user.id} />
+						{user.secondaryRoleIds.map((id) => (
+							<input
+								key={id}
+								type="hidden"
+								name="secondaryRoleIds"
+								value={id}
+							/>
+						))}
 						<select
 							name="roleId"
 							defaultValue={user.roleId}
@@ -238,6 +263,42 @@ function UserRow({ user, roles }: UserRowProps) {
 								</option>
 							))}
 						</select>
+					</fetcher.Form>
+				)}
+			</td>
+			<td className="px-4 py-4">
+				{user.isSuperAdmin ? (
+					<span className="text-sm text-gray-400">—</span>
+				) : (
+					<fetcher.Form method="post" className="flex flex-wrap gap-2">
+						<input type="hidden" name="userId" value={user.id} />
+						<input type="hidden" name="roleId" value={user.roleId} />
+						{roles
+							.filter((r) => r.name !== "Guest" && r.id !== user.roleId)
+							.map((role) => (
+								<label
+									key={role.id}
+									className="inline-flex items-center gap-1.5 text-sm cursor-pointer"
+								>
+									<input
+										type="checkbox"
+										name="secondaryRoleIds"
+										value={role.id}
+										defaultChecked={user.secondaryRoleIds.includes(role.id)}
+										onChange={(e) => e.target.form?.requestSubmit()}
+										disabled={fetcher.state !== "idle"}
+										className="rounded border-gray-300"
+									/>
+									<span
+										className={cn(
+											"px-2 py-0.5 rounded text-xs font-medium text-white",
+											role.color,
+										)}
+									>
+										{role.name}
+									</span>
+								</label>
+							))}
 					</fetcher.Form>
 				)}
 			</td>
