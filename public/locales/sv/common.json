@@ -56,6 +56,13 @@
 		"name": "Svenska",
 		"label": "Språk"
 	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
 	"home": {
 		"header": "Engagera dig",
 		"contact": {

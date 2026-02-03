@@ -33,6 +33,13 @@
 		"name": "Deutsch",
 		"label": "Sprache"
 	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
 	"home": {
 		"header": "Mitmachen",
 		"contact": {

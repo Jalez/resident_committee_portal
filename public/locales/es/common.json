@@ -33,6 +33,13 @@
 		"name": "Español",
 		"label": "Idioma"
 	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
 	"home": {
 		"header": "Involúcrate",
 		"contact": {

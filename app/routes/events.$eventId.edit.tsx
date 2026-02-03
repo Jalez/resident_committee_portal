@@ -18,6 +18,7 @@ import {
 import { queryClient } from "~/lib/query-client";
 import { queryKeys } from "~/lib/query-config";
 import type { Route } from "./+types/events.$eventId.edit";
+import { Switch } from "~/components/ui/switch";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -67,9 +68,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const attendeesRaw = formData.get("attendees") as string;
 	const attendees = attendeesRaw
 		? attendeesRaw
-				.split(/[,;\n]/)
-				.map((e) => e.trim())
-				.filter((e) => e.includes("@"))
+			.split(/[,;\n]/)
+			.map((e) => e.trim())
+			.filter((e) => e.includes("@"))
 		: undefined;
 
 	// Build the event update
@@ -133,11 +134,11 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 		? event.end.dateTime.split("T")[0]
 		: event.end?.date
 			? // For all-day events, Google returns exclusive end date, so subtract a day
-				(() => {
-					const d = new Date(event.end.date);
-					d.setDate(d.getDate() - 1);
-					return d.toISOString().split("T")[0];
-				})()
+			(() => {
+				const d = new Date(event.end.date);
+				d.setDate(d.getDate() - 1);
+				return d.toISOString().split("T")[0];
+			})()
 			: existingStartDate;
 	const existingEndTime = event.end?.dateTime
 		? event.end.dateTime.split("T")[1]?.substring(0, 5) || "10:00"
@@ -185,38 +186,38 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 				<Form method="post" className="space-y-6">
 					{/* Basic Info */}
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("events.new.basic_info")}
+						<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+							{t("common.sections.basic_info")}
 						</h2>
 
 						{/* Title */}
 						<div className="space-y-2">
-							<Label htmlFor="title">{t("events.form.title")} *</Label>
+							<Label htmlFor="title">{t("common.fields.title")} *</Label>
 							<Input
 								id="title"
 								name="title"
 								required
+								placeholder={t("common.placeholders.title")}
 								defaultValue={event.summary || ""}
-								placeholder={t("events.form.title_placeholder")}
 							/>
 						</div>
 
 						{/* Description */}
 						<div className="space-y-2">
-							<Label htmlFor="description">{t("events.form.description")}</Label>
+							<Label htmlFor="description">{t("common.fields.description")}</Label>
 							<textarea
 								id="description"
 								name="description"
-								rows={3}
+								rows={4}
 								className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-								placeholder={t("events.form.description_placeholder")}
+								placeholder={t("common.placeholders.description")}
 								defaultValue={event.description || ""}
 							/>
 						</div>
 
 						{/* Location */}
 						<div className="space-y-2">
-							<Label htmlFor="location">{t("events.form.location")}</Label>
+							<Label htmlFor="location">{t("common.fields.location")}</Label>
 							<Input
 								id="location"
 								name="location"
@@ -228,25 +229,25 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 
 					{/* Date & Time */}
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("events.new.date_time")}
+						<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+							{t("common.sections.date_time")}
 						</h2>
 
 						{/* All-day toggle */}
-						<div className="flex items-center gap-3">
-							<Checkbox
-								id="isAllDay"
+						<div className="flex items-center space-x-2">
+							<Switch
 								name="isAllDay"
+								id="isAllDay"
 								checked={isAllDay}
-								onCheckedChange={(checked) => setIsAllDay(checked === true)}
+								onCheckedChange={(checked: boolean) => setIsAllDay(checked)}
 							/>
-							<Label htmlFor="isAllDay">{t("events.form.all_day")}</Label>
+							<Label htmlFor="isAllDay">{t("common.fields.all_day")}</Label>
 						</div>
 
 						{/* Start date/time */}
 						<div className="grid grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="startDate">{t("events.form.start_date")} *</Label>
+								<Label htmlFor="startDate">{t("common.fields.start_date")} *</Label>
 								<Input
 									id="startDate"
 									name="startDate"
@@ -258,7 +259,7 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 							{!isAllDay && (
 								<div className="space-y-2">
 									<Label htmlFor="startTime">
-										{t("events.form.start_time")}
+										{t("common.fields.start_time")}
 									</Label>
 									<Input
 										id="startTime"
@@ -273,7 +274,7 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 						{/* End date/time */}
 						<div className="grid grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="endDate">{t("events.form.end_date")}</Label>
+								<Label htmlFor="endDate">{t("common.fields.end_date")}</Label>
 								<Input
 									id="endDate"
 									name="endDate"
@@ -283,7 +284,7 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 							</div>
 							{!isAllDay && (
 								<div className="space-y-2">
-									<Label htmlFor="endTime">{t("events.form.end_time")}</Label>
+									<Label htmlFor="endTime">{t("common.fields.end_time")}</Label>
 									<Input
 										id="endTime"
 										name="endTime"
@@ -297,12 +298,12 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 
 					{/* Attendees */}
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("events.new.attendees")}
+						<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+							{t("common.sections.attendees")}
 						</h2>
 
 						<div className="space-y-2">
-							<Label htmlFor="attendees">{t("events.form.attendees")}</Label>
+							<Label htmlFor="attendees">{t("common.fields.attendees")}</Label>
 							<textarea
 								id="attendees"
 								name="attendees"
@@ -322,10 +323,9 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 						<Button
 							type="button"
 							variant="outline"
-							onClick={() => navigate("/events")}
 							disabled={isSubmitting}
 						>
-							{t("settings.common.cancel")}
+							{t("common.actions.cancel")}
 						</Button>
 						<Button type="submit" disabled={isSubmitting}>
 							{isSubmitting ? (
@@ -333,14 +333,14 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 									<span className="animate-spin material-symbols-outlined text-sm">
 										progress_activity
 									</span>
-									<span>{t("settings.common.saving")}</span>
+									<span>{t("common.status.saving")}</span>
 								</span>
 							) : (
 								<>
 									<span className="material-symbols-outlined mr-2">
 										save
 									</span>
-									{t("events.edit.submit")}
+									{t("common.actions.save")}
 								</>
 							)}
 						</Button>

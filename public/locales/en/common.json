@@ -1,4 +1,88 @@
 {
+	"common": {
+		"actions": {
+			"save": "Save",
+			"cancel": "Cancel",
+			"delete": "Delete",
+			"edit": "Edit",
+			"add": "Add",
+			"create": "Create",
+			"update": "Update",
+			"close": "Close",
+			"remove": "Remove",
+			"search": "Search",
+			"filter": "Filter",
+			"clear": "Clear",
+			"select": "Select",
+			"view": "View",
+			"send": "Send",
+			"submit": "Submit",
+			"open": "Open",
+			"export": "Export",
+			"import": "Import",
+			"continue": "Continue",
+			"confirm": "Confirm",
+			"sort": "Sort",
+			"back": "Back",
+			"all": "All",
+			"details": "Details"
+		},
+		"fields": {
+			"name": "Name",
+			"email": "Email",
+			"description": "Description",
+			"amount": "Amount",
+			"price": "Price",
+			"free": "Free",
+			"date": "Date",
+			"status": "Status",
+			"type": "Type",
+			"title": "Title",
+			"year": "Year",
+			"category": "Category",
+			"location": "Location",
+			"message": "Message",
+			"content": "Content",
+			"quantity": "Quantity",
+			"unit": "Unit",
+			"value": "Value",
+			"url": "URL",
+			"icon": "Icon",
+			"color": "Color",
+			"order": "Order",
+			"active": "Active",
+			"all_day": "All Day",
+			"start_date": "Start Date",
+			"end_date": "End Date",
+			"start_time": "Start Time",
+			"end_time": "End Time",
+			"primary": "Primary",
+			"hidden": "Hidden",
+			"none": "None"
+		},
+		"placeholders": {
+			"search": "Search...",
+			"select": "Select...",
+			"title": "Enter title...",
+			"description": "Enter description..."
+		},
+		"sections": {
+			"basic_info": "Basic Info",
+			"date_time": "Date & Time",
+			"attendees": "Attendees"
+		},
+		"status": {
+			"loading": "Loading...",
+			"success": "Success",
+			"error": "Error",
+			"pending": "Pending",
+			"approved": "Approved",
+			"rejected": "Rejected",
+			"done": "Done",
+			"saved": "Saved",
+			"saving": "Saving..."
+		}
+	},
 	"app": {
 		"title": "Tenant Committee",
 		"setup_required": "Setup Required",
@@ -56,6 +140,13 @@
 	"lang": {
 		"name": "English",
 		"label": "Language"
+	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
 	},
 	"home": {
 		"header": "Get Involved",
@@ -568,7 +659,6 @@
 		"apartment_help": "Used for validating votes",
 		"role_label": "Role",
 		"member_since_label": "Member since",
-		"save_changes": "Save Changes",
 		"local_ai": {
 			"title": "Local AI Models",
 			"description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
@@ -620,17 +710,6 @@
 			"saved": "Settings saved",
 			"error": "Failed to save settings"
 		},
-		"common": {
-			"save": "Save",
-			"saving": "Saving...",
-			"delete": "Delete",
-			"cancel": "Cancel",
-			"create": "Create",
-			"new": "New",
-			"edit": "Edit",
-			"free": "Free",
-			"none": "None"
-		},
 		"reimbursements": {
 			"title": "Reimbursement Settings",
 			"api_key_title": "OpenRouter API Key",
@@ -646,7 +725,6 @@
 			"select_model": "Select a model...",
 			"showing_models": "Showing {{count}} of {{total}} models",
 			"no_api_key_msg": "Add an API key above to enable AI parsing and select a model.",
-			"save_ai_settings": "Save AI Settings",
 			"keywords_title": "Keywords",
 			"keywords_desc": "Custom keywords for detecting approval or rejection in emails",
 			"default_approval": "Default Approval Keywords",
@@ -654,8 +732,7 @@
 			"approval_placeholder": "paid, done, accepted (comma-separated)",
 			"default_rejection": "Default Rejection Keywords",
 			"additional_rejection": "Additional Rejection Keywords",
-			"rejection_placeholder": "refused, cancelled (comma-separated)",
-			"save_keywords": "Save Keywords"
+			"rejection_placeholder": "refused, cancelled (comma-separated)"
 		},
 		"news": {
 			"title": "News Settings",
@@ -669,8 +746,7 @@
 			"name": "Name",
 			"select_model": "Select model",
 			"select_model_placeholder": "Select a model...",
-			"showing_models": "Showing {{count}} of {{total}} models",
-			"save": "Save Settings"
+			"showing_models": "Showing {{count}} of {{total}} models"
 		},
 		"faqs": {
 			"title": "FAQ Settings",
@@ -684,8 +760,7 @@
 			"name": "Name",
 			"select_model": "Select model",
 			"select_model_placeholder": "Select a model...",
-			"showing_models": "Showing {{count}} of {{total}} models",
-			"save": "Save Settings"
+			"showing_models": "Showing {{count}} of {{total}} models"
 		},
 		"roles": {
 			"title": "Role Management",
@@ -809,24 +884,12 @@
 		"title": "Social",
 		"description": "Follow us on social media",
 		"header": "Social Media",
-		"add_link": "Add",
-		"hidden": "(hidden)",
 		"delete_confirm": "Delete?",
 		"no_channels": "No social channels",
 		"add_first": "Add first",
 		"primary_badge": "Primary",
 		"set_primary": "Set as primary",
 		"clear_primary": "Remove primary",
-		"form": {
-			"name": "Name",
-			"icon": "Icon",
-			"url": "URL",
-			"color": "Color",
-			"sort_order": "Order",
-			"active": "Active",
-			"is_primary": "Set as primary channel",
-			"is_primary_help": "Primary channel will be marked with a star"
-		},
 		"new": {
 			"title": "New Social Channel",
 			"header": "New Social Channel",
@@ -877,34 +940,16 @@
 		"open_calendar": "Open Calendar",
 		"all_day": "All Day",
 		"add_event": "Add Event",
-		"search": {
-			"label": "Event",
-			"placeholder": "Search by name..."
-		},
 		"new": {
 			"title": "New Event",
 			"header": "New Event",
-			"basic_info": "Basic Info",
-			"date_time": "Date & Time",
 			"recurrence": "Recurrence",
 			"reminders": "Reminders",
-			"attendees": "Attendees",
-			"submit": "Create Event",
 			"success": "Event created successfully!",
 			"error": "Failed to create event"
 		},
 		"form": {
-			"title": "Title",
-			"title_placeholder": "Event title",
-			"start_date": "Start Date",
-			"end_date": "End Date",
-			"start_time": "Start Time",
-			"end_time": "End Time",
-			"all_day": "All-day event",
-			"location": "Location",
 			"location_placeholder": "Event location (optional)",
-			"description": "Description",
-			"description_placeholder": "Event description (optional)",
 			"frequency": "Frequency",
 			"interval": "Interval",
 			"recurrence_end": "Recurrence ends",
@@ -914,7 +959,6 @@
 			"end_on": "On date",
 			"add_reminder": "Add reminder",
 			"no_reminders": "No reminders set",
-			"attendees": "Attendees",
 			"attendees_placeholder": "Email addresses (comma separated)",
 			"attendees_help": "Enter attendee email addresses separated by commas"
 		},
@@ -936,7 +980,6 @@
 		"edit": {
 			"title": "Edit Event",
 			"header": "Edit Event",
-			"submit": "Save Changes",
 			"success": "Event updated!",
 			"error": "Failed to update event"
 		},

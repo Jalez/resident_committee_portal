@@ -6,6 +6,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useLanguage } from "~/contexts/language-context";
+import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 
 interface ActionItem {
@@ -65,7 +66,6 @@ export function MobileActionMenuWithItems({
 					<DropdownMenuTrigger asChild>
 						<Button
 							variant="default"
-							size="sm"
 							className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300"
 						>
 							<span className="material-symbols-outlined text-lg">{icon}</span>
@@ -150,9 +150,9 @@ export function MobileActionMenuWithItems({
 							</div>
 						</a>
 					) : (
-						<a
+						<Link
 							key={item.href}
-							href={item.href}
+							to={item.href}
 							className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300"
 						>
 							<span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">
@@ -168,7 +168,7 @@ export function MobileActionMenuWithItems({
 									</span>
 								)}
 							</div>
-						</a>
+						</Link>
 					),
 				)}
 			</div>

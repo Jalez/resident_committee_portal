@@ -477,7 +477,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="name">{t("inventory.form.name_label")} *</Label>
+								<Label htmlFor="name">{t("common.fields.name")} *</Label>
 								<SmartCombobox
 									items={existingItems.map((i) => ({
 										...i,
@@ -541,7 +541,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="quantity">
-									{t("inventory.form.quantity_label")} *
+									{t("common.fields.quantity")} *
 								</Label>
 								<Input
 									id="quantity"
@@ -557,7 +557,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="location">
-									{t("inventory.form.location_label")} *
+									{t("common.fields.location")} *
 								</Label>
 								<SmartCombobox
 									items={uniqueLocations}
@@ -573,7 +573,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="category">
-									{t("inventory.form.category_label")}
+									{t("common.fields.category")}
 								</Label>
 								<SmartCombobox
 									items={uniqueCategories}
@@ -591,7 +591,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
 						<div className="space-y-2">
 							<Label htmlFor="description">
-								{t("inventory.form.description_label")}
+								{t("common.fields.description")}
 							</Label>
 							<Input
 								id="description"
@@ -604,7 +604,7 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="value">{t("inventory.form.value_label")}</Label>
+								<Label htmlFor="value">{t("common.fields.value")}</Label>
 								<Input
 									id="value"
 									name="value"
@@ -722,14 +722,14 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 							onClick={() => navigate(-1)}
 							className="flex-1"
 						>
-							{t("inventory.form.cancel")}
+							{t("common.actions.cancel")}
 						</Button>
 						<Button type="submit" className="flex-1">
 							{requestReimbursement
 								? t("inventory.form.add_and_request")
 								: addToTreasury
 									? t("inventory.form.add_to_treasury_btn")
-									: t("inventory.form.add")}
+									: t("common.actions.add")}
 						</Button>
 					</div>
 				</Form>

@@ -119,7 +119,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Get transactions without reimbursements (for linking selector)
 	const unlinkedTransactions =
 		await db.getExpenseTransactionsWithoutReimbursement();
-	
+
 	// Add current linked transaction to the list so it appears as selected option
 	if (linkedTransaction && !unlinkedTransactions.find((t) => t.id === linkedTransaction.id)) {
 		unlinkedTransactions.unshift(linkedTransaction);
@@ -300,7 +300,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	// Parse receipt links
 	const receiptLinks = parseReceiptLinks(formData);
-	
+
 	// Only validate receipts if resending email
 	if (resendReimbursementRequest) {
 		const receiptError = getMissingReceiptsError(receiptLinks, true);
@@ -748,7 +748,7 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 						>
 							<TransactionDetailsForm
 								transactionType="expense"
-								onTypeChange={() => {}}
+								onTypeChange={() => { }}
 								amount={amount}
 								onAmountChange={setAmount}
 								description={descriptionValue}
@@ -822,7 +822,7 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 									<span className="animate-spin material-symbols-outlined text-sm">
 										progress_activity
 									</span>
-									<span>{t("settings.common.saving")}</span>
+									<span>{t("common.status.saving")}</span>
 								</span>
 							) : (
 								t("treasury.reimbursements.edit.save")

@@ -129,7 +129,7 @@ export function LanguageSwitcher({
 							secondaryLanguage === "none" && "bg-secondary",
 						)}
 					>
-						<span>{t("settings.common.none")}</span>
+						<span>{t("common.fields.none")}</span>
 						{secondaryLanguage === "none" && (
 							<span className="material-symbols-outlined text-sm">check</span>
 						)}
@@ -214,7 +214,7 @@ export function LanguageSwitcher({
 								secondaryLanguage === "none" && "bg-secondary",
 							)}
 						>
-							<span>{t("settings.common.none")}</span>
+							<span>{t("common.fields.none")}</span>
 							{secondaryLanguage === "none" && (
 								<span className="material-symbols-outlined text-sm">check</span>
 							)}

@@ -334,7 +334,7 @@ export function Navigation({
 											</span>
 										</Link>
 									)}
-										{hasPermission("settings:analytics") && (
+									{hasPermission("settings:analytics") && (
 										<Link
 											to="/settings/analytics"
 											onClick={() => setMobileMenuOpen(false)}
@@ -350,7 +350,7 @@ export function Navigation({
 												bar_chart
 											</span>
 											<span className="text-sm font-bold">
-													{t("nav.analytics")}
+												{t("nav.analytics")}
 											</span>
 										</Link>
 									)}
@@ -454,7 +454,7 @@ export function Navigation({
 												chevron_right
 											</span>
 										</button>
-							{mobileMessagesOpen && (
+										{mobileMessagesOpen && (
 											<div className="pl-4 space-y-1">
 												{unreadMessages.length === 0 ? (
 													<div className="px-4 py-2 text-sm text-muted-foreground">
@@ -633,7 +633,7 @@ export function Navigation({
 															secondaryLanguage === "none" && "bg-primary/10 text-primary",
 														)}
 													>
-														<span>{t("settings.common.none")}</span>
+														<span>{t("common.fields.none")}</span>
 														{secondaryLanguage === "none" && (
 															<span className="material-symbols-outlined text-sm">
 																check
@@ -868,7 +868,7 @@ export function Navigation({
 											bar_chart
 										</span>
 										<div>
-												<p className="font-medium">{t("nav.analytics")}</p>
+											<p className="font-medium">{t("nav.analytics")}</p>
 										</div>
 									</Link>
 								</DropdownMenuItem>
@@ -1050,19 +1050,19 @@ export function Navigation({
 													</div>
 												</DropdownMenuItem>
 											))}
-												<>
-													<DropdownMenuSeparator />
-													<DropdownMenuItem asChild>
-														<Link
-															to="/messages"
-															className="flex items-center justify-center gap-2 cursor-pointer text-primary"
-														>
-															<span className="text-sm font-medium">
-																{t("messages.see_all")}
-															</span>
-														</Link>
-													</DropdownMenuItem>
-												</>
+											<>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem asChild>
+													<Link
+														to="/messages"
+														className="flex items-center justify-center gap-2 cursor-pointer text-primary"
+													>
+														<span className="text-sm font-medium">
+															{t("messages.see_all")}
+														</span>
+													</Link>
+												</DropdownMenuItem>
+											</>
 										</>
 									)}
 									{unreadMessageCount === 0 && (

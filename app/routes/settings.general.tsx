@@ -111,10 +111,10 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 
 	useEffect(() => {
 		if (actionData?.success) {
-			const msg = actionData.message || t("settings.general.saved");
+			const msg = actionData.message || t("common.status.saved");
 			toast.success(msg);
 		} else if (actionData?.error) {
-			toast.error(t("settings.general.error"));
+			toast.error(t("common.status.error"));
 		}
 	}, [actionData, t]);
 
@@ -181,7 +181,7 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 													</SelectItem>
 												))}
 												<SelectItem value="none">
-													{t("settings.common.none")}
+													{t("common.fields.none")}
 												</SelectItem>
 											</SelectContent>
 										</Select>
@@ -190,8 +190,8 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 
 								<Button type="submit" disabled={isSubmitting}>
 									{isSubmitting
-										? t("settings.common.saving")
-										: t("settings.common.save")}
+										? t("common.status.saving")
+										: t("common.actions.save")}
 								</Button>
 							</Form>
 						</CardContent>
@@ -222,8 +222,8 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 									/>
 									<Button type="submit" disabled={isSubmitting}>
 										{isSubmitting
-											? t("settings.common.saving")
-											: t("settings.common.save")}
+											? t("common.status.saving")
+											: t("common.actions.save")}
 									</Button>
 									{hasApiKey && (
 										<Form method="post">
@@ -237,7 +237,7 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 												variant="destructive"
 												disabled={isSubmitting}
 											>
-												{t("settings.common.delete")}
+												{t("common.actions.delete")}
 											</Button>
 										</Form>
 									)}

@@ -297,7 +297,7 @@ export default function BudgetReimbursements({
 							<span className="material-symbols-outlined text-base">
 								arrow_back
 							</span>
-							{t("treasury.reimbursements.back")}
+							{t("common.actions.back")}
 						</Link>
 						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
 							{t("treasury.reimbursements.title")}
@@ -344,7 +344,7 @@ export default function BudgetReimbursements({
 				<div className="flex flex-wrap gap-4 mb-6">
 					<div className="flex gap-2">
 						<span className="text-sm text-gray-500 self-center">
-							{t("treasury.reimbursements.status")}:
+							{t("common.fields.status")}:
 						</span>
 						{["all", "pending", "approved", "reimbursed", "rejected"].map(
 							(s) => (
@@ -357,7 +357,7 @@ export default function BudgetReimbursements({
 									className="text-xs font-bold uppercase"
 								>
 									{s === "all"
-										? t("treasury.reimbursements.all")
+										? t("common.common.all")
 										: t(`treasury.reimbursements.statuses.${s}`)}
 								</Button>
 							),
@@ -394,15 +394,15 @@ export default function BudgetReimbursements({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>{t("treasury.reimbursements.date")}</TableHead>
+									<TableHead>{t("common.fields.date")}</TableHead>
 									<TableHead>
-										{t("treasury.reimbursements.description")}
+										{t("common.fields.description")}
 									</TableHead>
 									<TableHead>
 										{t("treasury.reimbursements.purchaser")}
 									</TableHead>
-									<TableHead>{t("treasury.reimbursements.amount")}</TableHead>
-									<TableHead>{t("treasury.reimbursements.status")}</TableHead>
+									<TableHead>{t("common.fields.amount")}</TableHead>
+									<TableHead>{t("common.fields.status")}</TableHead>
 									<TableHead>{t("treasury.reimbursements.transaction")}</TableHead>
 									<TableHead title={t("treasury.reimbursements.email_sent")}>
 										📧
@@ -631,7 +631,7 @@ export default function BudgetReimbursements({
 																		}
 																	}}
 																	className="text-red-500 hover:text-red-700 h-8 w-8"
-																	title={t("settings.common.delete")}
+																	title={t("common.actions.delete")}
 																>
 																	<span className="material-symbols-outlined text-lg">
 																		delete

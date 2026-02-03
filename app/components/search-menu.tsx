@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -48,6 +49,7 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const [open, setOpen] = useState(false);
+	const { t } = useTranslation();
 
 	// Initialize form state from current URL params
 	const [formState, setFormState] = useState<Record<string, string>>(() => {
@@ -99,28 +101,25 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
+				<Button
 					type="button"
 					className={cn(
-						"group inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300",
-						hasActiveFilters
-							? "bg-primary text-white shadow-lg shadow-primary/20"
-							: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
+						"group inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
 						className,
-					)}
+					)}	
 				>
 					<span className="material-symbols-outlined text-xl">
 						{hasActiveFilters ? "filter_alt" : "search"}
 					</span>
 					<span className="text-sm font-bold hidden sm:inline">
-						{hasActiveFilters ? "Suodata" : "Hae"}
+						{hasActiveFilters ? t("search_menu.filter") : t("search_menu.search")}
 					</span>
-				</button>
+				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-80" align="end">
 				<div className="space-y-4">
 					<h4 className="font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
-						Haku / Search
+						{t("search_menu.title")}
 					</h4>
 
 					{fields.map((field) => (
@@ -145,7 +144,7 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 								>
 									<SelectTrigger>
 										<SelectValue
-											placeholder={field.placeholder || "Valitse..."}
+											placeholder={field.placeholder || t("search_menu.select_placeholder")}
 										/>
 									</SelectTrigger>
 									<SelectContent>
@@ -168,11 +167,11 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 							className="flex-1"
 							disabled={!Object.values(formState).some((v) => v?.trim())}
 						>
-							<span>Tyhjennä</span>
+							<span>{t("search_menu.clear")}</span>
 							<span className="text-muted-foreground ml-1">/ Clear</span>
 						</Button>
 						<Button size="sm" onClick={handleApply} className="flex-1">
-							<span>Hae</span>
+							<span>{t("search_menu.search")}</span>
 							<span className="opacity-75 ml-1">/ Search</span>
 						</Button>
 					</div>

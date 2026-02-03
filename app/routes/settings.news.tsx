@@ -107,7 +107,7 @@ export default function SettingsNews({ loaderData }: Route.ComponentProps) {
 	});
 
 	const formatPrice = (price: number) => {
-		if (price === 0) return t("settings.common.free");
+		if (price === 0) return t("common.fields.free");
 		if (price < 0.01) return `$${price.toFixed(4)}`;
 		return `$${price.toFixed(2)}`;
 	};
@@ -159,14 +159,14 @@ export default function SettingsNews({ loaderData }: Route.ComponentProps) {
 								{hasApiKey && models.length > 0 && (
 									<>
 										<div className="flex items-center gap-2 mb-2">
-											<Label>{t("settings.news.sort_by")}</Label>
+											<Label>{t("common.actions.sort")}</Label>
 											<Button
 												type="button"
 												variant={sortBy === "price" ? "default" : "outline"}
 												size="sm"
 												onClick={() => setSortBy("price")}
 											>
-												{t("settings.news.price")}
+												{t("common.fields.price")}
 											</Button>
 											<Button
 												type="button"
@@ -174,7 +174,7 @@ export default function SettingsNews({ loaderData }: Route.ComponentProps) {
 												size="sm"
 												onClick={() => setSortBy("name")}
 											>
-												{t("settings.news.name")}
+												{t("common.fields.name")}
 											</Button>
 										</div>
 
@@ -211,8 +211,8 @@ export default function SettingsNews({ loaderData }: Route.ComponentProps) {
 
 								<Button type="submit" disabled={isSubmitting || !hasApiKey}>
 									{isSubmitting
-										? t("settings.common.saving")
-										: t("settings.news.save")}
+										? t("common.status.saving")
+										: t("common.actions.save")}
 								</Button>
 							</Form>
 						</CardContent>

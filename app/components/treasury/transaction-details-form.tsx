@@ -114,7 +114,7 @@ export function TransactionDetailsForm({
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				{showTypeSelector && (
 					<div className="space-y-2">
-						<Label htmlFor="type">{t("treasury.form.type")} *</Label>
+						<Label htmlFor="type">{t("common.fields.type")} *</Label>
 						<Select
 							name="type"
 							value={transactionType}
@@ -124,7 +124,7 @@ export function TransactionDetailsForm({
 						>
 							<SelectTrigger>
 								<SelectValue
-									placeholder={t("treasury.placeholders.select_type")}
+									placeholder={t("common.placeholders.select")}
 								/>
 							</SelectTrigger>
 							<SelectContent>
@@ -145,7 +145,7 @@ export function TransactionDetailsForm({
 					</div>
 				)}
 				<div className={`space-y-2 ${!showTypeSelector ? "md:col-span-2" : ""}`}>
-					<Label htmlFor="amount">{t("treasury.form.amount")} *</Label>
+					<Label htmlFor="amount">{t("common.fields.amount")} *</Label>
 					<Input
 						id="amount"
 						name="amount"
@@ -162,7 +162,7 @@ export function TransactionDetailsForm({
 
 			<div className="space-y-2">
 				<Label htmlFor="description">
-					{t("treasury.form.description")} *
+					{t("common.fields.description")} *
 				</Label>
 				<Input
 					id="description"
@@ -176,7 +176,7 @@ export function TransactionDetailsForm({
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div className="space-y-2">
-					<Label htmlFor="category">{t("treasury.form.category")} *</Label>
+					<Label htmlFor="category">{t("common.fields.category")} *</Label>
 					<Select
 						name="category"
 						value={category}
@@ -185,7 +185,7 @@ export function TransactionDetailsForm({
 					>
 						<SelectTrigger>
 							<SelectValue
-								placeholder={t("treasury.placeholders.select_category")}
+								placeholder={t("common.placeholders.select")}
 							/>
 						</SelectTrigger>
 						<SelectContent>
@@ -198,7 +198,7 @@ export function TransactionDetailsForm({
 					</Select>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor="date">{t("treasury.form.date")} *</Label>
+					<Label htmlFor="date">{t("common.fields.date")} *</Label>
 					<Input
 						id="date"
 						name="date"
@@ -212,7 +212,7 @@ export function TransactionDetailsForm({
 
 			{showYearSelector && (
 				<div className="space-y-2">
-					<Label htmlFor="year">{t("treasury.form.year")} *</Label>
+					<Label htmlFor="year">{t("common.fields.year")} *</Label>
 					<Select
 						name="year"
 						value={year.toString()}
@@ -222,7 +222,7 @@ export function TransactionDetailsForm({
 					>
 						<SelectTrigger>
 							<SelectValue
-								placeholder={t("treasury.placeholders.select_year")}
+								placeholder={t("common.placeholders.select")}
 							/>
 						</SelectTrigger>
 						<SelectContent>

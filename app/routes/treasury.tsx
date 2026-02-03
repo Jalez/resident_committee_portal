@@ -162,7 +162,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 	const searchFields: SearchField[] = [
 		{
 			name: "year",
-			label: t("treasury.year"),
+			label: t("common.fields.year"),
 			type: "select",
 			placeholder: t("treasury.select_year"),
 			options: years.map(String),

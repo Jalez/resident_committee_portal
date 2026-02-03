@@ -147,7 +147,7 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 						<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
 							<Button variant="default">
 								<span className="material-symbols-outlined mr-2">edit</span>
-								{t("settings.common.edit")}
+								{t("common.actions.edit")}
 							</Button>
 						</Link>
 					)}

@@ -898,7 +898,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 							onClick={() => navigate(-1)}
 							className="flex-1"
 						>
-							{t("settings.common.cancel")}
+							{t("common.actions.cancel")}
 						</Button>
 						<Button type="submit" className="flex-1" disabled={isSubmitting}>
 							{isSubmitting ? (
@@ -906,7 +906,7 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 									<span className="animate-spin material-symbols-outlined text-sm">
 										progress_activity
 									</span>
-									<span>{t("settings.common.saving")}</span>
+									<span>{t("common.status.saving")}</span>
 								</span>
 							) : requestReimbursement ? (
 								t("treasury.new.submit_and_request")

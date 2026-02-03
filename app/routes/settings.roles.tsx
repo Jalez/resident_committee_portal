@@ -199,7 +199,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 										htmlFor="role-name"
 										className="block text-sm font-medium mb-1"
 									>
-										{t("settings.roles.name_label")} *
+										{t("common.fields.name")} *
 									</label>
 									<input
 										id="role-name"
@@ -236,7 +236,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									htmlFor="role-desc"
 									className="block text-sm font-medium mb-1"
 								>
-									{t("settings.roles.desc_label")}
+									{t("common.fields.description")}
 								</label>
 								<input
 									id="role-desc"
@@ -253,12 +253,12 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									variant="outline"
 									onClick={() => setShowNewRoleForm(false)}
 								>
-									{t("settings.common.cancel")}
+									{t("common.actions.cancel")}
 								</Button>
 								<Button type="submit" disabled={isSubmitting}>
 									{isSubmitting
-										? t("settings.common.saving")
-										: t("settings.common.create")}
+										? t("common.status.saving")
+										: t("common.actions.create")}
 								</Button>
 							</div>
 						</Form>
@@ -281,7 +281,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									<span className="material-symbols-outlined text-sm mr-1">
 										add
 									</span>
-									{t("settings.common.new")}
+									{t("common.actions.add")}
 								</Button>
 							</div>
 							<div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -294,7 +294,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"w-full h-auto p-4 justify-start text-left font-normal rounded-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50",
 											selectedRole === role.id &&
-												"bg-blue-50 dark:bg-blue-900/20",
+											"bg-blue-50 dark:bg-blue-900/20",
 										)}
 									>
 										<div className="flex items-center gap-3">
@@ -348,7 +348,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 											<AlertDialog>
 												<AlertDialogTrigger asChild>
 													<Button variant="destructive" size="sm">
-														{t("settings.common.delete")}
+														{t("common.actions.delete")}
 													</Button>
 												</AlertDialogTrigger>
 												<AlertDialogContent>
@@ -364,7 +364,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 													</AlertDialogHeader>
 													<AlertDialogFooter>
 														<AlertDialogCancel>
-															{t("settings.common.cancel")}
+															{t("common.actions.cancel")}
 														</AlertDialogCancel>
 														<Form method="post">
 															<input
@@ -381,7 +381,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 																type="submit"
 																className="bg-red-600 hover:bg-red-700 font-bold text-white border-0"
 															>
-																{t("settings.common.delete")}
+																{t("common.actions.delete")}
 															</AlertDialogAction>
 														</Form>
 													</AlertDialogFooter>
@@ -449,8 +449,8 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									<div className="mt-6 flex justify-end">
 										<Button type="submit" disabled={isSubmitting}>
 											{isSubmitting
-												? t("settings.common.saving")
-												: t("settings.common.save")}
+												? t("common.status.saving")
+												: t("common.actions.save")}
 										</Button>
 									</div>
 								</Form>

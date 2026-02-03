@@ -1,4 +1,88 @@
 {
+	"common": {
+		"actions": {
+			"save": "Tallenna",
+			"cancel": "Peruuta",
+			"delete": "Poista",
+			"edit": "Muokkaa",
+			"add": "Lisää",
+			"create": "Luo",
+			"update": "Päivitä",
+			"close": "Sulje",
+			"remove": "Poista",
+			"search": "Hae",
+			"filter": "Suodata",
+			"clear": "Tyhjennä",
+			"select": "Valitse",
+			"view": "Näytä",
+			"send": "Lähetä",
+			"submit": "Lähetä",
+			"open": "Avaa",
+			"export": "Vie",
+			"import": "Tuo",
+			"continue": "Jatka",
+			"confirm": "Vahvista",
+			"sort": "Järjestä",
+			"back": "Takaisin",
+			"all": "Kaikki",
+			"details": "Tiedot"
+		},
+		"fields": {
+			"name": "Nimi",
+			"email": "Sähköposti",
+			"description": "Kuvaus",
+			"amount": "Summa",
+			"price": "Hinta",
+			"free": "Ilmainen",
+			"date": "Päivämäärä",
+			"status": "Tila",
+			"type": "Tyyppi",
+			"title": "Otsikko",
+			"year": "Vuosi",
+			"category": "Kategoria",
+			"location": "Sijainti",
+			"message": "Viesti",
+			"content": "Sisältö",
+			"quantity": "Määrä",
+			"unit": "Yksikkö",
+			"value": "Arvo",
+			"url": "Osoite",
+			"icon": "Kuvake",
+			"color": "Väri",
+			"order": "Järjestys",
+			"active": "Aktiivinen",
+			"all_day": "Koko päivä",
+			"start_date": "Alkamispäivä",
+			"end_date": "Päättymispäivä",
+			"start_time": "Alkamisaika",
+			"end_time": "Päättymisaika",
+			"primary": "Ensisijainen",
+			"hidden": "Piilotettu",
+			"none": "Ei mitään"
+		},
+		"placeholders": {
+			"search": "Hae...",
+			"select": "Valitse...",
+			"title": "Anna otsikko...",
+			"description": "Anna kuvaus..."
+		},
+		"sections": {
+			"basic_info": "Perustiedot",
+			"date_time": "Ajankohta",
+			"attendees": "Osallistujat"
+		},
+		"status": {
+			"loading": "Ladataan...",
+			"success": "Onnistui",
+			"error": "Virhe",
+			"pending": "Odottaa",
+			"approved": "Hyväksytty",
+			"rejected": "Hylätty",
+			"done": "Valmis",
+			"saved": "Tallennettu",
+			"saving": "Tallennetaan..."
+		}
+	},
 	"app": {
 		"title": "Asukastoimikunta",
 		"setup_required": "Asetukset tarvitaan",
@@ -56,6 +140,13 @@
 	"lang": {
 		"name": "Suomi",
 		"label": "Kieli"
+	},
+	"search_menu": {
+		"title": "Haku",
+		"filter": "Suodata",
+		"search": "Hae",
+		"clear": "Tyhjennä",
+		"select_placeholder": "Valitse..."
 	},
 	"home": {
 		"header": "Osallistu",
@@ -568,7 +659,6 @@
 		"apartment_help": "Asuntonumeroa käytetään äänestysten validointiin",
 		"role_label": "Rooli",
 		"member_since_label": "Jäsen alkaen",
-		"save_changes": "Tallenna muutokset",
 		"local_ai": {
 			"title": "Paikalliset tekoälymallit",
 			"description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
@@ -620,17 +710,6 @@
 			"saved": "Asetukset tallennettu",
 			"error": "Asetusten tallennus epäonnistui"
 		},
-		"common": {
-			"save": "Tallenna",
-			"saving": "Tallennetaan...",
-			"delete": "Poista",
-			"cancel": "Peruuta",
-			"create": "Luo",
-			"new": "Uusi",
-			"edit": "Muokkaa",
-			"free": "Ilmainen",
-			"none": "Ei mitään"
-		},
 		"reimbursements": {
 			"title": "Korvausasetukset",
 			"api_key_title": "OpenRouter API-avain",
@@ -646,7 +725,6 @@
 			"select_model": "Valitse malli...",
 			"showing_models": "Näytetään {{count}} / {{total}} mallia",
 			"no_api_key_msg": "Lisää API-avain yllä ottaaksesi AI-tulkinnan käyttöön ja valitaksesi mallin.",
-			"save_ai_settings": "Tallenna AI-asetukset",
 			"keywords_title": "Avainsanat",
 			"keywords_desc": "Mukautetut avainsanat hyväksymisen tai hylkäämisen tunnistamiseksi sähköposteista",
 			"default_approval": "Oletusarvoiset hyväksyntäsanat",
@@ -654,8 +732,7 @@
 			"approval_placeholder": "maksettu, valmis, hyväksytty (pilkulla erotettuna)",
 			"default_rejection": "Oletusarvoiset hylkäyssanat",
 			"additional_rejection": "Lisää hylkäyssanoja",
-			"rejection_placeholder": "hylätty, peruttu (pilkulla erotettuna)",
-			"save_keywords": "Tallenna avainsanat"
+			"rejection_placeholder": "hylätty, peruttu (pilkulla erotettuna)"
 		},
 		"news": {
 			"title": "Uutisasetukset",
@@ -669,8 +746,7 @@
 			"name": "Nimi",
 			"select_model": "Valitse malli",
 			"select_model_placeholder": "Valitse malli...",
-			"showing_models": "Näytetään {{count}} / {{total}} mallia",
-			"save": "Tallenna asetukset"
+			"showing_models": "Näytetään {{count}} / {{total}} mallia"
 		},
 		"faqs": {
 			"title": "UKK-asetukset",
@@ -684,8 +760,7 @@
 			"name": "Nimi",
 			"select_model": "Valitse malli",
 			"select_model_placeholder": "Valitse malli...",
-			"showing_models": "Näytetään {{count}} / {{total}} mallia",
-			"save": "Tallenna asetukset"
+			"showing_models": "Näytetään {{count}} / {{total}} mallia"
 		},
 		"roles": {
 			"title": "Roolihallinta",
@@ -809,24 +884,12 @@
 		"title": "Some",
 		"description": "Seuraa meitä somessa",
 		"header": "Sosiaalinen Media",
-		"add_link": "Lisää",
-		"hidden": "(piilotettu)",
 		"delete_confirm": "Poista?",
 		"no_channels": "Ei sosiaalisia kanavia",
 		"add_first": "Lisää ensimmäinen",
 		"primary_badge": "Ensisijainen",
 		"set_primary": "Aseta ensisijaiseksi",
 		"clear_primary": "Poista ensisijaisuus",
-		"form": {
-			"name": "Nimi",
-			"icon": "Ikoni",
-			"url": "URL",
-			"color": "Väri",
-			"sort_order": "Järjestys",
-			"active": "Aktiivinen",
-			"is_primary": "Aseta ensisijaiseksi kanavaksi",
-			"is_primary_help": "Ensisijainen kanava merkitään tähdellä"
-		},
 		"new": {
 			"title": "Uusi some-kanava",
 			"header": "Uusi some-kanava",
@@ -877,34 +940,16 @@
 		"open_calendar": "Avaa kalenteri",
 		"all_day": "Koko päivä",
 		"add_event": "Lisää tapahtuma",
-		"search": {
-			"label": "Tapahtuma",
-			"placeholder": "Hae nimellä..."
-		},
 		"new": {
 			"title": "Uusi tapahtuma",
 			"header": "Uusi tapahtuma",
-			"basic_info": "Perustiedot",
-			"date_time": "Päivämäärä ja aika",
 			"recurrence": "Toistuvuus",
 			"reminders": "Muistutukset",
-			"attendees": "Osallistujat",
-			"submit": "Luo tapahtuma",
 			"success": "Tapahtuma luotu onnistuneesti!",
 			"error": "Tapahtuman luominen epäonnistui"
 		},
 		"form": {
-			"title": "Otsikko",
-			"title_placeholder": "Tapahtuman nimi",
-			"start_date": "Alkamispäivä",
-			"end_date": "Päättymispäivä",
-			"start_time": "Alkamisaika",
-			"end_time": "Päättymisaika",
-			"all_day": "Koko päivän tapahtuma",
-			"location": "Sijainti",
 			"location_placeholder": "Tapahtuman sijainti (valinnainen)",
-			"description": "Kuvaus",
-			"description_placeholder": "Tapahtuman kuvaus (valinnainen)",
 			"frequency": "Toistuvuus",
 			"interval": "Väli",
 			"recurrence_end": "Toistuminen päättyy",
@@ -914,7 +959,6 @@
 			"end_on": "Päivänä",
 			"add_reminder": "Lisää muistutus",
 			"no_reminders": "Ei muistutuksia",
-			"attendees": "Osallistujat",
 			"attendees_placeholder": "Sähköpostiosoitteet (pilkulla erotettu)",
 			"attendees_help": "Syötä osallistujien sähköpostiosoitteet pilkulla erotettuina"
 		},
@@ -936,7 +980,6 @@
 		"edit": {
 			"title": "Muokkaa tapahtumaa",
 			"header": "Muokkaa tapahtumaa",
-			"submit": "Tallenna muutokset",
 			"success": "Tapahtuma päivitetty!",
 			"error": "Tapahtuman päivitys epäonnistui"
 		},

@@ -94,7 +94,7 @@ export default function EditInventoryItem({
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="name">{t("inventory.form.name_label")} *</Label>
+								<Label htmlFor="name">{t("common.fields.name")} *</Label>
 								<Input
 									id="name"
 									name="name"
@@ -107,7 +107,7 @@ export default function EditInventoryItem({
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="quantity">
-									{t("inventory.form.quantity_label")} *
+									{t("common.fields.quantity")} *
 								</Label>
 								<Input
 									id="quantity"
@@ -123,7 +123,7 @@ export default function EditInventoryItem({
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="location">
-									{t("inventory.form.location_label")} *
+									{t("common.fields.location")} *
 								</Label>
 								<Input
 									id="location"
@@ -137,7 +137,7 @@ export default function EditInventoryItem({
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="category">
-									{t("inventory.form.category_label")}
+									{t("common.fields.category")}
 								</Label>
 								<Input
 									id="category"
@@ -152,7 +152,7 @@ export default function EditInventoryItem({
 
 						<div className="space-y-2">
 							<Label htmlFor="description">
-								{t("inventory.form.description_label")}
+								{t("common.fields.description")}
 							</Label>
 							<Input
 								id="description"
@@ -164,7 +164,7 @@ export default function EditInventoryItem({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="value">{t("inventory.form.value_label")}</Label>
+								<Label htmlFor="value">{t("common.fields.value")}</Label>
 								<Input
 									id="value"
 									name="value"
@@ -207,10 +207,10 @@ export default function EditInventoryItem({
 							onClick={() => navigate(-1)}
 							className="flex-1"
 						>
-							{t("inventory.form.cancel")}
+							{t("common.actions.cancel")}
 						</Button>
 						<Button type="submit" className="flex-1">
-							{t("inventory.form.save")}
+							{t("common.actions.save")}
 						</Button>
 					</div>
 				</Form>

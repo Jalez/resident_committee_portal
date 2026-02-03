@@ -109,13 +109,13 @@ export default function SocialNew() {
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
 						{/* Name */}
 						<div className="space-y-2">
-							<Label htmlFor="name">{t("social.form.name")} *</Label>
+							<Label htmlFor="name">{t("common.fields.name")} *</Label>
 							<Input id="name" name="name" required placeholder="Telegram" />
 						</div>
 
 						{/* URL */}
 						<div className="space-y-2">
-							<Label htmlFor="url">{t("social.form.url")} *</Label>
+							<Label htmlFor="url">{t("common.fields.url")} *</Label>
 							<Input
 								id="url"
 								name="url"
@@ -127,7 +127,7 @@ export default function SocialNew() {
 
 						{/* Icon */}
 						<div className="space-y-2">
-							<Label htmlFor="icon">{t("social.form.icon")} *</Label>
+							<Label htmlFor="icon">{t("common.fields.icon")} *</Label>
 							<Input id="icon" name="icon" required placeholder="send" />
 							<div className="flex flex-wrap gap-2 mt-2">
 								{COMMON_ICONS.map(({ icon, labelKey }) => (
@@ -158,7 +158,7 @@ export default function SocialNew() {
 
 						{/* Color */}
 						<div className="space-y-2">
-							<Label htmlFor="color">{t("social.form.color")}</Label>
+							<Label htmlFor="color">{t("common.fields.color")}</Label>
 							<select
 								id="color"
 								name="color"
@@ -175,7 +175,7 @@ export default function SocialNew() {
 
 						{/* Sort Order */}
 						<div className="space-y-2">
-							<Label htmlFor="sortOrder">{t("social.form.sort_order")}</Label>
+							<Label htmlFor="sortOrder">{t("common.fields.order")}</Label>
 							<Input
 								id="sortOrder"
 								name="sortOrder"
@@ -192,7 +192,7 @@ export default function SocialNew() {
 						<div className="flex items-center gap-3">
 							<Checkbox id="isActive" name="isActive" defaultChecked />
 							<Label htmlFor="isActive">
-								{t("social.form.active")}
+								{t("common.fields.active")}
 								<span className="text-xs text-gray-500 block">
 									{t("social.new.hidden_desc")}
 								</span>
@@ -203,7 +203,7 @@ export default function SocialNew() {
 						<div className="flex items-center gap-3">
 							<Checkbox id="isPrimary" name="isPrimary" />
 							<Label htmlFor="isPrimary">
-								{t("social.form.is_primary")}
+								{t("common.fields.primary")}
 								<span className="text-xs text-gray-500 block">
 									{t("social.new.primary_desc")}
 								</span>
@@ -218,11 +218,11 @@ export default function SocialNew() {
 							variant="outline"
 							onClick={() => navigate("/social")}
 						>
-							{t("settings.common.cancel")}
+							{t("common.actions.cancel")}
 						</Button>
 						<Button type="submit">
 							<span className="material-symbols-outlined mr-2">add</span>
-							{t("social.add_link")}
+							{t("common.actions.add")}
 						</Button>
 					</div>
 				</Form>

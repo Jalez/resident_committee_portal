@@ -137,7 +137,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			location: item.location || "",
 			type:
 				item.description?.includes("#meeting") ||
-				summary.toLowerCase().includes("kokous")
+					summary.toLowerCase().includes("kokous")
 					? "meeting"
 					: "social",
 		};
@@ -211,7 +211,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	const deleteFetcher = useFetcher<typeof action>();
 	const revalidator = useRevalidator();
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-	
+
 	// Track if we've revalidated after delete to prevent multiple revalidations
 	const revalidatedRef = useRef(false);
 
@@ -224,7 +224,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	useEffect(() => {
 		const created = searchParams.get("created") === "true";
 		const updated = searchParams.get("updated") === "true";
-		
+
 		if (created) {
 			toast.success(t("events.new.success"), { id: "event-created" });
 			setSearchParams((prev) => {
@@ -304,10 +304,10 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		if (event.isAllDay) {
 			// For info reel, force Finnish (which is default behavior of key lookup if lang is fi)
 			// but if we want specific behavior:
-			if (isInfoReel) {
-				return t("events.all_day", { lng: "fi" });
+			if (i18n.language === "fi") {
+				return t("common.fields.all_day", { lng: "fi" });
 			}
-			return t("events.all_day");
+			return t("common.fields.all_day");
 		}
 		return new Date(event.startDate).toLocaleTimeString(currentLocale, {
 			hour: "2-digit",
@@ -319,22 +319,22 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	const searchFields: SearchField[] = [
 		{
 			name: "title",
-			label: t("events.search.label"),
+			label: t("common.actions.search"),
 			type: "text",
-			placeholder: t("events.search.placeholder"),
+			placeholder: t("common.placeholders.search"),
 		},
 	];
 
 	// Filter events client-side based on title filter
 	const filteredMonths: GroupedMonth[] = filters?.title
 		? groupedMonths
-				.map((month: GroupedMonth) => ({
-					...month,
-					events: month.events.filter((event: Event) =>
-						event.title.toLowerCase().includes(filters.title.toLowerCase()),
-					),
-				}))
-				.filter((month: GroupedMonth) => month.events.length > 0)
+			.map((month: GroupedMonth) => ({
+				...month,
+				events: month.events.filter((event: Event) =>
+					event.title.toLowerCase().includes(filters.title.toLowerCase()),
+				),
+			}))
+			.filter((month: GroupedMonth) => month.events.length > 0)
 		: groupedMonths;
 
 	// QR Panel only shown in info reel mode
@@ -472,7 +472,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 																			progress_activity
 																		</span>
 																	) : (
-																		t("settings.common.confirm")
+																		t("common.actions.confirm")
 																	)}
 																</Button>
 																<Button
@@ -480,7 +480,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 																	size="sm"
 																	onClick={() => setDeleteConfirmId(null)}
 																>
-																	{t("settings.common.cancel")}
+																	{t("common.actions.cancel")}
 																</Button>
 															</>
 														) : (
@@ -489,7 +489,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 																	<Link
 																		to={`/events/${event.id}/edit`}
 																		className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-																		title={t("events.edit.title")}
+																		title={t("common.actions.edit")}
 																	>
 																		<span className="material-symbols-outlined text-lg">
 																			edit
@@ -501,7 +501,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 																		type="button"
 																		onClick={() => setDeleteConfirmId(event.id)}
 																		className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-																		title={t("events.delete.confirm")}
+																		title={t("common.actions.delete")}
 																	>
 																		<span className="material-symbols-outlined text-lg">
 																			delete

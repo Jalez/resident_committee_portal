@@ -223,7 +223,7 @@ export default function Profile({
 							<p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
 								{t("profile.local_ai.description")}
 							</p>
-							
+
 							{/* Enable Local AI Toggle */}
 							<div className="flex items-center justify-between py-3">
 								<div className="flex flex-col">
@@ -310,7 +310,7 @@ export default function Profile({
 								type="submit"
 								className="w-full py-6 text-lg font-bold rounded-xl"
 							>
-								{t("profile.save_changes")}
+								{t("common.actions.save")}
 							</Button>
 						</div>
 					</Form>

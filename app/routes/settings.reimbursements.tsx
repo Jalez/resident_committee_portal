@@ -166,7 +166,7 @@ export default function SettingsReimbursements({
 
 	// Format price for display
 	const formatPrice = (price: number) => {
-		if (price === 0) return t("settings.common.free");
+		if (price === 0) return t("common.fields.free");
 		if (price < 0.01) return `$${price.toFixed(4)}`;
 		return `$${price.toFixed(2)}`;
 	};
@@ -240,14 +240,14 @@ export default function SettingsReimbursements({
 								{settings.hasApiKey && models.length > 0 && (
 									<>
 										<div className="flex items-center gap-2 mb-2">
-											<Label>{t("settings.reimbursements.sort_by")}</Label>
+											<Label>{t("common.actions.sort")}</Label>
 											<Button
 												type="button"
 												variant={sortBy === "price" ? "default" : "outline"}
 												size="sm"
 												onClick={() => setSortBy("price")}
 											>
-												{t("settings.reimbursements.price")}
+												{t("common.fields.price")}
 											</Button>
 											<Button
 												type="button"
@@ -255,7 +255,7 @@ export default function SettingsReimbursements({
 												size="sm"
 												onClick={() => setSortBy("name")}
 											>
-												{t("settings.reimbursements.name")}
+												{t("common.fields.name")}
 											</Button>
 										</div>
 
@@ -301,8 +301,8 @@ export default function SettingsReimbursements({
 									disabled={isSubmitting || !settings.hasApiKey}
 								>
 									{isSubmitting
-										? t("settings.common.saving")
-										: t("settings.reimbursements.save_ai_settings")}
+										? t("common.status.saving")
+										: t("common.actions.save")}
 								</Button>
 							</Form>
 						</CardContent>
@@ -387,8 +387,8 @@ export default function SettingsReimbursements({
 
 								<Button type="submit" disabled={isSubmitting}>
 									{isSubmitting
-										? t("settings.common.saving")
-										: t("settings.reimbursements.save_keywords")}
+										? t("common.status.saving")
+										: t("common.actions.save")}
 								</Button>
 							</Form>
 						</CardContent>

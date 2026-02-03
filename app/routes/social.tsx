@@ -166,7 +166,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 				<Link
 					to="/social/new"
 					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-					title={`${t("social.add_link")} / Add`}
+					title={`${t("common.actions.add")} / Add`}
 				>
 					<span className="material-symbols-outlined text-xl">add</span>
 				</Link>
@@ -205,7 +205,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										<div className="grid grid-cols-2 gap-3">
 											<div>
 												<Label className="text-xs">
-													{t("social.form.name")}
+													{t("common.fields.name")}
 												</Label>
 												<Input
 													name="name"
@@ -216,7 +216,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 											</div>
 											<div>
 												<Label className="text-xs">
-													{t("social.form.icon")}
+													{t("common.fields.icon")}
 												</Label>
 												<Input
 													name="icon"
@@ -227,7 +227,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 											</div>
 										</div>
 										<div>
-											<Label className="text-xs">{t("social.form.url")}</Label>
+											<Label className="text-xs">{t("common.fields.url")}</Label>
 											<Input
 												name="url"
 												type="url"
@@ -239,7 +239,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										<div className="grid grid-cols-2 gap-3">
 											<div>
 												<Label className="text-xs">
-													{t("social.form.color")}
+													{t("common.fields.color")}
 												</Label>
 												<Input
 													name="color"
@@ -249,7 +249,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 											</div>
 											<div>
 												<Label className="text-xs">
-													{t("social.form.sort_order")}
+													{t("common.fields.order")}
 												</Label>
 												<Input
 													name="sortOrder"
@@ -269,7 +269,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 												htmlFor={`edit-isActive-${channel.id}`}
 												className="text-xs"
 											>
-												{t("social.form.active")}
+												{t("common.fields.active")}
 											</Label>
 										</div>
 										<div className="flex gap-2">
@@ -279,10 +279,10 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 												size="sm"
 												onClick={() => setEditingId(null)}
 											>
-												{t("settings.common.cancel")}
+												{t("common.actions.cancel")}
 											</Button>
 											<Button type="submit" size="sm">
-												{t("settings.common.save")}
+												{t("common.actions.save")}
 											</Button>
 										</div>
 									</Form>
@@ -296,7 +296,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 								className={cn(
 									"relative w-full flex items-center gap-6 p-5 rounded-xl transition-all text-left group outline-none overflow-hidden",
 									!isActive &&
-										"bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
+									"bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
 									!channel.isActive && "opacity-50",
 								)}
 							>
@@ -325,8 +325,8 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										style={
 											isActive
 												? {
-														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
-													}
+													color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
+												}
 												: undefined
 										}
 									>
@@ -337,21 +337,21 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 											className={cn(
 												"text-2xl font-black leading-tight uppercase tracking-wide",
 												!isActive &&
-													"text-gray-900 dark:text-white group-hover:text-primary",
+												"text-gray-900 dark:text-white group-hover:text-primary",
 											)}
 											style={
 												isActive
 													? {
-															color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--foreground) ${(1 - itemOpacity) * 100}%)`,
-														}
+														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--foreground) ${(1 - itemOpacity) * 100}%)`,
+													}
 													: undefined
 											}
 										>
 											{channel.name}
 										</h3>
 										{!channel.isActive && canWrite && (
-											<span className="text-xs text-gray-400">
-												{t("social.hidden")}
+											<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+												{t("common.fields.hidden")}
 											</span>
 										)}
 									</div>
@@ -359,13 +359,13 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"relative material-symbols-outlined ml-auto text-2xl",
 											!isActive &&
-												"text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1",
+											"text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1",
 										)}
 										style={
 											isActive
 												? {
-														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
-													}
+													color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
+												}
 												: undefined
 										}
 									>

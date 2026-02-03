@@ -123,7 +123,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 	// Get available items for picker (active, non-legacy, with available quantity)
 	const basePickerItems = await db.getInventoryItemsForPicker();
-	
+
 	// Merge linked items into picker items so they appear in the table
 	// Linked items might not be in pickerItems if they're fully allocated
 	const linkedItemIds = new Set(linkedItems.map((item) => item.id));
@@ -607,8 +607,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 		newPurchaseId && baseStatus === "complete" ? "pending" : baseStatus;
 	const finalReimbursementStatus = newPurchaseId
 		? (baseReimbursementStatus === "not_requested"
-				? "requested"
-				: baseReimbursementStatus)
+			? "requested"
+			: baseReimbursementStatus)
 		: baseReimbursementStatus;
 
 	await db.updateTransaction(params.transactionId, {
@@ -793,7 +793,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	// Initialize pending items from already-linked items (for unified table view)
 	const [pendingItems, setPendingItems] = useState<
 		{ itemId: string; name: string; quantity: number; unitValue: number }[]
-	>(() => 
+	>(() =>
 		linkedItems.map((item) => ({
 			itemId: item.id,
 			name: item.name,
@@ -861,12 +861,12 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		const newItemsToLink = pendingItems.filter(
 			(item) => !initialLinkedIds.current.has(item.itemId)
 		);
-		
+
 		if (newItemsToLink.length === 0) {
 			toast.info(t("treasury.breakdown.edit.no_new_items_to_link"));
 			return;
 		}
-		
+
 		for (const item of newItemsToLink) {
 			fetcher.submit(
 				{
@@ -1162,7 +1162,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 									<span className="animate-spin material-symbols-outlined text-sm">
 										progress_activity
 									</span>
-									<span>{t("settings.common.saving")}</span>
+									<span>{t("common.status.saving")}</span>
 								</span>
 							) : requestReimbursement ? (
 								t("treasury.new.submit_and_request")

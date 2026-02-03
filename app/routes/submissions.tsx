@@ -153,7 +153,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"px-2 py-1 rounded-full text-xs font-bold uppercase",
 											TYPE_COLORS[submission.type] ||
-												"bg-gray-100 text-gray-700",
+											"bg-gray-100 text-gray-700",
 										)}
 									>
 										{t(`contact.types.${submission.type}.title`, {
@@ -223,7 +223,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 												variant="ghost"
 												size="icon"
 												className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-												title={t("settings.common.delete")}
+												title={t("common.actions.delete")}
 											>
 												<span className="material-symbols-outlined text-xl">
 													delete
@@ -382,7 +382,7 @@ function SubmissionRow({
 								variant="ghost"
 								size="icon"
 								className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-								title={t("settings.common.delete")}
+								title={t("common.actions.delete")}
 							>
 								<span className="material-symbols-outlined text-xl">
 									delete
