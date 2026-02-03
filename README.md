@@ -74,6 +74,33 @@ bun dev
 
 The application will be available at `http://localhost:5173`.
 
+### Local email testing (Mailpit)
+
+The portal can send email (e.g. committee mail to role members). For local development you can use [Mailpit](https://github.com/axllent/mailpit) to capture outgoing mail instead of sending it for real. Mailpit runs a local SMTP server and a web UI where you can view all captured messages.
+
+1. **Install** (macOS with Homebrew):
+   ```bash
+   brew install mailpit
+   ```
+
+2. **Run** Mailpit (SMTP on port 1025, web UI on 8025):
+   ```bash
+   mailpit
+   ```
+   Open the UI at [http://localhost:8025](http://localhost:8025) to view captured emails.
+
+3. **Configure** your `.env` for committee mail:
+   ```bash
+   SMTP_HOST=localhost
+   SMTP_PORT=1025
+   SMTP_SECURE=false
+   COMMITTEE_FROM_EMAIL=committee@test.local
+   # COMMITTEE_FROM_NAME=Test Committee   # optional
+   ```
+   Leave `SMTP_USER` and `SMTP_PASS` unset when using Mailpit (no auth).
+
+For more options and details, see [Mailpit’s documentation](https://github.com/axllent/mailpit).
+
 ## Deployment
 
 ### Vercel (Recommended)
@@ -151,9 +178,25 @@ This project integrates with Google Calendar, Drive, and Sheets. To enable these
 
 
 
-5.  **Permissions Summary**:
-    - Calendar: Make public (for event display)
-    - Public folder: Share with "Anyone with the link" (Viewer)
+5.  **Share Google Calendar with Service Account** (for creating/editing events):
+    - Open [Google Calendar](https://calendar.google.com)
+    - In the left sidebar under "My calendars", **hover over** your calendar name
+    - Click the three vertical dots (⋮) that appear on hover
+    - Select "Settings and sharing"
+    - Scroll down to "Share with specific people or groups"
+    - Click "+ Add people and groups"
+    - Paste your service account email (the `client_email` from the JSON key file, e.g., `something@project-id.iam.gserviceaccount.com`)
+    - Set permission to **"Make changes to events"**
+    - Click "Send"
+    
+    > ⚠️ **Important**: Without this step, users with `events:write` permission in the app will get a 403 "requiredAccessLevel" error when trying to create events.
+
+6.  **Permissions Summary**:
+    | Resource | Share With | Permission Level |
+    |----------|------------|------------------|
+    | Calendar | Public | View (for event display) |
+    | Calendar | Service Account | Make changes to events |
+    | Public folder | Anyone with link | Viewer |
  
 ---
 
