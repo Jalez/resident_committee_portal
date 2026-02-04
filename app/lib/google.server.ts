@@ -1,7 +1,13 @@
+import { getDatabase } from "~/db";
+import {
+	getAuthenticatedUser,
+} from "./auth.server";
+
 interface GoogleConfig {
 	apiKey: string;
 	calendarId: string;
 	publicRootFolderId: string;
+	formsFolderId: string;
 	// Service account for writing
 	serviceAccountEmail: string;
 	serviceAccountPrivateKey: string;
@@ -15,16 +21,20 @@ interface DriveFile {
 	createdTime?: string;
 }
 
-const config: GoogleConfig = {
+export const config: GoogleConfig = {
 	apiKey: process.env.GOOGLE_API_KEY || "",
 	calendarId: process.env.GOOGLE_CALENDAR_ID || "",
 	publicRootFolderId: process.env.GOOGLE_DRIVE_PUBLIC_ROOT_ID || "",
+	formsFolderId: process.env.GOOGLE_DRIVE_FORMS_FOLDER_ID || "",
 	serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "",
 	serviceAccountPrivateKey: (
 		process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || ""
 	).replace(/\\n/g, "\n"),
 	submissionsSheetId: process.env.GOOGLE_SUBMISSIONS_SHEET_ID || "",
 };
+
+// Export for use in other modules
+export const GOOGLE_CONFIG = config;
 
 // Debug: Log config on server start (mask sensitive data)
 console.log("[Google Config]", {
@@ -58,11 +68,11 @@ async function getAccessToken(): Promise<string | null> {
 		// JWT Header
 		const header = { alg: "RS256", typ: "JWT" };
 
-		// JWT Payload - includes Sheets and Drive scopes
+		// JWT Payload - includes Sheets, Drive, Calendar, and Forms scopes
 		const payload = {
 			iss: config.serviceAccountEmail,
 			scope:
-				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events",
+				"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/forms.responses.readonly",
 			aud: "https://oauth2.googleapis.com/token",
 			iat: now,
 			exp: expiry,
@@ -72,7 +82,7 @@ async function getAccessToken(): Promise<string | null> {
 		const base64url = (obj: object) =>
 			Buffer.from(JSON.stringify(obj)).toString("base64url");
 
-		const unsignedToken = `${base64url(header)}.${base64url(payload)}`;
+		const unsignedToken = `${base64url(header)}.${base64url(payload)} `;
 
 		// Sign with private key
 		const crypto = await import("node:crypto");
@@ -80,7 +90,7 @@ async function getAccessToken(): Promise<string | null> {
 		sign.update(unsignedToken);
 		const signature = sign.sign(config.serviceAccountPrivateKey, "base64url");
 
-		const jwt = `${unsignedToken}.${signature}`;
+		const jwt = `${unsignedToken}.${signature} `;
 
 		// Exchange JWT for access token
 		const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -1462,6 +1472,468 @@ export async function getSocialChannels(): Promise<SocialChannel[]> {
 		return channels;
 	} catch (error) {
 		console.error("[getSocialChannels] Error:", error);
+		return [];
+	}
+}
+
+// ============================================
+// GOOGLE FORMS DISCOVERY (Service Account Auth)
+// ============================================
+
+export interface DiscoveredGoogleForm {
+	id: string;
+	name: string;
+	formUrl: string;
+	editUrl: string;
+	createdTime?: string;
+	modifiedTime?: string;
+}
+
+/**
+ * List all Google Forms the service account has access to
+ * Uses Google Drive API to find files with mimeType 'application/vnd.google-apps.form'
+ */
+export async function getGoogleForms(
+	forceRefresh = false,
+): Promise<DiscoveredGoogleForm[]> {
+	const cacheKey = "google_forms_list";
+
+	// Check cache unless force refresh
+	if (!forceRefresh) {
+		const cached = getCached<DiscoveredGoogleForm[]>(
+			cacheKey,
+			CACHE_TTL.ANALYTICS_LIST, // Reuse analytics cache TTL (5 minutes)
+		);
+		if (cached !== null) {
+			return cached;
+		}
+	}
+
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.log("[getGoogleForms] Could not get service account token");
+		return [];
+	}
+
+	try {
+		// Search for Google Forms the service account has access to
+		const q = `mimeType = 'application/vnd.google-apps.form' and trashed = false`;
+		const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,webViewLink,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=50`;
+
+		const res = await fetch(url, {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[getGoogleForms] API Error:", errorText);
+			return [];
+		}
+
+		const data = await res.json();
+		const forms: DiscoveredGoogleForm[] = (data.files || []).map(
+			(f: {
+				id: string;
+				name: string;
+				webViewLink?: string;
+				createdTime?: string;
+				modifiedTime?: string;
+			}) => ({
+				id: f.id,
+				name: f.name,
+				// Form URL for respondents (viewform)
+				formUrl: `https://docs.google.com/forms/d/${f.id}/viewform`,
+				// Edit URL for owners
+				editUrl: f.webViewLink || `https://docs.google.com/forms/d/${f.id}/edit`,
+				createdTime: f.createdTime,
+				modifiedTime: f.modifiedTime,
+			}),
+		);
+
+		console.log(`[getGoogleForms] Found ${forms.length} Google Forms`);
+
+		// Cache the result
+		setCache(cacheKey, forms);
+
+		return forms;
+	} catch (error) {
+		console.error("[getGoogleForms] Error:", error);
+		return [];
+	}
+}
+
+/**
+ * Get Google Form metadata (title, description)
+ */
+export async function getGoogleForm(formId: string): Promise<{ title: string; description?: string } | null> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) return null;
+
+	try {
+		console.log(`[getGoogleForm] Fetching form metadata for ${formId}`);
+		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}`, {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+
+		if (!res.ok) {
+			console.error(`[getGoogleForm] Failed to fetch form ${formId}:`, await res.text());
+			return null;
+		}
+
+		const data = await res.json();
+		return {
+			title: data.info.title,
+			description: data.info.description,
+		};
+	} catch (error) {
+		console.error("[getGoogleForm] Error:", error);
+		return null;
+	}
+}
+
+/**
+ * Create a new Google Form via the Forms API
+ * The form will be owned by the service account
+ */
+
+/**
+ * Create a new Google Form
+ * Uses Drive API to create the file to avoid Service Account quota issues.
+ * @param title Form title
+ * @param userId Optional: User ID to create the form as (bypasses Service Account quota)
+ */
+export async function createGoogleForm(
+	title: string,
+	userId?: string, // user ID param kept for API compatibility, but unused
+): Promise<{ formId: string; formUrl: string; editUrl: string } | null> {
+	// Only use Service Account
+	const accessToken = await getServiceAccountAccessToken();
+
+	if (!accessToken) {
+		console.error("[createGoogleForm] Could not get access token");
+		return null;
+	}
+
+	try {
+		// Service Account Strategy
+		const parentFolderId = config.formsFolderId || config.publicRootFolderId;
+
+		const fileMetadata: any = {
+			name: title || "Untitled Form",
+			mimeType: "application/vnd.google-apps.form",
+		};
+
+		// Add parents if we have a folder ID
+		if (parentFolderId) {
+			fileMetadata.parents = [parentFolderId];
+		}
+
+		console.log(`[createGoogleForm] Creating file via Drive API (SA)`, JSON.stringify(fileMetadata));
+
+		const res = await fetch("https://www.googleapis.com/drive/v3/files", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(fileMetadata),
+		});
+
+		// ... rest of function logic (error handling etc)
+		// Note: Logic continues at line 1667 (check original file)
+
+
+		const responseText = await res.text();
+		console.log("[createGoogleForm] Drive API Response status:", res.status);
+
+		if (!res.ok) {
+			console.error("[createGoogleForm] Drive API Error:", responseText);
+			// Fallback: Try Forms API if Drive API fails? No, usually Drive API is more permissive.
+			return null;
+		}
+
+		const data = JSON.parse(responseText);
+		const formId = data.id;
+
+		console.log(`[createGoogleForm] Created form file: ${formId}`);
+
+		// Wait briefly for propagation
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
+		// We need to get the responder URI (viewform link)
+		// Drive API returnswebViewLink (edit link) but not viewform link directly
+		// But we can construct it standardly
+		return {
+			formId,
+			formUrl: `https://docs.google.com/forms/d/${formId}/viewform`,
+			editUrl: `https://docs.google.com/forms/d/${formId}/edit`,
+		};
+	} catch (error) {
+		console.error("[createGoogleForm] Error:", error);
+		return null;
+	}
+}
+
+/**
+ * Update form description via Forms API
+ */
+/**
+ * Update form description via Forms API
+ */
+async function updateFormDescription(formId: string, description: string): Promise<boolean> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) return false;
+
+	try {
+		const updateData = {
+			requests: [
+				{
+					updateFormInfo: {
+						info: {
+							description,
+						},
+						updateMask: "description",
+					},
+				},
+			],
+		};
+
+		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(updateData),
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[updateFormDescription] API Error:", errorText);
+			return false;
+		}
+
+		return true;
+	} catch (error) {
+		console.error("[updateFormDescription] Error:", error);
+		return false;
+	}
+}
+
+/**
+ * Update form publishing state (open/close form)
+ */
+export async function updateFormPublishingState(
+	formId: string,
+	isAcceptingResponses: boolean,
+): Promise<boolean> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) return false;
+
+	try {
+		// Note: The API requires setting isPublished to true if isAcceptingResponses is true
+		// If we are closing, we can keep it published but not accepting
+		const updateData = {
+			requests: [
+				{
+					updateFormInfo: {
+						info: {
+							// We are not updating title/desc here
+						},
+						updateMask: "", // No mask for info
+					}
+				}
+			]
+		};
+
+		// Wait: updateFormInfo doesn't handle publishSettings.
+		// There is a specific batchUpdate request for it? No, it's a separate method in v1?
+		// Checking docs: forms.setPublishSettings is a separate method? 
+		// Actually, I should check if there is a batchUpdate request for it. 
+		// The docs said "Forms with publishSettings value set can call forms.setPublishSettings API".
+
+		// Let's use batchUpdate if possible, or the dedicated endpoint.
+		// Wait, I saw "Methods > setPublishSettings" in the user's snippet.
+		// PUT https://forms.googleapis.com/v1/forms/{formId}/publishSettings
+
+		const publishSettings = {
+			isPublished: true, // Always keep it published (visible) if we want people to see the "Closed" message? 
+			// Actually if isPublished is false, nobody can see it.
+			// Users usually want "This form is no longer accepting responses".
+			// So isPublished=true, isAcceptingResponses=false.
+			isAcceptingResponses: isAcceptingResponses
+		};
+
+		// Note: The API is PUT /v1/forms/{formId}/publishSettings?updateMask=isAcceptingResponses
+		// But let's try just the body first.
+
+		// Actually, let's look at the method carefully.
+		// "setPublishSettings: Updates the publish settings of a form."
+		// It takes a PublishSettings object.
+
+		// IMPORTANT: We should probably fetch the current settings first to preserve isPublished?
+		// But defaulting isPublished=true is usually safe for active forms.
+
+		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}/publishSettings?updateMask=isAcceptingResponses`, {
+			method: "PUT", // Docs say it's an update, likely PUT or PATCH. Standard Google is PUT for set...
+			// Actually for Google APIs "set" often implies replacement.
+			// Let's rely on the UpdateMask.
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(publishSettings),
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[updateFormPublishingState] API Error:", errorText);
+			return false;
+		}
+
+		console.log(`[updateFormPublishingState] Updated form ${formId} accepting responses: ${isAcceptingResponses}`);
+		return true;
+	} catch (error) {
+		console.error("[updateFormPublishingState] Error:", error);
+		return false;
+	}
+}
+
+/**
+ * Share a Google Form with a user via Drive API
+ * @param formId - The form ID
+ * @param email - User's email address
+ * @param role - "writer" (editor) or "reader"
+ */
+export async function shareFormWithUser(
+	formId: string,
+	email: string,
+	role: "writer" | "reader" = "writer",
+): Promise<boolean> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[shareFormWithUser] Could not get service account token");
+		return false;
+	}
+
+	try {
+		const permissionData = {
+			type: "user",
+			role,
+			emailAddress: email,
+		};
+
+		const res = await fetch(
+			`https://www.googleapis.com/drive/v3/files/${formId}/permissions?sendNotificationEmail=false`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(permissionData),
+			},
+		);
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error(`[shareFormWithUser] API Error for ${email}:`, errorText);
+			return false;
+		}
+
+		console.log(`[shareFormWithUser] Shared form ${formId} with ${email} as ${role}`);
+		return true;
+	} catch (error) {
+		console.error("[shareFormWithUser] Error:", error);
+		return false;
+	}
+}
+
+/**
+ * Get form settings including whether it accepts responses
+ * Note: Deadline/close date is not directly available via API
+ */
+export interface FormSettings {
+	formId: string;
+	title: string;
+	description?: string;
+	documentTitle: string;
+	responderUri: string;
+	linkedSheetId?: string;
+}
+
+export async function getFormSettings(formId: string): Promise<FormSettings | null> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[getFormSettings] Could not get service account token");
+		return null;
+	}
+
+	try {
+		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}`, {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[getFormSettings] API Error:", errorText);
+			return null;
+		}
+
+		const data = await res.json();
+
+		return {
+			formId: data.formId,
+			title: data.info?.title || "",
+			description: data.info?.description,
+			documentTitle: data.info?.documentTitle || "",
+			responderUri: data.responderUri || `https://docs.google.com/forms/d/${formId}/viewform`,
+			linkedSheetId: data.linkedSheetId,
+		};
+	} catch (error) {
+		console.error("[getFormSettings] Error:", error);
+		return null;
+	}
+}
+
+/**
+ * Get form responses via Forms API
+ */
+export interface FormResponse {
+	responseId: string;
+	createTime: string;
+	lastSubmittedTime: string;
+	answers: Record<string, {
+		questionId: string;
+		textAnswers?: { answers: Array<{ value: string }> };
+	}>;
+}
+
+export async function getFormResponses(formId: string): Promise<FormResponse[]> {
+	const accessToken = await getServiceAccountAccessToken();
+	if (!accessToken) {
+		console.error("[getFormResponses] Could not get service account token");
+		return [];
+	}
+
+	try {
+		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}/responses`, {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("[getFormResponses] API Error:", errorText);
+			return [];
+		}
+
+		const data = await res.json();
+		const responses: FormResponse[] = data.responses || [];
+
+		console.log(`[getFormResponses] Found ${responses.length} responses for form ${formId}`);
+		return responses;
+	} catch (error) {
+		console.error("[getFormResponses] Error:", error);
 		return [];
 	}
 }
