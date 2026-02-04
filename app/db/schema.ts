@@ -57,9 +57,13 @@ export const users = pgTable("users", {
 		.references(() => roles.id)
 		.notNull(), // Required role reference
 	apartmentNumber: text("apartment_number"),
+	// Profile fields
+	description: text("description"),
+	picture: text("picture"), // Google profile picture URL
 	// Language preferences
 	primaryLanguage: text("primary_language").notNull().default("fi"),
 	secondaryLanguage: text("secondary_language").notNull().default("en"),
+	// Local AI model preferences
 	// Local AI model preferences
 	localOllamaEnabled: boolean("local_ollama_enabled").notNull().default(false),
 	localOllamaUrl: text("local_ollama_url").notNull().default("http://localhost:11434"),
@@ -510,6 +514,57 @@ export const reservationTransactions = pgTable("reservation_transactions", {
 
 export type ReservationTransaction = typeof reservationTransactions.$inferSelect;
 export type NewReservationTransaction = typeof reservationTransactions.$inferInsert;
+
+// ============================================
+// POLLS
+// ============================================
+
+/**
+ * Poll types
+ * - managed: Service account owns the form, users are added as editors
+ * - linked: User owns the form, shared with service account
+ * - external: External URL (not a Google Form)
+ */
+export type PollType = "managed" | "linked" | "external";
+
+/**
+ * Poll status
+ * - active: Poll is currently accepting responses
+ * - closed: Poll is no longer accepting responses
+ */
+export type PollStatus = "active" | "closed";
+
+/**
+ * Polls table schema
+ * Stores user-added polls (Google Forms links or other external polls)
+ */
+export const polls = pgTable("polls", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	// Basic info
+	name: text("name").notNull(),
+	description: text("description"),
+	// Poll source type
+	type: text("type").$type<PollType>().notNull().default("external"),
+	// Google Form ID (for managed/linked types)
+	googleFormId: text("google_form_id"),
+	// External URL (auto-generated for managed/linked forms)
+	externalUrl: text("external_url").notNull(),
+	// Optional: Link to analytics sheet (Google Sheet ID for response data)
+	analyticsSheetId: text("analytics_sheet_id"),
+	// Deadline tracking
+	deadline: timestamp("deadline"), // When the poll closes
+	status: text("status").$type<PollStatus>().notNull().default("active"),
+	// Metadata
+	year: integer("year").notNull(),
+	// Creator tracking
+	createdBy: uuid("created_by").references(() => users.id),
+	// Timestamps
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Poll = typeof polls.$inferSelect;
+export type NewPoll = typeof polls.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS
