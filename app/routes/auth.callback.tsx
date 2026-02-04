@@ -53,6 +53,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		email: userInfo.email,
 		name: userInfo.name || userInfo.email.split("@")[0],
 		roleId,
+		picture: userInfo.picture || null,
 	});
 
 	// Ensure super admins always have the Admin role (even if they already existed)
@@ -60,6 +61,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		await db.updateUser(user.id, { roleId });
 		console.log(`[OAuth Callback] Promoted ${userInfo.email} to Admin role`);
 	}
+
+	// Update picture if it has changed
+	if (userInfo.picture && user.picture !== userInfo.picture) {
+		await db.updateUser(user.id, { picture: userInfo.picture });
+	}
+
+
 
 	// Fetch full user data to get language preferences
 	const fullUser = await db.findUserByEmail(userInfo.email);
