@@ -1,5 +1,7 @@
 {
 	"common": {
+		"date": "Date",
+		"time": "Time",
 		"actions": {
 			"save": "Save",
 			"cancel": "Cancel",
@@ -111,6 +113,8 @@
 		"inventory": "Inventory",
 		"social": "Social",
 		"analytics": "Analytics",
+		"polls": "Polls",
+		"committee": "Committee",
 		"login": "Login",
 		"submissions": "Submissions",
 		"committee_mail": "Email"
@@ -659,6 +663,10 @@
 		"apartment_help": "Used for validating votes",
 		"role_label": "Role",
 		"member_since_label": "Member since",
+		"description_label": "Description",
+		"description_placeholder": "Tell us about yourself...",
+		"picture_label": "Profile Picture",
+		"picture_help": "Profile picture is automatically updated from your Google account when you log in",
 		"local_ai": {
 			"title": "Local AI Models",
 			"description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
@@ -794,6 +802,12 @@
 		}
 	},
 	"committee": {
+		"title": "Committee",
+		"members": "Members",
+		"no_members": "No committee members found",
+		"primary_role": "Primary Role",
+		"secondary_roles": "Secondary Roles",
+		"no_description": "No description",
 		"mail": {
 			"title": "Committee Email",
 			"description": "Send email to a role (recipients: everyone with that role as primary or secondary).",
@@ -894,7 +908,8 @@
 			"title": "New Social Channel",
 			"header": "New Social Channel",
 			"hidden_desc": "Hidden channels only visible to staff",
-			"sort_desc": "Lower numbers appear first"
+			"sort_desc": "Lower numbers appear first",
+			"primary_desc": "Primary channel will be highlighted."
 		},
 		"colors": {
 			"blue": "Blue",
@@ -1043,6 +1058,78 @@
 		"translating": "Translating...",
 		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"polls": {
+		"title": "Polls",
+		"description": "View and manage polls",
+		"active": "Active",
+		"closed": "Closed",
+		"no_active_polls": "No active polls at the moment",
+		"no_closed_polls": "No closed polls",
+		"no_sheets": "No unlinked Google Sheets",
+		"time_remaining": "{{time}} left",
+		"ends_today": "Ends today",
+		"ends_tomorrow": "Ends tomorrow",
+		"status_closed": "Closed",
+		"fill_poll": "Fill out poll",
+		"view_results": "View Results",
+		"add_poll": "Add Poll",
+		"analytics": "Analytics",
+		"analytics_description": "View and analyze poll responses",
+		"google_form": "Google Form",
+		"google_sheets": "Google Sheets",
+		"no_sheets_found": "No Analytics Sheets Found",
+		"no_sheets_found_description": "Create an 'analytics' folder in your year folder and add Google Sheets. Share with service account.",
+		"select_sheet": "Select a Sheet",
+		"select_sheet_description": "Choose a sheet from the dropdown above to view its data.",
+		"new": {
+			"title": "Add Poll",
+			"form_title": "Poll Details",
+			"form_description": "Add a new poll by providing a link and optional deadline",
+			"choose_type": "Choose Poll Type",
+			"type_managed": "Create New Google Form",
+			"type_managed_desc": "Create a form via Google Forms API. The service account owns it, you become an editor.",
+			"type_linked": "Link Existing Google Form",
+			"type_linked_desc": "Connect a Google Form you've already created. Share it with the service account.",
+			"type_external": "External Poll Link",
+			"type_external_desc": "Link to any external poll (non-Google), like SurveyMonkey, Typeform, etc.",
+			"managed_info": "A new Google Form will be created. You'll be added as an editor automatically.",
+			"linked_info": "Link a Google Form you already own. Remember to share it with the service account.",
+			"external_info": "Link to any poll, survey, or form URL.",
+			"name": "Poll Name",
+			"name_placeholder": "E.g. Event feedback",
+			"description": "Description",
+			"description_placeholder": "What is this poll about?",
+			"url": "Poll URL",
+			"url_placeholder": "https://forms.google.com/...",
+			"url_help": "Link where users can fill out the poll",
+			"google_form_url": "Google Form URL",
+			"share_instruction_title": "Important: Share with Service Account",
+			"share_instruction": "For the app to read responses, share your form with: {{email}}",
+			"deadline": "Deadline",
+			"deadline_help": "When should the poll close? (optional)",
+			"analytics_sheet": "Link to Analytics Sheet",
+			"analytics_sheet_help": "Optional: Select a sheet to view responses in analytics",
+			"no_sheet": "Don't link to a sheet",
+			"submit": "Add Poll",
+			"create_form": "Create Form",
+			"creating": "Creating form..."
+		},
+		"instructions": {
+			"title": "Creating a New Google Form",
+			"step1": "Go to forms.google.com and create a new form",
+			"step2": "Set up your questions and configure form settings",
+			"step3": "In form settings, enable 'Collect email addresses' if needed",
+			"step4": "Click 'Send' and copy the form link",
+			"step5": "Paste the link above to add the poll",
+			"auto_discovery": "For automatic response analytics:",
+			"share_with_sa": "Share the linked Google Sheet with the service account email"
+		},
+		"success": {
+			"created": "Poll added",
+			"updated": "Poll updated",
+			"deleted": "Poll deleted"
+		}
 	},
 	"email": {
 		"reimbursement": {
@@ -1201,6 +1288,11 @@
 			"read": "View form responses and analytics",
 			"export": "Export form data to CSV"
 		},
+		"polls": {
+			"read": "View polls",
+			"write": "Create and manage own polls",
+			"delete": "Delete any poll"
+		},
 		"profile": {
 			"read": {
 				"own": "View own profile"
@@ -1224,7 +1316,8 @@
 			"faqs": "Access FAQ settings (AI translation model)"
 		},
 		"committee": {
-			"email": "Send email to role members"
+			"email": "Send email to role members",
+			"read": "View committee members"
 		},
 		"categories": {
 			"Users": "Users",
@@ -1240,6 +1333,7 @@
 			"News": "News",
 			"FAQ": "FAQ",
 			"Forms": "Forms",
+			"Polls": "Polls",
 			"Profile": "Profile",
 			"Roles": "Roles",
 			"Settings": "Settings"

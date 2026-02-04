@@ -26,6 +26,8 @@
 		"faq": "FAQ",
 		"inventory": "Inventar",
 		"social": "Sozial",
+		"polls": "Umfragen",
+		"committee": "Ausschuss",
 		"login": "Anmelden",
 		"submissions": "Einreichungen"
 	},
@@ -76,6 +78,10 @@
 		"apartment_help": "Wird zur Validierung von Stimmen verwendet",
 		"role_label": "Rolle",
 		"member_since_label": "Mitglied seit",
+		"description_label": "Beschreibung",
+		"description_placeholder": "Erzählen Sie uns von sich...",
+		"picture_label": "Profilbild",
+		"picture_help": "Profilbild wird automatisch von Ihrem Google-Konto aktualisiert, wenn Sie sich anmelden",
 		"save_changes": "Änderungen speichern"
 	},
 	"settings": {
@@ -228,6 +234,14 @@
 		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
 	},
+	"committee": {
+		"title": "Ausschuss",
+		"members": "Mitglieder",
+		"no_members": "Keine Ausschussmitglieder gefunden",
+		"primary_role": "Hauptrolle",
+		"secondary_roles": "Nebenrollen",
+		"no_description": "Keine Beschreibung"
+	},
 	"faq": {
 		"title": "FAQ",
 		"add": "Frage hinzufügen",
@@ -352,6 +366,10 @@
 			"analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)",
 			"news": "Zugriff auf Nachrichteneinstellungen (KI-Übersetzungsmodell)",
 			"faqs": "Zugriff auf FAQ-Einstellungen (KI-Übersetzungsmodell)"
+		},
+		"committee": {
+			"email": "E-Mail an Rollenmitglieder senden",
+			"read": "Ausschussmitglieder anzeigen"
 		},
 		"categories": {
 			"Users": "Benutzer",

@@ -1,5 +1,7 @@
 {
 	"common": {
+		"date": "Päivämäärä",
+		"time": "Aika",
 		"actions": {
 			"save": "Tallenna",
 			"cancel": "Peruuta",
@@ -111,6 +113,8 @@
 		"inventory": "Tavaraluettelo",
 		"social": "Some",
 		"analytics": "Analytiikka",
+		"polls": "Kyselyt",
+		"committee": "Toimikunta",
 		"login": "Kirjaudu",
 		"submissions": "Yhteydenotot",
 		"committee_mail": "Sähköposti"
@@ -659,6 +663,10 @@
 		"apartment_help": "Asuntonumeroa käytetään äänestysten validointiin",
 		"role_label": "Rooli",
 		"member_since_label": "Jäsen alkaen",
+		"description_label": "Kuvaus",
+		"description_placeholder": "Kerro itsestäsi...",
+		"picture_label": "Profiilikuva",
+		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä",
 		"local_ai": {
 			"title": "Paikalliset tekoälymallit",
 			"description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
@@ -794,6 +802,12 @@
 		}
 	},
 	"committee": {
+		"title": "Toimikunta",
+		"members": "Jäsenet",
+		"no_members": "Toimikunnalla ei ole jäseniä",
+		"primary_role": "Päärooli",
+		"secondary_roles": "Sivuroolit",
+		"no_description": "Ei kuvausta",
 		"mail": {
 			"title": "Sähköposti",
 			"description": "Lähetä sähköpostia tietylle roolille (vastaanottajina kaikki, joilla rooli pää- tai sivuroolina).",
@@ -894,7 +908,8 @@
 			"title": "Uusi some-kanava",
 			"header": "Uusi some-kanava",
 			"hidden_desc": "Piilotetut kanavat näkyvät vain henkilökunnalle",
-			"sort_desc": "Pienemmät numerot näkyvät ensin"
+			"sort_desc": "Pienemmät numerot näkyvät ensin",
+			"primary_desc": "Ensisijainen kanava korostetaan"
 		},
 		"colors": {
 			"blue": "Sininen",
@@ -1043,6 +1058,78 @@
 		"translating": "Käännetään...",
 		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"polls": {
+		"title": "Kyselyt",
+		"description": "Näytä ja hallinnoi kyselyitä",
+		"active": "Aktiiviset",
+		"closed": "Suljetut",
+		"no_active_polls": "Ei aktiivisia kyselyitä tällä hetkellä",
+		"no_closed_polls": "Ei suljettuja kyselyitä",
+		"no_sheets": "Ei linkittämättömiä Google Sheettejä",
+		"time_remaining": "{{time}} jäljellä",
+		"ends_today": "Päättyy tänään",
+		"ends_tomorrow": "Päättyy huomenna",
+		"status_closed": "Suljettu",
+		"fill_poll": "Täytä kysely",
+		"view_results": "Näytä tulokset",
+		"add_poll": "Lisää kysely",
+		"analytics": "Analytiikka",
+		"analytics_description": "Näytä ja analysoi kyselyn vastauksia",
+		"google_form": "Google Form",
+		"google_sheets": "Google Sheets",
+		"no_sheets_found": "Analytiikka-taulukoita ei löytynyt",
+		"no_sheets_found_description": "Luo 'analytics'-kansio vuosikansioosi ja lisää Google Sheetejä. Jaa palvelutilille.",
+		"select_sheet": "Valitse taulukko",
+		"select_sheet_description": "Valitse taulukko yläpuolelta nähdäksesi sen tiedot.",
+		"new": {
+			"title": "Lisää kysely",
+			"form_title": "Kyselyn tiedot",
+			"form_description": "Lisää uusi kysely antamalla linkki ja valinnainen deadline",
+			"choose_type": "Valitse kyselyn tyyppi",
+			"type_managed": "Luo uusi Google Form",
+			"type_managed_desc": "Luo lomake Google Forms API:n kautta. Palvelutili omistaa sen, sinusta tulee muokkaaja.",
+			"type_linked": "Linkitä olemassa oleva Google Form",
+			"type_linked_desc": "Yhdistä jo luomasi Google Form. Jaa se palvelutilille.",
+			"type_external": "Ulkoinen kyselylinkki",
+			"type_external_desc": "Linkitä mihin tahansa ulkoiseen kyselyyn, kuten SurveyMonkey, Typeform jne.",
+			"managed_info": "Uusi Google Form luodaan. Sinut lisätään muokkaajaksi automaattisesti.",
+			"linked_info": "Linkitä omistamaasi Google Formiin. Muista jakaa se palvelutilille.",
+			"external_info": "Linkitä mihin tahansa kyselyyn tai lomakkeeseen.",
+			"name": "Kyselyn nimi",
+			"name_placeholder": "Esim. Tapahtumapalaute",
+			"description": "Kuvaus",
+			"description_placeholder": "Mitä tämä kysely koskee?",
+			"url": "Kyselyn URL",
+			"url_placeholder": "https://forms.google.com/...",
+			"url_help": "Linkki josta käyttäjät voivat täyttää kyselyn",
+			"google_form_url": "Google Form URL",
+			"share_instruction_title": "Tärkeää: Jaa palvelutilille",
+			"share_instruction": "Jotta sovellus voi lukea vastauksia, jaa lomake osoitteeseen: {{email}}",
+			"deadline": "Deadline",
+			"deadline_help": "Milloin kyselyn tulisi sulkeutua? (valinnainen)",
+			"analytics_sheet": "Linkitä analytiikka-taulukkoon",
+			"analytics_sheet_help": "Valinnainen: Valitse taulukko nähdäksesi vastaukset analytiikassa",
+			"no_sheet": "Älä linkitä taulukkoon",
+			"submit": "Lisää kysely",
+			"create_form": "Luo lomake",
+			"creating": "Luodaan lomaketta..."
+		},
+		"instructions": {
+			"title": "Uuden Google Formin luominen",
+			"step1": "Mene osoitteeseen forms.google.com ja luo uusi lomake",
+			"step2": "Määritä kysymykset ja lomakkeen asetukset",
+			"step3": "Ota tarvittaessa käyttöön 'Kerää sähköpostiosoitteet' -asetus",
+			"step4": "Klikkaa 'Lähetä' ja kopioi lomakkeen linkki",
+			"step5": "Liitä linkki yllä lisätäksesi kyselyn",
+			"auto_discovery": "Automaattiseen vastausanalytiikkaan:",
+			"share_with_sa": "Jaa linkitetty Google Sheet palvelutilille"
+		},
+		"success": {
+			"created": "Kysely lisätty",
+			"updated": "Kysely päivitetty",
+			"deleted": "Kysely poistettu"
+		}
 	},
 	"email": {
 		"reimbursement": {
@@ -1201,6 +1288,11 @@
 			"read": "Näytä lomaketiedot ja analytiikka",
 			"export": "Vie lomaketiedot CSV-tiedostoon"
 		},
+		"polls": {
+			"read": "Näytä kyselyt",
+			"write": "Luo ja hallinnoi omia kyselyitä",
+			"delete": "Poista mikä tahansa kysely"
+		},
 		"profile": {
 			"read": {
 				"own": "Näytä oma profiili"
@@ -1224,7 +1316,8 @@
 			"faqs": "Pääsy UKK-asetuksiin (AI-käännösmalli)"
 		},
 		"committee": {
-			"email": "Lähetä sähköpostia roolin jäsenille"
+			"email": "Lähetä sähköpostia roolin jäsenille",
+			"read": "Näytä toimikunnan jäsenet"
 		},
 		"categories": {
 			"Users": "Käyttäjät",
@@ -1240,6 +1333,7 @@
 			"News": "Uutiset",
 			"FAQ": "UKK",
 			"Forms": "Lomakkeet",
+			"Polls": "Kyselyt",
 			"Profile": "Profiili",
 			"Roles": "Roolit",
 			"Settings": "Asetukset"

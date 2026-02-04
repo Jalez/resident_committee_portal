@@ -26,6 +26,8 @@
 		"faq": "Vanliga frågor",
 		"inventory": "Inventarier",
 		"social": "Socialt",
+		"polls": "Omröstningar",
+		"committee": "Kommitté",
 		"login": "Logga in",
 		"submissions": "Inskickat",
 		"committee_mail": "E-post"
@@ -461,6 +463,10 @@
 		"apartment_help": "Används för validering av röster",
 		"role_label": "Roll",
 		"member_since_label": "Medlem sedan",
+		"description_label": "Beskrivning",
+		"description_placeholder": "Berätta om dig själv...",
+		"picture_label": "Profilbild",
+		"picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in",
 		"save_changes": "Spara ändringar"
 	},
 	"settings": {
@@ -572,6 +578,12 @@
 		}
 	},
 	"committee": {
+		"title": "Kommitté",
+		"members": "Medlemmar",
+		"no_members": "Inga kommittémedlemmar hittades",
+		"primary_role": "Huvudroll",
+		"secondary_roles": "Sidoroller",
+		"no_description": "Ingen beskrivning",
 		"mail": {
 			"title": "E-post",
 			"description": "Skicka e-post till en roll (mottagare: alla med den rollen som huvud- eller sidoroll).",
@@ -953,7 +965,8 @@
 			"faqs": "Åtkomst till FAQ-inställningar (AI-översättningsmodell)"
 		},
 		"committee": {
-			"email": "Skicka e-post till rollmedlemmar"
+			"email": "Skicka e-post till rollmedlemmar",
+			"read": "Visa kommittémedlemmar"
 		},
 		"categories": {
 			"Users": "Användare",

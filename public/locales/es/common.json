@@ -26,6 +26,8 @@
 		"faq": "FAQ",
 		"inventory": "Inventario",
 		"social": "Social",
+		"polls": "Encuestas",
+		"committee": "Comité",
 		"login": "Iniciar sesión",
 		"submissions": "Envíos"
 	},
@@ -94,6 +96,23 @@
 			"view_details": "Ver detalles"
 		}
 	},
+	"profile": {
+		"title": "Perfil",
+		"update_success": "¡Perfil actualizado!",
+		"email_label": "Correo electrónico",
+		"email_help": "El correo electrónico no se puede cambiar",
+		"name_label": "Nombre",
+		"apartment_label": "Número de apartamento",
+		"optional": "opcional",
+		"apartment_placeholder": "ej. A 101",
+		"apartment_help": "Se utiliza para validar votos",
+		"role_label": "Rol",
+		"member_since_label": "Miembro desde",
+		"description_label": "Descripción",
+		"description_placeholder": "Cuéntanos sobre ti...",
+		"picture_label": "Foto de perfil",
+		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión"
+	},
 	"messages": {
 		"title": "Mensajes",
 		"empty": "Aún no hay mensajes nuevos",
@@ -161,6 +180,14 @@
 		"translating": "Traduciendo...",
 		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"committee": {
+		"title": "Comité",
+		"members": "Miembros",
+		"no_members": "No se encontraron miembros del comité",
+		"primary_role": "Rol Principal",
+		"secondary_roles": "Roles Secundarios",
+		"no_description": "Sin descripción"
 	},
 	"faq": {
 		"title": "FAQ",
@@ -323,6 +350,10 @@
 			"analytics": "Acceso a configuración de análisis (modelos de IA)",
 			"news": "Acceso a configuración de noticias (modelo de traducción IA)",
 			"faqs": "Acceso a configuración de FAQ (modelo de traducción IA)"
+		},
+		"committee": {
+			"email": "Enviar correo electrónico a miembros del rol",
+			"read": "Ver miembros del comité"
 		},
 		"categories": {
 			"Users": "Usuarios",
