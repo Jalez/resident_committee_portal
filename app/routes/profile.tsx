@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { data, Form, redirect } from "react-router";
 import { toast } from "sonner";
@@ -46,6 +46,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 			createdAt: user.createdAt,
 			localOllamaEnabled: user.localOllamaEnabled,
 			localOllamaUrl: user.localOllamaUrl,
+			description: user.description || null,
+			picture: user.picture || null,
 		},
 	};
 }
@@ -67,6 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const name = formData.get("name") as string;
 	const apartmentNumber = formData.get("apartmentNumber") as string;
+	const description = formData.get("description") as string;
 	const localOllamaEnabled = formData.get("localOllamaEnabled") === "true";
 	const localOllamaUrl = (formData.get("localOllamaUrl") as string) || "http://localhost:11434";
 
@@ -74,6 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
 	await db.updateUser(user.id, {
 		name: name || user.name,
 		apartmentNumber: apartmentNumber || null,
+		description: description || null,
 		localOllamaEnabled,
 		localOllamaUrl,
 	});
@@ -92,11 +96,6 @@ export default function Profile({
 	const [testingConnection, setTestingConnection] = useState(false);
 	const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
 
-	// Reset connection status when URL changes
-	useEffect(() => {
-		setConnectionStatus("idle");
-	}, [localOllamaUrl]);
-
 	const testConnection = async () => {
 		setTestingConnection(true);
 		setConnectionStatus("idle");
@@ -114,7 +113,7 @@ export default function Profile({
 				setConnectionStatus("error");
 				toast.error(t("profile.local_ai.connection_failed"));
 			}
-		} catch (error) {
+		} catch {
 			setConnectionStatus("error");
 			toast.error(t("profile.local_ai.connection_error"));
 		} finally {
@@ -213,6 +212,52 @@ export default function Profile({
 									})}
 								</span>
 							</div>
+						</div>
+
+						{/* Description */}
+						<div>
+							<Label htmlFor="description" className="mb-2">
+								{t("profile.description_label")}
+								<span className="ml-2 text-xs font-normal text-gray-500">
+									({t("profile.optional")})
+								</span>
+							</Label>
+							<textarea
+								id="description"
+								name="description"
+								defaultValue={user.description || ""}
+								placeholder={t("profile.description_placeholder")}
+								rows={4}
+								className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+							/>
+							<p className="mt-1 text-xs text-gray-500">
+								{t("committee.no_description")}
+							</p>
+						</div>
+
+						{/* Profile Picture */}
+						<div>
+							<Label className="mb-2">{t("profile.picture_label")}</Label>
+							{user.picture ? (
+								<div className="flex items-center gap-4">
+									<img
+										src={user.picture}
+										alt={user.name}
+										className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+									/>
+									<div className="flex-1">
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											{t("profile.picture_help")}
+										</p>
+									</div>
+								</div>
+							) : (
+								<div className="px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700">
+									<p className="text-sm text-gray-500 dark:text-gray-400">
+										{t("profile.picture_help")}
+									</p>
+								</div>
+							)}
 						</div>
 
 						{/* Local AI Settings Section */}
