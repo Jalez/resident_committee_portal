@@ -59,6 +59,7 @@ export default [
 	// User routes
 	route("profile", "routes/profile.tsx"),
 	route("messages", "routes/messages.tsx"),
+	route("committee", "routes/committee.tsx"),
 	// Staff routes (admin + board_member)
 	route("submissions", "routes/submissions.tsx"),
 	route("mail", "routes/mail.tsx", [
@@ -77,8 +78,14 @@ export default [
 	route("settings/news", "routes/settings.news.tsx"),
 	route("settings/faqs", "routes/settings.faqs.tsx"),
 
-	// Analytics
+	// Analytics (redirect to polls/analytics)
 	route("analytics", "routes/analytics.tsx"),
+
+	// Polls
+	route("polls", "routes/polls.tsx"),
+	route("polls/new", "routes/polls.new.tsx"),
+	route("polls/analytics", "routes/polls.analytics.tsx"),
+	route("polls/:pollId/edit", "routes/polls.$pollId.edit.tsx"),
 
 	// API Routes
 	route("api/minutes", "routes/api.minutes.tsx"),

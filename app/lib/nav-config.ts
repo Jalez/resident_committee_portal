@@ -57,10 +57,17 @@ export const NAV_ITEMS: NavItem[] = [
 		infoReelDuration: 16000,
 	},
 	{
-		path: "/analytics",
-		icon: "analytics",
-		i18nKey: "nav.analytics",
-		permission: "forms:read",
+		path: "/polls",
+		icon: "ballot",
+		i18nKey: "nav.polls",
+		permission: "polls:read",
+	},
+	// Committee - requires committee:read permission
+	{
+		path: "/committee",
+		icon: "groups",
+		i18nKey: "nav.committee",
+		permission: "committee:read",
 	},
 	// Auth items - shown conditionally
 	{
