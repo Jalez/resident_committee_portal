@@ -25,6 +25,7 @@ import {
 	type NewInventoryItem,
 	type NewMessage,
 	type NewNews,
+	type NewPoll,
 	type NewPurchase,
 	type NewRole,
 	type NewSocialLink,
@@ -33,6 +34,8 @@ import {
 	type NewUser,
 	type News,
 	news,
+	type Poll,
+	polls,
 	type Purchase,
 	purchases,
 	type ReservationTransaction,
@@ -1354,5 +1357,66 @@ export class NeonAdapter implements DatabaseAdapter {
 			reservation,
 			amount: link[0].amount,
 		};
+	}
+
+	// ==================== Poll Methods ====================
+	async getPolls(year?: number): Promise<Poll[]> {
+		if (year !== undefined) {
+			return this.db
+				.select()
+				.from(polls)
+				.where(eq(polls.year, year))
+				.orderBy(desc(polls.createdAt));
+		}
+		return this.db.select().from(polls).orderBy(desc(polls.createdAt));
+	}
+
+	async getPollById(id: string): Promise<Poll | null> {
+		const result = await this.db
+			.select()
+			.from(polls)
+			.where(eq(polls.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getActivePolls(year?: number): Promise<Poll[]> {
+		if (year !== undefined) {
+			return this.db
+				.select()
+				.from(polls)
+				.where(and(eq(polls.status, "active"), eq(polls.year, year)))
+				.orderBy(desc(polls.createdAt));
+		}
+		return this.db
+			.select()
+			.from(polls)
+			.where(eq(polls.status, "active"))
+			.orderBy(desc(polls.createdAt));
+	}
+
+	async createPoll(poll: NewPoll): Promise<Poll> {
+		const result = await this.db.insert(polls).values(poll).returning();
+		return result[0];
+	}
+
+	async updatePoll(
+		id: string,
+		data: Partial<Omit<NewPoll, "id">>,
+	): Promise<Poll | null> {
+		const result = await this.db
+			.update(polls)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(polls.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deletePoll(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(polls)
+			.where(eq(polls.id, id))
+			.returning();
+		return result.length > 0;
 	}
 }

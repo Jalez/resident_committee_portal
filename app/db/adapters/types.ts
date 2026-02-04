@@ -14,6 +14,7 @@ import type {
 	NewInventoryItem,
 	NewMessage,
 	NewNews,
+	NewPoll,
 	NewPurchase,
 	NewRole,
 	NewSocialLink,
@@ -21,6 +22,7 @@ import type {
 	NewTransaction,
 	NewUser,
 	News,
+	Poll,
 	Purchase,
 	ReservationTransaction,
 	Role,
@@ -292,4 +294,21 @@ export interface DatabaseAdapter {
 	getReservationForTransaction(
 		transactionId: string,
 	): Promise<{ reservation: FundReservation; amount: string } | null>;
+
+	// ==================== Poll Methods ====================
+	/** Get all polls */
+	getPolls(year?: number): Promise<Poll[]>;
+	/** Get a single poll by ID */
+	getPollById(id: string): Promise<Poll | null>;
+	/** Get active polls (not closed, optionally filtered by year) */
+	getActivePolls(year?: number): Promise<Poll[]>;
+	/** Create a new poll */
+	createPoll(poll: NewPoll): Promise<Poll>;
+	/** Update a poll */
+	updatePoll(
+		id: string,
+		data: Partial<Omit<NewPoll, "id">>,
+	): Promise<Poll | null>;
+	/** Delete a poll */
+	deletePoll(id: string): Promise<boolean>;
 }
