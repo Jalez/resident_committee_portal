@@ -396,9 +396,10 @@ export function getGoogleAuthUrl(): string {
 		client_id: config.oauthClientId,
 		redirect_uri: config.redirectUri,
 		response_type: "code",
+		// Request only basic profile info
 		scope: "openid email profile",
-		access_type: "online",
-		prompt: "select_account",
+		access_type: "offline", // Required to get a refresh token
+		prompt: "consent select_account", // Force consent screen to ensure we get a refresh token
 	});
 
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -409,6 +410,8 @@ interface GoogleTokenResponse {
 	id_token: string;
 	token_type: string;
 	expires_in: number;
+	refresh_token?: string; // Only returned if access_type=offline and prompt=consent
+	scope?: string;
 }
 
 interface GoogleUserInfo {
@@ -464,3 +467,5 @@ export async function getUserInfo(
 		return null;
 	}
 }
+
+

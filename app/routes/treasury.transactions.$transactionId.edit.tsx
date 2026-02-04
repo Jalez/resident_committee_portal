@@ -60,7 +60,6 @@ import {
 } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { RECEIPT_MAX_SIZE_BYTES } from "~/lib/constants";
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
@@ -325,11 +324,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 		if (!receiptFile || receiptFile.size === 0) {
 			return { success: false, error: "No file provided" };
-		}
-
-		// Validate file size
-		if (receiptFile.size > RECEIPT_MAX_SIZE_BYTES) {
-			return { success: false, error: "File too large" };
 		}
 
 		try {

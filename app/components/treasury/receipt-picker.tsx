@@ -23,8 +23,6 @@ import {
 } from "~/components/ui/select";
 import {
 	RECEIPT_ALLOWED_TYPES,
-	RECEIPT_MAX_SIZE_BYTES,
-	RECEIPT_MAX_SIZE_MB,
 } from "~/lib/constants";
 
 export interface ReceiptLink {
@@ -152,14 +150,6 @@ export function ReceiptPicker({
 		) {
 			setUploadError(
 				t("receipts.invalid_type", { types: RECEIPT_ALLOWED_TYPES.join(", ") }),
-			);
-			return;
-		}
-
-		// Validate file size
-		if (file.size > RECEIPT_MAX_SIZE_BYTES) {
-			setUploadError(
-				t("receipts.file_too_large", { size: RECEIPT_MAX_SIZE_MB }),
 			);
 			return;
 		}
@@ -333,9 +323,14 @@ export function ReceiptPicker({
 									/>
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Max {RECEIPT_MAX_SIZE_MB}MB.{" "}
-									{t("receipts.allowed", "Allowed")}:{" "}
+									{t("receipts.allowed", "Allowed")}: {" "}
 									{RECEIPT_ALLOWED_TYPES.join(", ")}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{t(
+										"receipts.upload_notice",
+										"Large files can take a while to upload.",
+									)}
 								</p>
 
 								{uploadError && (
@@ -360,9 +355,15 @@ export function ReceiptPicker({
 								)}
 
 								{isUploading && (
-									<p className="text-sm text-muted-foreground animate-pulse">
-										{t("receipts.uploading")}
-									</p>
+									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+										<span className="material-symbols-outlined animate-spin">
+											progress_activity
+										</span>
+										{t(
+											"receipts.uploading",
+											"Uploading receipt...",
+										)}
+									</div>
 								)}
 							</div>
 						)}

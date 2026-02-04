@@ -11,8 +11,6 @@ export const SUBMISSION_STATUSES = [
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
 // Receipt upload constants
-export const RECEIPT_MAX_SIZE_BYTES = 500 * 1024; // 500KB - easily adjustable
-export const RECEIPT_MAX_SIZE_MB = RECEIPT_MAX_SIZE_BYTES / (1024 * 1024);
 export const RECEIPT_ALLOWED_TYPES = [
 	".pdf",
 	".jpg",
