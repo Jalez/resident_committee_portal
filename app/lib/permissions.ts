@@ -287,6 +287,24 @@ export const PERMISSIONS = {
 		category: "Forms",
 	},
 
+	// Polls
+	"polls:read": {
+		translationKey: "permissions.polls.read",
+		category: "Polls",
+	},
+	"polls:write": {
+		translationKey: "permissions.polls.write",
+		category: "Polls",
+	},
+	"polls:update": {
+		translationKey: "permissions.polls.update",
+		category: "Polls",
+	},
+	"polls:delete": {
+		translationKey: "permissions.polls.delete",
+		category: "Polls",
+	},
+
 	// Profile
 	"profile:read:own": {
 		translationKey: "permissions.profile.read.own",
@@ -344,6 +362,10 @@ export const PERMISSIONS = {
 	// Committee email (direct communication)
 	"committee:email": {
 		translationKey: "permissions.committee.email",
+		category: "Committee",
+	},
+	"committee:read": {
+		translationKey: "permissions.committee.read",
 		category: "Committee",
 	},
 } as const;
