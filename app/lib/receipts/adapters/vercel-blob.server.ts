@@ -1,6 +1,13 @@
-import { list } from "@vercel/blob";
+import { copy, del, head, list, put } from "@vercel/blob";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
-import type { ReceiptStorageAdapter, ReceiptsByYear } from "../types";
+import type {
+	ReceiptStorageAdapter,
+	ReceiptsByYear,
+	UploadOptions,
+	UploadResult,
+	RenameResult,
+	FileMetadata,
+} from "../types";
 
 type ListedBlob = {
 	url: string;
@@ -121,6 +128,57 @@ export class VercelBlobReceiptStorage implements ReceiptStorageAdapter {
 			return Buffer.from(arrayBuffer).toString("base64");
 		} catch (error) {
 			console.error("[receiptStorage] Download error:", error);
+			return null;
+		}
+	}
+
+	async uploadFile(
+		pathname: string,
+		file: File | Buffer,
+		options?: UploadOptions,
+	): Promise<UploadResult> {
+		const blob = await put(pathname, file, {
+			access: options?.access || "public",
+			addRandomSuffix: options?.addRandomSuffix ?? true,
+		});
+
+		return {
+			url: blob.url,
+			pathname: blob.pathname,
+		};
+	}
+
+	async deleteFile(pathname: string): Promise<void> {
+		await del(pathname);
+	}
+
+	async renameFile(
+		fromPathname: string,
+		toPathname: string,
+	): Promise<RenameResult> {
+		const result = await copy(fromPathname, toPathname, {
+			access: "public",
+		});
+		await del(fromPathname);
+
+		return {
+			url: result.url,
+			pathname: result.pathname,
+		};
+	}
+
+	async getFileMetadata(pathname: string): Promise<FileMetadata | null> {
+		try {
+			const meta = await head(pathname);
+			return {
+				url: meta.url,
+				pathname: meta.pathname,
+				contentType: meta.contentType,
+				size: meta.size,
+				uploadedAt: meta.uploadedAt,
+			};
+		} catch (error) {
+			console.error("[VercelBlobReceiptStorage] getFileMetadata error:", error);
 			return null;
 		}
 	}
