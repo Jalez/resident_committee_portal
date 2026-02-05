@@ -85,34 +85,59 @@ export async function loader({ request }: Route.LoaderArgs) {
 			t.reimbursementStatus === "approved",
 	);
 
-	// Calculate totals: Balance = Income - Expenses
-	const expenses = transactions
+	// Get all transaction IDs that are linked to budgets
+	const allBudgets = await db.getFundBudgetsByYear(selectedYear);
+	const budgetLinkedTransactionIds = new Set<string>();
+	for (const budget of allBudgets) {
+		const budgetTxs = await db.getBudgetTransactions(budget.id);
+		for (const { transaction } of budgetTxs) {
+			budgetLinkedTransactionIds.add(transaction.id);
+		}
+	}
+
+	// Calculate totals: Balance = Income - Expenses (including ALL expenses)
+	// Budget-linked expenses reduce the balance AND reduce the reserved amount
+	const allExpenses = transactions
 		.filter((t) => t.type === "expense")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+	// Separate budget-linked transactions from unbudgeted transactions
+	const budgetedTransactions = transactions
+		.filter((t) => budgetLinkedTransactionIds.has(t.id))
+		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+	const budgetLinkedExpenses = transactions
+		.filter((t) => t.type === "expense" && budgetLinkedTransactionIds.has(t.id))
+		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+	const unbudgetedExpenses = allExpenses - budgetLinkedExpenses;
 
 	const income = transactions
 		.filter((t) => t.type === "income")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-	const balance = income - expenses;
+	const balance = income - allExpenses;
 
-	// Get open reservations for the selected year to calculate reserved amount
-	const openReservations = await db.getOpenFundReservationsByYear(selectedYear);
+	// Get open budgets for the selected year to calculate reserved amount
+	const openBudgets = await db.getOpenFundBudgetsByYear(selectedYear);
 	let totalReserved = 0;
-	for (const reservation of openReservations) {
-		const usedAmount = await db.getReservationUsedAmount(reservation.id);
-		const remainingInReservation = Number.parseFloat(reservation.amount) - usedAmount;
-		totalReserved += remainingInReservation;
+	for (const budget of openBudgets) {
+		const usedAmount = await db.getBudgetUsedAmount(budget.id);
+		const remainingInBudget = Number.parseFloat(budget.amount) - usedAmount;
+		// Only count positive remaining amounts (if budget is overspent, don't subtract from reserved)
+		totalReserved += Math.max(0, remainingInBudget);
 	}
 	const available = balance - totalReserved;
 
 	return {
 		siteConfig: SITE_CONFIG,
 		selectedYear,
-		expenses,
+		unbudgeted_transactions: unbudgetedExpenses,
+		budgeted_transactions: budgetedTransactions,
+		budgetLinkedExpenses,
 		income,
 		balance,
-		reserved: totalReserved,
+		budget_costs: totalReserved,
 		available,
 		years: contextYears.length > 0 ? contextYears : [currentRealYear],
 		transactionCount: transactions.length,
@@ -123,10 +148,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Treasury({ loaderData }: Route.ComponentProps) {
 	const {
 		selectedYear,
-		expenses,
+		unbudgeted_transactions,
+		budgeted_transactions,
 		income,
 		balance,
-		reserved,
+		budget_costs,
 		available,
 		years,
 		transactionCount,
@@ -209,56 +235,74 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 				<ContentArea className="space-y-8">
 					{transactionCount > 0 ? (
 						<>
+							{/* Available funds - most important, shown prominently */}
 							<div>
 								<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-									{t("treasury.balance")}
+									{t("treasury.available")}
 								</p>
 								<p
-									className={`text-5xl lg:text-7xl font-black tracking-tighter ${balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+									className={`text-5xl lg:text-7xl font-black tracking-tighter ${available >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
 								>
-									{formatCurrency(balance)}
+									{formatCurrency(available)}
 								</p>
 							</div>
 
-							{/* Reserved / Available split - only show if there's reserved amount */}
-							{reserved > 0 && (
-								<div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-									<div>
-										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-											{t("treasury.reserved")}
-										</p>
-										<p className="text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-400">
-											{formatCurrency(reserved)}
-										</p>
-									</div>
-									<div>
-										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-											{t("treasury.available")}
-										</p>
-										<p className={`text-2xl lg:text-3xl font-bold ${available >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}>
-											{formatCurrency(available)}
-										</p>
-									</div>
-								</div>
-							)}
+							{/* Income */}
+							<div>
+								<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+									{t("treasury.income")}
+								</p>
+								<p className="text-2xl lg:text-3xl font-bold text-green-600 dark:text-green-400">
+									+{formatCurrency(income)}
+								</p>
+							</div>
 
-							<div className="grid grid-cols-2 gap-4">
+							{/* Expenses: Budgeted and Unbudgeted transactions side by side */}
+							<div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
 								<div>
 									<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-										{t("treasury.income")}
-									</p>
-									<p className="text-2xl lg:text-3xl font-bold text-green-600 dark:text-green-400">
-										+{formatCurrency(income)}
-									</p>
-								</div>
-								<div>
-									<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-										{t("treasury.expenses")}
+										{t("treasury.unbudgeted_transactions")}
 									</p>
 									<p className="text-2xl lg:text-3xl font-bold text-red-600 dark:text-red-400">
-										-{formatCurrency(expenses)}
+										-{formatCurrency(unbudgeted_transactions)}
 									</p>
 								</div>
+								{budgeted_transactions > 0 ? (
+									<div>
+										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+											{t("treasury.budgeted_transactions")}
+										</p>
+										<p className="text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-400">
+											-{formatCurrency(budgeted_transactions)}
+										</p>
+									</div>
+								) : (
+									<div />
+								)}
+							</div>
+
+							{/* Balance and Budget costs side by side */}
+							<div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+								<div>
+									<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+										{t("treasury.balance")}
+									</p>
+									<p className={`text-2xl lg:text-3xl font-bold ${balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+										{formatCurrency(balance)}
+									</p>
+								</div>
+								{budget_costs > 0 ? (
+									<div>
+										<p className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+											{t("treasury.budget_costs")}
+										</p>
+										<p className="text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-400">
+											{formatCurrency(budget_costs)}
+										</p>
+									</div>
+								) : (
+									<div />
+								)}
 							</div>
 
 							<div className="inline-block bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
