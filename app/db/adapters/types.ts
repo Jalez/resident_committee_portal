@@ -16,6 +16,7 @@ import type {
 	NewNews,
 	NewPoll,
 	NewPurchase,
+	NewReceipt,
 	NewRole,
 	NewSocialLink,
 	NewSubmission,
@@ -25,6 +26,7 @@ import type {
 	Poll,
 	Purchase,
 	BudgetTransaction,
+	Receipt,
 	Role,
 	SocialLink,
 	Submission,
@@ -49,7 +51,7 @@ export interface DatabaseAdapter {
 	deleteUser(id: string): Promise<boolean>;
 	getAllUsers(limit?: number, offset?: number): Promise<User[]>;
 	upsertUser(
-		user: Omit<NewUser, "roleId"> & { roleId?: string },
+		user: Omit<NewUser, "roleId">,
 	): Promise<User>;
 
 	// ==================== RBAC Methods ====================
@@ -64,18 +66,18 @@ export interface DatabaseAdapter {
 	): Promise<Role | null>;
 	deleteRole(id: string): Promise<boolean>;
 
-	// User permissions (fetched from user's primary + secondary roles)
+	// User permissions (fetched from all user roles)
 	getUserPermissions(userId: string): Promise<string[]>;
 	getUserWithRole(
 		userId: string,
 	): Promise<(User & { roleName?: string; permissions: string[] }) | null>;
-	/** Secondary role IDs for a user */
-	getUserSecondaryRoleIds(userId: string): Promise<string[]>;
-	/** All user–secondary role pairs (for bulk display) */
-	getAllUserSecondaryRoles(): Promise<{ userId: string; roleId: string }[]>;
-	/** Replace user's secondary roles with the given role IDs */
-	setUserSecondaryRoles(userId: string, roleIds: string[]): Promise<void>;
-	/** Users who have this role as primary OR secondary (deduplicated) */
+	/** Role IDs for a user */
+	getUserRoleIds(userId: string): Promise<string[]>;
+	/** All user–role pairs (for bulk display) */
+	getAllUserRoles(): Promise<{ userId: string; roleId: string }[]>;
+	/** Replace user's roles with the given role IDs */
+	setUserRoles(userId: string, roleIds: string[]): Promise<void>;
+	/** Users who have this role (deduplicated) */
 	getUsersByRoleId(roleId: string): Promise<User[]>;
 
 	// ==================== Inventory Methods ====================
@@ -287,8 +289,10 @@ export interface DatabaseAdapter {
 	getBudgetTransactions(
 		budgetId: string,
 	): Promise<{ transaction: Transaction; amount: string }[]>;
-	/** Get the total used amount for a budget */
+	/** Get the total used amount for a budget (only complete transactions) */
 	getBudgetUsedAmount(budgetId: string): Promise<number>;
+	/** Get the total reserved amount for a budget (only pending transactions) */
+	getBudgetReservedAmount(budgetId: string): Promise<number>;
 	/** Calculate available funds for a year (balance - open budget amounts) */
 	getAvailableFundsForYear(year: number): Promise<number>;
 	/** Get budget linked to a transaction (if any) */
@@ -312,4 +316,21 @@ export interface DatabaseAdapter {
 	): Promise<Poll | null>;
 	/** Delete a poll */
 	deletePoll(id: string): Promise<boolean>;
+
+	// ==================== Receipt Methods ====================
+	/** Get all receipts */
+	getReceipts(): Promise<Receipt[]>;
+	/** Get a single receipt by ID */
+	getReceiptById(id: string): Promise<Receipt | null>;
+	/** Get all receipts for a purchase (reimbursement request) */
+	getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]>;
+	/** Create a new receipt */
+	createReceipt(receipt: NewReceipt): Promise<Receipt>;
+	/** Update a receipt */
+	updateReceipt(
+		id: string,
+		data: Partial<Omit<NewReceipt, "id">>,
+	): Promise<Receipt | null>;
+	/** Delete a receipt */
+	deleteReceipt(id: string): Promise<boolean>;
 }

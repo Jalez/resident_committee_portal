@@ -27,6 +27,7 @@ import {
 	type NewNews,
 	type NewPoll,
 	type NewPurchase,
+	type NewReceipt,
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
@@ -40,6 +41,8 @@ import {
 	purchases,
 	type BudgetTransaction,
 	budgetTransactions,
+	type Receipt,
+	receipts,
 	type Role,
 	roles,
 	type SocialLink,
@@ -50,7 +53,7 @@ import {
 	type Transaction,
 	transactions,
 	type User,
-	userSecondaryRoles,
+	userRoles,
 	users,
 } from "../schema";
 
@@ -124,7 +127,7 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async upsertUser(
-		user: Omit<NewUser, "roleId"> & { roleId?: string },
+		user: Omit<NewUser, "roleId">,
 	): Promise<User> {
 		const existing = await this.findUserByEmail(user.email);
 		if (existing) {
@@ -137,18 +140,19 @@ export class NeonAdapter implements DatabaseAdapter {
 			}
 			return updated;
 		}
-		// For new users, automatically assign the Resident role
+		// Create new user without roleId
+		const newUser = await this.createUser(user);
+		
+		// For new users, automatically assign the Resident role via junction table
 		const residentRole = await this.getRoleByName("Resident");
 		if (!residentRole) {
 			throw new Error(
 				"Resident role not found. Run the seed-rbac.ts script to create default roles.",
 			);
 		}
-		const newUserData: NewUser = {
-			...user,
-			roleId: user.roleId ?? residentRole.id,
-		};
-		return this.createUser(newUserData);
+		await this.setUserRoles(newUser.id, [residentRole.id]);
+		
+		return newUser;
 	}
 
 	// ==================== RBAC Methods ====================
@@ -201,10 +205,19 @@ export class NeonAdapter implements DatabaseAdapter {
 		// Get the Resident role to reassign users
 		const residentRole = await this.getRoleByName("Resident");
 		if (residentRole) {
-			await this.db
-				.update(users)
-				.set({ roleId: residentRole.id })
-				.where(eq(users.roleId, id));
+			// Get all users with this role
+			const usersWithRole = await this.getUsersByRoleId(id);
+			// Remove the role and assign Resident role instead
+			for (const user of usersWithRole) {
+				const currentRoleIds = await this.getUserRoleIds(user.id);
+				const newRoleIds = currentRoleIds.filter(rid => rid !== id);
+				// If user has no roles left, assign Resident
+				if (newRoleIds.length === 0) {
+					await this.setUserRoles(user.id, [residentRole.id]);
+				} else {
+					await this.setUserRoles(user.id, newRoleIds);
+				}
+			}
 		}
 		const result = await this.db
 			.delete(roles)
@@ -213,17 +226,15 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-	// User permissions (primary role ∪ secondary roles)
+	// User permissions (union of all user roles)
 	async getUserPermissions(userId: string): Promise<string[]> {
-		const user = await this.findUserById(userId);
-		if (!user) return [];
-
-		const primaryRole = await this.getRoleById(user.roleId);
-		const secondaryIds = await this.getUserSecondaryRoleIds(userId);
-		const allPerms = [...(primaryRole?.permissions ?? [])];
-		for (const roleId of secondaryIds) {
-			const r = await this.getRoleById(roleId);
-			if (r?.permissions) allPerms.push(...r.permissions);
+		const roleIds = await this.getUserRoleIds(userId);
+		const allPerms: string[] = [];
+		for (const roleId of roleIds) {
+			const role = await this.getRoleById(roleId);
+			if (role?.permissions) {
+				allPerms.push(...role.permissions);
+			}
 		}
 		return [...new Set(allPerms)];
 	}
@@ -234,74 +245,68 @@ export class NeonAdapter implements DatabaseAdapter {
 		const user = await this.findUserById(userId);
 		if (!user) return null;
 
-		const primaryRole = await this.getRoleById(user.roleId);
+		const roleIds = await this.getUserRoleIds(userId);
+		const firstRole = roleIds.length > 0 ? await this.getRoleById(roleIds[0]) : null;
 		const permissions = await this.getUserPermissions(userId);
 		return {
 			...user,
-			roleName: primaryRole?.name,
+			roleName: firstRole?.name,
 			permissions,
 		};
 	}
 
-	async getUserSecondaryRoleIds(userId: string): Promise<string[]> {
+	async getUserRoleIds(userId: string): Promise<string[]> {
 		const rows = await this.db
-			.select({ roleId: userSecondaryRoles.roleId })
-			.from(userSecondaryRoles)
-			.where(eq(userSecondaryRoles.userId, userId));
+			.select({ roleId: userRoles.roleId })
+			.from(userRoles)
+			.where(eq(userRoles.userId, userId));
 		return rows.map((r) => r.roleId);
 	}
 
-	async getAllUserSecondaryRoles(): Promise<
+	async getAllUserRoles(): Promise<
 		{ userId: string; roleId: string }[]
 	> {
 		const rows = await this.db
 			.select({
-				userId: userSecondaryRoles.userId,
-				roleId: userSecondaryRoles.roleId,
+				userId: userRoles.userId,
+				roleId: userRoles.roleId,
 			})
-			.from(userSecondaryRoles);
+			.from(userRoles);
 		return rows;
 	}
 
-	async setUserSecondaryRoles(userId: string, roleIds: string[]): Promise<void> {
+	async setUserRoles(userId: string, roleIds: string[]): Promise<void> {
 		await this.db
-			.delete(userSecondaryRoles)
-			.where(eq(userSecondaryRoles.userId, userId));
-		if (roleIds.length > 0) {
-			await this.db.insert(userSecondaryRoles).values(
-				roleIds.map((roleId) => ({ userId, roleId })),
-			);
+			.delete(userRoles)
+			.where(eq(userRoles.userId, userId));
+		
+		// If no roles provided, assign default "Resident" role to prevent users from having no roles
+		let finalRoleIds = roleIds;
+		if (finalRoleIds.length === 0) {
+			const residentRole = await this.getRoleByName("Resident");
+			if (!residentRole) {
+				throw new Error(
+					"Resident role not found. Run the seed-rbac.ts script to create default roles.",
+				);
+			}
+			finalRoleIds = [residentRole.id];
 		}
+		
+		await this.db.insert(userRoles).values(
+			finalRoleIds.map((roleId) => ({ userId, roleId })),
+		);
 	}
 
 	async getUsersByRoleId(roleId: string): Promise<User[]> {
-		const byPrimary = await this.db
-			.select()
-			.from(users)
-			.where(eq(users.roleId, roleId));
-		const bySecondary = await this.db
+		const rows = await this.db
 			.select({ user: users })
 			.from(users)
 			.innerJoin(
-				userSecondaryRoles,
-				eq(users.id, userSecondaryRoles.userId),
+				userRoles,
+				eq(users.id, userRoles.userId),
 			)
-			.where(eq(userSecondaryRoles.roleId, roleId));
-		const seen = new Set<string>();
-		const result: User[] = [];
-		for (const row of byPrimary) {
-			if (!seen.has(row.id)) {
-				seen.add(row.id);
-				result.push(row);
-			}
-		}
-		for (const row of bySecondary) {
-			if (!seen.has(row.user.id)) {
-				seen.add(row.user.id);
-				result.push(row.user);
-			}
-		}
-		return result;
+			.where(eq(userRoles.roleId, roleId));
+		return rows.map((r) => r.user);
 	}
 
 	// ==================== Inventory Methods ====================
@@ -1310,9 +1315,36 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	async getBudgetUsedAmount(budgetId: string): Promise<number> {
 		const links = await this.db
-			.select()
+			.select({ amount: budgetTransactions.amount })
 			.from(budgetTransactions)
-			.where(eq(budgetTransactions.budgetId, budgetId));
+			.innerJoin(
+				transactions,
+				eq(budgetTransactions.transactionId, transactions.id),
+			)
+			.where(
+				and(
+					eq(budgetTransactions.budgetId, budgetId),
+					eq(transactions.status, "complete"),
+				),
+			);
+
+		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
+	}
+
+	async getBudgetReservedAmount(budgetId: string): Promise<number> {
+		const links = await this.db
+			.select({ amount: budgetTransactions.amount })
+			.from(budgetTransactions)
+			.innerJoin(
+				transactions,
+				eq(budgetTransactions.transactionId, transactions.id),
+			)
+			.where(
+				and(
+					eq(budgetTransactions.budgetId, budgetId),
+					eq(transactions.status, "pending"),
+				),
+			);
 
 		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
 	}
@@ -1440,6 +1472,59 @@ export class NeonAdapter implements DatabaseAdapter {
 		const result = await this.db
 			.delete(polls)
 			.where(eq(polls.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	// ==================== Receipt Methods ====================
+	async getReceipts(): Promise<Receipt[]> {
+		return this.db
+			.select()
+			.from(receipts)
+			.orderBy(desc(receipts.createdAt));
+	}
+
+	async getReceiptById(id: string): Promise<Receipt | null> {
+		const result = await this.db
+			.select()
+			.from(receipts)
+			.where(eq(receipts.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]> {
+		return this.db
+			.select()
+			.from(receipts)
+			.where(eq(receipts.purchaseId, purchaseId))
+			.orderBy(desc(receipts.createdAt));
+	}
+
+	async createReceipt(receipt: NewReceipt): Promise<Receipt> {
+		const result = await this.db
+			.insert(receipts)
+			.values(receipt)
+			.returning();
+		return result[0];
+	}
+
+	async updateReceipt(
+		id: string,
+		data: Partial<Omit<NewReceipt, "id">>,
+	): Promise<Receipt | null> {
+		const result = await this.db
+			.update(receipts)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(receipts.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deleteReceipt(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(receipts)
+			.where(eq(receipts.id, id))
 			.returning();
 		return result.length > 0;
 	}

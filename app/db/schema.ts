@@ -46,16 +46,13 @@ export type NewRole = typeof roles.$inferInsert;
  * Users table schema
  * Stores authenticated user information
  *
- * Users MUST have a roleId assigned. New users are automatically
- * assigned the "Resident" role when created via upsertUser().
+ * Users have roles assigned via the userRoles junction table.
+ * New users are automatically assigned the "Resident" role when created via upsertUser().
  */
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	email: text("email").notNull().unique(),
 	name: text("name").notNull(),
-	roleId: uuid("role_id")
-		.references(() => roles.id)
-		.notNull(), // Required role reference
 	apartmentNumber: text("apartment_number"),
 	// Profile fields
 	description: text("description"),
@@ -75,12 +72,12 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 /**
- * User secondary roles (many-to-many)
- * A user has one primary role (users.roleId) and optionally multiple secondary roles.
- * Permissions = primary role permissions ∪ secondary role permissions.
+ * User roles (many-to-many)
+ * Users can have multiple roles. Permissions = union of all role permissions.
+ * New users are automatically assigned the "Resident" role.
  */
-export const userSecondaryRoles = pgTable(
-	"user_secondary_roles",
+export const userRoles = pgTable(
+	"user_secondary_roles", // Keep table name for backward compatibility
 	{
 		id: uuid("id").primaryKey().defaultRandom(),
 		userId: uuid("user_id")
@@ -92,12 +89,12 @@ export const userSecondaryRoles = pgTable(
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
 	(t) => ({
-		userSecondaryRolesUserRoleUnique: unique().on(t.userId, t.roleId),
+		userRolesUserRoleUnique: unique().on(t.userId, t.roleId),
 	}),
 );
 
-export type UserSecondaryRole = typeof userSecondaryRoles.$inferSelect;
-export type NewUserSecondaryRole = typeof userSecondaryRoles.$inferInsert;
+export type UserRole = typeof userRoles.$inferSelect;
+export type NewUserRole = typeof userRoles.$inferInsert;
 
 /**
  * Inventory item status for lifecycle tracking
@@ -565,6 +562,35 @@ export const polls = pgTable("polls", {
 
 export type Poll = typeof polls.$inferSelect;
 export type NewPoll = typeof polls.$inferInsert;
+
+// ============================================
+// RECEIPTS
+// ============================================
+
+/**
+ * Receipts table schema
+ * Stores receipt metadata and links to purchases (reimbursement requests)
+ * Receipt files are stored in blob storage (Vercel Blob/Google Drive)
+ */
+export const receipts = pgTable("receipts", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	// Receipt metadata
+	name: text("name"), // Optional name (defaults to filename if not provided)
+	description: text("description"), // Optional description
+	// File storage info
+	url: text("url").notNull(), // Link to actual receipt file in blob storage
+	pathname: text("pathname").notNull(), // Storage path for the receipt file
+	// Link to purchase (reimbursement request) - one receipt can only be connected to one reimbursement request
+	purchaseId: uuid("purchase_id").references(() => purchases.id),
+	// Creator tracking
+	createdBy: uuid("created_by").references(() => users.id),
+	// Timestamps
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Receipt = typeof receipts.$inferSelect;
+export type NewReceipt = typeof receipts.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS
