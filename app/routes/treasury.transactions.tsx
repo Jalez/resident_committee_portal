@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { AddItemButton } from "~/components/add-item-button";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
 	Table,
@@ -13,9 +14,9 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { useUser } from "~/contexts/user-context";
-import { useLanguage } from "~/contexts/language-context";
 import { getDatabase, type Transaction } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.transactions";
 
@@ -79,6 +80,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Get unique statuses for filter
 	const statuses = [...new Set(allTransactions.map((t) => t.status))];
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		year,
@@ -89,13 +91,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 		statuses,
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
+		systemLanguages,
 	};
 }
 
 export default function TreasuryTransactions({
 	loaderData,
 }: Route.ComponentProps) {
-	const { year, transactions, totalExpenses, totalIncome, years, statuses, currentStatus, totalCount } =
+	const { year, transactions, totalExpenses, totalIncome, years, statuses, currentStatus, totalCount, systemLanguages } =
 		loaderData;
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
@@ -112,7 +115,6 @@ export default function TreasuryTransactions({
 		return false;
 	};
 	const { t, i18n } = useTranslation();
-	const { isInfoReel } = useLanguage();
 
 	const formatCurrency = (value: number | string) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
@@ -151,64 +153,46 @@ export default function TreasuryTransactions({
 		});
 	};
 
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+			{years.length > 0 && (
+				<div className="flex gap-2">
+					{years.map((y: number) => (
+						<Button
+							key={y}
+							variant={y === year ? "default" : "secondary"}
+							onClick={() => handleYearChange(y)}
+							className="font-bold rounded-xl"
+						>
+							{y}
+						</Button>
+					))}
+				</div>
+			)}
+			{canWrite && (
+				<AddItemButton
+					to="/treasury/transactions/new"
+					title={t("treasury.transactions.new")}
+					variant="icon"
+				/>
+			)}
+		</div>
+	);
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-4xl mx-auto px-4">
-				{/* Header */}
-				<div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<Link
-							to="/treasury"
-							className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-2"
-						>
-							<span className="material-symbols-outlined text-base">
-								arrow_back
-							</span>
-							{t("treasury.transactions.back")}
-						</Link>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("treasury.transactions.title")} {year}
-						</h1>
-						<p className="text-lg text-gray-500">
-							{isInfoReel
-								? t("treasury.transactions.title", { lng: "en" })
-								: t("treasury.transactions.title")}{" "}
-							{year}
-						</p>
-					</div>
-
-					<div className="flex items-center gap-4">
-						{/* Year navigation */}
-						{years.length > 0 && (
-							<div className="flex gap-2">
-								{years.map((y: number) => (
-									<Button
-										key={y}
-										variant={y === year ? "default" : "secondary"}
-										onClick={() => handleYearChange(y)}
-										className="font-bold rounded-xl"
-									>
-										{y}
-									</Button>
-								))}
-							</div>
-						)}
-
-						{/* Add new transaction button */}
-						{canWrite && (
-							<Link
-								to="/treasury/transactions/new"
-								className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-								title={t("treasury.transactions.new")}
-							>
-								<span className="material-symbols-outlined text-xl">add</span>
-							</Link>
-						)}
-					</div>
-				</div>
-
+			<SplitLayout
+				header={{
+					primary: t("treasury.transactions.title", { lng: systemLanguages.primary }),
+					secondary: t("treasury.transactions.title", {
+						lng: systemLanguages.secondary ?? systemLanguages.primary,
+					}),
+				}}
+				footer={footerContent}
+			>
+				<div className="space-y-6">
 				{/* Summary cards */}
-				<div className="grid grid-cols-2 gap-4 mb-8">
+				<div className="grid grid-cols-2 gap-4">
 					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
 						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
 							{t("treasury.transactions.total_income")}
@@ -353,7 +337,8 @@ export default function TreasuryTransactions({
 						</Table>
 					)}
 				</div>
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

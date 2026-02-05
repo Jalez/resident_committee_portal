@@ -1,4 +1,4 @@
-import { Form, Link, redirect, useNavigate } from "react-router";
+import { Form, redirect, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import {
@@ -181,17 +181,6 @@ export default function TreasuryReservationsEdit({
                 }}
             >
                 <ContentArea>
-                    {/* Back link */}
-                    <Link
-                        to={`/treasury/reservations/${reservation.id}`}
-                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-4"
-                    >
-                        <span className="material-symbols-outlined text-base">
-                            arrow_back
-                        </span>
-                        {t("treasury.reservations.back")}
-                    </Link>
-
                     <Card>
                         <CardHeader>
                             <CardTitle>{t("treasury.reservations.edit.title")}</CardTitle>

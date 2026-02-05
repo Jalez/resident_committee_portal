@@ -1,7 +1,7 @@
-import { Link, useFetcher, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
 	Table,
@@ -14,6 +14,7 @@ import {
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.breakdown";
 
@@ -82,6 +83,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => b - a,
 	);
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		year,
@@ -90,18 +92,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalIncome,
 		balance,
 		years,
+		systemLanguages,
 	};
 }
 
 import { useTranslation } from "react-i18next";
-import { useLanguage } from "~/contexts/language-context";
 
 /**
  * Import button component with file input
  */
 function ImportButton({ year }: { year: number }) {
 	const { t } = useTranslation();
-	const fetcher = useFetcher();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isImporting, setIsImporting] = useState(false);
 
@@ -174,7 +175,7 @@ function ImportButton({ year }: { year: number }) {
 export default function TreasuryBreakdown({
 	loaderData,
 }: Route.ComponentProps) {
-	const { year, transactions, totalExpenses, totalIncome, balance, years } =
+	const { year, transactions, totalExpenses, totalIncome, balance, years, systemLanguages } =
 		loaderData;
 	const [_searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
@@ -192,7 +193,6 @@ export default function TreasuryBreakdown({
 		return false;
 	};
 	const { t, i18n } = useTranslation();
-	const { isInfoReel } = useLanguage();
 
 	const formatCurrency = (value: number | string) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
@@ -207,72 +207,48 @@ export default function TreasuryBreakdown({
 		setSearchParams({ year: String(newYear) });
 	};
 
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+			{years.length > 0 && (
+				<div className="flex gap-2">
+					{years.map((y: number) => (
+						<Button
+							key={y}
+							variant={y === year ? "default" : "secondary"}
+							onClick={() => handleYearChange(y)}
+							className="font-bold rounded-xl"
+						>
+							{y}
+						</Button>
+					))}
+				</div>
+			)}
+			{canImport && <ImportButton year={year} />}
+			{canExport && (
+				<a
+					href={`/api/treasury/export?year=${year}`}
+					download={`transactions-${year}.csv`}
+					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+					title={t("treasury.breakdown.export")}
+				>
+					<span className="material-symbols-outlined text-xl">download</span>
+				</a>
+			)}
+		</div>
+	);
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-4xl mx-auto px-4">
-				{/* Header */}
-				<div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<Link
-							to="/treasury"
-							className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-2"
-						>
-							<span className="material-symbols-outlined text-base">
-								arrow_back
-							</span>
-							{t("treasury.breakdown.back")}
-						</Link>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("treasury.breakdown.title")} {year}
-						</h1>
-						<p className="text-lg text-gray-500">
-							{isInfoReel
-								? t("treasury.breakdown.title", { lng: "en" })
-								: t("treasury.breakdown.title")}{" "}
-							{year}
-						</p>
-					</div>
-
-					<div className="flex items-center gap-4">
-						{/* Year navigation */}
-						{years.length > 0 && (
-							<div className="flex gap-2">
-								{years.map((y: number) => (
-									<Button
-										key={y}
-										variant={y === year ? "default" : "secondary"}
-										onClick={() => handleYearChange(y)}
-										className="font-bold rounded-xl"
-									>
-										{y}
-									</Button>
-								))}
-							</div>
-						)}
-
-						{/* Import Button - only visible if user has permission */}
-						{canImport && (
-							<ImportButton year={year} />
-						)}
-
-						{/* Export Button - only visible if user has permission */}
-						{canExport && (
-							<a
-								href={`/api/treasury/export?year=${year}`}
-								download={`transactions-${year}.csv`}
-								className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-								title={t("treasury.breakdown.export")}
-							>
-								<span className="material-symbols-outlined text-xl">
-									download
-								</span>
-							</a>
-						)}
-					</div>
-				</div>
-
-				{/* Summary cards - 3 columns now (no allocation) */}
-				<div className="grid grid-cols-3 gap-4 mb-8">
+			<SplitLayout
+				header={{
+					primary: `${t("treasury.breakdown.title", { lng: systemLanguages.primary })} ${year}`,
+					secondary: `${t("treasury.breakdown.title", { lng: systemLanguages.secondary ?? systemLanguages.primary })} ${year}`,
+				}}
+				footer={footerContent}
+			>
+				<div className="space-y-6">
+				{/* Summary cards */}
+				<div className="grid grid-cols-3 gap-4">
 					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
 						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
 							{t("treasury.breakdown.income")}
@@ -387,10 +363,11 @@ export default function TreasuryBreakdown({
 				</div>
 
 				{/* Note about transparency */}
-				<p className="mt-6 text-sm text-gray-500 text-center">
+				<p className="text-sm text-gray-500 text-center">
 					{t("treasury.breakdown.public_info")}
 				</p>
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

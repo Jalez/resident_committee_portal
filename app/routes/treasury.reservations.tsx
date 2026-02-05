@@ -2,12 +2,12 @@ import { Link, useSearchParams } from "react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { AddItemButton } from "~/components/add-item-button";
 import {
     ContentArea,
     PageWrapper,
     SplitLayout,
 } from "~/components/layout/page-layout";
-import { MobileActionMenuWithItems } from "~/components/mobile-action-menu";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -186,36 +186,16 @@ export default function TreasuryReservations({
         },
     ];
 
-    // Action items for the mobile action menu
-    const actionItems = [
-        {
-            href: `/treasury?year=${selectedYear}`,
-            icon: "arrow_back",
-            labelPrimary: t("treasury.reservations.back", { lng: languages.primary }),
-            labelSecondary: t("treasury.reservations.back", {
-                lng: languages.secondary,
-            }),
-        },
-        ...(canWrite
-            ? [
-                {
-                    href: `/treasury/reservations/new?year=${selectedYear}`,
-                    icon: "add",
-                    labelPrimary: t("treasury.reservations.new", {
-                        lng: languages.primary,
-                    }),
-                    labelSecondary: t("treasury.reservations.new", {
-                        lng: languages.secondary,
-                    }),
-                },
-            ]
-            : []),
-    ];
-
     const FooterContent = (
         <div className="flex items-center gap-2">
             <SearchMenu fields={searchFields} />
-            <MobileActionMenuWithItems items={actionItems} />
+            {canWrite && (
+                <AddItemButton
+                    to={`/treasury/reservations/new?year=${selectedYear}`}
+                    title={t("treasury.reservations.new")}
+                    variant="icon"
+                />
+            )}
         </div>
     );
 
@@ -363,12 +343,11 @@ export default function TreasuryReservations({
                                 })}
                             </p>
                             {canWrite && (
-                                <Button asChild>
-                                    <Link to={`/treasury/reservations/new?year=${selectedYear}`}>
-                                        <span className="material-symbols-outlined mr-2">add</span>
-                                        {t("treasury.reservations.new")}
-                                    </Link>
-                                </Button>
+                                <AddItemButton
+                                    to={`/treasury/reservations/new?year=${selectedYear}`}
+                                    title={t("treasury.reservations.new")}
+                                    variant="button"
+                                />
                             )}
                         </div>
                     )}

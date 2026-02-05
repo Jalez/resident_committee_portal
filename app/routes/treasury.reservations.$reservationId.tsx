@@ -190,17 +190,6 @@ export default function TreasuryReservationsView({
                 }}
             >
                 <ContentArea className="space-y-6">
-                    {/* Back link */}
-                    <Link
-                        to={`/treasury/reservations?year=${reservation.year}`}
-                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary"
-                    >
-                        <span className="material-symbols-outlined text-base">
-                            arrow_back
-                        </span>
-                        {t("treasury.reservations.back")}
-                    </Link>
-
                     {/* Main info card */}
                     <Card>
                         <CardHeader>

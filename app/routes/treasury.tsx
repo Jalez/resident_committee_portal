@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
 	ContentArea,
@@ -8,7 +8,6 @@ import {
 	QRPanel,
 	SplitLayout,
 } from "~/components/layout/page-layout";
-import { MobileActionMenuWithItems } from "~/components/mobile-action-menu";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
@@ -135,7 +134,6 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 	} = loaderData;
 	const { hasPermission } = useUser();
 	const canReadBreakdown = hasPermission("treasury_breakdown:read");
-	const canReadTransactions = hasPermission("transactions:read");
 
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;
@@ -186,81 +184,9 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		/>
 	) : null;
 
-	// Build action items array based on permissions
-	const actionItems = [
-		...(canReadBreakdown
-			? [
-				{
-					href: `/treasury/breakdown?year=${selectedYear}`,
-					icon: "table_chart",
-					labelPrimary: t("treasury.actions.breakdown", { lng: languages.primary }),
-					labelSecondary: t("treasury.actions.breakdown", {
-						lng: languages.secondary,
-					}),
-				},
-			]
-			: []),
-		...(canReadTransactions
-			? [
-				{
-					href: `/treasury/transactions?year=${selectedYear}`,
-					icon: "list_alt",
-					labelPrimary: t("treasury.actions.transactions", { lng: languages.primary }),
-					labelSecondary: t("treasury.actions.transactions", {
-						lng: languages.secondary,
-					}),
-				},
-			]
-			: []),
-		...(hasPermission("treasury:read")
-			? [
-				{
-					href: "/treasury/receipts",
-					icon: "receipt",
-					labelPrimary: t("treasury.actions.receipts", {
-						lng: languages.primary,
-					}),
-					labelSecondary: t("treasury.actions.receipts", {
-						lng: languages.secondary,
-					}),
-				},
-			]
-			: []),
-		...(hasPermission("reimbursements:read")
-			? [
-				{
-					href: "/treasury/reimbursements",
-					icon: "receipt_long",
-					labelPrimary: t("treasury.actions.reimbursements", {
-						lng: languages.primary,
-					}),
-					labelSecondary: t("treasury.actions.reimbursements", {
-						lng: languages.secondary,
-					}),
-				},
-			]
-			: []),
-		...(hasPermission("reservations:read")
-			? [
-				{
-					href: `/treasury/reservations?year=${selectedYear}`,
-					icon: "savings",
-					labelPrimary: t("treasury.actions.reservations", {
-						lng: languages.primary,
-					}),
-					labelSecondary: t("treasury.actions.reservations", {
-						lng: languages.secondary,
-					}),
-				},
-			]
-			: []),
-	];
-
-	// Footer with breakdown link and add button for staff
 	const FooterContent = (
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
-			<MobileActionMenuWithItems items={actionItems} />
 		</div>
 	);
 
@@ -340,17 +266,6 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 									{t("treasury.transactions_count", {
 										count: transactionCount,
 									})}
-									{canReadBreakdown && (
-										<>
-											{" "}—
-											<Link
-												to={`/treasury/breakdown?year=${selectedYear}`}
-												className="text-primary hover:underline ml-1"
-											>
-												{t("treasury.view_breakdown")}
-											</Link>
-										</>
-									)}
 								</p>
 							</div>
 						</>

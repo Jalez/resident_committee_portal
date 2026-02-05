@@ -1,15 +1,12 @@
 import { upload } from "@vercel/blob/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	Link,
-	useLoaderData,
-	useRevalidator,
-} from "react-router";
+import { Await, useLoaderData, useRevalidator } from "react-router";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { ReceiptsGridSkeletonOnly } from "~/components/treasury/receipts-skeleton";
 import { Thumbnail } from "~/components/ui/thumbnail";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { getDatabase } from "~/db";
@@ -20,6 +17,7 @@ import {
 	hasAnyPermission,
 	requireAnyPermission,
 } from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.receipts";
 
@@ -41,16 +39,18 @@ export async function loader({ request }: Route.LoaderArgs) {
 		"transactions:write",
 		"inventory:write",
 	], getDatabase);
-	const receiptsByYear = await getReceiptsByYear();
 	const canWrite = hasAnyPermission(user, [
 		"reimbursements:write",
 		"transactions:write",
 		"inventory:write",
 	]);
+	const systemLanguages = await getSystemLanguageDefaults();
+	// Return promise for receipts so layout renders immediately; use Await in UI
 	return {
 		siteConfig: SITE_CONFIG,
-		receiptsByYear,
 		canWrite,
+		systemLanguages,
+		receiptsByYear: getReceiptsByYear(),
 	};
 }
 
@@ -61,15 +61,20 @@ function isImageReceipt(name: string): boolean {
 	return IMAGE_EXTENSIONS.has(ext);
 }
 
+type ReceiptsByYearItem = Awaited<ReturnType<typeof getReceiptsByYear>>[number];
+
 export default function TreasuryReceipts() {
-	const { receiptsByYear, canWrite } = useLoaderData<typeof loader>();
+	const loaderData = useLoaderData<typeof loader>();
 	const revalidator = useRevalidator();
 	const { t } = useTranslation();
-	const [selectedYear, setSelectedYear] = useState<string>(() => {
-		const current = new Date().getFullYear().toString();
-		const hasCurrent = receiptsByYear.some((r) => r.year === current);
-		return hasCurrent ? current : (receiptsByYear[0]?.year ?? current);
-	});
+
+	const canWrite = loaderData?.canWrite ?? false;
+	const systemLanguages = loaderData?.systemLanguages ?? { primary: "fi", secondary: "en" };
+	const receiptsByYearPromise = loaderData?.receiptsByYear;
+
+	const [selectedYear, setSelectedYear] = useState(() =>
+		new Date().getFullYear().toString(),
+	);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [isUploading, setIsUploading] = useState(false);
@@ -78,30 +83,6 @@ export default function TreasuryReceipts() {
 		Map<string, { id: string; name: string; url: string; createdTime: string }[]>
 	>(new Map());
 	const fileInputRef = useRef<HTMLInputElement>(null);
-
-	const yearData = receiptsByYear.find((r) => r.year === selectedYear);
-	const serverFiles = yearData?.files ?? [];
-	const optimisticForYear = optimisticReceipts.get(selectedYear) ?? [];
-	const serverIds = new Set(serverFiles.map((f) => f.id));
-	const optimisticOnly = optimisticForYear.filter((o) => !serverIds.has(o.id));
-	const receipts = [...serverFiles, ...optimisticOnly];
-
-	// Prune optimistic receipts once they appear in server data
-	useEffect(() => {
-		if (optimisticReceipts.size === 0) return;
-		setOptimisticReceipts((prev) => {
-			const next = new Map(prev);
-			for (const [year, list] of next) {
-				const serverIds = new Set(
-					receiptsByYear.find((r) => r.year === year)?.files.map((f) => f.id) ?? [],
-				);
-				const kept = list.filter((o) => !serverIds.has(o.id));
-				if (kept.length === 0) next.delete(year);
-				else next.set(year, kept);
-			}
-			return next;
-		});
-	}, [receiptsByYear, optimisticReceipts.size]);
 
 	const handleRename = useCallback(
 		async (pathname: string, newName: string) => {
@@ -198,110 +179,232 @@ export default function TreasuryReceipts() {
 		[handleUpload, t],
 	);
 
+	const footerFallback = (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+			{canWrite && (
+				<>
+					<input
+						ref={fileInputRef}
+						type="file"
+						className="hidden"
+						accept={RECEIPT_ALLOWED_TYPES.join(",")}
+						onChange={onFileChange}
+						disabled={isUploading}
+					/>
+					<button
+						type="button"
+						onClick={() => fileInputRef.current?.click()}
+						disabled={isUploading}
+						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+						title={t("treasury.receipts.add")}
+					>
+						<span
+							className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
+						>
+							{isUploading ? "progress_activity" : "add"}
+						</span>
+					</button>
+				</>
+			)}
+		</div>
+	);
+
+	const footerContent =
+		receiptsByYearPromise == null ? (
+			footerFallback
+		) : (
+			<Suspense fallback={footerFallback}>
+				<Await resolve={receiptsByYearPromise}>
+					{(receiptsByYear: ReceiptsByYearItem[]) => (
+						<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+							{receiptsByYear.length > 0 && (
+								<div className="flex gap-2">
+									{receiptsByYear.map((y) => (
+										<Button
+											key={y.year}
+											type="button"
+											variant={selectedYear === y.year ? "default" : "secondary"}
+											onClick={() => setSelectedYear(y.year)}
+											className="font-bold rounded-xl"
+										>
+											{y.year}
+										</Button>
+									))}
+								</div>
+							)}
+							{canWrite && (
+								<>
+									<input
+										ref={fileInputRef}
+										type="file"
+										className="hidden"
+										accept={RECEIPT_ALLOWED_TYPES.join(",")}
+										onChange={onFileChange}
+										disabled={isUploading}
+									/>
+									<button
+										type="button"
+										onClick={() => fileInputRef.current?.click()}
+										disabled={isUploading}
+										className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+										title={t("treasury.receipts.add")}
+									>
+										<span
+											className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
+										>
+											{isUploading ? "progress_activity" : "add"}
+										</span>
+									</button>
+								</>
+							)}
+						</div>
+					)}
+				</Await>
+			</Suspense>
+		);
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-5xl mx-auto px-4">
-				{/* Header - same pattern as reimbursements / transactions */}
-				<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<Link
-							to="/treasury"
-							className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-2"
-						>
-							<span className="material-symbols-outlined text-base">
-								arrow_back
-							</span>
-							{t("common.actions.back")}
-						</Link>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("treasury.receipts.title")}
-						</h1>
-					</div>
-					<div className="flex flex-wrap items-center gap-4">
-						{receiptsByYear.length > 0 && (
-							<div className="flex gap-2">
-								{receiptsByYear.map((y) => (
-									<Button
-										key={y.year}
-										type="button"
-										variant={selectedYear === y.year ? "default" : "secondary"}
-										size="sm"
-										onClick={() => setSelectedYear(y.year)}
-										className="font-bold rounded-xl"
-									>
-										{y.year}
-									</Button>
-								))}
-							</div>
-						)}
-						{canWrite && (
-							<>
-								<input
-									ref={fileInputRef}
-									type="file"
-									className="hidden"
-									accept={RECEIPT_ALLOWED_TYPES.join(",")}
-									onChange={onFileChange}
-									disabled={isUploading}
-								/>
-								<button
-									type="button"
-									onClick={() => fileInputRef.current?.click()}
-									disabled={isUploading}
-									className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-									title={t("treasury.receipts.add")}
-								>
-									<span
-									className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
-								>
-									{isUploading ? "progress_activity" : "add"}
-								</span>
-								</button>
-							</>
-						)}
-					</div>
-				</div>
-
-				{/* Content - no wrapper background; only each receipt card is white */}
-				{revalidator.state === "loading" && receipts.length === 0 ? (
+			<SplitLayout
+				header={{
+					primary: t("treasury.receipts.title", { lng: systemLanguages.primary }),
+					secondary: t("treasury.receipts.title", {
+						lng: systemLanguages.secondary ?? systemLanguages.primary,
+					}),
+				}}
+				footer={footerContent}
+			>
+				{receiptsByYearPromise == null ? (
 					<ReceiptsGridSkeletonOnly />
-				) : receipts.length === 0 ? (
-					<div className="p-8 text-center text-gray-500">
-						<span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">
-							receipt_long
-						</span>
-						<p className="mt-2 font-medium">{t("treasury.receipts.no_receipts")}</p>
-						{canWrite && (
-							<button
-								type="button"
-								onClick={() => fileInputRef.current?.click()}
-								disabled={isUploading}
-								className="mt-4 inline-flex items-center gap-1 p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-								title={t("treasury.receipts.add")}
-							>
-								<span
-									className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
-								>
-									{isUploading ? "progress_activity" : "add"}
-								</span>
-								{t("treasury.receipts.add")}
-							</button>
-						)}
-					</div>
 				) : (
-					<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-						{receipts.map((receipt) => (
-							<li
-								key={receipt.id}
-								className="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 shadow-sm"
-							>
-								{/* Thumbnail - use neutral background, padding and rounded top like other item thumbnails */}
-								<div className="relative aspect-4/3 w-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center shrink-0 border-b border-gray-100 dark:border-gray-700 p-3 rounded-t-xl">
-									{isImageReceipt(receipt.name) ? (
-										<Thumbnail
-											src={`/api/receipts/thumbnail?pathname=${encodeURIComponent(receipt.id)}&w=${THUMBNAIL_WIDTH}`}
-											alt=""
-										/>
+					<Suspense fallback={<ReceiptsGridSkeletonOnly />}>
+						<Await resolve={receiptsByYearPromise}>
+							{(receiptsByYear: ReceiptsByYearItem[]) => (
+								<ReceiptsContent
+									receiptsByYear={receiptsByYear}
+									selectedYear={selectedYear}
+									optimisticReceipts={optimisticReceipts}
+									setOptimisticReceipts={setOptimisticReceipts}
+									editingId={editingId}
+									setEditingId={setEditingId}
+									editValue={editValue}
+									setEditValue={setEditValue}
+									isUploading={isUploading}
+									deletingId={deletingId}
+									canWrite={canWrite}
+									fileInputRef={fileInputRef}
+									handleRename={handleRename}
+									handleDelete={handleDelete}
+									t={t}
+								/>
+							)}
+						</Await>
+					</Suspense>
+				)}
+			</SplitLayout>
+		</PageWrapper>
+	);
+}
+
+function ReceiptsContent({
+	receiptsByYear,
+	selectedYear,
+	optimisticReceipts,
+	setOptimisticReceipts,
+	editingId,
+	setEditingId,
+	editValue,
+	setEditValue,
+	isUploading,
+	deletingId,
+	canWrite,
+	fileInputRef,
+	handleRename,
+	handleDelete,
+	t,
+}: {
+	receiptsByYear: ReceiptsByYearItem[];
+	selectedYear: string;
+	optimisticReceipts: Map<string, { id: string; name: string; url: string; createdTime: string }[]>;
+	setOptimisticReceipts: React.Dispatch<
+		React.SetStateAction<Map<string, { id: string; name: string; url: string; createdTime: string }[]>>
+	>;
+	editingId: string | null;
+	setEditingId: (id: string | null) => void;
+	editValue: string;
+	setEditValue: (v: string) => void;
+	isUploading: boolean;
+	deletingId: string | null;
+	canWrite: boolean;
+	fileInputRef: React.RefObject<HTMLInputElement | null>;
+	handleRename: (pathname: string, newName: string) => Promise<void>;
+	handleDelete: (pathname: string) => Promise<void>;
+	t: (key: string, opts?: { defaultValue?: string }) => string;
+}) {
+	const yearData = receiptsByYear.find((r) => r.year === selectedYear);
+	const serverFiles = yearData?.files ?? [];
+	const optimisticForYear = optimisticReceipts.get(selectedYear) ?? [];
+	const serverIds = new Set(serverFiles.map((f) => f.id));
+	const optimisticOnly = optimisticForYear.filter((o) => !serverIds.has(o.id));
+	const receipts = [...serverFiles, ...optimisticOnly];
+
+	useEffect(() => {
+		if (optimisticReceipts.size === 0) return;
+		setOptimisticReceipts((prev) => {
+			const next = new Map(prev);
+			for (const [year, list] of next) {
+				const serverIds = new Set(
+					receiptsByYear.find((r) => r.year === year)?.files.map((f) => f.id) ?? [],
+				);
+				const kept = list.filter((o) => !serverIds.has(o.id));
+				if (kept.length === 0) next.delete(year);
+				else next.set(year, kept);
+			}
+			return next;
+		});
+	}, [receiptsByYear, optimisticReceipts.size, setOptimisticReceipts]);
+
+	if (receipts.length === 0) {
+		return (
+			<div className="p-8 text-center text-gray-500">
+				<span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">
+					receipt_long
+				</span>
+				<p className="mt-2 font-medium">{t("treasury.receipts.no_receipts")}</p>
+				{canWrite && (
+					<button
+						type="button"
+						onClick={() => fileInputRef.current?.click()}
+						disabled={isUploading}
+						className="mt-4 inline-flex items-center gap-1 p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+						title={t("treasury.receipts.add")}
+					>
+						<span
+							className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
+						>
+							{isUploading ? "progress_activity" : "add"}
+						</span>
+						{t("treasury.receipts.add")}
+					</button>
+				)}
+			</div>
+		);
+	}
+
+	return (
+		<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			{receipts.map((receipt) => (
+								<li
+									key={receipt.id}
+									className="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 shadow-sm"
+								>
+									{/* Thumbnail - use neutral background, padding and rounded top like other item thumbnails */}
+									<div className="relative aspect-4/3 w-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center shrink-0 border-b border-gray-100 dark:border-gray-700 p-3 rounded-t-xl">
+										{isImageReceipt(receipt.name) ? (
+											<Thumbnail
+												src={`/api/receipts/thumbnail?pathname=${encodeURIComponent(receipt.id)}&w=${THUMBNAIL_WIDTH}`}
+												alt=""
+											/>
 										) : (
 											<a
 												href={receipt.url}
@@ -365,10 +468,7 @@ export default function TreasuryReceipts() {
 										)}
 									</div>
 								</li>
-							))}
-						</ul>
-					)}
-			</div>
-		</PageWrapper>
+			))}
+		</ul>
 	);
 }

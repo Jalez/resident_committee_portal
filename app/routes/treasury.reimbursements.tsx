@@ -8,7 +8,8 @@ import {
 	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { AddItemButton } from "~/components/add-item-button";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
 	Table,
@@ -30,6 +31,7 @@ import {
 	requireDeletePermissionOrSelf,
 } from "~/lib/auth.server";
 import { createReimbursementStatusNotification } from "~/lib/notifications.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements";
@@ -108,6 +110,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			.reduce((sum, p) => sum + parseFloat(p.amount), 0),
 	};
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		purchases: enrichedPurchases,
@@ -116,6 +119,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
 		totals,
+		systemLanguages,
 	};
 }
 
@@ -218,7 +222,7 @@ const statusColors = {
 export default function BudgetReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { purchases, purchaseTransactionMap, years, currentYear, currentStatus, totals } = loaderData;
+	const { purchases, purchaseTransactionMap, years, currentYear, currentStatus, totals, systemLanguages } = loaderData;
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isStaff =
@@ -284,36 +288,30 @@ export default function BudgetReimbursements({
 		);
 	}
 
+	const footerContent = (
+		<div className="flex items-center gap-2">
+			{isStaff && (
+				<AddItemButton
+					to="/treasury/reimbursement/new"
+					title={t("treasury.reimbursements.new")}
+					variant="icon"
+				/>
+			)}
+		</div>
+	);
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-5xl mx-auto px-4">
-				{/* Header */}
-				<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<Link
-							to="/treasury"
-							className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-2"
-						>
-							<span className="material-symbols-outlined text-base">
-								arrow_back
-							</span>
-							{t("common.actions.back")}
-						</Link>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("treasury.reimbursements.title")}
-						</h1>
-					</div>
-					<Link
-						to="/treasury/reimbursement/new"
-						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-						title={t("treasury.reimbursements.new")}
-					>
-						<span className="material-symbols-outlined text-xl">add</span>
-					</Link>
-				</div>
-
+			<SplitLayout
+				header={{
+					primary: t("treasury.reimbursements.title", { lng: systemLanguages.primary }),
+					secondary: t("treasury.reimbursements.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+				footer={footerContent}
+			>
+				<div className="space-y-6">
 				{/* Summary cards */}
-				<div className="grid grid-cols-3 gap-4 mb-6">
+				<div className="grid grid-cols-3 gap-4">
 					<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">
 						<p className="text-xs font-bold uppercase text-yellow-700 dark:text-yellow-300">
 							{t("treasury.reimbursements.statuses.pending")}
@@ -649,7 +647,8 @@ export default function BudgetReimbursements({
 						</Table>
 					)}
 				</div>
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }
