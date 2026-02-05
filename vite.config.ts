@@ -8,6 +8,9 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ["@radix-ui/react-alert-dialog"],
 	},
+	ssr: {
+		external: ["@aws-sdk/client-s3", "@aws-sdk/s3-request-presigner"],
+	},
 	server: {
 		allowedHosts: [".ngrok-free.dev", ".ngrok.io"],
 	},
