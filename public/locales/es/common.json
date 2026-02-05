@@ -1,4 +1,7 @@
 {
+	"common": {
+		"total": "Total"
+	},
 	"app": {
 		"title": "Comité de Inquilinos",
 		"setup_required": "Configuración Requerida",
@@ -156,7 +159,9 @@
 		"description_label": "Descripción",
 		"description_placeholder": "Cuéntanos sobre ti...",
 		"picture_label": "Foto de perfil",
-		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión"
+		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión",
+		"picture_too_large": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Las dimensiones de la imagen son demasiado grandes. El tamaño máximo es {{maxDimension}}x{{maxDimension}}px."
 	},
 	"messages": {
 		"title": "Mensajes",
@@ -299,6 +304,10 @@
 			"select_model_placeholder": "Seleccione un modelo...",
 			"showing_models": "Mostrando {{count}} de {{total}} modelos",
 			"save": "Guardar ajustes"
+		},
+		"users": {
+			"secondary_roles_placeholder": "Escriba el nombre del rol y pulse Tab para añadir",
+			"no_roles_match": "No hay roles coincidentes"
 		}
 	},
 	"treasury": {
@@ -310,6 +319,10 @@
 			"reimbursements": "Solicitudes de reembolso",
 			"reservations": "Reservas",
 			"add": "Añadir"
+		},
+		"transactions": {
+			"title": "Transacciones",
+			"type": "Tipo"
 		}
 	},
 	"permissions": {

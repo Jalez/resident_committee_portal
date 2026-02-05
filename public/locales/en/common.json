@@ -30,6 +30,7 @@
 			"details": "Details",
 			"loading": "Loading..."
 		},
+		"total": "Total",
 		"fields": {
 			"name": "Name",
 			"email": "Email",
@@ -281,6 +282,7 @@
 			"back": "Back",
 			"new": "New Transaction",
 			"all": "All",
+			"type": "Type",
 			"status": "Status",
 			"reimbursement_status": "Reimbursement",
 			"total_income": "Total Income",
@@ -376,7 +378,6 @@
 			"status": "Status",
 			"reimbursement_status": "Reimbursement Status",
 			"amount": "Amount",
-			"public_info": "This is public information",
 			"export": "Export CSV",
 			"import": "Import CSV",
 			"import_success": "Imported {{count}} transactions",
@@ -696,6 +697,8 @@
 		"use_google_picture": "Use Google picture again",
 		"use_google_picture_success": "Profile picture cleared. It will update from Google on next login.",
 		"picture_invalid_type": "Invalid file type. Use JPG, PNG or WebP.",
+		"picture_too_large": "File is too large. Maximum size is {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Image dimensions are too large. Maximum size is {{maxDimension}}x{{maxDimension}}px.",
 		"picture_updated": "Profile picture updated.",
 		"picture_upload_error": "Failed to update profile picture.",
 		"local_ai": {
@@ -838,6 +841,8 @@
 				"joined": "Joined"
 			},
 			"no_users": "No users yet",
+			"secondary_roles_placeholder": "Type role name and press Tab to add",
+			"no_roles_match": "No matching roles",
 			"super_admin": "Super Admin",
 			"role_updated": "Role updated",
 			"cannot_change_super_admin": "Cannot change Super Admin role",

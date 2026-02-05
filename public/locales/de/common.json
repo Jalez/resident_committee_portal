@@ -1,4 +1,7 @@
 {
+	"common": {
+		"total": "Gesamt"
+	},
 	"app": {
 		"title": "Mieterausschuss",
 		"setup_required": "Einrichtung erforderlich",
@@ -127,6 +130,8 @@
 		"description_placeholder": "Erzählen Sie uns von sich...",
 		"picture_label": "Profilbild",
 		"picture_help": "Profilbild wird automatisch von Ihrem Google-Konto aktualisiert, wenn Sie sich anmelden",
+		"picture_too_large": "Datei ist zu groß. Maximale Größe ist {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Bildabmessungen sind zu groß. Maximale Größe ist {{maxDimension}}x{{maxDimension}}px.",
 		"save_changes": "Änderungen speichern"
 	},
 	"settings": {
@@ -182,6 +187,10 @@
 			"select_model_placeholder": "Modell auswählen...",
 			"showing_models": "{{count}} von {{total}} Modellen",
 			"save": "Einstellungen speichern"
+		},
+		"users": {
+			"secondary_roles_placeholder": "Rollenname eingeben und Tab drücken",
+			"no_roles_match": "Keine passenden Rollen"
 		}
 	},
 	"email": {
@@ -326,6 +335,10 @@
 			"reimbursements": "Erstattungsanträge",
 			"reservations": "Reservierungen",
 			"add": "Hinzufügen"
+		},
+		"transactions": {
+			"title": "Transaktionen",
+			"type": "Typ"
 		}
 	},
 	"permissions": {

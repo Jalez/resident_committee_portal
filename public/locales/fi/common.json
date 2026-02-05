@@ -25,6 +25,7 @@
 			"details": "Tiedot",
 			"loading": "Ladataan..."
 		},
+		"total": "Yhteensä",
 		"fields": {
 			"name": "Nimi",
 			"email": "Sähköposti",
@@ -274,6 +275,7 @@
 			"back": "Takaisin",
 			"new": "Uusi transaktio",
 			"all": "Kaikki",
+			"type": "Tyyppi",
 			"status": "Tila",
 			"reimbursement_status": "Kulukorvaus",
 			"total_income": "Tulot yhteensä",
@@ -369,7 +371,6 @@
 			"status": "Tila",
 			"reimbursement_status": "Kulukorvauksen tila",
 			"amount": "Summa",
-			"public_info": "Tämä on julkista tietoa",
 			"export": "Lataa CSV",
 			"import": "Tuo CSV",
 			"import_success": "Tuotu {{count}} tapahtumaa",
@@ -691,6 +692,8 @@
 		"use_google_picture": "Käytä Google-kuvaa",
 		"use_google_picture_success": "Profiilikuva tyhjennetty. Se päivittyy Google-tilistä seuraavalla kirjautumisella.",
 		"picture_invalid_type": "Virheellinen tiedostotyyppi. Käytä JPG-, PNG- tai WebP-muotoa.",
+		"picture_too_large": "Tiedosto on liian suuri. Maksimikoko on {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Kuvan mitat ovat liian suuret. Maksimikoko on {{maxDimension}}x{{maxDimension}}px.",
 		"picture_updated": "Profiilikuva päivitetty.",
 		"picture_upload_error": "Profiilikuvan päivitys epäonnistui.",
 		"local_ai": {
@@ -833,6 +836,8 @@
 				"joined": "Liittynyt"
 			},
 			"no_users": "Ei käyttäjiä vielä",
+			"secondary_roles_placeholder": "Kirjoita roolin nimi ja paina Tab",
+			"no_roles_match": "Ei vastaavia rooleja",
 			"super_admin": "Pääkäyttäjä",
 			"role_updated": "Rooli päivitetty",
 			"cannot_change_super_admin": "Pääkäyttäjän roolia ei voi muuttaa",

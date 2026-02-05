@@ -1,4 +1,7 @@
 {
+	"common": {
+		"total": "Totalt"
+	},
 	"app": {
 		"title": "Hyresgästkommitté",
 		"setup_required": "Konfiguration krävs",
@@ -131,6 +134,10 @@
 			"date": "Datum",
 			"year": "År"
 		},
+		"transactions": {
+			"title": "Transaktioner",
+			"type": "Typ"
+		},
 		"placeholders": {
 			"select_type": "Välj typ...",
 			"select_category": "Välj kategori...",
@@ -226,7 +233,6 @@
 			"status": "Status",
 			"reimbursement_status": "Ersättningsstatus",
 			"amount": "Belopp",
-			"public_info": "Detta är offentlig information",
 			"export": "Exportera CSV",
 			"statuses": {
 				"complete": "Klar",
@@ -469,6 +475,8 @@
 		"description_placeholder": "Berätta om dig själv...",
 		"picture_label": "Profilbild",
 		"picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in",
+		"picture_too_large": "Filen är för stor. Maximal storlek är {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Bildens dimensioner är för stora. Maximal storlek är {{maxDimension}}x{{maxDimension}}px.",
 		"save_changes": "Spara ändringar"
 	},
 	"settings": {
@@ -576,6 +584,8 @@
 				"joined": "Gick med"
 			},
 			"no_users": "Inga användare än",
+			"secondary_roles_placeholder": "Skriv rollnamn och tryck Tab för att lägga till",
+			"no_roles_match": "Inga matchande roller",
 			"super_admin": "Superadministratör",
 			"role_updated": "Roll uppdaterad",
 			"cannot_change_super_admin": "Kan inte ändra superadministratörens roll",
