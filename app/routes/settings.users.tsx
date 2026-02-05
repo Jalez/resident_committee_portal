@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { RolePicker } from "~/components/role-picker";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { SearchMenu, type SearchField } from "~/components/search-menu";
 import { getDatabase, type Role } from "~/db";
 import { isAdmin, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -28,6 +30,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	const db = getDatabase();
+	const url = new URL(request.url);
+	const nameParam = url.searchParams.get("name");
+
 	const [users, roles, secondaryRows] = await Promise.all([
 		db.getAllUsers(),
 		db.getAllRoles(),
@@ -42,7 +47,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	// Enrich users with role info and secondary role IDs
-	const usersWithRoles = users.map((user) => {
+	let usersWithRoles = users.map((user) => {
 		const userRole = roles.find((r) => r.id === user.roleId);
 		return {
 			...user,
@@ -52,6 +57,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 			isSuperAdmin: isAdmin(user.email),
 		};
 	});
+
+	// Filter by name if specified
+	if (nameParam) {
+		const nameLower = nameParam.toLowerCase();
+		usersWithRoles = usersWithRoles.filter((user) =>
+			user.name.toLowerCase().includes(nameLower)
+		);
+	}
 
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
@@ -104,6 +117,22 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 	const { users, roles, systemLanguages } = loaderData;
 	const { t } = useTranslation();
 
+	// Configure search fields
+	const searchFields: SearchField[] = [
+		{
+			name: "name",
+			label: t("settings.users.headers.name"),
+			type: "text",
+			placeholder: t("settings.users.search.name_placeholder", { defaultValue: "Search by name..." }),
+		},
+	];
+
+	const footerContent = (
+		<div className="flex items-center gap-2">
+			<SearchMenu fields={searchFields} />
+		</div>
+	);
+
 	return (
 		<PageWrapper>
 			<SplitLayout
@@ -111,6 +140,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 					primary: t("settings.users.title", { lng: systemLanguages.primary }),
 					secondary: t("settings.users.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
 				}}
+				footer={footerContent}
 			>
 				{/* Users Table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -269,36 +299,26 @@ function UserRow({ user, roles }: UserRowProps) {
 				{user.isSuperAdmin ? (
 					<span className="text-sm text-gray-400">—</span>
 				) : (
-					<fetcher.Form method="post" className="flex flex-wrap gap-2">
-						<input type="hidden" name="userId" value={user.id} />
-						<input type="hidden" name="roleId" value={user.roleId} />
-						{roles
-							.filter((r) => r.name !== "Guest" && r.id !== user.roleId)
-							.map((role) => (
-								<label
-									key={role.id}
-									className="inline-flex items-center gap-1.5 text-sm cursor-pointer"
-								>
-									<input
-										type="checkbox"
-										name="secondaryRoleIds"
-										value={role.id}
-										defaultChecked={user.secondaryRoleIds.includes(role.id)}
-										onChange={(e) => e.target.form?.requestSubmit()}
-										disabled={fetcher.state !== "idle"}
-										className="rounded border-gray-300"
-									/>
-									<span
-										className={cn(
-											"px-2 py-0.5 rounded text-xs font-medium text-white",
-											role.color,
-										)}
-									>
-										{role.name}
-									</span>
-								</label>
-							))}
-					</fetcher.Form>
+					<div className="min-w-[200px]">
+						<RolePicker
+							selectedRoleIds={user.secondaryRoleIds}
+							availableRoles={roles.filter(
+								(r) => r.name !== "Guest" && r.id !== user.roleId,
+							)}
+							onChange={(secondaryRoleIds) => {
+								const formData = new FormData();
+								formData.set("userId", user.id);
+								formData.set("roleId", user.roleId);
+								for (const id of secondaryRoleIds) {
+									formData.append("secondaryRoleIds", id);
+								}
+								fetcher.submit(formData, { method: "post" });
+							}}
+							disabled={fetcher.state !== "idle"}
+							listId={`secondary-roles-${user.id}`}
+							label=""
+						/>
+					</div>
 				)}
 			</td>
 			<td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
