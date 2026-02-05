@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher, useNavigate, useNavigation } from "react-router";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -315,6 +316,7 @@ export async function action({ request }: Route.ActionArgs) {
 			} else {
 				await db.updateInventoryItem(itemId, { [field]: value || null });
 			}
+			return { success: true, updatedField: field, itemId };
 		}
 	}
 
@@ -416,6 +418,19 @@ export async function action({ request }: Route.ActionArgs) {
 				await db.updateInventoryItemManualCount(itemId, newManualCount);
 			}
 		}
+	}
+
+	// Link one inventory item to a transaction (inline from unknown badge, no navigation)
+	if (actionType === "linkItemToTransaction") {
+		const itemId = formData.get("itemId") as string;
+		const transactionId = formData.get("transactionId") as string;
+		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
+
+		if (itemId && transactionId) {
+			await db.linkInventoryItemToTransaction(itemId, transactionId, quantity);
+			return { success: true, linked: true };
+		}
+		return { success: true };
 	}
 
 	// Unlink item from transaction with amount update
@@ -565,6 +580,10 @@ function InventoryTablePage({
 		visibleColumns,
 		handleInlineEdit,
 		handlePageChange,
+		handleDeleteSelected,
+		pendingDeleteMany,
+		setPendingDeleteMany,
+		handleConfirmDeleteMany,
 		uniqueLocations,
 		uniqueCategories,
 		transactionLinksMap,
@@ -603,7 +622,7 @@ function InventoryTablePage({
 	} | null>(null);
 
 	const { isInfoReel } = useLanguage();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 
 	const getUnknownQuantity = (item: InventoryItem) => {
 		const links = transactionLinksMap[item.id] || [];
@@ -757,12 +776,60 @@ function InventoryTablePage({
 		);
 	};
 
+	// Toast when item is linked to transaction from unknown badge
+	const lastFetcherDataRef = useRef<unknown>(null);
+	useEffect(() => {
+		if (
+			fetcher.state === "idle" &&
+			fetcher.data &&
+			typeof fetcher.data === "object" &&
+			"linked" in fetcher.data &&
+			fetcher.data !== lastFetcherDataRef.current
+		) {
+			lastFetcherDataRef.current = fetcher.data;
+			toast.success(t("inventory.badge_linked_to_transaction"));
+		}
+	}, [fetcher.state, fetcher.data, t]);
+
+	// Unknown badge: link this item to the chosen transaction inline (no navigation)
+	const handleSelectTransactionForItem = (
+		item: InventoryItem,
+		quantity: number,
+		transaction: { id: string; description: string; date: Date; amount: string; category: string | null },
+	) => {
+		fetcher.submit(
+			{
+				_action: "linkItemToTransaction",
+				itemId: item.id,
+				transactionId: transaction.id,
+				quantity: quantity.toString(),
+			},
+			{ method: "POST", action: "/inventory" },
+		);
+	};
+
+	// Unknown badge: create new transaction with this single item
+	const handleCreateNewFromBadge = (item: InventoryItem, quantity: number) => {
+		setTransactionItems([
+			{
+				itemId: item.id,
+				name: item.name,
+				quantity,
+				unitValue: parseFloat(item.value || "0"),
+			},
+		]);
+		navigate("/treasury/transactions/new");
+	};
+
 	const columns = useInventoryColumns({
 		visibleColumns,
 		isStaff,
 		onInlineEdit: handleInlineEdit,
 		onUnlinkFromTransaction: handleUnlinkFromTransaction,
 		onReduceManualCount: handleReduceManualCount,
+		onSelectTransactionForItem: handleSelectTransactionForItem,
+		onCreateNewTransaction: handleCreateNewFromBadge,
+		inventoryTransactions,
 		uniqueLocations,
 		uniqueCategories,
 		itemNames: items.map((i) => i.name),
@@ -1009,6 +1076,7 @@ function InventoryTablePage({
 						onPageChange={handlePageChange}
 						enableRowSelection={true}
 						onSelectionChange={setSelectedIds}
+						onDeleteSelected={isStaff ? handleDeleteSelected : undefined}
 						prependedRow={addRowElement}
 						actionsComponent={actionsComponent}
 						selectionActions={selectionActions}
@@ -1083,45 +1151,68 @@ function InventoryTablePage({
 			/>
 
 			{/* Unlink Confirmation Dialog */}
-			<Dialog
+			<ConfirmDialog
 				open={!!unlinkConfirmation}
 				onOpenChange={(open) => !open && setUnlinkConfirmation(null)}
-			>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>
-							{t("inventory.modals.confirm_unlink_title")}
-						</DialogTitle>
-					</DialogHeader>
-					<div className="py-4">
-						<p className="text-gray-600 dark:text-gray-400">
-							{t("inventory.modals.confirm_unlink_desc")}
-						</p>
-						<p className="text-gray-600 dark:text-gray-400 mt-2">
-							{/* Note: This is now handled by the bilingual t() helper replacement which we can't easily do for mixed text content without changing structure.
-                                Actually, the original was:
-                                <p>Haluatko... {quantity} kpl...</p>
-                                <p>Are you... {quantity} unit(s)...</p>
-                                I can utilize t with interpolation.
-                             */}
-							{t("inventory.modals.confirm_unlink_details", {
-								count: unlinkConfirmation?.quantity,
-							})}
-						</p>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setUnlinkConfirmation(null)}
-						>
-							{t("inventory.modals.cancel")}
-						</Button>
-						<Button variant="destructive" onClick={handleConfirmUnlink}>
-							{t("inventory.modals.unlink")}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				title={t("inventory.modals.confirm_unlink_title")}
+				description={
+					<>
+						<p>{t("inventory.modals.confirm_unlink_desc")}</p>
+						{unlinkConfirmation && (
+							<p className="mt-2 whitespace-pre-line">
+								{t("inventory.modals.confirm_unlink_details", {
+									name:
+										items.find((i) => i.id === unlinkConfirmation.itemId)
+											?.name ?? "—",
+									count: unlinkConfirmation.quantity,
+									description:
+										(
+											transactionLinksMap[unlinkConfirmation.itemId] || []
+										).find(
+											(l) =>
+												l.transaction.id ===
+												unlinkConfirmation.transactionId,
+										)?.transaction.description ?? "—",
+									date: (() => {
+										const link = (
+											transactionLinksMap[unlinkConfirmation.itemId] || []
+										).find(
+											(l) =>
+												l.transaction.id ===
+												unlinkConfirmation.transactionId,
+										);
+										return link?.transaction.date
+											? new Date(
+													link.transaction.date,
+												).toLocaleDateString(i18n.language)
+											: "—";
+									})(),
+								})}
+							</p>
+						)}
+					</>
+				}
+				confirmLabel={t("inventory.modals.unlink")}
+				cancelLabel={t("inventory.modals.cancel")}
+				variant="destructive"
+				onConfirm={handleConfirmUnlink}
+			/>
+
+			{/* Delete many confirmation */}
+			<ConfirmDialog
+				open={!!pendingDeleteMany}
+				onOpenChange={(open) => !open && setPendingDeleteMany(null)}
+				title={t("inventory.modals.confirm_delete_many_title")}
+				description={t("inventory.modals.confirm_delete_many_desc", {
+					count: pendingDeleteMany?.ids.length ?? 0,
+				})}
+				confirmLabel={t("common.actions.delete")}
+				cancelLabel={t("inventory.modals.cancel")}
+				variant="destructive"
+				onConfirm={() =>
+					pendingDeleteMany && handleConfirmDeleteMany(pendingDeleteMany.ids)
+				}
+			/>
 
 			{/* Transaction Selector Modal */}
 			<TransactionSelectorModal
@@ -1161,6 +1252,7 @@ function InventoryQRPanel({
 
 function InventoryFooter() {
 	const { isAdmin } = useInventory();
+	const { t } = useTranslation();
 
 	return (
 		<div className="flex items-center gap-2">
@@ -1191,12 +1283,24 @@ function InventoryFooter() {
 									body: formData,
 								});
 								const data = await res.json();
-								alert(
-									data.success
-										? `Imported ${data.imported} items`
-										: `Error: ${data.error}`,
-								);
-								if (data.success) window.location.reload();
+								if (data.success) {
+									toast.success(
+										data.imported != null
+											? t("inventory.messages.import_success", {
+													count: data.imported,
+												})
+											: "Imported",
+									);
+									window.location.reload();
+								} else {
+									toast.error(
+										data.error != null
+											? t("inventory.messages.import_error", {
+													error: data.error,
+												})
+											: "Import failed",
+									);
+								}
 								e.target.value = "";
 							}}
 						/>

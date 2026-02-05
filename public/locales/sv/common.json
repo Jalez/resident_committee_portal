@@ -2,8 +2,16 @@
 	"common": {
 		"total": "Totalt",
 		"fields": {
-			"created_by": "Skapad av"
-		}
+			"created_by": "Skapad av",
+			"search": "Sök"
+		},
+		"actions": {
+			"update": "Uppdatera"
+		},
+		"filters": {
+			"all": "Alla kategorier"
+		},
+		"no_results": "Inga resultat"
 	},
 	"app": {
 		"title": "Hyresgästkommitté",
@@ -334,6 +342,11 @@
 			"unlink": "Ta bort länk",
 			"remove_marker": "Ta bort markering"
 		},
+		"badge_unknown_title": "Oredovisad mängd – klicka för alternativ",
+		"badge_connect_existing": "Koppla till befintlig transaktion",
+		"badge_create_new_transaction": "Skapa ny transaktion",
+		"badge_linked_to_transaction": "Länkad till transaktion",
+		"inline_edit_saved": "Sparat",
 		"messages": {
 			"importing": "Importerar fil...",
 			"import_success": "Importerade {{count}} rader",
@@ -394,6 +407,8 @@
 			"confirm_unlink_desc": "Detta kommer att ta bort länken mellan artikeln och den valda transaktionen.",
 			"confirm_unlink_details": "Artikel: {{name}} ({{count}} st)\nTransaktion: {{description}} ({{date}})",
 			"unlink": "Ta bort länk",
+			"confirm_delete_many_title": "Ta bort objekt?",
+			"confirm_delete_many_desc": "Är du säker på att du vill ta bort {{count}} objekt permanent?",
 			"quantity_selection": {
 				"title_no_txn": "Markera ingen transaktion",
 				"title_existing": "Lägg till i befintlig",
@@ -577,7 +592,15 @@
 			"delete_title": "Ta bort roll",
 			"delete_confirm": "Är du säker på att du vill ta bort rollen \"{{name}}\"? Detta kan inte ångras.",
 			"permissions_header": "Behörigheter",
-			"select_role_msg": "Välj en roll till vänster för att redigera behörigheter"
+			"select_role_msg": "Välj en roll till vänster för att redigera behörigheter",
+			"select_role": "Välj roll",
+			"select_role_placeholder": "Välj en roll...",
+			"search_placeholder": "Sök behörigheter...",
+			"category": "Kategori",
+			"permission_name": "Behörighetsnamn",
+			"description": "Beskrivning",
+			"select_role_to_manage": "Välj en roll ovan för att hantera behörigheter",
+			"show_only_assigned": "Visa endast tilldelade behörigheter"
 		},
 		"users": {
 			"title": "Användarhantering",
@@ -586,11 +609,11 @@
 				"email": "E-post",
 				"apartment": "Lägenhet",
 				"role": "Huvudroll",
-				"secondary_roles": "Sidoroller",
+				"roles": "Roller",
 				"joined": "Gick med"
 			},
 			"no_users": "Inga användare än",
-			"secondary_roles_placeholder": "Skriv rollnamn och tryck Tab för att lägga till",
+			"roles_placeholder": "Skriv rollnamn och tryck Tab för att lägga till",
 			"no_roles_match": "Inga matchande roller",
 			"super_admin": "Superadministratör",
 			"role_updated": "Roll uppdaterad",
@@ -603,7 +626,7 @@
 		"members": "Medlemmar",
 		"no_members": "Inga kommittémedlemmar hittades",
 		"primary_role": "Huvudroll",
-		"secondary_roles": "Sidoroller",
+		"roles": "Roller",
 		"no_description": "Ingen beskrivning",
 		"mail": {
 			"title": "E-post",
@@ -911,26 +934,62 @@
 		"treasury": {
 			"read": "Visa kassaöversikt",
 			"export": "Exportera kassadata till CSV",
-			"import": "Importera kassadata från fil"
-		},
-		"treasury_breakdown": {
-			"read": "Visa kassaavdelning"
-		},
-		"transactions": {
-			"read": "Visa transaktionslista",
-			"write": "Skapa transaktioner",
-			"update": "Redigera transaktioner",
-			"delete": "Ta bort transaktioner",
-			"update-self": "Redigera egna transaktioner",
-			"delete-self": "Ta bort egna transaktioner"
-		},
-		"reimbursements": {
-			"read": "Visa ersättningsförfrågningar",
-			"write": "Skapa ersättningsförfrågningar",
-			"update": "Uppdatera och godkänna/avvisa ersättningar",
-			"delete": "Ta bort ersättningsförfrågningar",
-			"update-self": "Redigera egna ersättningsförfrågningar",
-			"delete-self": "Ta bort egna ersättningsförfrågningar"
+			"import": "Importera kassadata från fil",
+			"breakdown": {
+				"read": "Visa kassaavdelning",
+				"read-self": "Visa egen kassaavdelning"
+			},
+			"transactions": {
+				"read": "Visa transaktionslista",
+				"write": "Skapa transaktioner",
+				"write-self": "Skapa egna transaktioner",
+				"update": "Redigera transaktioner",
+				"delete": "Ta bort transaktioner",
+				"update-self": "Redigera egna transaktioner",
+				"delete-self": "Ta bort egna transaktioner",
+				"read-self": "Visa egna transaktioner"
+			},
+			"reimbursements": {
+				"read": "Visa ersättningsförfrågningar",
+				"write": "Skapa ersättningsförfrågningar",
+				"write-self": "Skapa egna ersättningsförfrågningar",
+				"update": "Uppdatera och godkänna/avvisa ersättningar",
+				"delete": "Ta bort ersättningsförfrågningar",
+				"update-self": "Redigera egna ersättningsförfrågningar",
+				"delete-self": "Ta bort egna ersättningsförfrågningar",
+				"read-self": "Visa egna ersättningsförfrågningar"
+			},
+			"budgets": {
+				"read": "Visa budgetar",
+				"read-self": "Visa egna budgetar",
+				"write": "Skapa budgetar",
+				"write-self": "Skapa egna budgetar",
+				"update": "Redigera budgetar",
+				"delete": "Ta bort budgetar",
+				"update-self": "Redigera egna budgetar",
+				"delete-self": "Ta bort egna budgetar"
+			},
+			"receipts": {
+				"read": "Visa kvitton",
+				"read-self": "Visa egna kvitton",
+				"write": "Skapa kvitton",
+				"write-self": "Skapa egna kvitton",
+				"update": "Redigera kvitton",
+				"delete": "Ta bort kvitton",
+				"update-self": "Redigera egna kvitton",
+				"delete-self": "Ta bort egna kvitton"
+			},
+			"view_scope": {
+				"all": "Du ser alla {{itemType}}",
+				"own_only": "Du ser endast dina egna {{itemType}}",
+				"item_types": {
+					"receipts": "kvitton",
+					"transactions": "transaktioner",
+					"reimbursements": "ersättningsansökningar",
+					"budgets": "budgetar",
+					"breakdown": "uppdelning"
+				}
+			}
 		},
 		"purchases": {
 			"read": "Visa alla köpförfrågningar",
@@ -1000,8 +1059,6 @@
 			"Users": "Användare",
 			"Inventory": "Inventarie",
 			"Treasury": "Kassa",
-			"Transactions": "Transaktioner",
-			"Reimbursements": "Ersättningar",
 			"Purchases": "Köp",
 			"Submissions": "Inlämningar",
 			"Social": "Social",

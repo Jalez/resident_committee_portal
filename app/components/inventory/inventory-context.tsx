@@ -4,9 +4,12 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import { useFetcher, useNavigate, useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { InventoryItem } from "~/db";
 import {
 	COLUMN_KEYS,
@@ -63,6 +66,9 @@ interface InventoryContextValue {
 	handleInlineEdit: (itemId: string, field: string, value: string) => void;
 	handleCreateItem: () => void;
 	handleDeleteSelected: (ids: string[]) => void;
+	pendingDeleteMany: { ids: string[] } | null;
+	setPendingDeleteMany: (pending: { ids: string[] } | null) => void;
+	handleConfirmDeleteMany: (ids: string[]) => void;
 	handleFilterChange: (key: string, value: string) => void;
 	handlePageChange: (page: number) => void;
 	toggleColumn: (col: ColumnKey) => void;
@@ -149,16 +155,38 @@ export function InventoryProvider({
 	const [newItem, setNewItem] =
 		useState<NewInventoryItemState>(DEFAULT_NEW_ITEM);
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const [pendingDeleteMany, setPendingDeleteMany] = useState<{
+		ids: string[];
+	} | null>(null);
 
 	const isSaving = fetcher.state !== "idle";
+	const { t } = useTranslation();
+	const lastToastDataRef = useRef<unknown>(null);
 
-	// Reset add row form when save completes
+	// Reset add row form when createItem completes (not on inline edit)
 	useEffect(() => {
-		if (fetcher.state === "idle" && fetcher.data?.success) {
+		if (
+			fetcher.state === "idle" &&
+			fetcher.data?.success &&
+			!("updatedField" in (fetcher.data ?? {}))
+		) {
 			setNewItem(DEFAULT_NEW_ITEM);
 			setShowAddRow(false);
 		}
 	}, [fetcher.state, fetcher.data]);
+
+	// Toast when inline edit (e.g. quantity) succeeds
+	useEffect(() => {
+		if (
+			fetcher.state === "idle" &&
+			fetcher.data &&
+			"updatedField" in fetcher.data &&
+			fetcher.data !== lastToastDataRef.current
+		) {
+			lastToastDataRef.current = fetcher.data;
+			toast.success(t("inventory.inline_edit_saved"));
+		}
+	}, [fetcher.state, fetcher.data, t]);
 
 	// Parse visible columns from URL
 	const getVisibleColumns = useCallback((): Set<ColumnKey> => {
@@ -206,7 +234,7 @@ export function InventoryProvider({
 			formData.set("itemId", itemId);
 			formData.set("field", field);
 			formData.set("value", value);
-			fetcher.submit(formData, { method: "POST" });
+			fetcher.submit(formData, { method: "POST", action: "/inventory" });
 		},
 		[fetcher],
 	);
@@ -224,18 +252,18 @@ export function InventoryProvider({
 		fetcher.submit(formData, { method: "POST" });
 	}, [fetcher, newItem]);
 
-	const handleDeleteSelected = useCallback(
+	const handleDeleteSelected = useCallback((ids: string[]) => {
+		setPendingDeleteMany({ ids });
+	}, []);
+
+	const handleConfirmDeleteMany = useCallback(
 		(ids: string[]) => {
-			if (
-				!confirm(
-					`Haluatko varmasti poistaa ${ids.length} tavaraa? / Delete ${ids.length} items?`,
-				)
-			)
-				return;
 			const formData = new FormData();
 			formData.set("_action", "deleteMany");
 			formData.set("itemIds", JSON.stringify(ids));
-			fetcher.submit(formData, { method: "POST" });
+			fetcher.submit(formData, { method: "POST", action: "/inventory" });
+			setPendingDeleteMany(null);
+			setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
 		},
 		[fetcher],
 	);
@@ -334,6 +362,9 @@ export function InventoryProvider({
 		handleInlineEdit,
 		handleCreateItem,
 		handleDeleteSelected,
+		pendingDeleteMany,
+		setPendingDeleteMany,
+		handleConfirmDeleteMany,
 		handleFilterChange,
 		handlePageChange,
 		toggleColumn,

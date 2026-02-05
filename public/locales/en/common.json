@@ -30,6 +30,10 @@
 			"details": "Details",
 			"loading": "Loading..."
 		},
+		"filters": {
+			"all": "All Categories"
+		},
+		"no_results": "No results",
 		"total": "Total",
 		"fields": {
 			"name": "Name",
@@ -42,6 +46,7 @@
 			"status": "Status",
 			"type": "Type",
 			"title": "Title",
+			"search": "Search",
 			"year": "Year",
 			"category": "Category",
 			"created_by": "Created By",
@@ -64,6 +69,10 @@
 			"primary": "Primary",
 			"hidden": "Hidden",
 			"none": "None"
+		},
+		"file_upload": {
+			"drag_drop": "Drag and drop a file here, or click to select",
+			"drop_file": "Drop file here"
 		},
 		"placeholders": {
 			"search": "Search...",
@@ -198,7 +207,12 @@
 		"add_transaction": "Add Transaction",
 		"receipts": {
 			"title": "Receipts",
+			"new": "New receipt",
 			"add": "Add receipt",
+			"link": "Link",
+			"open": "Open",
+			"view": "View",
+			"reimbursement_request": "Reimbursement Request",
 			"rename": "Rename",
 			"rename_placeholder": "Description (optional)",
 			"no_receipts": "No receipts for this year",
@@ -211,7 +225,27 @@
 			"delete": "Delete receipt",
 			"delete_confirm": "Are you sure you want to delete this receipt?",
 			"delete_success": "Receipt deleted",
-			"delete_error": "Delete failed"
+			"delete_error": "Delete failed",
+			"new_description": "Upload a new receipt and optionally link it to a reimbursement request.",
+			"file": "File",
+			"allowed_types": "Allowed file types",
+			"name_placeholder": "Receipt name (optional)",
+			"name_hint": "If left empty, the filename will be used.",
+			"description_placeholder": "Describe the receipt if needed",
+			"link_to_reimbursement": "Link to reimbursement request",
+			"select_reimbursement": "Select reimbursement request...",
+			"link_hint": "Optional: Link this receipt to an existing reimbursement request that has not been sent yet.",
+			"drag_drop": "Drag and drop a file here, or click to select",
+			"drop_file": "Drop file here",
+			"invalid_file_type": "Invalid file type. Allowed types: {{types}}",
+			"form": {
+				"create": "Create receipt",
+				"cancel": "Cancel"
+			},
+			"success": {
+				"receipt_created": "Receipt created",
+				"receipt_updated": "Receipt updated"
+			}
 		},
 		"actions": {
 			"breakdown": "Breakdown",
@@ -298,6 +332,8 @@
 			"date": "Date",
 			"description": "Description",
 			"purchaser": "Purchaser",
+			"receipts": "Receipts",
+			"view_receipt": "View receipt",
 			"amount": "Amount",
 			"transaction": "Transaction",
 			"view_transaction": "View Transaction",
@@ -442,8 +478,9 @@
 			"name_placeholder": "E.g. Guitar purchase",
 			"description": "Description",
 			"description_placeholder": "Additional details about the budget",
-			"amount": "Reserved Amount",
+			"amount": "Budget",
 			"used": "Used",
+			"reserved": "Reserved",
 			"available": "Available",
 			"remaining": "Remaining",
 			"status": "Status",
@@ -550,6 +587,11 @@
 			"unlink": "Unlink",
 			"remove_marker": "Remove marker"
 		},
+		"badge_unknown_title": "Unaccounted quantity – click for options",
+		"badge_connect_existing": "Connect to existing transaction",
+		"badge_create_new_transaction": "Create new transaction",
+		"badge_linked_to_transaction": "Linked to transaction",
+		"inline_edit_saved": "Saved",
 		"messages": {
 			"importing": "Importing file...",
 			"import_success": "Imported {{count}} rows",
@@ -610,6 +652,8 @@
 			"confirm_unlink_desc": "This will unlink the item from the selected transaction.",
 			"confirm_unlink_details": "Item: {{name}} ({{count}} pcs)\nTransaction: {{description}} ({{date}})",
 			"unlink": "Unlink",
+			"confirm_delete_many_title": "Delete items?",
+			"confirm_delete_many_desc": "Are you sure you want to permanently delete {{count}} item(s)?",
 			"quantity_selection": {
 				"title_no_txn": "Mark No Transaction",
 				"title_existing": "Add to Existing",
@@ -830,7 +874,15 @@
 			"delete_title": "Delete Role",
 			"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
 			"permissions_header": "Permissions",
-			"select_role_msg": "Select a role from the left to edit permissions"
+			"select_role_msg": "Select a role from the left to edit permissions",
+			"select_role": "Select Role",
+			"select_role_placeholder": "Choose a role...",
+			"search_placeholder": "Search permissions...",
+			"category": "Category",
+			"permission_name": "Permission Name",
+			"description": "Description",
+			"select_role_to_manage": "Select a role above to manage permissions",
+			"show_only_assigned": "Show only assigned permissions"
 		},
 		"users": {
 			"title": "User Management",
@@ -839,11 +891,11 @@
 				"email": "Email",
 				"apartment": "Apartment",
 				"role": "Primary role",
-				"secondary_roles": "Secondary roles",
+				"roles": "Roles",
 				"joined": "Joined"
 			},
 			"no_users": "No users yet",
-			"secondary_roles_placeholder": "Type role name and press Tab to add",
+			"roles_placeholder": "Type role name and press Tab to add",
 			"no_roles_match": "No matching roles",
 			"super_admin": "Super Admin",
 			"role_updated": "Role updated",
@@ -856,7 +908,7 @@
 		"members": "Members",
 		"no_members": "No committee members found",
 		"primary_role": "Primary Role",
-		"secondary_roles": "Secondary Roles",
+		"roles": "Roles",
 		"no_description": "No description",
 		"mail": {
 			"title": "Committee Email",
@@ -1275,34 +1327,62 @@
 		"treasury": {
 			"read": "View treasury overview",
 			"export": "Export treasury data to CSV",
-			"import": "Import treasury data from file"
-		},
-		"treasury_breakdown": {
-			"read": "View treasury breakdown"
-		},
-		"transactions": {
-			"read": "View transaction list",
-			"write": "Create transactions",
-			"update": "Edit transactions",
-			"delete": "Delete transactions",
-			"update-self": "Edit own transactions",
-			"delete-self": "Delete own transactions"
-		},
-		"budgets": {
-			"read": "View budgets",
-			"write": "Create budgets",
-			"update": "Edit budgets",
-			"delete": "Delete budgets",
-			"update-self": "Edit own budgets",
-			"delete-self": "Delete own budgets"
-		},
-		"reimbursements": {
-			"read": "View reimbursement requests",
-			"write": "Create reimbursement requests",
-			"update": "Update and approve/reject reimbursements",
-			"delete": "Delete reimbursement requests",
-			"update-self": "Edit own reimbursement requests",
-			"delete-self": "Delete own reimbursement requests"
+			"import": "Import treasury data from file",
+			"breakdown": {
+				"read": "View treasury breakdown",
+				"read-self": "View own treasury breakdown"
+			},
+			"transactions": {
+				"read": "View transaction list",
+				"write": "Create transactions",
+				"write-self": "Create own transactions",
+				"update": "Edit transactions",
+				"delete": "Delete transactions",
+				"update-self": "Edit own transactions",
+				"delete-self": "Delete own transactions",
+				"read-self": "View own transactions"
+			},
+			"reimbursements": {
+				"read": "View reimbursement requests",
+				"write": "Create reimbursement requests",
+				"write-self": "Create own reimbursement requests",
+				"update": "Update and approve/reject reimbursements",
+				"delete": "Delete reimbursement requests",
+				"update-self": "Edit own reimbursement requests",
+				"delete-self": "Delete own reimbursement requests",
+				"read-self": "View own reimbursement requests"
+			},
+			"budgets": {
+				"read": "View budgets",
+				"read-self": "View own budgets",
+				"write": "Create budgets",
+				"write-self": "Create own budgets",
+				"update": "Edit budgets",
+				"delete": "Delete budgets",
+				"update-self": "Edit own budgets",
+				"delete-self": "Delete own budgets"
+			},
+			"receipts": {
+				"read": "View receipts",
+				"read-self": "View own receipts",
+				"write": "Create receipts",
+				"write-self": "Create own receipts",
+				"update": "Edit receipts",
+				"delete": "Delete receipts",
+				"update-self": "Edit own receipts",
+				"delete-self": "Delete own receipts"
+			},
+			"view_scope": {
+				"all": "You are viewing all {{itemType}}",
+				"own_only": "You are viewing only your own {{itemType}}",
+				"item_types": {
+					"receipts": "receipts",
+					"transactions": "transactions",
+					"reimbursements": "reimbursement requests",
+					"budgets": "budgets",
+					"breakdown": "breakdown"
+				}
+			}
 		},
 		"purchases": {
 			"read": "View all purchase requests",
@@ -1384,8 +1464,6 @@
 			"Users": "Users",
 			"Inventory": "Inventory",
 			"Treasury": "Treasury",
-			"Transactions": "Transactions",
-			"Reimbursements": "Reimbursements",
 			"Purchases": "Purchases",
 			"Submissions": "Submissions",
 			"Social": "Social",

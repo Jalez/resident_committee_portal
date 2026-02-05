@@ -23,8 +23,13 @@
 			"back": "Takaisin",
 			"all": "Kaikki",
 			"details": "Tiedot",
-			"loading": "Ladataan..."
+			"loading": "Ladataan...",
+			"update": "Päivitä"
 		},
+		"filters": {
+			"all": "Kaikki kategoriat"
+		},
+		"no_results": "Ei tuloksia",
 		"total": "Yhteensä",
 		"fields": {
 			"name": "Nimi",
@@ -37,6 +42,7 @@
 			"status": "Tila",
 			"type": "Tyyppi",
 			"title": "Otsikko",
+			"search": "Haku",
 			"year": "Vuosi",
 			"category": "Kategoria",
 			"created_by": "Luoja",
@@ -59,6 +65,10 @@
 			"primary": "Ensisijainen",
 			"hidden": "Piilotettu",
 			"none": "Ei mitään"
+		},
+		"file_upload": {
+			"drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
+			"drop_file": "Pudota tiedosto tähän"
 		},
 		"placeholders": {
 			"search": "Hae...",
@@ -198,7 +208,14 @@
 		"add_transaction": "Lisää tapahtuma",
 		"receipts": {
 			"title": "Kuitit",
+			"new": "Uusi kuitti",
+			"edit": "Muokkaa kuittia",
+			"edit_description": "Muokkaa kuittin tietoja. Tiedostoa ei voi vaihtaa tässä näkymässä.",
 			"add": "Lisää kuitti",
+			"link": "Linkki",
+			"open": "Avaa",
+			"view": "Näytä",
+			"reimbursement_request": "Kulukorvaushakemus",
 			"rename": "Nimeä uudelleen",
 			"rename_placeholder": "Kuvaus (valinnainen)",
 			"no_receipts": "Ei kuitteja tälle vuodelle",
@@ -211,7 +228,27 @@
 			"delete": "Poista kuitti",
 			"delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
 			"delete_success": "Kuitti poistettu",
-			"delete_error": "Poisto epäonnistui"
+			"delete_error": "Poisto epäonnistui",
+			"new_description": "Lataa uusi kuitti ja linkitä se tarvittaessa kulukorvaushakemukseen.",
+			"file": "Tiedosto",
+			"allowed_types": "Sallitut tiedostotyypit",
+			"name_placeholder": "Kuittin nimi (valinnainen)",
+			"name_hint": "Jos jätät tyhjäksi, käytetään tiedoston nimeä.",
+			"description_placeholder": "Kuvaile kuittia tarvittaessa",
+			"link_to_reimbursement": "Linkitä kulukorvaushakemukseen",
+			"select_reimbursement": "Valitse kulukorvaushakemus...",
+			"link_hint": "Valinnainen: Linkitä kuitti olemassa olevaan kulukorvaushakemukseen, jota ei ole vielä lähetetty.",
+			"drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
+			"drop_file": "Pudota tiedosto tähän",
+			"invalid_file_type": "Virheellinen tiedostotyyppi. Sallitut tyypit: {{types}}",
+			"form": {
+				"create": "Luo kuitti",
+				"cancel": "Peruuta"
+			},
+			"success": {
+				"receipt_created": "Kuitti luotu",
+				"receipt_updated": "Kuitti päivitetty"
+			}
 		},
 		"actions": {
 			"breakdown": "Erittely",
@@ -291,6 +328,8 @@
 			"date": "Päivä",
 			"description": "Kuvaus",
 			"purchaser": "Ostaja",
+			"receipts": "Kuitit",
+			"view_receipt": "Näytä kuitti",
 			"amount": "Summa",
 			"transaction": "Tapahtuma",
 			"view_transaction": "Näytä tapahtuma",
@@ -437,6 +476,7 @@
 			"description_placeholder": "Lisätietoja budjetista",
 			"amount": "Varattu summa",
 			"used": "Käytetty",
+			"reserved": "Varattu",
 			"available": "Käytettävissä",
 			"remaining": "Jäljellä",
 			"status": "Tila",
@@ -543,6 +583,11 @@
 			"unlink": "Poista linkki",
 			"remove_marker": "Poista merkintä"
 		},
+		"badge_unknown_title": "Selittämätön määrä – klikkaa valintoja varten",
+		"badge_connect_existing": "Yhdistä olemassa olevaan tapahtumaan",
+		"badge_create_new_transaction": "Luo uusi tapahtuma",
+		"badge_linked_to_transaction": "Yhdistetty tapahtumaan",
+		"inline_edit_saved": "Tallennettu",
 		"messages": {
 			"importing": "Tuodaan tiedostoa...",
 			"import_success": "Tuotu {{count}} riviä",
@@ -603,6 +648,8 @@
 			"confirm_unlink_desc": "Tämä poistaa tavaran yhdistämisen valittuun tapahtumaan.",
 			"confirm_unlink_details": "Tavara: {{name}} ({{count}} kpl)\nTapahtuma: {{description}} ({{date}})",
 			"unlink": "Poista yhdistäminen",
+			"confirm_delete_many_title": "Poistetaanko tavarat?",
+			"confirm_delete_many_desc": "Haluatko varmasti poistaa {{count}} tavaraa pysyvästi?",
 			"quantity_selection": {
 				"title_no_txn": "Merkitse ei tapahtumaa",
 				"title_existing": "Lisää olemassaolevaan",
@@ -825,7 +872,15 @@
 			"delete_title": "Poista rooli",
 			"delete_confirm": "Haluatko varmasti poistaa roolin \"{{name}}\"? Tätä toimintoa ei voi peruuttaa.",
 			"permissions_header": "Oikeudet",
-			"select_role_msg": "Valitse rooli vasemmalta muokataksesi oikeuksia"
+			"select_role_msg": "Valitse rooli vasemmalta muokataksesi oikeuksia",
+			"select_role": "Valitse rooli",
+			"select_role_placeholder": "Valitse rooli...",
+			"search_placeholder": "Hae oikeuksia...",
+			"category": "Kategoria",
+			"permission_name": "Oikeuden nimi",
+			"description": "Kuvaus",
+			"select_role_to_manage": "Valitse rooli yllä hallitaksesi oikeuksia",
+			"show_only_assigned": "Näytä vain määritetyt oikeudet"
 		},
 		"users": {
 			"title": "Käyttäjähallinta",
@@ -834,11 +889,11 @@
 				"email": "Sähköposti",
 				"apartment": "Asunto",
 				"role": "Päärooli",
-				"secondary_roles": "Sivuroolit",
+				"roles": "Roolit",
 				"joined": "Liittynyt"
 			},
 			"no_users": "Ei käyttäjiä vielä",
-			"secondary_roles_placeholder": "Kirjoita roolin nimi ja paina Tab",
+			"roles_placeholder": "Kirjoita roolin nimi ja paina Tab",
 			"no_roles_match": "Ei vastaavia rooleja",
 			"super_admin": "Pääkäyttäjä",
 			"role_updated": "Rooli päivitetty",
@@ -851,7 +906,7 @@
 		"members": "Jäsenet",
 		"no_members": "Toimikunnalla ei ole jäseniä",
 		"primary_role": "Päärooli",
-		"secondary_roles": "Sivuroolit",
+		"roles": "Roolit",
 		"no_description": "Ei kuvausta",
 		"mail": {
 			"title": "Sähköposti",
@@ -1270,34 +1325,62 @@
 		"treasury": {
 			"read": "Näytä kassan yleiskuva",
 			"export": "Vie kassatiedot CSV-tiedostoon",
-			"import": "Tuo kassatiedot tiedostosta"
-		},
-		"treasury_breakdown": {
-			"read": "Näytä kassan erittely"
-		},
-		"transactions": {
-			"read": "Näytä tapahtumalista",
-			"write": "Luo tapahtumia",
-			"update": "Muokkaa tapahtumia",
-			"delete": "Poista tapahtumia",
-			"update-self": "Muokkaa omia tapahtumia",
-			"delete-self": "Poista omia tapahtumia"
-		},
-		"budgets": {
-			"read": "Näytä budjetit",
-			"write": "Luo budjetteja",
-			"update": "Muokkaa budjetteja",
-			"delete": "Poista budjetteja",
-			"update-self": "Muokkaa omia budjetteja",
-			"delete-self": "Poista omia budjetteja"
-		},
-		"reimbursements": {
-			"read": "Näytä korvausvaatimukset",
-			"write": "Luo korvausvaatimuksia",
-			"update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
-			"delete": "Poista korvausvaatimuksia",
-			"update-self": "Muokkaa omia korvausvaatimuksia",
-			"delete-self": "Poista omia korvausvaatimuksia"
+			"import": "Tuo kassatiedot tiedostosta",
+			"breakdown": {
+				"read": "Näytä kassan erittely",
+				"read-self": "Näytä oma kassan erittely"
+			},
+			"transactions": {
+				"read": "Näytä tapahtumalista",
+				"write": "Luo tapahtumia",
+				"write-self": "Luo omia tapahtumia",
+				"update": "Muokkaa tapahtumia",
+				"delete": "Poista tapahtumia",
+				"update-self": "Muokkaa omia tapahtumia",
+				"delete-self": "Poista omia tapahtumia",
+				"read-self": "Näytä omia tapahtumia"
+			},
+			"reimbursements": {
+				"read": "Näytä korvausvaatimukset",
+				"write": "Luo korvausvaatimuksia",
+				"write-self": "Luo omia korvausvaatimuksia",
+				"update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
+				"delete": "Poista korvausvaatimuksia",
+				"update-self": "Muokkaa omia korvausvaatimuksia",
+				"delete-self": "Poista omia korvausvaatimuksia",
+				"read-self": "Näytä omia korvausvaatimuksia"
+			},
+			"budgets": {
+				"read": "Näytä budjetit",
+				"read-self": "Näytä omat budjetit",
+				"write": "Luo budjetteja",
+				"write-self": "Luo omia budjetteja",
+				"update": "Muokkaa budjetteja",
+				"delete": "Poista budjetteja",
+				"update-self": "Muokkaa omia budjetteja",
+				"delete-self": "Poista omia budjetteja"
+			},
+			"receipts": {
+				"read": "Näytä kuitit",
+				"read-self": "Näytä omat kuitit",
+				"write": "Luo kuitteja",
+				"write-self": "Luo omia kuitteja",
+				"update": "Muokkaa kuitteja",
+				"delete": "Poista kuitteja",
+				"update-self": "Muokkaa omia kuitteja",
+				"delete-self": "Poista omia kuitteja"
+			},
+			"view_scope": {
+				"all": "Näet kaikki {{itemType}}",
+				"own_only": "Näet vain omat {{itemType}}",
+				"item_types": {
+					"receipts": "kuitit",
+					"transactions": "tapahtumat",
+					"reimbursements": "kulukorvaushakemukset",
+					"budgets": "budjetit",
+					"breakdown": "yhteenveto"
+				}
+			}
 		},
 		"purchases": {
 			"read": "Näytä kaikki ostopyynnöt",
@@ -1379,8 +1462,6 @@
 			"Users": "Käyttäjät",
 			"Inventory": "Inventaario",
 			"Treasury": "Kassa",
-			"Transactions": "Tapahtumat",
-			"Reimbursements": "Kulukorvaukset",
 			"Purchases": "Ostot",
 			"Submissions": "Yhteydenotot",
 			"Social": "Sosiaalinen",
