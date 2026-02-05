@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Thumbnail } from "~/components/ui/thumbnail";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { getAvatarsPrefix } from "~/lib/avatars/utils";
@@ -42,10 +43,10 @@ export default function Avatars() {
 	const revalidator = useRevalidator();
 	const { t } = useTranslation();
 	const [deletingPathname, setDeletingPathname] = useState<string | null>(null);
+	const [deleteConfirmPathname, setDeleteConfirmPathname] = useState<string | null>(null);
 
-	const handleDelete = useCallback(
+	const doDelete = useCallback(
 		async (pathname: string) => {
-			if (!window.confirm(t("avatars.delete_confirm"))) return;
 			setDeletingPathname(pathname);
 			try {
 				const res = await fetch("/api/avatars/delete", {
@@ -67,8 +68,27 @@ export default function Avatars() {
 		[t, revalidator],
 	);
 
+	const handleDeleteClick = useCallback((pathname: string) => {
+		setDeleteConfirmPathname(pathname);
+	}, []);
+
 	return (
 		<PageWrapper>
+			<ConfirmDialog
+				open={deleteConfirmPathname !== null}
+				onOpenChange={(open) => !open && setDeleteConfirmPathname(null)}
+				title={t("common.actions.delete")}
+				description={t("avatars.delete_confirm")}
+				confirmLabel={t("common.actions.delete")}
+				cancelLabel={t("common.actions.cancel")}
+				variant="destructive"
+				onConfirm={() => {
+					if (deleteConfirmPathname) {
+						doDelete(deleteConfirmPathname);
+						setDeleteConfirmPathname(null);
+					}
+				}}
+			/>
 			<SplitLayout
 				header={{
 					primary: t("avatars.title", { lng: systemLanguages.primary }),
@@ -107,7 +127,7 @@ export default function Avatars() {
 											size="sm"
 											className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
 											disabled={deletingPathname === blob.pathname}
-											onClick={() => handleDelete(blob.pathname)}
+											onClick={() => handleDeleteClick(blob.pathname)}
 										>
 											{deletingPathname === blob.pathname
 												? t("common.actions.loading", { defaultValue: "..." })

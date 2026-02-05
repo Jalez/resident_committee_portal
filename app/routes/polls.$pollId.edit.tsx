@@ -1,4 +1,5 @@
-import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
+import { useRef, useState } from "react";
+import { Form, redirect, useActionData, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
@@ -10,6 +11,7 @@ import type { AnalyticsSheet } from "~/lib/google.server";
 import type { Route } from "./+types/polls.$pollId.edit";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -190,6 +192,8 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const deleteFormRef = useRef<HTMLFormElement>(null);
 
     const deadlineIso = poll.deadline ? new Date(poll.deadline).toISOString() : "";
     const defaultDate = deadlineIso ? deadlineIso.split("T")[0] : "";
@@ -197,6 +201,22 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
 
     return (
         <PageWrapper>
+            <Form method="post" className="hidden" ref={deleteFormRef}>
+                <input type="hidden" name="actionType" value="delete" />
+            </Form>
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                onOpenChange={setShowDeleteConfirm}
+                title={t("common.actions.delete")}
+                description={t("common.confirm_delete") || "Are you sure?"}
+                confirmLabel={t("common.actions.delete")}
+                cancelLabel={t("common.actions.cancel")}
+                variant="destructive"
+                onConfirm={() => {
+                    deleteFormRef.current?.requestSubmit();
+                    setShowDeleteConfirm(false);
+                }}
+            />
             <SplitLayout
                 header={{
                     primary: `${t("common.actions.edit", { lng: systemLanguages.primary })} Poll`,
@@ -307,16 +327,10 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
                             </Button>
 
                             <Button
-                                type="submit"
-                                name="actionType"
-                                value="delete"
+                                type="button"
                                 variant="destructive"
                                 disabled={isSubmitting}
-                                onClick={(e) => {
-                                    if (!confirm(t("common.confirm_delete") || "Are you sure?")) {
-                                        e.preventDefault();
-                                    }
-                                }}
+                                onClick={() => setShowDeleteConfirm(true)}
                             >
                                 {t("common.actions.delete")}
                             </Button>

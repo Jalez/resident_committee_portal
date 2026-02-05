@@ -1,7 +1,9 @@
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form } from "react-router";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { getDatabase, type Submission, type SubmissionStatus } from "~/db";
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -108,8 +110,30 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 		return i18n.language === "fi" ? parts[0] : parts[1] || parts[0];
 	};
 
+	const [deleteConfirmSubmissionId, setDeleteConfirmSubmissionId] = useState<string | null>(null);
+	const deleteFormRef = useRef<HTMLFormElement>(null);
+
 	return (
 		<PageWrapper>
+			{canDelete && (
+				<Form method="post" className="hidden" ref={deleteFormRef}>
+					<input type="hidden" name="_action" value="delete" />
+					<input type="hidden" name="submissionId" value={deleteConfirmSubmissionId ?? ""} />
+				</Form>
+			)}
+			<ConfirmDialog
+				open={deleteConfirmSubmissionId !== null}
+				onOpenChange={(open) => !open && setDeleteConfirmSubmissionId(null)}
+				title={t("common.actions.delete")}
+				description={t("submissions.delete_confirm")}
+				confirmLabel={t("common.actions.delete")}
+				cancelLabel={t("common.actions.cancel")}
+				variant="destructive"
+				onConfirm={() => {
+					deleteFormRef.current?.requestSubmit();
+					setDeleteConfirmSubmissionId(null);
+				}}
+			/>
 			<SplitLayout
 				header={{
 					primary: t("submissions.title", { lng: systemLanguages.primary }),
@@ -203,32 +227,18 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 									</Form>
 
 									{canDelete && (
-										<Form
-											method="post"
-											onSubmit={(e) => {
-												if (!confirm(t("submissions.delete_confirm"))) {
-													e.preventDefault();
-												}
-											}}
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
+											title={t("common.actions.delete")}
+											onClick={() => setDeleteConfirmSubmissionId(submission.id)}
 										>
-											<input type="hidden" name="_action" value="delete" />
-											<input
-												type="hidden"
-												name="submissionId"
-												value={submission.id}
-											/>
-											<Button
-												type="submit"
-												variant="ghost"
-												size="icon"
-												className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-												title={t("common.actions.delete")}
-											>
-												<span className="material-symbols-outlined text-xl">
-													delete
-												</span>
-											</Button>
-										</Form>
+											<span className="material-symbols-outlined text-xl">
+												delete
+											</span>
+										</Button>
 									)}
 								</div>
 							</div>
@@ -275,6 +285,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 											key={submission.id}
 											submission={submission}
 											canDelete={canDelete}
+											onDeleteClick={canDelete ? setDeleteConfirmSubmissionId : undefined}
 										/>
 									))
 								)}
@@ -290,9 +301,11 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 function SubmissionRow({
 	submission,
 	canDelete,
+	onDeleteClick,
 }: {
 	submission: Submission;
 	canDelete?: boolean;
+	onDeleteClick?: (id: string) => void;
 }) {
 	const { t, i18n } = useTranslation();
 	const formattedDate = new Date(submission.createdAt).toLocaleDateString(
@@ -365,29 +378,19 @@ function SubmissionRow({
 							))}
 						</select>
 					</Form>
-					{canDelete && (
-						<Form
-							method="post"
-							onSubmit={(e) => {
-								if (!confirm(t("submissions.delete_confirm"))) {
-									e.preventDefault();
-								}
-							}}
+					{canDelete && onDeleteClick && (
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
+							title={t("common.actions.delete")}
+							onClick={() => onDeleteClick(submission.id)}
 						>
-							<input type="hidden" name="_action" value="delete" />
-							<input type="hidden" name="submissionId" value={submission.id} />
-							<Button
-								type="submit"
-								variant="ghost"
-								size="icon"
-								className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-								title={t("common.actions.delete")}
-							>
-								<span className="material-symbols-outlined text-xl">
-									delete
-								</span>
-							</Button>
-						</Form>
+							<span className="material-symbols-outlined text-xl">
+								delete
+							</span>
+						</Button>
 					)}
 				</div>
 			</td>
