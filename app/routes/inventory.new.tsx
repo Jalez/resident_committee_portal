@@ -30,11 +30,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import {
-	getOrCreateReceiptsFolder,
-	getReceiptsByYear,
-	uploadReceiptToDrive,
-} from "~/lib/google.server";
+import { getReceiptsByYear } from "~/lib/receipts";
 import type { Route } from "./+types/inventory.new";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -80,9 +76,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Get receipts for picker
 	const receiptsByYear = await getReceiptsByYear();
-	const currentYearReceipts = receiptsByYear.find(
-		(r) => r.year === currentYear.toString(),
-	);
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -92,7 +85,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentYear,
 		existingItems: uniqueItems,
 		receiptsByYear,
-		receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
 		metaTitle,
 	};
 }
@@ -103,56 +95,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 	const formData = await request.formData();
 	const actionType = formData.get("_action");
-
-	// Handle uploadReceipt action for ReimbursementForm
-	if (actionType === "uploadReceipt") {
-		const receiptFile = formData.get("receiptFile") as File;
-		const year = formData.get("year") as string;
-		const description = formData.get("description") as string;
-
-		if (!receiptFile || receiptFile.size === 0) {
-			return { success: false, error: "No file provided" };
-		}
-
-		try {
-			const arrayBuffer = await receiptFile.arrayBuffer();
-			const base64Content = Buffer.from(arrayBuffer).toString("base64");
-
-			const result = await uploadReceiptToDrive(
-				{
-					name: receiptFile.name,
-					content: base64Content,
-					mimeType: receiptFile.type,
-				},
-				year,
-				description,
-			);
-
-			if (result) {
-				return { success: true, receipt: result };
-			} else {
-				return { success: false, error: "Upload failed" };
-			}
-		} catch (error) {
-			console.error("[uploadReceipt] Error:", error);
-			return { success: false, error: "Upload failed" };
-		}
-	}
-
-	// Handle ensureReceiptsFolder action for ReimbursementForm
-	if (actionType === "ensureReceiptsFolder") {
-		const year = formData.get("year") as string;
-		try {
-			const result = await getOrCreateReceiptsFolder(year);
-			if (result) {
-				return { success: true, folderUrl: result.folderUrl };
-			}
-			return { success: false, error: "Could not create receipts folder" };
-		} catch (error) {
-			console.error("[ensureReceiptsFolder] Error:", error);
-			return { success: false, error: "Failed to create receipts folder" };
-		}
-	}
 
 	// Handle refreshReceipts action to clear cache
 	if (actionType === "refreshReceipts") {
@@ -319,7 +261,6 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 		currentYear,
 		existingItems,
 		receiptsByYear,
-		receiptsFolderUrl,
 	} = loaderData ?? {
 		recentMinutes: [] as Array<{ id: string; name: string; year: number }>,
 		recentTransactions: [] as Array<{
@@ -338,7 +279,6 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 			value: string | null;
 		}>,
 		receiptsByYear: [],
-		receiptsFolderUrl: "#",
 		metaTitle: "New Item",
 	};
 	const { t } = useTranslation();
@@ -699,7 +639,6 @@ export default function NewInventoryItem({ loaderData }: Route.ComponentProps) {
 											emailConfigured={emailConfigured}
 											receiptsByYear={receiptsByYear}
 											currentYear={currentYear}
-											receiptsFolderUrl={receiptsFolderUrl}
 											description={itemName}
 											showNotes={true}
 											required={requestReimbursement}

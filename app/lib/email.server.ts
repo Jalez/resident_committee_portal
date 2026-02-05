@@ -13,6 +13,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Resend } from "resend";
+import { getReceiptContentBase64 } from "./receipts";
 import { getFileAsBase64 } from "./google.server";
 import { getSystemLanguageDefaults } from "./settings.server";
 
@@ -235,7 +236,7 @@ export async function parseReimbursementReply(
  * Send reimbursement request email with receipt links and optional attachments
  * Now returns message ID for tracking replies
  *
- * Receipt files are stored in Google Drive and attached when available.
+ * Receipt files are stored in external storage and attached when available.
  * Uses app's default language settings for bilingual email content.
  */
 export async function sendReimbursementEmail(
@@ -457,7 +458,7 @@ export async function sendReimbursementStatusEmail(
 }
 
 /**
- * Build attachments for receipt links by downloading files from Google Drive
+ * Build attachments for receipt links by downloading files from receipt storage
  */
 export async function buildReceiptAttachments(
 	receiptLinks?: ReceiptLink[],
@@ -469,7 +470,7 @@ export async function buildReceiptAttachments(
 	const attachments = await Promise.all(
 		receiptLinks.map(async (receipt) => {
 			try {
-				const content = await getFileAsBase64(receipt.id);
+				const content = await getReceiptContentBase64(receipt);
 				if (!content) {
 					console.warn(
 						`[buildReceiptAttachments] Failed to download receipt: ${receipt.id}`,
