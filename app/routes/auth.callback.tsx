@@ -1,6 +1,7 @@
 import { type LoaderFunctionArgs, redirect } from "react-router";
 import { getDatabase } from "~/db";
 import { localeCookie } from "~/i18next.server";
+import { isCustomAvatarUrl } from "~/lib/avatars/utils";
 import {
 	createSession,
 	exchangeCodeForTokens,
@@ -62,8 +63,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		console.log(`[OAuth Callback] Promoted ${userInfo.email} to Admin role`);
 	}
 
-	// Update picture if it has changed
-	if (userInfo.picture && user.picture !== userInfo.picture) {
+	// Update picture from Google only if user has not set a custom avatar
+	if (
+		userInfo.picture &&
+		user.picture !== userInfo.picture &&
+		!isCustomAvatarUrl(user.picture)
+	) {
 		await db.updateUser(user.id, { picture: userInfo.picture });
 	}
 
