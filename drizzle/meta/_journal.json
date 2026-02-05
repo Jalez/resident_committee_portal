@@ -71,6 +71,27 @@
 			"when": 1738800000000,
 			"tag": "0009_add_mail_drafts",
 			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1738886400000,
+			"tag": "0014_consolidate_user_roles",
+			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "7",
+			"when": 1738972800000,
+			"tag": "0015_rename_treasury_permissions",
+			"breakpoints": true
+		},
+		{
+			"idx": 12,
+			"version": "7",
+			"when": 1739059200000,
+			"tag": "0016_add_receipts_table",
+			"breakpoints": true
 		}
 	]
 }
