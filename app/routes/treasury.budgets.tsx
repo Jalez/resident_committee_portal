@@ -8,15 +8,22 @@ import {
     SplitLayout,
 } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { Link } from "react-router";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
     TreasuryTable,
     TREASURY_TABLE_STYLES,
 } from "~/components/treasury/treasury-table";
+import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
-import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
+import {
+	getAuthenticatedUser,
+	getGuestContext,
+	hasAnyPermission,
+	type AuthenticatedUser,
+} from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.budgets";
 
@@ -54,10 +61,24 @@ export async function loader({ request }: Route.LoaderArgs) {
     }
 
     const canRead = permissions.some(
-        (p) => p === "budgets:read" || p === "*",
+        (p) =>
+            p === "treasury:budgets:read" ||
+            p === "treasury:budgets:read-self" ||
+            p === "*",
     );
     if (!canRead) {
         throw new Response("Not Found", { status: 404 });
+    }
+
+    // Check if user can read all budgets or only their own
+    let canReadAll = false;
+    if (authUser) {
+        canReadAll = hasAnyPermission(authUser as AuthenticatedUser, [
+            "treasury:budgets:read",
+        ]);
+    } else {
+        // Guest users can't read all
+        canReadAll = false;
     }
 
     const db = getDatabase();
@@ -72,19 +93,28 @@ export async function loader({ request }: Route.LoaderArgs) {
     // Get budgets for the year
     let budgets = await db.getFundBudgetsByYear(selectedYear);
 
+    // Filter budgets: if user only has read-self, show only their own budgets
+    if (!canReadAll && userId) {
+        budgets = budgets.filter((b) => b.createdBy === userId);
+    }
+
     // Filter by status if specified
     if (statusParam !== "all") {
         budgets = budgets.filter((r) => r.status === statusParam);
     }
 
-    // Calculate used amounts for each budget
+    // Calculate used/reserved amounts and fetch linked transactions for each budget
     const budgetsWithUsage = await Promise.all(
         budgets.map(async (budget) => {
             const usedAmount = await db.getBudgetUsedAmount(budget.id);
+            const reservedAmount = await db.getBudgetReservedAmount(budget.id);
+            const linkedTransactions = await db.getBudgetTransactions(budget.id);
             return {
                 ...budget,
                 usedAmount,
-                remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
+                reservedAmount,
+                remainingAmount: Number.parseFloat(budget.amount) - usedAmount - reservedAmount,
+                linkedTransactions,
             };
         }),
     );
@@ -128,6 +158,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         statuses: uniqueStatuses,
         languages,
         userId,
+        canReadAll,
         creatorsMap: Object.fromEntries(creatorsMap),
     };
 }
@@ -142,22 +173,23 @@ export default function TreasuryBudgets({
         statuses,
         languages,
         creatorsMap: creatorsMapRaw,
+        canReadAll,
     } = loaderData;
     const creatorsMap = new Map(
         Object.entries(creatorsMapRaw ?? {}) as [string, string][],
     );
     const { hasPermission, user } = useUser();
-    const canWrite = hasPermission("budgets:write");
+    const canWrite = hasPermission("treasury:budgets:write");
     const canUpdateBudget = (budget: (typeof budgets)[0]) =>
-        hasPermission("budgets:update") ||
-        (hasPermission("budgets:update-self") &&
+        hasPermission("treasury:budgets:update") ||
+        (hasPermission("treasury:budgets:update-self") &&
             budget.createdBy &&
             user?.userId === budget.createdBy);
 
     const canDeleteBudget = (budget: (typeof budgets)[0]) => {
         const canDelete =
-            hasPermission("budgets:delete") ||
-            (hasPermission("budgets:delete-self") &&
+            hasPermission("treasury:budgets:delete") ||
+            (hasPermission("treasury:budgets:delete-self") &&
                 budget.createdBy &&
                 user?.userId === budget.createdBy);
         // Only allow delete when no linked transactions (usedAmount === 0)
@@ -242,6 +274,14 @@ export default function TreasuryBudgets({
         open: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
         closed: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
     };
+    const TRANSACTION_STATUS_VARIANT_MAP: Record<string, string> = {
+        complete:
+            "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+        pending:
+            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+        paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+        declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    };
 
     // Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
     const columns = [
@@ -292,10 +332,47 @@ export default function TreasuryBudgets({
             cellClassName: "text-gray-500 dark:text-gray-400",
         },
         {
+            key: "transaction",
+            header: t("treasury.reimbursements.transaction"),
+            cell: (row: BudgetRow) =>
+                row.linkedTransactions && row.linkedTransactions.length > 0 ? (
+                    <div className="flex flex-col gap-0.5">
+                        {row.linkedTransactions
+                            .filter(({ transaction }) => transaction.status !== "declined")
+                            .map(({ transaction }) => {
+                                const statusVariant =
+                                    TRANSACTION_STATUS_VARIANT_MAP[transaction.status] ||
+                                    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+                                return (
+                                    <Link
+                                        key={transaction.id}
+                                        to={`/treasury/transactions/${transaction.id}`}
+                                        className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
+                                        title={t("treasury.reimbursements.view_transaction")}
+                                    >
+                                        <span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
+                                            link
+                                        </span>
+                                        {transaction.id.substring(0, 8)}
+                                    </Link>
+                                );
+                            })}
+                    </div>
+                ) : (
+                    <span className="text-gray-400">—</span>
+                ),
+        },
+        {
             key: "used",
             header: t("treasury.budgets.used"),
             cell: (row: BudgetRow) => formatCurrency(row.usedAmount),
             cellClassName: "text-gray-600 dark:text-gray-400",
+        },
+        {
+            key: "reserved",
+            header: t("treasury.budgets.reserved"),
+            cell: (row: BudgetRow) => formatCurrency(row.reservedAmount),
+            cellClassName: "text-yellow-600 dark:text-yellow-400",
         },
         {
             key: "remaining",
@@ -331,6 +408,7 @@ export default function TreasuryBudgets({
                 }}
             >
                 <div className="space-y-6">
+                    <ViewScopeDisclaimer canReadAll={canReadAll} itemType="budgets" />
                     <TreasuryTable<BudgetRow>
                         data={budgets}
                         columns={columns}
@@ -372,11 +450,17 @@ export default function TreasuryBudgets({
                             ) : undefined,
                         }}
                         totals={{
-                            labelColSpan: 6,
+                            labelColSpan: 7,
                             columns: [
                                 {
                                     value: budgets.reduce(
                                         (sum, r) => sum + r.usedAmount,
+                                        0,
+                                    ),
+                                },
+                                {
+                                    value: budgets.reduce(
+                                        (sum, r) => sum + r.reservedAmount,
                                         0,
                                     ),
                                 },

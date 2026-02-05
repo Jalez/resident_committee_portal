@@ -17,6 +17,7 @@ import {
 	TreasuryTable,
 	TREASURY_TABLE_STYLES,
 } from "~/components/treasury/treasury-table";
+import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
 import {
 	getDatabase,
@@ -25,8 +26,11 @@ import {
 	type PurchaseStatus,
 } from "~/db";
 import {
+	requireAnyPermission,
+	hasAnyPermission,
 	requirePermission,
 	requireDeletePermissionOrSelf,
+	type RBACDatabaseAdapter,
 } from "~/lib/auth.server";
 import { createReimbursementStatusNotification } from "~/lib/notifications.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
@@ -44,13 +48,32 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "reimbursements:read", getDatabase);
+	// Require either treasury:reimbursements:read or treasury:reimbursements:read-self permission
+	const user = await requireAnyPermission(
+		request,
+		[
+			"treasury:reimbursements:read",
+			"treasury:reimbursements:read-self",
+		],
+		getDatabase as unknown as () => RBACDatabaseAdapter,
+	);
+
+	// Check if user can read all reimbursements or only their own
+	const canReadAll = hasAnyPermission(user, [
+		"treasury:reimbursements:read",
+	]);
+
 	const db = getDatabase();
 	const url = new URL(request.url);
 	const status = url.searchParams.get("status") || "all";
 	const year = url.searchParams.get("year") || String(new Date().getFullYear());
 
 	let purchases = await db.getPurchases();
+
+	// Filter purchases: if user only has read-self, show only their own purchases
+	if (!canReadAll) {
+		purchases = purchases.filter((p) => p.createdBy === user.userId);
+	}
 
 	// Filter by year
 	if (year !== "all") {
@@ -71,15 +94,24 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const inventoryItems = await db.getInventoryItems();
 	const itemsMap = new Map(inventoryItems.map((item) => [item.id, item]));
 
-	// Check which purchases have linked transactions and create map of purchase ID to transaction ID
+	// Check which purchases have linked transactions and create map of purchase ID to transaction ID and status
 	const purchasesWithLinkedTransactions = new Set<string>();
 	const purchaseTransactionMap = new Map<string, string>();
+	const transactionStatusMap = new Map<string, string>();
 	for (const purchase of purchases) {
 		const linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
 		if (linkedTransaction) {
 			purchasesWithLinkedTransactions.add(purchase.id);
 			purchaseTransactionMap.set(purchase.id, linkedTransaction.id);
+			transactionStatusMap.set(linkedTransaction.id, linkedTransaction.status);
 		}
+	}
+
+	// Fetch receipts for each purchase
+	const purchaseReceiptsMap = new Map<string, string[]>();
+	for (const purchase of purchases) {
+		const receipts = await db.getReceiptsByPurchaseId(purchase.id);
+		purchaseReceiptsMap.set(purchase.id, receipts.map((r) => r.id));
 	}
 
 	// Enrich purchases
@@ -87,6 +119,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		...p,
 		inventoryItem: p.inventoryItemId ? itemsMap.get(p.inventoryItemId) : null,
 		hasLinkedTransaction: purchasesWithLinkedTransactions.has(p.id),
+		receiptIds: purchaseReceiptsMap.get(p.id) || [],
 	}));
 
 	// Get unique years from purchases
@@ -116,9 +149,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		siteConfig: SITE_CONFIG,
 		purchases: enrichedPurchases,
 		purchaseTransactionMap: Object.fromEntries(purchaseTransactionMap),
+		transactionStatusMap: Object.fromEntries(transactionStatusMap),
 		years,
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
+		canReadAll,
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
 	};
@@ -132,7 +167,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 	if (actionType === "updateStatus" && purchaseId) {
 		// Updating status requires update permission
-		await requirePermission(request, "reimbursements:update", getDatabase);
+		await requirePermission(request, "treasury:reimbursements:update", getDatabase);
 
 		const newStatus = formData.get("status") as PurchaseStatus;
 		await db.updatePurchase(purchaseId, { status: newStatus });
@@ -189,8 +224,8 @@ export async function action({ request }: Route.ActionArgs) {
 		// Check delete permission with self-delete support
 		await requireDeletePermissionOrSelf(
 			request,
-			"reimbursements:delete",
-			"reimbursements:delete-self",
+			"treasury:reimbursements:delete",
+			"treasury:reimbursements:delete-self",
 			purchase.createdBy,
 			getDatabase,
 		);
@@ -219,6 +254,14 @@ const statusColors = {
 		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 	rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 };
+const TRANSACTION_STATUS_VARIANT_MAP: Record<string, string> = {
+	complete:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	pending:
+		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+	paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+	declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+};
 
 export default function BudgetReimbursements({
 	loaderData,
@@ -226,12 +269,17 @@ export default function BudgetReimbursements({
 	const {
 		purchases,
 		purchaseTransactionMap,
+		transactionStatusMap: transactionStatusMapRaw,
 		years,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
+		canReadAll,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
+	const transactionStatusMap = new Map(
+		Object.entries(transactionStatusMapRaw ?? {}) as [string, string][],
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
@@ -323,6 +371,7 @@ export default function BudgetReimbursements({
 	type PurchaseRow = Purchase & {
 		inventoryItem?: InventoryItem | null;
 		hasLinkedTransaction: boolean;
+		receiptIds: string[];
 	};
 
 	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
@@ -350,7 +399,7 @@ export default function BudgetReimbursements({
 			header: t("common.fields.status"),
 			cell: (row: PurchaseRow) => {
 				const canApprove =
-					rootData?.user?.permissions?.includes("reimbursements:update") ||
+					rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
 					rootData?.user?.permissions?.includes("*");
 				const statusKey = row.status as keyof typeof statusColors;
 				const statusColor =
@@ -401,20 +450,63 @@ export default function BudgetReimbursements({
 		{
 			key: "transaction",
 			header: t("treasury.reimbursements.transaction"),
-			cell: (row: PurchaseRow) =>
-				purchaseTransactionMap[row.id] ? (
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: PurchaseRow) => {
+				const transactionId = purchaseTransactionMap[row.id];
+				if (!transactionId) {
+					return <span className="text-gray-400">—</span>;
+				}
+				const transactionStatus = transactionStatusMap.get(transactionId) || "pending";
+				const statusVariant =
+					TRANSACTION_STATUS_VARIANT_MAP[transactionStatus] ||
+					TRANSACTION_STATUS_VARIANT_MAP.pending;
+				return (
 					<Link
-						to={`/treasury/transactions/${purchaseTransactionMap[row.id]}`}
-						className="inline-flex items-center text-primary hover:underline"
+						to={`/treasury/transactions/${transactionId}`}
+						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
 						title={t("treasury.reimbursements.view_transaction")}
 					>
-						<span className="material-symbols-outlined text-base">
+						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
 							link
 						</span>
+						{transactionId.substring(0, 8)}
 					</Link>
-				) : (
-					<span className="text-gray-400">—</span>
-				),
+				);
+			},
+		},
+		{
+			key: "receipts",
+			header: t("treasury.reimbursements.receipts"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: PurchaseRow) => {
+				if (!row.receiptIds || row.receiptIds.length === 0) {
+					return <span className="text-gray-400">—</span>;
+				}
+				// Use purchase status for receipt link coloring
+				const purchaseStatus = row.status;
+				const statusVariant =
+					statusColors[purchaseStatus as keyof typeof statusColors] ||
+					statusColors.pending;
+				return (
+					<div className="inline-flex flex-wrap gap-1 justify-center">
+						{row.receiptIds.map((receiptId) => (
+							<Link
+								key={receiptId}
+								to={`/treasury/receipts/${receiptId}`}
+								className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
+								title={t("treasury.reimbursements.view_receipt")}
+							>
+								<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
+									receipt_long
+								</span>
+								{receiptId.substring(0, 8)}
+							</Link>
+						))}
+					</div>
+				);
+			},
 		},
 		{
 			key: "email",
@@ -478,6 +570,7 @@ export default function BudgetReimbursements({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
+					<ViewScopeDisclaimer canReadAll={canReadAll} itemType="reimbursements" />
 					<TreasuryTable<PurchaseRow>
 						data={purchases}
 						columns={columns}
@@ -485,22 +578,22 @@ export default function BudgetReimbursements({
 						renderActions={(purchase) => {
 							const canDeleteGeneral =
 								rootData?.user?.permissions?.includes(
-									"reimbursements:delete",
+									"treasury:reimbursements:delete",
 								) || rootData?.user?.permissions?.includes("*");
 							const canDeleteSelf =
 								rootData?.user?.permissions?.includes(
-									"reimbursements:delete-self",
+									"treasury:reimbursements:delete-self",
 								) &&
 								purchase.createdBy &&
 								rootData?.user?.userId === purchase.createdBy;
 							const canDelete = canDeleteGeneral || canDeleteSelf;
 							const canUpdateGeneral =
 								rootData?.user?.permissions?.includes(
-									"reimbursements:update",
+									"treasury:reimbursements:update",
 								) || rootData?.user?.permissions?.includes("*");
 							const canUpdateSelf =
 								rootData?.user?.permissions?.includes(
-									"reimbursements:update-self",
+									"treasury:reimbursements:update-self",
 								) &&
 								purchase.createdBy &&
 								rootData?.user?.userId === purchase.createdBy;
@@ -538,7 +631,7 @@ export default function BudgetReimbursements({
 							title: t("treasury.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 9,
+							labelColSpan: 10,
 							columns: [
 								{
 									value: purchases.reduce(
