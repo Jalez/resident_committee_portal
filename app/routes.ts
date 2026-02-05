@@ -20,6 +20,7 @@ export default [
 		"treasury/transactions/:transactionId/edit",
 		"routes/treasury.transactions.$transactionId.edit.tsx",
 	),
+	route("treasury/receipts", "routes/treasury.receipts.tsx"),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
 	route(
 		"treasury/reimbursements/:purchaseId",
@@ -69,6 +70,9 @@ export default [
 		route(":messageId", "routes/mail.$messageId.tsx"),
 	]),
 	route("committee/mail", "routes/committee.mail.redirect.tsx"),
+	// Avatars admin (avatars:read)
+	route("avatars", "routes/avatars.tsx"),
+
 	// Settings routes (admin only)
 	route("settings/general", "routes/settings.general.tsx"),
 	route("settings/users", "routes/settings.users.tsx"),
@@ -89,6 +93,13 @@ export default [
 
 	// API Routes
 	route("api/minutes", "routes/api.minutes.tsx"),
+	route("api/avatar/upload", "routes/api.avatar.upload.tsx"),
+	route("api/avatar/set", "routes/api.avatar.set.tsx"),
+	route("api/avatars/delete", "routes/api.avatars.delete.tsx"),
+	route("api/receipts/upload", "routes/api.receipts.upload.tsx"),
+	route("api/receipts/thumbnail", "routes/api.receipts.thumbnail.tsx"),
+	route("api/receipts/rename", "routes/api.receipts.rename.tsx"),
+	route("api/receipts/delete", "routes/api.receipts.delete.tsx"),
 	route("api/analytics/export", "routes/api.analytics.export.tsx"),
 	route("api/analytics/analyze", "routes/api.analytics.analyze.tsx"),
 	route("api/inventory/export", "routes/api.inventory.export.tsx"),
