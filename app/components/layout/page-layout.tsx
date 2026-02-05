@@ -152,7 +152,7 @@ export function SplitLayout({
 				className,
 			)}
 		>
-			<div className="flex flex-col p-2 lg:p-12 relative">
+			<div className="flex flex-col px-2 lg:px-12 pt-2 lg:pt-4 pb-2 lg:pb-12 relative">
 				{/* Header row with optional action button on right */}
 				{/* Header row - hidden on mobile since nav shows page name */}
 				{header && (
