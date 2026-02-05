@@ -3,21 +3,16 @@
 		"title": "Comité de Inquilinos",
 		"setup_required": "Configuración Requerida",
 		"setup_message": "Parece que la aplicación aún no está configurada. Por favor, verifique sus variables de entorno.",
-		"error_details": "Detalles del error",
-		"open_setup": "Abrir Guía de Configuración",
 		"copy_env": "O copie .env.template a .env y configure sus ajustes."
 	},
 	"nav": {
 		"menu": "Menú",
-		"navigation": "Navegación",
-		"settings": "Ajustes",
 		"profile": "Perfil",
 		"edit_profile": "Editar perfil",
 		"messages": "Mensajes",
 		"log_out": "Cerrar sesión",
 		"users": "Usuarios",
 		"roles": "Roles",
-		"reimbursements": "Reembolsos",
 		"get_involved": "Involúcrate",
 		"events": "Eventos",
 		"treasury": "Tesorería",
@@ -29,7 +24,32 @@
 		"polls": "Encuestas",
 		"committee": "Comité",
 		"login": "Iniciar sesión",
-		"submissions": "Envíos"
+		"submissions": "Envíos",
+		"sidebar_collapse": "Contraer barra lateral",
+		"sidebar_expand": "Expandir barra lateral"
+	},
+	"receipts": {
+		"select_receipts": "Seleccionar recibos",
+		"selected": "Recibos seleccionados",
+		"add_more": "Agregar más recibos",
+		"open_drive": "Abrir carpeta de recibos",
+		"open_folder": "Abrir carpeta de recibos",
+		"search_placeholder": "Buscar recibos...",
+		"refresh": "Actualizar recibos",
+		"upload_new": "Subir nuevo recibo",
+		"upload_unavailable": "La carga no está disponible",
+		"upload_failed": "La carga falló. Inténtalo de nuevo.",
+		"file_too_large": "El archivo es demasiado grande (máx {{size}}MB).",
+		"invalid_type": "Tipo de archivo no válido. Permitidos: {{types}}",
+		"uploading": "Subiendo...",
+		"upload_notice": "Los archivos grandes pueden tardar un poco.",
+		"no_receipts": "No hay recibos para el año {{year}}",
+		"done": "Hecho",
+		"open": "Abrir",
+		"delete": "Eliminar",
+		"select_existing_or_upload": "Selecciona recibos existentes o sube uno nuevo.",
+		"allowed": "Permitidos",
+		"selected_count": "seleccionados"
 	},
 	"lang": {
 		"name": "Español",
@@ -41,6 +61,31 @@
 		"search": "Search",
 		"clear": "Clear",
 		"select_placeholder": "Select..."
+	},
+	"mail": {
+		"inbox": "Bandeja de entrada",
+		"sent": "Enviados",
+		"compose": "Redactar",
+		"drafts": "Borradores",
+		"draft_saved_at": "Borrador guardado a las {{time}}",
+		"send_tooltip": "Enviar",
+		"no_drafts": "Sin borradores",
+		"no_subject": "(Sin asunto)",
+		"refresh": "Actualizar",
+		"refreshed": "{{count}} nuevos mensajes obtenidos",
+		"no_messages": "Sin mensajes",
+		"from": "De",
+		"to": "Para",
+		"cc": "Copia",
+		"date": "Fecha",
+		"back": "Atrás",
+		"delete": "Eliminar",
+		"delete_confirm": "¿Está seguro de que desea eliminar este mensaje?",
+		"delete_draft_confirm": "¿Está seguro de que desea eliminar este borrador?",
+		"delete_success": "Eliminado correctamente",
+		"delete_error": "Error al eliminar",
+		"select": "Seleccionar",
+		"delete_selected": "Eliminar seleccionados"
 	},
 	"home": {
 		"header": "Involúcrate",
@@ -217,6 +262,9 @@
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
 	},
 	"settings": {
+		"analytics": {
+			"title": "Ajustes de análisis"
+		},
 		"common": {
 			"save": "Guardar",
 			"saving": "Guardando...",

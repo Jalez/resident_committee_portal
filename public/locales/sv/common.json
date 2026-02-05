@@ -3,21 +3,16 @@
 		"title": "Hyresgästkommitté",
 		"setup_required": "Konfiguration krävs",
 		"setup_message": "Det verkar som att appen inte är konfigurerad än. Kontrollera dina miljövariabler.",
-		"error_details": "Felinformation",
-		"open_setup": "Öppna installationsguide",
 		"copy_env": "Eller kopiera .env.template till .env och konfigurera dina inställningar."
 	},
 	"nav": {
 		"menu": "Meny",
-		"navigation": "Navigering",
-		"settings": "Inställningar",
 		"profile": "Profil",
 		"edit_profile": "Redigera profil",
 		"messages": "Meddelanden",
 		"log_out": "Logga ut",
 		"users": "Användare",
 		"roles": "Roller",
-		"reimbursements": "Utlägg",
 		"get_involved": "Engagera dig",
 		"events": "Evenemang",
 		"treasury": "Kassa",
@@ -30,27 +25,30 @@
 		"committee": "Kommitté",
 		"login": "Logga in",
 		"submissions": "Inskickat",
-		"committee_mail": "E-post"
+		"committee_mail": "E-post",
+		"sidebar_collapse": "Fäll ihop sidofältet",
+		"sidebar_expand": "Expandera sidofältet"
 	},
 	"receipts": {
 		"select_receipts": "Välj kvitton",
 		"selected": "Valda kvitton",
 		"add_more": "Lägg till fler kvitton",
-		"open_drive": "Öppna kvitton i Drive",
-		"open_folder": "Öppna mapp i Drive",
+		"open_drive": "Öppna kvittomapp",
+		"open_folder": "Öppna kvittomapp",
 		"search_placeholder": "Sök kvitton...",
 		"refresh": "Uppdatera kvitton",
 		"upload_new": "Ladda upp nytt kvitto",
 		"upload_unavailable": "Uppladdning ej tillgänglig",
-		"upload_failed": "Uppladdning misslyckades. Försök igen eller ladda upp direkt till Google Drive.",
-		"file_too_large": "Filen är för stor (max {{size}}MB). Ladda upp kvittot direkt till Google Drive och välj det från listan.",
+		"upload_failed": "Uppladdning misslyckades. Försök igen.",
+		"file_too_large": "Filen är för stor (max {{size}}MB).",
 		"invalid_type": "Ogiltig filtyp. Tillåtna: {{types}}",
 		"uploading": "Laddar upp...",
+		"upload_notice": "Stora filer kan ta en stund att ladda upp.",
 		"no_receipts": "Inga kvitton för år {{year}}",
 		"done": "Klar",
 		"open": "Öppna",
 		"delete": "Ta bort",
-		"select_existing_or_upload": "Välj befintliga kvitton från Google Drive eller ladda upp ett nytt.",
+		"select_existing_or_upload": "Välj befintliga kvitton eller ladda upp ett nytt.",
 		"allowed": "Tillåtna",
 		"selected_count": "valda"
 	},
@@ -516,6 +514,9 @@
 			"rejection_placeholder": "avvisad, avbruten (kommateckenseparerad)",
 			"save_keywords": "Spara nyckelord"
 		},
+		"analytics": {
+			"title": "Analysinställningar"
+		},
 		"news": {
 			"title": "Nyhetsinställningar",
 			"ai_disabled_title": "AI-funktioner inaktiverade",
@@ -629,7 +630,14 @@
 		"to": "Till",
 		"cc": "Kopia",
 		"date": "Datum",
-		"back": "Tillbaka"
+		"back": "Tillbaka",
+		"delete": "Ta bort",
+		"delete_confirm": "Är du säker på att du vill ta bort detta meddelande?",
+		"delete_draft_confirm": "Är du säker på att du vill ta bort detta utkast?",
+		"delete_success": "Borttaget",
+		"delete_error": "Borttagning misslyckades",
+		"select": "Välj",
+		"delete_selected": "Ta bort valda"
 	},
 	"contact": {
 		"title": "Kontakt",

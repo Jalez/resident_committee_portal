@@ -3,21 +3,16 @@
 		"title": "Mieterausschuss",
 		"setup_required": "Einrichtung erforderlich",
 		"setup_message": "Die App scheint noch nicht konfiguriert zu sein. Bitte überprüfen Sie Ihre Umgebungsvariablen.",
-		"error_details": "Fehlerdetails",
-		"open_setup": "Einrichtungsanleitung öffnen",
 		"copy_env": "Oder kopieren Sie .env.template nach .env und konfigurieren Sie Ihre Einstellungen."
 	},
 	"nav": {
 		"menu": "Menü",
-		"navigation": "Navigation",
-		"settings": "Einstellungen",
 		"profile": "Profil",
 		"edit_profile": "Profil bearbeiten",
 		"messages": "Nachrichten",
 		"log_out": "Abmelden",
 		"users": "Benutzer",
 		"roles": "Rollen",
-		"reimbursements": "Erstattungen",
 		"get_involved": "Mitmachen",
 		"events": "Veranstaltungen",
 		"treasury": "Kasse",
@@ -29,7 +24,32 @@
 		"polls": "Umfragen",
 		"committee": "Ausschuss",
 		"login": "Anmelden",
-		"submissions": "Einreichungen"
+		"submissions": "Einreichungen",
+		"sidebar_collapse": "Seitenleiste einklappen",
+		"sidebar_expand": "Seitenleiste erweitern"
+	},
+	"receipts": {
+		"select_receipts": "Quittungen auswählen",
+		"selected": "Ausgewählte Quittungen",
+		"add_more": "Weitere Quittungen hinzufügen",
+		"open_drive": "Quittungsordner öffnen",
+		"open_folder": "Quittungsordner öffnen",
+		"search_placeholder": "Quittungen suchen...",
+		"refresh": "Quittungen aktualisieren",
+		"upload_new": "Neue Quittung hochladen",
+		"upload_unavailable": "Upload ist nicht verfügbar",
+		"upload_failed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+		"file_too_large": "Datei ist zu groß (max {{size}}MB).",
+		"invalid_type": "Ungültiger Dateityp. Erlaubt: {{types}}",
+		"uploading": "Wird hochgeladen...",
+		"upload_notice": "Große Dateien können etwas länger dauern.",
+		"no_receipts": "Keine Quittungen für das Jahr {{year}}",
+		"done": "Fertig",
+		"open": "Öffnen",
+		"delete": "Entfernen",
+		"select_existing_or_upload": "Vorhandene Quittungen auswählen oder eine neue hochladen.",
+		"allowed": "Erlaubt",
+		"selected_count": "ausgewählt"
 	},
 	"lang": {
 		"name": "Deutsch",
@@ -41,6 +61,31 @@
 		"search": "Search",
 		"clear": "Clear",
 		"select_placeholder": "Select..."
+	},
+	"mail": {
+		"inbox": "Posteingang",
+		"sent": "Gesendet",
+		"compose": "Verfassen",
+		"drafts": "Entwürfe",
+		"draft_saved_at": "Entwurf gespeichert um {{time}}",
+		"send_tooltip": "Senden",
+		"no_drafts": "Keine Entwürfe",
+		"no_subject": "(Kein Betreff)",
+		"refresh": "Aktualisieren",
+		"refreshed": "{{count}} neue Nachrichten abgerufen",
+		"no_messages": "Keine Nachrichten",
+		"from": "Von",
+		"to": "An",
+		"cc": "Kopie",
+		"date": "Datum",
+		"back": "Zurück",
+		"delete": "Löschen",
+		"delete_confirm": "Möchten Sie diese Nachricht wirklich löschen?",
+		"delete_draft_confirm": "Möchten Sie diesen Entwurf wirklich löschen?",
+		"delete_success": "Erfolgreich gelöscht",
+		"delete_error": "Löschen fehlgeschlagen",
+		"select": "Auswählen",
+		"delete_selected": "Ausgewählte löschen"
 	},
 	"home": {
 		"header": "Mitmachen",
@@ -93,6 +138,9 @@
 			"secondary_language": "Zweitsprache",
 			"saved": "Einstellungen gespeichert",
 			"error": "Einstellungen konnten nicht gespeichert werden"
+		},
+		"analytics": {
+			"title": "Analytik-Einstellungen"
 		},
 		"common": {
 			"save": "Speichern",

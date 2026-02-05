@@ -3,21 +3,16 @@
 		"date": "Päivämäärä",
 		"time": "Aika",
 		"actions": {
-			"save": "Tallenna",
-			"cancel": "Peruuta",
 			"delete": "Poista",
 			"edit": "Muokkaa",
 			"add": "Lisää",
 			"create": "Luo",
-			"update": "Päivitä",
-			"close": "Sulje",
 			"remove": "Poista",
 			"search": "Hae",
 			"filter": "Suodata",
 			"clear": "Tyhjennä",
 			"select": "Valitse",
 			"view": "Näytä",
-			"send": "Lähetä",
 			"submit": "Lähetä",
 			"open": "Avaa",
 			"export": "Vie",
@@ -27,7 +22,8 @@
 			"sort": "Järjestä",
 			"back": "Takaisin",
 			"all": "Kaikki",
-			"details": "Tiedot"
+			"details": "Tiedot",
+			"loading": "Ladataan..."
 		},
 		"fields": {
 			"name": "Nimi",
@@ -103,41 +99,46 @@
 		"log_out": "Kirjaudu ulos",
 		"users": "Käyttäjät",
 		"roles": "Roolit",
+		"avatars": "Avatarit",
 		"reimbursements": "Korvaukset",
 		"get_involved": "Osallistu",
 		"events": "Tapahtumat",
 		"treasury": "Rahasto",
+		"receipts": "Kuitit",
 		"minutes": "Pöytäkirjat",
 		"news": "Uutiset",
 		"faq": "UKK",
 		"inventory": "Tavaraluettelo",
-		"social": "Some",
+		"social": "Sosiaalinen media",
 		"analytics": "Analytiikka",
 		"polls": "Kyselyt",
 		"committee": "Toimikunta",
 		"login": "Kirjaudu",
 		"submissions": "Yhteydenotot",
-		"committee_mail": "Sähköposti"
+		"committee_mail": "Sähköposti",
+		"sidebar_collapse": "Kutista valikko",
+		"sidebar_expand": "Laajenna valikko"
 	},
 	"receipts": {
 		"select_receipts": "Valitse kuitit",
 		"selected": "Valitut kuitit",
 		"add_more": "Lisää kuitteja",
-		"open_drive": "Avaa kuitit Drivessä",
-		"open_folder": "Avaa kansio Drivessä",
+		"open_drive": "Avaa kuittikansio",
+		"open_folder": "Avaa kuittikansio",
 		"search_placeholder": "Hae kuitteja...",
 		"refresh": "Päivitä kuittilista",
 		"upload_new": "Lataa uusi kuitti",
 		"upload_unavailable": "Lataus ei ole käytettävissä",
-		"upload_failed": "Lataus epäonnistui. Yritä uudelleen tai lataa suoraan Google Driveen.",
-		"file_too_large": "Tiedosto on liian suuri (max {{size}}MB). Lataa kuitti suoraan Google Driveen ja valitse se listalta.",
+		"upload_failed": "Lataus epäonnistui. Yritä uudelleen.",
+		"file_too_large": "Tiedosto on liian suuri (max {{size}}MB).",
 		"invalid_type": "Virheellinen tiedostotyyppi. Sallitut: {{types}}",
 		"uploading": "Ladataan...",
+		"upload_notice": "Suuret tiedostot voivat latautua hetken.",
 		"no_receipts": "Ei kuitteja vuodelta {{year}}",
 		"done": "Valmis",
 		"open": "Avaa",
 		"delete": "Poista",
-		"select_existing_or_upload": "Valitse olemassaolevat kuitit Google Drivestä tai lataa uusi kuitti.",
+		"select_existing_or_upload": "Valitse olemassa olevat kuitit tai lataa uusi kuitti.",
 		"allowed": "Sallitut",
 		"selected_count": "valittu"
 	},
@@ -191,9 +192,27 @@
 		"no_transactions": "Ei tapahtumia",
 		"no_transactions_desc": "Vuodelle {{year}} ei ole vielä kirjattu tapahtumia.",
 		"add_transaction": "Lisää tapahtuma",
+		"receipts": {
+			"title": "Kuitit",
+			"add": "Lisää kuitti",
+			"rename": "Nimeä uudelleen",
+			"rename_placeholder": "Kuvaus (valinnainen)",
+			"no_receipts": "Ei kuitteja tälle vuodelle",
+			"upload_success": "Kuitti ladattu",
+			"rename_success": "Nimi päivitetty",
+			"rename_error": "Nimen muutos epäonnistui",
+			"upload_error": "Lataus epäonnistui",
+			"uploading": "Ladataan...",
+			"open_pdf": "Avaa PDF",
+			"delete": "Poista kuitti",
+			"delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
+			"delete_success": "Kuitti poistettu",
+			"delete_error": "Poisto epäonnistui"
+		},
 		"actions": {
 			"breakdown": "Erittely",
 			"transactions": "Transaktiovirta",
+			"receipts": "Kuitit",
 			"reimbursements": "Kulukorvaushakemukset",
 			"reservations": "Varaukset",
 			"add": "Lisää"
@@ -666,7 +685,13 @@
 		"description_label": "Kuvaus",
 		"description_placeholder": "Kerro itsestäsi...",
 		"picture_label": "Profiilikuva",
-		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä",
+		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä. Voit ladata oman kuvasi alla.",
+		"upload_picture": "Lataa uusi kuva",
+		"use_google_picture": "Käytä Google-kuvaa",
+		"use_google_picture_success": "Profiilikuva tyhjennetty. Se päivittyy Google-tilistä seuraavalla kirjautumisella.",
+		"picture_invalid_type": "Virheellinen tiedostotyyppi. Käytä JPG-, PNG- tai WebP-muotoa.",
+		"picture_updated": "Profiilikuva päivitetty.",
+		"picture_upload_error": "Profiilikuvan päivitys epäonnistui.",
 		"local_ai": {
 			"title": "Paikalliset tekoälymallit",
 			"description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
@@ -684,6 +709,15 @@
 			"cors_title": "Selainkäyttö (CORS)",
 			"cors_help": "Selainyhteyksiä varten käynnistä Ollama: OLLAMA_ORIGINS=* ollama serve"
 		}
+	},
+	"avatars": {
+		"title": "Avatarit",
+		"description": "Tallennetut profiilikuvat. Poista tarpeen mukaan.",
+		"empty": "Avatar-kuvia ei ole vielä ladattu.",
+		"delete": "Poista",
+		"delete_confirm": "Haluatko varmasti poistaa tämän avatar-kuvan?",
+		"delete_success": "Avatar poistettu",
+		"delete_error": "Poisto epäonnistui"
 	},
 	"local_ai": {
 		"model_selector": {
@@ -741,6 +775,9 @@
 			"default_rejection": "Oletusarvoiset hylkäyssanat",
 			"additional_rejection": "Lisää hylkäyssanoja",
 			"rejection_placeholder": "hylätty, peruttu (pilkulla erotettuna)"
+		},
+		"analytics": {
+			"title": "Analytiikka-asetukset"
 		},
 		"news": {
 			"title": "Uutisasetukset",
@@ -853,7 +890,14 @@
 		"to": "Vastaanottaja",
 		"cc": "Kopio",
 		"date": "Päivä",
-		"back": "Takaisin"
+		"back": "Takaisin",
+		"delete": "Poista",
+		"delete_confirm": "Haluatko varmasti poistaa tämän viestin?",
+		"delete_draft_confirm": "Haluatko varmasti poistaa tämän luonnoksen?",
+		"delete_success": "Poistettu onnistuneesti",
+		"delete_error": "Poisto epäonnistui",
+		"select": "Valitse",
+		"delete_selected": "Poista valitut"
 	},
 	"contact": {
 		"title": "Ota yhteyttä",
@@ -1301,6 +1345,10 @@
 				"own": "Muokkaa omaa profiilia"
 			}
 		},
+		"avatars": {
+			"read": "Näytä avatar-kuvalista",
+			"delete": "Poista avatar-kuvia"
+		},
 		"roles": {
 			"read": "Näytä roolit ja oikeudet",
 			"write": "Luo ja muokkaa rooleja",
@@ -1336,7 +1384,8 @@
 			"Polls": "Kyselyt",
 			"Profile": "Profiili",
 			"Roles": "Roolit",
-			"Settings": "Asetukset"
+			"Settings": "Asetukset",
+			"Storage": "Tallennus"
 		}
 	}
 }

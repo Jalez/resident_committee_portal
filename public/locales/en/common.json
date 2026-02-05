@@ -27,7 +27,8 @@
 			"sort": "Sort",
 			"back": "Back",
 			"all": "All",
-			"details": "Details"
+			"details": "Details",
+			"loading": "Loading..."
 		},
 		"fields": {
 			"name": "Name",
@@ -103,10 +104,12 @@
 		"log_out": "Log out",
 		"users": "Users",
 		"roles": "Roles",
+		"avatars": "Avatars",
 		"reimbursements": "Reimbursements",
 		"get_involved": "Get Involved",
 		"events": "Events",
 		"treasury": "Treasury",
+		"receipts": "Receipts",
 		"minutes": "Minutes",
 		"news": "News",
 		"faq": "FAQ",
@@ -117,27 +120,30 @@
 		"committee": "Committee",
 		"login": "Login",
 		"submissions": "Submissions",
-		"committee_mail": "Email"
+		"committee_mail": "Email",
+		"sidebar_collapse": "Collapse sidebar",
+		"sidebar_expand": "Expand sidebar"
 	},
 	"receipts": {
 		"select_receipts": "Select Receipts",
 		"selected": "Selected Receipts",
 		"add_more": "Add More Receipts",
-		"open_drive": "Open Receipts in Drive",
-		"open_folder": "Open folder in Drive",
+		"open_drive": "Open receipts folder",
+		"open_folder": "Open receipts folder",
 		"search_placeholder": "Search receipts...",
 		"refresh": "Refresh receipts",
 		"upload_new": "Upload New Receipt",
 		"upload_unavailable": "Upload is not available",
-		"upload_failed": "Upload failed. Try again or upload directly to Google Drive.",
-		"file_too_large": "File is too large (max {{size}}MB). Upload the receipt directly to Google Drive and select it from the list.",
+		"upload_failed": "Upload failed. Try again.",
+		"file_too_large": "File is too large (max {{size}}MB).",
 		"invalid_type": "Invalid file type. Allowed: {{types}}",
 		"uploading": "Uploading...",
+		"upload_notice": "Large files can take a while to upload.",
 		"no_receipts": "No receipts for year {{year}}",
 		"done": "Done",
 		"open": "Open",
 		"delete": "Remove",
-		"select_existing_or_upload": "Select existing receipts from Google Drive or upload a new one.",
+		"select_existing_or_upload": "Select existing receipts or upload a new one.",
 		"allowed": "Allowed",
 		"selected_count": "selected"
 	},
@@ -186,9 +192,27 @@
 		"no_transactions": "No transactions",
 		"no_transactions_desc": "No transactions recorded for {{year}} yet.",
 		"add_transaction": "Add Transaction",
+		"receipts": {
+			"title": "Receipts",
+			"add": "Add receipt",
+			"rename": "Rename",
+			"rename_placeholder": "Description (optional)",
+			"no_receipts": "No receipts for this year",
+			"upload_success": "Receipt uploaded",
+			"rename_success": "Name updated",
+			"rename_error": "Rename failed",
+			"upload_error": "Upload failed",
+			"uploading": "Uploading...",
+			"open_pdf": "Open PDF",
+			"delete": "Delete receipt",
+			"delete_confirm": "Are you sure you want to delete this receipt?",
+			"delete_success": "Receipt deleted",
+			"delete_error": "Delete failed"
+		},
 		"actions": {
 			"breakdown": "Breakdown",
 			"transactions": "Transactions",
+			"receipts": "Receipts",
 			"reimbursements": "Reimbursement Requests",
 			"reservations": "Reservations",
 			"add": "Add"
@@ -666,7 +690,13 @@
 		"description_label": "Description",
 		"description_placeholder": "Tell us about yourself...",
 		"picture_label": "Profile Picture",
-		"picture_help": "Profile picture is automatically updated from your Google account when you log in",
+		"picture_help": "Profile picture is automatically updated from your Google account when you log in. You can upload your own picture below.",
+		"upload_picture": "Upload new picture",
+		"use_google_picture": "Use Google picture again",
+		"use_google_picture_success": "Profile picture cleared. It will update from Google on next login.",
+		"picture_invalid_type": "Invalid file type. Use JPG, PNG or WebP.",
+		"picture_updated": "Profile picture updated.",
+		"picture_upload_error": "Failed to update profile picture.",
 		"local_ai": {
 			"title": "Local AI Models",
 			"description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
@@ -684,6 +714,15 @@
 			"cors_title": "Browser access (CORS)",
 			"cors_help": "For browser access, start Ollama with: OLLAMA_ORIGINS=* ollama serve"
 		}
+	},
+	"avatars": {
+		"title": "Avatars",
+		"description": "Profile pictures stored in blob storage. Delete to clean up.",
+		"empty": "No avatars uploaded yet.",
+		"delete": "Delete",
+		"delete_confirm": "Are you sure you want to delete this avatar?",
+		"delete_success": "Avatar deleted",
+		"delete_error": "Delete failed"
 	},
 	"local_ai": {
 		"model_selector": {
@@ -741,6 +780,9 @@
 			"default_rejection": "Default Rejection Keywords",
 			"additional_rejection": "Additional Rejection Keywords",
 			"rejection_placeholder": "refused, cancelled (comma-separated)"
+		},
+		"analytics": {
+			"title": "Analytics Settings"
 		},
 		"news": {
 			"title": "News Settings",
@@ -853,7 +895,14 @@
 		"to": "To",
 		"cc": "CC",
 		"date": "Date",
-		"back": "Back"
+		"back": "Back",
+		"delete": "Delete",
+		"delete_confirm": "Are you sure you want to delete this message?",
+		"delete_draft_confirm": "Are you sure you want to delete this draft?",
+		"delete_success": "Deleted successfully",
+		"delete_error": "Delete failed",
+		"select": "Select",
+		"delete_selected": "Delete selected"
 	},
 	"contact": {
 		"title": "Contact",
@@ -1301,6 +1350,10 @@
 				"own": "Edit own profile"
 			}
 		},
+		"avatars": {
+			"read": "View avatar blob list",
+			"delete": "Delete avatar blobs"
+		},
 		"roles": {
 			"read": "View roles and permissions",
 			"write": "Create and edit roles",
@@ -1336,7 +1389,8 @@
 			"Polls": "Polls",
 			"Profile": "Profile",
 			"Roles": "Roles",
-			"Settings": "Settings"
+			"Settings": "Settings",
+			"Storage": "Storage"
 		}
 	}
 }
