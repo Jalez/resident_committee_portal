@@ -44,6 +44,7 @@
 			"title": "Title",
 			"year": "Year",
 			"category": "Category",
+			"created_by": "Created By",
 			"location": "Location",
 			"message": "Message",
 			"content": "Content",
@@ -187,8 +188,9 @@
 		"view_breakdown": "See Breakdown",
 		"balance": "Balance",
 		"income": "Income",
-		"expenses": "Expenses",
-		"reserved": "Reserved",
+		"unbudgeted_transactions": "Unbudgeted Transactions",
+		"budgeted_transactions": "Budgeted Transactions",
+		"budget_costs": "Budget Costs",
 		"available": "Available",
 		"transactions_count": "{{count}} transactions",
 		"no_transactions": "No transactions",
@@ -216,7 +218,7 @@
 			"transactions": "Transactions",
 			"receipts": "Receipts",
 			"reimbursements": "Reimbursement Requests",
-			"reservations": "Reservations",
+			"budgets": "Budgets",
 			"add": "Add"
 		},
 		"new": {
@@ -239,10 +241,10 @@
 			"or": "or",
 			"submit": "Add",
 			"submit_and_request": "Add & Create Reimbursement Request",
-			"link_reservation": "Link to Fund Reservation",
-			"link_reservation_help": "Optional: Use funds from an existing reservation.",
-			"no_reservation": "Don't use reservation",
-			"reservation_note": "The expense amount will be deducted from the selected reservation."
+			"link_budget": "Link to Budget",
+			"link_budget_help": "Optional: Use funds from an existing budget.",
+			"no_budget": "Don't use budget",
+			"budget_note": "The expense amount will be deducted from the selected budget."
 		},
 		"success": {
 			"transaction_created": "Transaction created",
@@ -432,14 +434,14 @@
 				}
 			}
 		},
-		"reservations": {
-			"title": "Fund Reservations",
+		"budgets": {
+			"title": "Budgets",
 			"back": "Back",
-			"new": "New Reservation",
-			"name": "Reservation Name",
+			"new": "New Budget",
+			"name": "Budget Name",
 			"name_placeholder": "E.g. Guitar purchase",
 			"description": "Description",
-			"description_placeholder": "Additional details about the reservation",
+			"description_placeholder": "Additional details about the budget",
 			"amount": "Reserved Amount",
 			"used": "Used",
 			"available": "Available",
@@ -456,49 +458,49 @@
 				"view": "View",
 				"edit": "Edit",
 				"delete": "Delete",
-				"close": "Close Reservation",
-				"reopen": "Reopen Reservation"
+				"close": "Close Budget",
+				"reopen": "Reopen Budget"
 			},
-			"close_confirm": "Closing this reservation will return {{amount}} to available funds. Continue?",
-			"reopen_confirm": "Reopen this reservation?",
-			"delete_confirm": "Delete this reservation? This action cannot be undone.",
+			"close_confirm": "Closing this budget will return {{amount}} to available funds. Continue?",
+			"reopen_confirm": "Reopen this budget?",
+			"delete_confirm": "Delete this budget? This action cannot be undone.",
 			"cannot_reduce": "Cannot reduce amount below used amount ({{used}})",
 			"insufficient_funds": "Insufficient available funds. Available: {{available}}",
 			"linked_transactions": "Linked Transactions",
 			"no_transactions": "No transactions linked",
-			"deduct_from": "Deduct from Reservation",
-			"select_reservation": "Select reservation...",
-			"no_reservation": "Don't link to reservation",
+			"deduct_from": "Deduct from Budget",
+			"select_budget": "Select budget...",
+			"no_budget": "Don't link to budget",
 			"deduction_amount": "Deduction Amount",
-			"available_in_reservation": "Available: {{available}} €",
-			"exceeds_available": "Amount exceeds available funds in reservation",
-			"no_reservations": "No reservations",
-			"no_reservations_desc": "No fund reservations for {{year}} yet.",
+			"available_in_budget": "Available: {{available}} €",
+			"exceeds_available": "Amount exceeds available funds in budget",
+			"no_budgets": "No budgets",
+			"no_budgets_desc": "No budgets for {{year}} yet.",
 			"available_funds": "Available Funds",
 			"reserved_funds": "Reserved Funds",
 			"success": {
-				"created": "Reservation created",
-				"updated": "Reservation updated",
-				"deleted": "Reservation deleted",
-				"closed": "Reservation closed",
-				"reopened": "Reservation reopened"
+				"created": "Budget created",
+				"updated": "Budget updated",
+				"deleted": "Budget deleted",
+				"closed": "Budget closed",
+				"reopened": "Budget reopened"
 			},
 			"error": {
-				"create_failed": "Failed to create reservation",
-				"update_failed": "Failed to update reservation",
-				"delete_failed": "Failed to delete reservation",
-				"has_transactions": "Cannot delete reservation with linked transactions"
+				"create_failed": "Failed to create budget",
+				"update_failed": "Failed to update budget",
+				"delete_failed": "Failed to delete budget",
+				"has_transactions": "Cannot delete budget with linked transactions"
 			},
 			"form": {
 				"cancel": "Cancel",
 				"save": "Save",
-				"create": "Create Reservation"
+				"create": "Create Budget"
 			},
 			"view": {
-				"title": "View Reservation"
+				"title": "View Budget"
 			},
 			"edit": {
-				"title": "Edit Reservation"
+				"title": "Edit Budget"
 			}
 		}
 	},
@@ -1286,13 +1288,13 @@
 			"update-self": "Edit own transactions",
 			"delete-self": "Delete own transactions"
 		},
-		"reservations": {
-			"read": "View fund reservations",
-			"write": "Create fund reservations",
-			"update": "Edit fund reservations",
-			"delete": "Delete fund reservations",
-			"update-self": "Edit own fund reservations",
-			"delete-self": "Delete own fund reservations"
+		"budgets": {
+			"read": "View budgets",
+			"write": "Create budgets",
+			"update": "Edit budgets",
+			"delete": "Delete budgets",
+			"update-self": "Edit own budgets",
+			"delete-self": "Delete own budgets"
 		},
 		"reimbursements": {
 			"read": "View reimbursement requests",

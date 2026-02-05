@@ -39,6 +39,7 @@
 			"title": "Otsikko",
 			"year": "Vuosi",
 			"category": "Kategoria",
+			"created_by": "Luoja",
 			"location": "Sijainti",
 			"message": "Viesti",
 			"content": "Sisältö",
@@ -187,8 +188,9 @@
 		"view_breakdown": "Katso erittely",
 		"balance": "Saldo",
 		"income": "Tulot",
-		"expenses": "Menot",
-		"reserved": "Varattu",
+		"unbudgeted_transactions": "Budjetoimattomat transaktiot",
+		"budgeted_transactions": "Budjetoidut transaktiot",
+		"budget_costs": "Budjetoidut menot",
 		"available": "Käytettävissä",
 		"transactions_count": "{{count}} tapahtumaa",
 		"no_transactions": "Ei tapahtumia",
@@ -216,7 +218,7 @@
 			"transactions": "Transaktiovirta",
 			"receipts": "Kuitit",
 			"reimbursements": "Kulukorvaushakemukset",
-			"reservations": "Varaukset",
+			"budgets": "Budjetit",
 			"add": "Lisää"
 		},
 		"new": {
@@ -237,10 +239,10 @@
 			"or": "tai",
 			"submit": "Lisää",
 			"submit_and_request": "Lisää ja hae korvausta",
-			"link_reservation": "Linkitä määrärahavaraukseen",
-			"link_reservation_help": "Valinnainen: Käytä varoja olemassa olevasta varauksesta.",
-			"no_reservation": "Älä käytä varausta",
-			"reservation_note": "Menon summa vähennetään valitusta varauksesta."
+			"link_budget": "Linkitä budjettiin",
+			"link_budget_help": "Valinnainen: Käytä varoja olemassa olevasta budjetista.",
+			"no_budget": "Älä käytä budjettia",
+			"budget_note": "Menon summa vähennetään valitusta budjetista."
 		},
 		"form": {
 			"type": "Tyyppi",
@@ -425,14 +427,14 @@
 				}
 			}
 		},
-		"reservations": {
-			"title": "Rahastovaraukset",
+		"budgets": {
+			"title": "Budjetit",
 			"back": "Takaisin",
-			"new": "Uusi varaus",
-			"name": "Varauksen nimi",
+			"new": "Uusi budjetti",
+			"name": "Budjetin nimi",
 			"name_placeholder": "Esim. Kitaran hankinta",
 			"description": "Kuvaus",
-			"description_placeholder": "Lisätietoja varauksesta",
+			"description_placeholder": "Lisätietoja budjetista",
 			"amount": "Varattu summa",
 			"used": "Käytetty",
 			"available": "Käytettävissä",
@@ -449,49 +451,49 @@
 				"view": "Näytä",
 				"edit": "Muokkaa",
 				"delete": "Poista",
-				"close": "Sulje varaus",
+				"close": "Sulje budjetti",
 				"reopen": "Avaa uudelleen"
 			},
-			"close_confirm": "Varauksen sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
-			"reopen_confirm": "Avaa tämä varaus uudelleen?",
-			"delete_confirm": "Poista tämä varaus? Tätä ei voi peruuttaa.",
+			"close_confirm": "Budjetin sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
+			"reopen_confirm": "Avaa tämä budjetti uudelleen?",
+			"delete_confirm": "Poista tämä budjetti? Tätä ei voi peruuttaa.",
 			"cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
 			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
 			"linked_transactions": "Linkitetyt transaktiot",
 			"no_transactions": "Ei linkitettyjä transaktioita",
-			"deduct_from": "Vähennä varauksesta",
-			"select_reservation": "Valitse varaus...",
-			"no_reservation": "Älä linkitä varaukseen",
+			"deduct_from": "Vähennä budjetista",
+			"select_budget": "Valitse budjetti...",
+			"no_budget": "Älä linkitä budjettiin",
 			"deduction_amount": "Vähennyssumma",
-			"available_in_reservation": "Käytettävissä: {{available}}",
-			"exceeds_available": "Summa ylittää varauksen käytettävissä olevat varat",
-			"no_reservations": "Ei varauksia",
-			"no_reservations_desc": "Vuodelle {{year}} ei ole vielä varauksia.",
+			"available_in_budget": "Käytettävissä: {{available}}",
+			"exceeds_available": "Summa ylittää budjetin käytettävissä olevat varat",
+			"no_budgets": "Ei budjetteja",
+			"no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
 			"available_funds": "Käytettävissä olevat varat",
 			"reserved_funds": "Varatut varat",
 			"success": {
-				"created": "Varaus luotu",
-				"updated": "Varaus päivitetty",
-				"deleted": "Varaus poistettu",
-				"closed": "Varaus suljettu",
-				"reopened": "Varaus avattu uudelleen"
+				"created": "Budjetti luotu",
+				"updated": "Budjetti päivitetty",
+				"deleted": "Budjetti poistettu",
+				"closed": "Budjetti suljettu",
+				"reopened": "Budjetti avattu uudelleen"
 			},
 			"error": {
-				"create_failed": "Varauksen luonti epäonnistui",
-				"update_failed": "Varauksen päivitys epäonnistui",
-				"delete_failed": "Varauksen poisto epäonnistui",
-				"has_transactions": "Varausta ei voi poistaa, koska siihen on linkitetty transaktioita"
+				"create_failed": "Budjetin luonti epäonnistui",
+				"update_failed": "Budjetin päivitys epäonnistui",
+				"delete_failed": "Budjetin poisto epäonnistui",
+				"has_transactions": "Budjettia ei voi poistaa, koska siihen on linkitetty transaktioita"
 			},
 			"form": {
 				"cancel": "Peruuta",
 				"save": "Tallenna",
-				"create": "Luo varaus"
+				"create": "Luo budjetti"
 			},
 			"view": {
-				"title": "Näytä varaus"
+				"title": "Näytä budjetti"
 			},
 			"edit": {
-				"title": "Muokkaa varausta"
+				"title": "Muokkaa budjettia"
 			}
 		}
 	},
@@ -1281,13 +1283,13 @@
 			"update-self": "Muokkaa omia tapahtumia",
 			"delete-self": "Poista omia tapahtumia"
 		},
-		"reservations": {
-			"read": "Näytä rahastovaraukset",
-			"write": "Luo rahastovarauksia",
-			"update": "Muokkaa rahastovarauksia",
-			"delete": "Poista rahastovarauksia",
-			"update-self": "Muokkaa omia rahastovarauksia",
-			"delete-self": "Poista omia rahastovarauksia"
+		"budgets": {
+			"read": "Näytä budjetit",
+			"write": "Luo budjetteja",
+			"update": "Muokkaa budjetteja",
+			"delete": "Poista budjetteja",
+			"update-self": "Muokkaa omia budjetteja",
+			"delete-self": "Poista omia budjetteja"
 		},
 		"reimbursements": {
 			"read": "Näytä korvausvaatimukset",

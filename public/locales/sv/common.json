@@ -1,6 +1,9 @@
 {
 	"common": {
-		"total": "Totalt"
+		"total": "Totalt",
+		"fields": {
+			"created_by": "Skapad av"
+		}
 	},
 	"app": {
 		"title": "Hyresgästkommitté",
@@ -98,7 +101,10 @@
 		"view_breakdown": "Se detaljer",
 		"balance": "Saldo",
 		"income": "Inkomster",
-		"expenses": "Utgifter",
+		"unbudgeted_transactions": "Obudgeterade transaktioner",
+		"budgeted_transactions": "Budgeterade transaktioner",
+		"budget_costs": "Budgetkostnader",
+		"available": "Tillgängligt",
 		"transactions_count": "{{count}} transaktioner",
 		"no_transactions": "Inga transaktioner",
 		"no_transactions_desc": "Inga transaktioner registrerade för {{year}} än.",
@@ -108,7 +114,7 @@
 			"transactions": "Transaktioner",
 			"receipts": "Kvitton",
 			"reimbursements": "Utlägg",
-			"reservations": "Reservationer",
+			"budgets": "Budgetar",
 			"add": "Lägg till"
 		},
 		"new": {

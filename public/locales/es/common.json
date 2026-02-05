@@ -1,6 +1,9 @@
 {
 	"common": {
-		"total": "Total"
+		"total": "Total",
+		"fields": {
+			"created_by": "Creado por"
+		}
 	},
 	"app": {
 		"title": "Comité de Inquilinos",
@@ -312,12 +315,26 @@
 	},
 	"treasury": {
 		"overview": "Resumen",
+		"title": "Tesorería {{year}}",
+		"year": "Año",
+		"select_year": "Seleccionar año...",
+		"view_breakdown": "Ver desglose",
+		"balance": "Saldo",
+		"income": "Ingresos",
+		"unbudgeted_transactions": "Transacciones no presupuestadas",
+		"budgeted_transactions": "Transacciones presupuestadas",
+		"budget_costs": "Costos del presupuesto",
+		"available": "Disponible",
+		"transactions_count": "{{count}} transacciones",
+		"no_transactions": "No hay transacciones",
+		"no_transactions_desc": "Aún no se han registrado transacciones para {{year}}.",
+		"add_transaction": "Añadir transacción",
 		"actions": {
 			"breakdown": "Desglose",
 			"transactions": "Transacciones",
 			"receipts": "Recibos",
 			"reimbursements": "Solicitudes de reembolso",
-			"reservations": "Reservas",
+			"budgets": "Presupuestos",
 			"add": "Añadir"
 		},
 		"transactions": {

@@ -1,6 +1,9 @@
 {
 	"common": {
-		"total": "Gesamt"
+		"total": "Gesamt",
+		"fields": {
+			"created_by": "Erstellt von"
+		}
 	},
 	"app": {
 		"title": "Mieterausschuss",
@@ -328,12 +331,26 @@
 	},
 	"treasury": {
 		"overview": "Übersicht",
+		"title": "Kasse {{year}}",
+		"year": "Jahr",
+		"select_year": "Jahr auswählen...",
+		"view_breakdown": "Aufschlüsselung anzeigen",
+		"balance": "Saldo",
+		"income": "Einnahmen",
+		"unbudgeted_transactions": "Nicht budgetierte Transaktionen",
+		"budgeted_transactions": "Budgetierte Transaktionen",
+		"budget_costs": "Budgetkosten",
+		"available": "Verfügbar",
+		"transactions_count": "{{count}} Transaktionen",
+		"no_transactions": "Keine Transaktionen",
+		"no_transactions_desc": "Für {{year}} wurden noch keine Transaktionen erfasst.",
+		"add_transaction": "Transaktion hinzufügen",
 		"actions": {
 			"breakdown": "Aufschlüsselung",
 			"transactions": "Transaktionen",
 			"receipts": "Quittungen",
 			"reimbursements": "Erstattungsanträge",
-			"reservations": "Reservierungen",
+			"budgets": "Budgets",
 			"add": "Hinzufügen"
 		},
 		"transactions": {
