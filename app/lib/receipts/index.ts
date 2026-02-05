@@ -1,10 +1,9 @@
 import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
 import { FilesystemReceiptStorage } from "./adapters/filesystem.server";
-import { S3ReceiptStorage } from "./adapters/s3.server";
 import { VercelBlobReceiptStorage } from "./adapters/vercel-blob.server";
 import type { ReceiptStorageAdapter, ReceiptsByYear } from "./types";
 
-export type ReceiptStorageProvider = "vercel-blob" | "filesystem" | "s3";
+export type ReceiptStorageProvider = "vercel-blob" | "filesystem";
 
 interface ReceiptStorageConfig {
 	provider: ReceiptStorageProvider;
@@ -18,8 +17,6 @@ export function createReceiptStorage(
 			return new VercelBlobReceiptStorage();
 		case "filesystem":
 			return new FilesystemReceiptStorage();
-		case "s3":
-			return new S3ReceiptStorage();
 		default:
 			throw new Error(`Unsupported receipt storage provider: ${config.provider}`);
 	}
