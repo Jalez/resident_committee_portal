@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { Link, useFetcher } from "react-router";
+import { ArrowLeft, Trash2 } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
@@ -46,21 +57,62 @@ function formatRecipientsJson(json: string | null): string {
 export default function MailMessage({ loaderData }: Route.ComponentProps) {
 	const { message } = loaderData;
 	const { t } = useTranslation();
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const deleteFetcher = useFetcher();
 	const backTo =
 		message.direction === "sent"
 			? "/mail?direction=sent"
 			: "/mail?direction=inbox";
 
+	const handleConfirmDelete = () => {
+		const formData = new FormData();
+		formData.set("_action", "deleteMessage");
+		formData.set("messageId", message.id);
+		formData.set("direction", message.direction);
+		deleteFetcher.submit(formData, { action: "/mail", method: "post" });
+		setDeleteOpen(false);
+	};
+
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex items-center gap-2">
+			<div className="flex items-center justify-between gap-2">
 				<Button variant="ghost" size="sm" asChild>
 					<Link to={backTo}>
 						<ArrowLeft className="size-4" />
 						{t("mail.back")}
 					</Link>
 				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="text-destructive hover:text-destructive hover:bg-destructive/10"
+					onClick={() => setDeleteOpen(true)}
+					aria-label={t("mail.delete")}
+				>
+					<Trash2 className="size-4" />
+					{t("mail.delete")}
+				</Button>
 			</div>
+
+			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t("mail.delete")}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t("mail.delete_confirm")}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleConfirmDelete}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							{t("common.actions.delete")}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			{/* Header */}
 			<div className="space-y-2 border-b border-gray-200 dark:border-gray-700 pb-4">

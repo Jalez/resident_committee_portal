@@ -1,12 +1,17 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, useActionData, useSearchParams } from "react-router";
+import {
+	Form,
+	useActionData,
+	useFetcher,
+	useSearchParams,
+} from "react-router";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
+import { MailItem } from "~/components/mail/mail-item";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { cn } from "~/lib/utils";
 import type { Route } from "./+types/mail._index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -82,6 +87,18 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 	const [searchParams] = useSearchParams();
 	const actionData = useActionData<typeof action>();
 	const currentDirection = searchParams.get("direction") || "inbox";
+	const deleteFetcher = useFetcher();
+
+	const handleDeleteMessage = useCallback(
+		(messageId: string) => {
+			const formData = new FormData();
+			formData.set("_action", "deleteMessage");
+			formData.set("messageId", messageId);
+			formData.set("direction", currentDirection);
+			deleteFetcher.submit(formData, { action: "/mail", method: "post" });
+		},
+		[currentDirection, deleteFetcher],
+	);
 
 	useEffect(() => {
 		if (actionData && "refreshed" in actionData && actionData.refreshed) {
@@ -91,6 +108,14 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 				toast.success(t("mail.refreshed", { count: data.count }));
 		}
 	}, [actionData, t]);
+
+	useEffect(() => {
+		if (deleteFetcher.data && "deleted" in deleteFetcher.data) {
+			const data = deleteFetcher.data as { deleted?: boolean; error?: string };
+			if (data.deleted) toast.success(t("mail.delete_success"));
+			else if (data.error) toast.error(data.error || t("mail.delete_error"));
+		}
+	}, [deleteFetcher.data, t]);
 
 	return (
 		<div className="flex flex-col">
@@ -121,35 +146,20 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 					</div>
 				) : (
 					messages.map((msg) => (
-						<Link
+						<MailItem
 							key={msg.id}
-							to={`/mail/${msg.id}`}
-							className={cn(
-								"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50",
-							)}
-						>
-							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium">
-								{(direction === "sent"
+							type="message"
+							id={msg.id}
+							primaryText={
+								direction === "sent"
 									? formatRecipients(msg.toJson, "sent")
-									: msg.fromName || msg.fromAddress
-								).slice(0, 1).toUpperCase()}
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center justify-between gap-2">
-									<span className="truncate text-sm font-medium text-gray-900 dark:text-white">
-										{direction === "sent"
-											? formatRecipients(msg.toJson, "sent")
-											: msg.fromName || msg.fromAddress}
-									</span>
-									<span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-										{formatDate(msg.date)}
-									</span>
-								</div>
-								<p className="truncate text-sm text-gray-600 dark:text-gray-300">
-									{msg.subject || "(No subject)"}
-								</p>
-							</div>
-						</Link>
+									: msg.fromName || msg.fromAddress || ""
+							}
+							secondaryText={msg.subject || t("mail.no_subject")}
+							date={formatDate(msg.date)}
+							href={`/mail/${msg.id}`}
+							onDelete={handleDeleteMessage}
+						/>
 					))
 				)}
 			</div>

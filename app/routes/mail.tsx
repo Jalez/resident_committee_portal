@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, Outlet, redirect, useLocation, useNavigate, useSearchParams, useActionData } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { FileText, Inbox, PenSquare, Send } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { MailComposeForm } from "../components/mail-compose-form";
 import { Button } from "~/components/ui/button";
@@ -15,7 +15,6 @@ import {
 	sendCommitteeEmail,
 	type CommitteeMailRecipient,
 } from "~/lib/mail-nodemailer.server";
-import { cn } from "~/lib/utils";
 import type { Route } from "./+types/mail";
 
 type MailLoaderData = {
@@ -201,6 +200,24 @@ export async function action({ request }: Route.ActionArgs) {
 		return redirect(`/mail/${inserted.id}`);
 	}
 
+	if (intent === "deleteDraft") {
+		const draftId = formData.get("draftId") as string;
+		if (!draftId) return { deleted: false, error: "Missing draftId" };
+		const ok = await db.deleteMailDraft(draftId);
+		if (!ok) return { deleted: false, error: "Draft not found" };
+		return redirect("/mail/drafts");
+	}
+
+	if (intent === "deleteMessage") {
+		const messageId = formData.get("messageId") as string;
+		if (!messageId) return { deleted: false, error: "Missing messageId" };
+		const ok = await db.deleteCommitteeMailMessage(messageId);
+		if (!ok) return { deleted: false, error: "Message not found" };
+		const direction = formData.get("direction") as string;
+		const backTo = direction === "sent" ? "/mail?direction=sent" : "/mail";
+		return redirect(backTo);
+	}
+
 	return { sent: false, error: "Unknown action" };
 }
 
@@ -210,8 +227,14 @@ export default function MailLayout(props: Route.ComponentProps) {
 	const pathname = location.pathname;
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
-	const actionData = useActionData<{ sent?: boolean; error?: string }>();
+	const direction = searchParams.get("direction") || "inbox";
 	const composeParam = searchParams.get("compose");
+
+	const isInbox = pathname === "/mail" && direction !== "sent" && !composeParam;
+	const isSent = pathname === "/mail" && direction === "sent";
+	const isDrafts = pathname === "/mail/drafts";
+	const isCompose = pathname === "/mail" && !!composeParam;
+	const actionData = useActionData<{ sent?: boolean; error?: string }>();
 
 	useEffect(() => {
 		if (actionData && "sent" in actionData && !actionData.sent && actionData.error) {
@@ -246,57 +269,40 @@ export default function MailLayout(props: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="mx-auto flex w-full max-w-6xl flex-1 gap-4 px-4 py-6">
-				{/* Left sidebar - Gmail-like */}
-				<aside className="flex w-48 shrink-0 flex-col gap-1 border-r border-gray-200 dark:border-gray-700 pr-4">
-					<Button asChild variant="default" className="justify-start gap-2">
+			<div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6">
+				{/* Toolbar: Inbox, Sent, Drafts, Compose (sub-route style) + New message button */}
+				<div className="flex flex-wrap items-center gap-2 shrink-0">
+					<Button asChild variant={isInbox ? "default" : "secondary"} size="sm" className="gap-1.5">
+						<Link to="/mail">
+							<span className="material-symbols-outlined text-lg">inbox</span>
+							{t("mail.inbox")}
+						</Link>
+					</Button>
+					<Button asChild variant={isSent ? "default" : "secondary"} size="sm" className="gap-1.5">
+						<Link to="/mail?direction=sent">
+							<span className="material-symbols-outlined text-lg">send</span>
+							{t("mail.sent")}
+						</Link>
+					</Button>
+					<Button asChild variant={isDrafts ? "default" : "secondary"} size="sm" className="gap-1.5">
+						<Link to="/mail/drafts">
+							<span className="material-symbols-outlined text-lg">draft</span>
+							{t("mail.drafts")}
+						</Link>
+					</Button>
+					<Button asChild variant={isCompose ? "default" : "secondary"} size="sm" className="gap-1.5">
+						<Link to="/mail?compose=new">
+							<span className="material-symbols-outlined text-lg">edit_note</span>
+							{t("mail.compose")}
+						</Link>
+					</Button>
+					<Button asChild variant="default" size="sm" className="gap-1.5 ml-auto">
 						<Link to="/mail?compose=new">
 							<PenSquare className="size-4" />
 							{t("mail.compose")}
 						</Link>
 					</Button>
-					<nav className="flex flex-col gap-0.5">
-						<Link
-							to="/mail/drafts"
-							className={cn(
-								"flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
-								pathname === "/mail/drafts"
-									? "bg-primary/10 text-primary"
-									: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-							)}
-						>
-							<FileText className="size-4" />
-							{t("mail.drafts")}
-						</Link>
-						<Link
-							to="/mail?direction=inbox"
-							className={cn(
-								"flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
-								pathname === "/mail" &&
-									(new URLSearchParams(location.search).get("direction") !== "sent")
-									? "bg-primary/10 text-primary"
-									: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-							)}
-						>
-							<Inbox className="size-4" />
-							{t("mail.inbox")}
-						</Link>
-						<Link
-							to="/mail?direction=sent"
-							className={cn(
-								"flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
-								pathname === "/mail" &&
-									new URLSearchParams(location.search).get("direction") === "sent"
-									? "bg-primary/10 text-primary"
-									: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-							)}
-						>
-							<Send className="size-4" />
-							{t("mail.sent")}
-						</Link>
-					</nav>
-				</aside>
-				{/* Main content */}
+				</div>
 				<main className="min-w-0 flex-1">
 					<Outlet />
 				</main>

@@ -1,10 +1,12 @@
-import { Link } from "react-router";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useFetcher } from "react-router";
 import { FileText } from "lucide-react";
+import { toast } from "sonner";
+import { MailItem } from "~/components/mail/mail-item";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { cn } from "~/lib/utils";
 import type { Route } from "./+types/mail.drafts";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -51,6 +53,25 @@ function formatDraftDate(updatedAt: Date | string | null): string {
 export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 	const { drafts } = loaderData;
 	const { t } = useTranslation();
+	const deleteFetcher = useFetcher();
+
+	const handleDeleteDraft = useCallback(
+		(draftId: string) => {
+			const formData = new FormData();
+			formData.set("_action", "deleteDraft");
+			formData.set("draftId", draftId);
+			deleteFetcher.submit(formData, { action: "/mail", method: "post" });
+		},
+		[deleteFetcher],
+	);
+
+	useEffect(() => {
+		if (deleteFetcher.data && "deleted" in deleteFetcher.data) {
+			const data = deleteFetcher.data as { deleted?: boolean; error?: string };
+			if (data.deleted) toast.success(t("mail.delete_success"));
+			else if (data.error) toast.error(data.error || t("mail.delete_error"));
+		}
+	}, [deleteFetcher.data, t]);
 
 	return (
 		<div className="flex flex-col">
@@ -71,32 +92,17 @@ export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 						const subject = draft.subject?.trim() || t("mail.no_subject");
 						const preview = firstLine(draft.body);
 						return (
-							<Link
+							<MailItem
 								key={draft.id}
-								to={`/mail/drafts?compose=${draft.id}`}
-								className={cn(
-									"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50",
-								)}
-							>
-								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium">
-									{subject.slice(0, 1).toUpperCase() || "D"}
-								</div>
-								<div className="min-w-0 flex-1">
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate text-sm font-medium text-gray-900 dark:text-white">
-											{subject}
-										</span>
-										<span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-											{formatDraftDate(draft.updatedAt)}
-										</span>
-									</div>
-									{preview && (
-										<p className="truncate text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-											{preview}
-										</p>
-									)}
-								</div>
-							</Link>
+								type="draft"
+								id={draft.id}
+								primaryText={subject}
+								secondaryText={subject}
+								date={formatDraftDate(draft.updatedAt)}
+								preview={preview || undefined}
+								href={`/mail/drafts?compose=${draft.id}`}
+								onDelete={handleDeleteDraft}
+							/>
 						);
 					})}
 				</div>
