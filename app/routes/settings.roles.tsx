@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
@@ -15,11 +15,31 @@ import {
 	AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Input } from "~/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
+import {
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "~/components/ui/table";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { getPermissionsByCategory } from "~/lib/permissions";
+import {
+	getPermissionsByCategory,
+	PERMISSION_CATEGORIES,
+	type PermissionName,
+} from "~/lib/permissions";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/settings.roles";
 
@@ -140,6 +160,13 @@ const ROLE_COLORS = [
 	{ value: "bg-teal-500", label: "Teal", class: "bg-teal-500" },
 ];
 
+type PermissionRow = {
+	id: PermissionName;
+	name: PermissionName;
+	category: string;
+	description: string;
+};
+
 export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 	const { roles, permissionsByCategory, systemLanguages } = loaderData;
 	const { t } = useTranslation();
@@ -148,6 +175,12 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 
 	const [selectedRole, setSelectedRole] = useState<string | null>(null);
 	const [showNewRoleForm, setShowNewRoleForm] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [selectedCategory, setSelectedCategory] = useState<string>("all");
+	const [showOnlyChecked, setShowOnlyChecked] = useState(false);
+	const [checkedPermissions, setCheckedPermissions] = useState<Set<string>>(
+		new Set(),
+	);
 	const actionData = useActionData<{
 		success?: boolean;
 		action?: string;
@@ -162,6 +195,13 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 				setShowNewRoleForm(false);
 			} else if (actionData.action === "updatePermissions") {
 				toast.success("Oikeudet päivitetty / Permissions updated");
+				// Reset checked permissions to match updated role
+				if (selectedRole) {
+					const updatedRole = roles.find((r) => r.id === selectedRole);
+					if (updatedRole) {
+						setCheckedPermissions(new Set(updatedRole.permissions));
+					}
+				}
 			} else if (actionData.action === "delete") {
 				toast.success("Rooli poistettu / Role deleted");
 				setSelectedRole(null);
@@ -171,9 +211,123 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 		} else if (actionData?.error) {
 			toast.error(actionData.error);
 		}
-	}, [actionData]);
+	}, [actionData, selectedRole, roles]);
 
 	const selectedRoleData = roles.find((r) => r.id === selectedRole);
+
+	// Initialize checked permissions when role changes
+	useEffect(() => {
+		if (selectedRoleData) {
+			setCheckedPermissions(new Set(selectedRoleData.permissions));
+		} else {
+			setCheckedPermissions(new Set());
+		}
+	}, [selectedRoleData]);
+
+	// Flatten permissions into array for table display
+	const allPermissions: PermissionRow[] = useMemo(() => {
+		const flattened: PermissionRow[] = [];
+		for (const [category, perms] of Object.entries(permissionsByCategory)) {
+			for (const perm of perms) {
+				flattened.push({
+					id: perm.name,
+					name: perm.name,
+					category,
+					description: t(perm.definition.translationKey),
+				});
+			}
+		}
+		return flattened;
+	}, [permissionsByCategory, t]);
+
+	// Filter permissions based on search, category, and checked filter
+	const filteredPermissions = useMemo(() => {
+		let filtered = allPermissions;
+
+		// Apply category filter
+		if (selectedCategory !== "all") {
+			filtered = filtered.filter((p) => p.category === selectedCategory);
+		}
+
+		// Apply search filter
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			filtered = filtered.filter(
+				(p) =>
+					p.name.toLowerCase().includes(query) ||
+					p.description.toLowerCase().includes(query),
+			);
+		}
+
+		// Apply "show only checked" filter
+		if (showOnlyChecked && selectedRoleData) {
+			filtered = filtered.filter((p) => checkedPermissions.has(p.id));
+		}
+
+		return filtered;
+	}, [allPermissions, selectedCategory, searchQuery, showOnlyChecked, checkedPermissions, selectedRoleData]);
+
+	// Check if there are changes to save
+	const hasChanges = useMemo(() => {
+		if (!selectedRoleData) return false;
+		const originalPermissions = new Set(selectedRoleData.permissions);
+		const currentPermissions = checkedPermissions;
+
+		// Check if sets are different
+		if (originalPermissions.size !== currentPermissions.size) return true;
+
+		for (const perm of originalPermissions) {
+			if (!currentPermissions.has(perm)) return true;
+		}
+
+		for (const perm of currentPermissions) {
+			if (!originalPermissions.has(perm)) return true;
+		}
+
+		return false;
+	}, [selectedRoleData, checkedPermissions]);
+
+	// Handle role selection change
+	const handleRoleChange = (roleId: string) => {
+		setSelectedRole(roleId);
+	};
+
+	// Handle checkbox change
+	const handlePermissionToggle = useCallback(
+		(permissionId: string, checked: boolean) => {
+			setCheckedPermissions((prev) => {
+				const newSet = new Set(prev);
+				if (checked) {
+					newSet.add(permissionId);
+				} else {
+					newSet.delete(permissionId);
+				}
+				return newSet;
+			});
+		},
+		[],
+	);
+
+	// Handle select all visible
+	const handleSelectAllVisible = useCallback(
+		(checked: boolean) => {
+			setCheckedPermissions((prev) => {
+				const newSet = new Set(prev);
+				if (checked) {
+					for (const perm of filteredPermissions) {
+						newSet.add(perm.id);
+					}
+				} else {
+					for (const perm of filteredPermissions) {
+						newSet.delete(perm.id);
+					}
+				}
+				return newSet;
+			});
+		},
+		[filteredPermissions],
+	);
+
 
 	return (
 		<PageWrapper>
@@ -264,14 +418,46 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 					</div>
 				)}
 
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					{/* Roles List */}
-					<div className="lg:col-span-1">
-						<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-							<div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-								<h2 className="font-bold">
-									{t("settings.roles.list_title", { count: roles.length })}
-								</h2>
+				<div className="space-y-6">
+					{/* Role Selector and Actions */}
+					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+						<div className="flex items-center justify-between gap-4 flex-wrap">
+							<div className="flex-1 min-w-[200px]">
+								<div className="block text-sm font-medium mb-2">
+									{t("settings.roles.select_role") || "Select Role"}
+								</div>
+								<Select
+									value={selectedRole ?? undefined}
+									onValueChange={handleRoleChange}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue
+											placeholder={
+												t("settings.roles.select_role_placeholder") ||
+												"Choose a role..."
+											}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										{roles.map((role) => (
+											<SelectItem key={role.id} value={role.id}>
+												<div className="flex items-center gap-2">
+													<div
+														className={cn("w-3 h-3 rounded-full", role.color)}
+													/>
+													<span>{role.name}</span>
+													{role.isSystem && (
+														<span className="text-xs text-gray-500">
+															({t("settings.roles.system")})
+														</span>
+													)}
+												</div>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex items-center gap-2">
 								<Button
 									size="sm"
 									onClick={() => setShowNewRoleForm(true)}
@@ -282,186 +468,249 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 									</span>
 									{t("common.actions.add")}
 								</Button>
-							</div>
-							<div className="divide-y divide-gray-100 dark:divide-gray-700">
-								{roles.map((role) => (
-									<Button
-										key={role.id}
-										type="button"
-										variant="ghost"
-										onClick={() => setSelectedRole(role.id)}
-										className={cn(
-											"w-full h-auto p-4 justify-start text-left font-normal rounded-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50",
-											selectedRole === role.id &&
-											"bg-blue-50 dark:bg-blue-900/20",
-										)}
-									>
-										<div className="flex items-center gap-3">
-											<div className={cn("w-3 h-3 rounded-full", role.color)} />
-											<div className="flex-1">
-												<p className="font-medium text-gray-900 dark:text-white">
-													{role.name}
-													{role.isSystem && (
-														<span className="ml-2 text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">
-															{t("settings.roles.system")}
-														</span>
-													)}
-												</p>
-												<p className="text-sm text-gray-500">
-													{t("settings.roles.permissions_count", {
-														count: role.permissionCount,
+								{selectedRoleData && !selectedRoleData.isSystem && (
+									<AlertDialog>
+										<AlertDialogTrigger asChild>
+											<Button variant="destructive" size="sm">
+												{t("common.actions.delete")}
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>
+													{t("settings.roles.delete_title")}
+												</AlertDialogTitle>
+												<AlertDialogDescription>
+													{t("settings.roles.delete_confirm", {
+														name: selectedRoleData.name,
 													})}
-												</p>
-											</div>
-										</div>
-									</Button>
-								))}
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter>
+												<AlertDialogCancel>
+													{t("common.actions.cancel")}
+												</AlertDialogCancel>
+												<Form method="post">
+													<input
+														type="hidden"
+														name="_action"
+														value="delete"
+													/>
+													<input
+														type="hidden"
+														name="roleId"
+														value={selectedRoleData.id}
+													/>
+													<AlertDialogAction
+														type="submit"
+														className="bg-red-600 hover:bg-red-700 font-bold text-white border-0"
+													>
+														{t("common.actions.delete")}
+													</AlertDialogAction>
+												</Form>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+								)}
 							</div>
 						</div>
 					</div>
 
-					{/* Role Details & Permissions */}
-					<div className="lg:col-span-2">
-						{selectedRoleData ? (
-							<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-								{/* Role Header */}
-								<div className="p-6 border-b border-gray-200 dark:border-gray-700">
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-3">
-											<div
-												className={cn(
-													"w-4 h-4 rounded-full",
-													selectedRoleData.color,
-												)}
+					{/* Permissions Table */}
+					{selectedRoleData ? (
+						<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+							<div className="p-6 space-y-4">
+								<h3 className="font-bold">
+									{t("settings.roles.permissions_header")}
+								</h3>
+
+								{/* Filter Controls */}
+								<div className="space-y-4">
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div>
+											<label
+												htmlFor="permission-search"
+												className="block text-sm font-medium mb-2"
+											>
+												{t("common.fields.search") || "Search"}
+											</label>
+											<Input
+												id="permission-search"
+												type="text"
+												placeholder={
+													t("settings.roles.search_placeholder") ||
+													"Search permissions..."
+												}
+												value={searchQuery}
+												onChange={(e) => setSearchQuery(e.target.value)}
 											/>
-											<div>
-												<h2 className="text-xl font-bold">
-													{selectedRoleData.name}
-												</h2>
-												<p className="text-sm text-gray-500">
-													{selectedRoleData.description}
-												</p>
-											</div>
 										</div>
-										{!selectedRoleData.isSystem && (
-											<AlertDialog>
-												<AlertDialogTrigger asChild>
-													<Button variant="destructive" size="sm">
-														{t("common.actions.delete")}
-													</Button>
-												</AlertDialogTrigger>
-												<AlertDialogContent>
-													<AlertDialogHeader>
-														<AlertDialogTitle>
-															{t("settings.roles.delete_title")}
-														</AlertDialogTitle>
-														<AlertDialogDescription>
-															{t("settings.roles.delete_confirm", {
-																name: selectedRoleData.name,
-															})}
-														</AlertDialogDescription>
-													</AlertDialogHeader>
-													<AlertDialogFooter>
-														<AlertDialogCancel>
-															{t("common.actions.cancel")}
-														</AlertDialogCancel>
-														<Form method="post">
-															<input
-																type="hidden"
-																name="_action"
-																value="delete"
-															/>
-															<input
-																type="hidden"
-																name="roleId"
-																value={selectedRoleData.id}
-															/>
-															<AlertDialogAction
-																type="submit"
-																className="bg-red-600 hover:bg-red-700 font-bold text-white border-0"
-															>
-																{t("common.actions.delete")}
-															</AlertDialogAction>
-														</Form>
-													</AlertDialogFooter>
-												</AlertDialogContent>
-											</AlertDialog>
-										)}
+										<div>
+											<span className="block text-sm font-medium mb-2">
+												{t("settings.roles.category") || "Category"}
+											</span>
+											<Select
+												value={selectedCategory}
+												onValueChange={setSelectedCategory}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="all">
+														{t("common.filters.all") || "All Categories"}
+													</SelectItem>
+													{PERMISSION_CATEGORIES.map((category) => (
+														<SelectItem key={category} value={category}>
+															{t(`permissions.categories.${category}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											id="show-only-checked"
+											checked={showOnlyChecked}
+											onCheckedChange={(checked) =>
+												setShowOnlyChecked(!!checked)
+											}
+										/>
+										<label
+											htmlFor="show-only-checked"
+											className="text-sm font-medium cursor-pointer"
+										>
+											{t("settings.roles.show_only_assigned") ||
+												"Show only assigned permissions"}
+										</label>
 									</div>
 								</div>
 
-								{/* Permissions Form */}
-								<Form method="post" className="p-6" key={selectedRoleData.id}>
-									<input
-										type="hidden"
-										name="_action"
-										value="updatePermissions"
-									/>
-									<input
-										type="hidden"
-										name="roleId"
-										value={selectedRoleData.id}
-									/>
-
-									<h3 className="font-bold mb-4">
-										{t("settings.roles.permissions_header")}
-									</h3>
-
-									<div className="space-y-6">
-										{Object.entries(permissionsByCategory).map(
-											([category, perms]) => (
-												<div key={category}>
-													<h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-														{t(`permissions.categories.${category}`)}
-													</h4>
-													<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-														{perms.map((perm) => (
-															<label
-																key={perm.name}
-																className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
-															>
-																<input
-																	type="checkbox"
-																	name="permissions"
-																	value={perm.name}
-																	defaultChecked={selectedRoleData.permissions.includes(
-																		perm.name,
-																	)}
-																	className="mt-1"
+								{/* Permissions Table */}
+								<div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+									<div className="overflow-auto max-h-[calc(100vh-500px)]">
+										<table className="w-full">
+											<TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+												<TableRow>
+													<TableHead className="w-12">
+														<Checkbox
+															checked={
+																filteredPermissions.length > 0 &&
+																filteredPermissions.every((p) =>
+																	checkedPermissions.has(p.id),
+																)
+																	? true
+																	: filteredPermissions.some((p) =>
+																			checkedPermissions.has(p.id),
+																		)
+																		? "indeterminate"
+																		: false
+															}
+															onCheckedChange={handleSelectAllVisible}
+															aria-label="Select all visible"
+														/>
+													</TableHead>
+													<TableHead>
+														{t("settings.roles.permission_name") ||
+															"Permission Name"}
+													</TableHead>
+													<TableHead>
+														{t("settings.roles.category") || "Category"}
+													</TableHead>
+													<TableHead>
+														{t("settings.roles.description") || "Description"}
+													</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{filteredPermissions.length > 0 ? (
+													filteredPermissions.map((permission) => (
+														<TableRow key={permission.id}>
+															<TableCell>
+																<Checkbox
+																	checked={checkedPermissions.has(permission.id)}
+																	onCheckedChange={(checked) =>
+																		handlePermissionToggle(
+																			permission.id,
+																			!!checked,
+																		)
+																	}
+																	aria-label={`Select ${permission.name}`}
 																/>
-																<div>
-																	<p className="font-mono text-sm text-gray-900 dark:text-white">
-																		{perm.name}
-																	</p>
-																	<p className="text-xs text-gray-500">
-																		{t(perm.definition.translationKey)}
-																	</p>
-																</div>
-															</label>
-														))}
-													</div>
-												</div>
-											),
-										)}
+															</TableCell>
+															<TableCell>
+																<span className="font-mono text-sm">
+																	{permission.name}
+																</span>
+															</TableCell>
+															<TableCell>
+																<span className="text-sm">
+																	{t(`permissions.categories.${permission.category}`)}
+																</span>
+															</TableCell>
+															<TableCell>
+																<span className="text-sm text-gray-600 dark:text-gray-400">
+																	{permission.description}
+																</span>
+															</TableCell>
+														</TableRow>
+													))
+												) : (
+													<TableRow>
+														<TableCell
+															colSpan={4}
+															className="h-24 text-center text-gray-500"
+														>
+															{t("common.no_results") || "No results"}
+														</TableCell>
+													</TableRow>
+												)}
+											</TableBody>
+										</table>
 									</div>
+								</div>
 
-									<div className="mt-6 flex justify-end">
-										<Button type="submit" disabled={isSubmitting}>
+								{/* Update Button */}
+								<div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+									<Form method="post">
+										<input
+											type="hidden"
+											name="_action"
+											value="updatePermissions"
+										/>
+										<input
+											type="hidden"
+											name="roleId"
+											value={selectedRoleData.id}
+										/>
+										{Array.from(checkedPermissions).map((permId) => (
+											<input
+												key={permId}
+												type="hidden"
+												name="permissions"
+												value={permId}
+											/>
+										))}
+										<Button
+											type="submit"
+											disabled={isSubmitting || !hasChanges}
+										>
 											{isSubmitting
 												? t("common.status.saving")
-												: t("common.actions.save")}
+												: t("common.actions.update")}
 										</Button>
-									</div>
-								</Form>
+									</Form>
+								</div>
 							</div>
-						) : (
-							<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-								<p className="text-gray-500">
-									{t("settings.roles.select_role_msg")}
-								</p>
-							</div>
-						)}
-					</div>
+						</div>
+					) : (
+						<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+							<p className="text-gray-500">
+								{t("settings.roles.select_role_msg")}
+							</p>
+						</div>
+					)}
 				</div>
 			</SplitLayout>
 		</PageWrapper>
