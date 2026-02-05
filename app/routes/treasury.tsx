@@ -159,7 +159,7 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		languages,
 	} = loaderData;
 	const { hasPermission } = useUser();
-	const canReadBreakdown = hasPermission("treasury_breakdown:read");
+	const canReadBreakdown = hasPermission("treasury:breakdown:read");
 
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
@@ -11,9 +11,14 @@ import {
 	TreasuryTable,
 	TREASURY_TABLE_STYLES,
 } from "~/components/treasury/treasury-table";
+import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import {
+	requireAnyPermission,
+	hasAnyPermission,
+	type RBACDatabaseAdapter,
+} from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.transactions";
@@ -28,12 +33,20 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Require transactions:read permission - throw 404 to hide route
-	try {
-		await requirePermission(request, "transactions:read", getDatabase);
-	} catch (_error) {
-		throw new Response("Not Found", { status: 404 });
-	}
+	// Require either treasury:transactions:read or treasury:transactions:read-self permission
+	const user = await requireAnyPermission(
+		request,
+		[
+			"treasury:transactions:read",
+			"treasury:transactions:read-self",
+		],
+		getDatabase as unknown as () => RBACDatabaseAdapter,
+	);
+
+	// Check if user can read all transactions or only their own
+	const canReadAll = hasAnyPermission(user, [
+		"treasury:transactions:read",
+	]);
 
 	const db = getDatabase();
 	const url = new URL(request.url);
@@ -49,7 +62,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	// Get ALL transactions for the year (no filtering by reimbursement status)
-	const allTransactions = await db.getTransactionsByYear(year);
+	let allTransactions = await db.getTransactionsByYear(year);
+
+	// Filter transactions: if user only has read-self, show only their own transactions
+	if (!canReadAll) {
+		allTransactions = allTransactions.filter((t) => t.createdBy === user.userId);
+	}
 
 	// Filter by status if specified
 	let transactions = allTransactions;
@@ -109,6 +127,31 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
+	// Fetch budgets for each transaction
+	const budgetMap = new Map<string, string>();
+	for (const transaction of sortedTransactions) {
+		const budgetLink = await db.getBudgetForTransaction(transaction.id);
+		if (budgetLink) {
+			budgetMap.set(transaction.id, budgetLink.budget.id);
+		}
+	}
+
+	// Fetch purchase statuses for transactions with purchaseId
+	const purchaseStatusMap = new Map<string, string>();
+	const purchaseIds = [
+		...new Set(
+			sortedTransactions
+				.map((t) => t.purchaseId)
+				.filter((id): id is string => Boolean(id)),
+		),
+	];
+	for (const purchaseId of purchaseIds) {
+		const purchase = await db.getPurchaseById(purchaseId);
+		if (purchase) {
+			purchaseStatusMap.set(purchaseId, purchase.status);
+		}
+	}
+
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
@@ -121,6 +164,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 		categories,
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
+		canReadAll,
+		budgetMap: Object.fromEntries(budgetMap),
+		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
 	};
@@ -136,15 +182,24 @@ export default function TreasuryTransactions({
 		categories,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
+		canReadAll,
+		budgetMap: budgetMapRaw,
+		purchaseStatusMap: purchaseStatusMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
+	const budgetMap = new Map(
+		Object.entries(budgetMapRaw ?? {}) as [string, string][],
+	);
+	const purchaseStatusMap = new Map(
+		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
+	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
-	const canEditGeneral = hasPermission("transactions:update");
-	const canEditSelf = hasPermission("transactions:update-self");
-	const canWrite = hasPermission("transactions:write");
+	const canEditGeneral = hasPermission("treasury:transactions:update");
+	const canEditSelf = hasPermission("treasury:transactions:update-self");
+	const canWrite = hasPermission("treasury:transactions:write");
 	
 	// Helper to check if user can edit a specific transaction
 	const canEditTransaction = (transaction: Transaction) => {
@@ -156,9 +211,9 @@ export default function TreasuryTransactions({
 	};
 
 	const canDeleteTransaction = (transaction: Transaction) => {
-		const canDeleteGeneral = hasPermission("transactions:delete");
+		const canDeleteGeneral = hasPermission("treasury:transactions:delete");
 		const canDeleteSelf =
-			hasPermission("transactions:delete-self") &&
+			hasPermission("treasury:transactions:delete-self") &&
 			transaction.createdBy &&
 			user?.userId === transaction.createdBy;
 		return canDeleteGeneral || canDeleteSelf;
@@ -243,12 +298,13 @@ export default function TreasuryTransactions({
 		paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 	};
-	const REIMBURSEMENT_VARIANT_MAP: Record<string, string> = {
-		approved:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-		requested:
-			"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+	const PURCHASE_STATUS_VARIANT_MAP: Record<string, string> = {
+		pending:
+			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+		approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+		reimbursed:
+			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+		rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 	};
 
 	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
@@ -306,22 +362,53 @@ export default function TreasuryTransactions({
 			cellClassName: "text-gray-500",
 		},
 		{
+			key: "budget",
+			header: t("treasury.actions.budgets"),
+			cell: (row: Transaction) => {
+				const budgetId = budgetMap.get(row.id);
+				if (!budgetId) {
+					return <span className="text-gray-400">—</span>;
+				}
+				const statusVariant =
+					STATUS_VARIANT_MAP[row.status] ||
+					"bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+				return (
+					<Link
+						to={`/treasury/budgets/${budgetId}`}
+						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
+						title={t("treasury.budgets.view")}
+					>
+						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
+							bookmark
+						</span>
+						{budgetId.substring(0, 8)}
+					</Link>
+				);
+			},
+		},
+		{
 			key: "reimbursement",
-			header: t("treasury.transactions.reimbursement_status"),
-			cell: (row: Transaction) =>
-				row.reimbursementStatus &&
-				row.reimbursementStatus !== "not_requested" ? (
-					<TreasuryStatusPill
-						value={row.reimbursementStatus}
-						variantMap={REIMBURSEMENT_VARIANT_MAP}
-						label={t(
-							`treasury.breakdown.edit.reimbursement_statuses.${row.reimbursementStatus}`,
-							{ defaultValue: row.reimbursementStatus },
-						)}
-					/>
-				) : (
-					<span className="text-gray-400">—</span>
-				),
+			header: t("treasury.receipts.reimbursement_request"),
+			cell: (row: Transaction) => {
+				if (!row.purchaseId) {
+					return <span className="text-gray-400">—</span>;
+				}
+				const purchaseStatus = purchaseStatusMap.get(row.purchaseId) || "pending";
+				const statusVariant =
+					PURCHASE_STATUS_VARIANT_MAP[purchaseStatus] ||
+					PURCHASE_STATUS_VARIANT_MAP.pending;
+				return (
+					<Link
+						to={`/treasury/reimbursements/${row.purchaseId}`}
+						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
+					>
+						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
+							link
+						</span>
+						{row.purchaseId.substring(0, 8)}
+					</Link>
+				);
+			},
 		},
 		{
 			key: "amount",
@@ -355,6 +442,7 @@ export default function TreasuryTransactions({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
+					<ViewScopeDisclaimer canReadAll={canReadAll} itemType="transactions" />
 					<TreasuryTable<Transaction>
 						data={transactions}
 						columns={columns}
@@ -384,7 +472,7 @@ export default function TreasuryTransactions({
 							title: t("treasury.breakdown.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 8,
+							labelColSpan: 9,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {

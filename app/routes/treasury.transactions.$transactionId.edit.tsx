@@ -99,8 +99,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Check permission with self-edit support
 	await requirePermissionOrSelf(
 		request,
-		"transactions:update",
-		"transactions:update-self",
+		"treasury:transactions:update",
+		"treasury:transactions:update-self",
 		transaction.createdBy,
 		getDatabase,
 	);
@@ -242,16 +242,16 @@ export async function action({ request, params }: Route.ActionArgs) {
 		// Delete permission check happens in delete handler
 		user = await requireDeletePermissionOrSelf(
 			request,
-			"transactions:delete",
-			"transactions:delete-self",
+			"treasury:transactions:delete",
+			"treasury:transactions:delete-self",
 			transaction?.createdBy,
 			getDatabase,
 		);
 	} else {
 		user = await requirePermissionOrSelf(
 			request,
-			"transactions:update",
-			"transactions:update-self",
+			"treasury:transactions:update",
+			"treasury:transactions:update-self",
 			transaction?.createdBy,
 			getDatabase,
 		);
@@ -742,13 +742,19 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	// Track which items were initially linked (for detecting unlinks on deselection)
 	const initialLinkedIds = useRef<Set<string>>(new Set(linkedItems.map((i) => i.id)));
 
+	// Sync initialLinkedIds when loader revalidates (e.g. after linkItems)
+	useEffect(() => {
+		const ids = new Set(linkedItems.map((i) => i.id));
+		initialLinkedIds.current = ids;
+	}, [linkedItems]);
+
 	// Track if we've already processed the addItems param
 	const hasProcessedAddItems = useRef(false);
 
 	// Generate year options (last 5 years)
 	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-	// Load pending items from context when ?addItems=true
+	// Load pending items from context when ?addItems=true: merge into list and auto-link
 	useEffect(() => {
 		const addItems = searchParams.get("addItems");
 
@@ -762,10 +768,39 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		) {
 			hasProcessedAddItems.current = true;
 
-			console.log("[AddToExisting] Loading items from context:", contextItems);
+			// Merge context items into pending (keep already-linked, add/update from context)
+			setPendingItems((prev) => {
+				const next = [...prev];
+				const byId = new Map(next.map((p) => [p.itemId, p]));
+				for (const c of contextItems) {
+					const existing = byId.get(c.itemId);
+					if (existing) {
+						const idx = next.findIndex((p) => p.itemId === c.itemId);
+						next[idx] = { ...existing, quantity: c.quantity };
+					} else {
+						next.push(c);
+						byId.set(c.itemId, c);
+					}
+				}
+				return next;
+			});
 
-			// Add context items to pending list
-			setPendingItems(contextItems);
+			// Auto-link context items so they persist without requiring "Link items" click
+			const contextIds = contextItems.map((c) => c.itemId);
+			const quantities = Object.fromEntries(
+				contextItems.map((c) => [c.itemId, c.quantity]),
+			);
+			fetcher.submit(
+				{
+					_action: "linkItems",
+					itemIds: JSON.stringify(contextIds),
+					quantities: JSON.stringify(quantities),
+				},
+				{ method: "POST" },
+			);
+			for (const id of contextIds) {
+				initialLinkedIds.current.add(id);
+			}
 
 			// Clear context and remove query param
 			clearItems();
@@ -774,7 +809,14 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 				return prev;
 			});
 		}
-	}, [searchParams, contextItems, isHydrated, clearItems, setSearchParams]);
+	}, [
+		searchParams,
+		contextItems,
+		isHydrated,
+		clearItems,
+		setSearchParams,
+		fetcher,
+	]);
 
 	// Enforce minimum amount based on selected items (pendingItems now includes linked items)
 	useEffect(() => {

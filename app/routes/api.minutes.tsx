@@ -4,7 +4,7 @@ import { getMinutesByYear } from "~/lib/google.server";
 import type { Route } from "./+types/api.minutes";
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "reimbursements:write", getDatabase);
+	await requirePermission(request, "treasury:reimbursements:write", getDatabase);
 
 	const url = new URL(request.url);
 	const limitParam = url.searchParams.get("limit");

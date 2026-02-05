@@ -67,7 +67,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "transactions:write", getDatabase);
+	await requirePermission(request, "treasury:transactions:write", getDatabase);
 	const db = getDatabase();
 
 	// Parse URL params for pre-fill
@@ -189,7 +189,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	const user = await requirePermission(request, "transactions:write", getDatabase);
+	const user = await requirePermission(request, "treasury:transactions:write", getDatabase);
 	const db = getDatabase();
 
 	const formData = await request.formData();

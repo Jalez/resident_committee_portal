@@ -48,8 +48,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Check permission with self-read support
 	await requirePermissionOrSelf(
 		request,
-		"transactions:read",
-		"transactions:read-self",
+		"treasury:transactions:read",
+		"treasury:transactions:read-self",
 		transaction.createdBy,
 		getDatabase,
 	);
@@ -98,17 +98,17 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 
 	// Check if user can edit
 	const canUpdateGeneral =
-		rootData?.user?.permissions?.includes("transactions:update") ||
+		rootData?.user?.permissions?.includes("treasury:transactions:update") ||
 		rootData?.user?.permissions?.includes("*");
 	const canUpdateSelf =
-		rootData?.user?.permissions?.includes("transactions:update-self") &&
+		rootData?.user?.permissions?.includes("treasury:transactions:update-self") &&
 		transaction.createdBy &&
 		rootData?.user?.userId === transaction.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
 
 	// Can view full bank account if user can update reimbursements OR is the purchase creator
 	const canUpdateReimbursements =
-		rootData?.user?.permissions?.includes("reimbursements:update") ||
+		rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
 		rootData?.user?.permissions?.includes("*");
 	const isPurchaseCreator = !!(purchase?.createdBy && rootData?.user?.userId === purchase.createdBy);
 	const canViewFullBankAccount = !!(canUpdateReimbursements || isPurchaseCreator);

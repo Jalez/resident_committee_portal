@@ -44,8 +44,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Check permission with self-read support
 	await requirePermissionOrSelf(
 		request,
-		"reimbursements:read",
-		"reimbursements:read-self",
+		"treasury:reimbursements:read",
+		"treasury:reimbursements:read-self",
 		purchase.createdBy,
 		getDatabase,
 	);
@@ -114,10 +114,10 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 
 	// Check if user can edit
 	const canUpdateGeneral =
-		rootData?.user?.permissions?.includes("reimbursements:update") ||
+		rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
 		rootData?.user?.permissions?.includes("*");
 	const canUpdateSelf =
-		rootData?.user?.permissions?.includes("reimbursements:update-self") &&
+		rootData?.user?.permissions?.includes("treasury:reimbursements:update-self") &&
 		purchase.createdBy &&
 		rootData?.user?.userId === purchase.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;

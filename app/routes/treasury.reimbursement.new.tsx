@@ -64,7 +64,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "reimbursements:write", getDatabase);
+	await requirePermission(request, "treasury:reimbursements:write", getDatabase);
 	const db = getDatabase();
 
 	// Get receipts for picker
@@ -107,7 +107,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	const user = await requirePermission(request, "reimbursements:write", getDatabase);
+	const user = await requirePermission(request, "treasury:reimbursements:write", getDatabase);
 	const db = getDatabase();
 	const formData = await request.formData();
 
@@ -239,6 +239,34 @@ export async function action({ request }: Route.ActionArgs) {
 			reimbursementStatus: "requested",
 		});
 
+		// Create receipt records for linked receipts
+		if (receiptLinks.length > 0) {
+			for (const receiptLink of receiptLinks) {
+				// Extract pathname from receipt link (id is the pathname)
+				const pathname = receiptLink.id;
+				// Check if receipt already exists in database
+				const existingReceipts = await db.getReceipts();
+				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
+				
+				if (existingReceipt) {
+					// Update existing receipt to link to purchase
+					await db.updateReceipt(existingReceipt.id, {
+						purchaseId: purchase.id,
+					});
+				} else {
+					// Create new receipt record
+					await db.createReceipt({
+						name: receiptLink.name || null,
+						description: null,
+						url: receiptLink.url,
+						pathname,
+						purchaseId: purchase.id,
+						createdBy: user.userId,
+					});
+				}
+			}
+		}
+
 		// Send email
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
 		const minutesAttachmentPromise = buildMinutesAttachment(
@@ -324,6 +352,34 @@ export async function action({ request }: Route.ActionArgs) {
 		};
 		const transaction = await db.createTransaction(newTransaction);
 		transactionId = transaction.id;
+
+		// Create receipt records for linked receipts
+		if (receiptLinks.length > 0) {
+			for (const receiptLink of receiptLinks) {
+				// Extract pathname from receipt link (id is the pathname)
+				const pathname = receiptLink.id;
+				// Check if receipt already exists in database
+				const existingReceipts = await db.getReceipts();
+				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
+				
+				if (existingReceipt) {
+					// Update existing receipt to link to purchase
+					await db.updateReceipt(existingReceipt.id, {
+						purchaseId: purchase.id,
+					});
+				} else {
+					// Create new receipt record
+					await db.createReceipt({
+						name: receiptLink.name || null,
+						description: null,
+						url: receiptLink.url,
+						pathname,
+						purchaseId: purchase.id,
+						createdBy: user.userId,
+					});
+				}
+			}
+		}
 
 		// Link inventory items if provided
 		const linkedItemIds = formData.get("linkedItemIds") as string;

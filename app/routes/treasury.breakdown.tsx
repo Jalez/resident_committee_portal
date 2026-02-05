@@ -11,7 +11,10 @@ import {
 } from "~/components/treasury/treasury-table";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import {
+	requireAnyPermission,
+	type RBACDatabaseAdapter,
+} from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.breakdown";
@@ -26,12 +29,16 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Require treasury_breakdown:read permission - throw 404 to hide route
-	try {
-		await requirePermission(request, "treasury_breakdown:read", getDatabase);
-	} catch (_error) {
-		throw new Response("Not Found", { status: 404 });
-	}
+	// Require either treasury:breakdown:read or treasury:breakdown:read-self permission
+	// Note: Breakdown always shows all transactions regardless of permission level
+	await requireAnyPermission(
+		request,
+		[
+			"treasury:breakdown:read",
+			"treasury:breakdown:read-self",
+		],
+		getDatabase as unknown as () => RBACDatabaseAdapter,
+	);
 
 	const db = getDatabase();
 	const url = new URL(request.url);
@@ -45,6 +52,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		throw new Response("Invalid year", { status: 400 });
 	}
 
+	// Breakdown always shows all transactions (aggregate view)
 	const allTransactionsForYear = await db.getTransactionsByYear(year);
 
 	// Filter out pending/declined reimbursements - they shouldn't affect the budget yet
@@ -223,15 +231,15 @@ export default function TreasuryBreakdown({
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
 	const { hasPermission, user } = useUser();
-	const canEditGeneral = hasPermission("transactions:update");
-	const canEditSelf = hasPermission("transactions:update-self");
+	const canEditGeneral = hasPermission("treasury:transactions:update");
+	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canExport = hasPermission("treasury:export");
 	const canImport = hasPermission("treasury:import");
 	
 	// Helper to check if user can edit a specific transaction
 	const canViewTransaction = (transaction: Transaction) =>
-		hasPermission("transactions:read") ||
-		(hasPermission("transactions:read-self") &&
+		hasPermission("treasury:transactions:read") ||
+		(hasPermission("treasury:transactions:read-self") &&
 			transaction.createdBy &&
 			user?.userId === transaction.createdBy);
 	const canEditTransaction = (transaction: Transaction) => {
@@ -243,9 +251,9 @@ export default function TreasuryBreakdown({
 	};
 
 	const canDeleteTransaction = (transaction: Transaction) => {
-		const canDeleteGeneral = hasPermission("transactions:delete");
+		const canDeleteGeneral = hasPermission("treasury:transactions:delete");
 		const canDeleteSelf =
-			hasPermission("transactions:delete-self") &&
+			hasPermission("treasury:transactions:delete-self") &&
 			transaction.createdBy &&
 			user?.userId === transaction.createdBy;
 		return canDeleteGeneral || canDeleteSelf;

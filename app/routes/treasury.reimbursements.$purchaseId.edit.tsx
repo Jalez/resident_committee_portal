@@ -76,8 +76,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Check permission with self-edit support
 	await requirePermissionOrSelf(
 		request,
-		"reimbursements:update",
-		"reimbursements:update-self",
+		"treasury:reimbursements:update",
+		"treasury:reimbursements:update-self",
 		purchase.createdBy,
 		getDatabase,
 	);
@@ -151,8 +151,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Check permission with self-edit support
 	const user = await requirePermissionOrSelf(
 		request,
-		"reimbursements:update",
-		"reimbursements:update-self",
+		"treasury:reimbursements:update",
+		"treasury:reimbursements:update-self",
 		purchase.createdBy,
 		getDatabase,
 	);
@@ -358,6 +358,48 @@ export async function action({ request, params }: Route.ActionArgs) {
 			minutesName: minutesName || null,
 			notes: notes || null,
 		});
+	}
+
+	// Handle receipt linking/unlinking
+	// Get existing receipts linked to this purchase
+	const existingReceipts = await db.getReceiptsByPurchaseId(params.purchaseId);
+	const newReceiptPathnames = new Set(receiptLinks.map((rl) => rl.id));
+
+	// Unlink receipts that are no longer in receiptLinks
+	for (const existingReceipt of existingReceipts) {
+		if (!newReceiptPathnames.has(existingReceipt.pathname)) {
+			await db.updateReceipt(existingReceipt.id, {
+				purchaseId: null,
+			});
+		}
+	}
+
+	// Link/create receipts that are in receiptLinks
+	if (receiptLinks.length > 0) {
+		const allReceipts = await db.getReceipts();
+		for (const receiptLink of receiptLinks) {
+			// Extract pathname from receipt link (id is the pathname)
+			const pathname = receiptLink.id;
+			// Check if receipt already exists in database
+			const existingReceipt = allReceipts.find((r) => r.pathname === pathname);
+			
+			if (existingReceipt) {
+				// Update existing receipt to link to purchase
+				await db.updateReceipt(existingReceipt.id, {
+					purchaseId: params.purchaseId,
+				});
+			} else {
+				// Create new receipt record
+				await db.createReceipt({
+					name: receiptLink.name || null,
+					description: null,
+					url: receiptLink.url,
+					pathname,
+					purchaseId: params.purchaseId,
+					createdBy: user.userId,
+				});
+			}
+		}
 	}
 
 	// If resend reimbursement request is checked, send email

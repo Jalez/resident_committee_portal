@@ -80,8 +80,12 @@ export const PERMISSIONS = {
 		translationKey: "permissions.treasury.read",
 		category: "Treasury",
 	},
-	"treasury_breakdown:read": {
-		translationKey: "permissions.treasury_breakdown.read",
+	"treasury:breakdown:read": {
+		translationKey: "permissions.treasury.breakdown.read",
+		category: "Treasury",
+	},
+	"treasury:breakdown:read-self": {
+		translationKey: "permissions.treasury.breakdown.read-self",
 		category: "Treasury",
 	},
 	"treasury:export": {
@@ -92,83 +96,133 @@ export const PERMISSIONS = {
 		translationKey: "permissions.treasury.import",
 		category: "Treasury",
 	},
-
-	// Transactions
-	"transactions:read": {
-		translationKey: "permissions.transactions.read",
-		category: "Transactions",
+	"treasury:transactions:read": {
+		translationKey: "permissions.treasury.transactions.read",
+		category: "Treasury",
 	},
-	"transactions:write": {
-		translationKey: "permissions.transactions.write",
-		category: "Transactions",
+	"treasury:transactions:write": {
+		translationKey: "permissions.treasury.transactions.write",
+		category: "Treasury",
 	},
-	"transactions:update": {
-		translationKey: "permissions.transactions.update",
-		category: "Transactions",
+	"treasury:transactions:write-self": {
+		translationKey: "permissions.treasury.transactions.write-self",
+		category: "Treasury",
 	},
-	"transactions:delete": {
-		translationKey: "permissions.transactions.delete",
-		category: "Transactions",
+	"treasury:transactions:update": {
+		translationKey: "permissions.treasury.transactions.update",
+		category: "Treasury",
 	},
-	"transactions:update-self": {
-		translationKey: "permissions.transactions.update-self",
-		category: "Transactions",
+	"treasury:transactions:delete": {
+		translationKey: "permissions.treasury.transactions.delete",
+		category: "Treasury",
 	},
-	"transactions:delete-self": {
-		translationKey: "permissions.transactions.delete-self",
-		category: "Transactions",
+	"treasury:transactions:update-self": {
+		translationKey: "permissions.treasury.transactions.update-self",
+		category: "Treasury",
 	},
-
-	// Fund Budgets
-	"budgets:read": {
-		translationKey: "permissions.budgets.read",
-		category: "Budgets",
+	"treasury:transactions:delete-self": {
+		translationKey: "permissions.treasury.transactions.delete-self",
+		category: "Treasury",
 	},
-	"budgets:write": {
-		translationKey: "permissions.budgets.write",
-		category: "Budgets",
+	"treasury:transactions:read-self": {
+		translationKey: "permissions.treasury.transactions.read-self",
+		category: "Treasury",
 	},
-	"budgets:update": {
-		translationKey: "permissions.budgets.update",
-		category: "Budgets",
+	"treasury:reimbursements:read": {
+		translationKey: "permissions.treasury.reimbursements.read",
+		category: "Treasury",
 	},
-	"budgets:delete": {
-		translationKey: "permissions.budgets.delete",
-		category: "Budgets",
+	"treasury:reimbursements:write": {
+		translationKey: "permissions.treasury.reimbursements.write",
+		category: "Treasury",
 	},
-	"budgets:update-self": {
-		translationKey: "permissions.budgets.update-self",
-		category: "Budgets",
+	"treasury:reimbursements:write-self": {
+		translationKey: "permissions.treasury.reimbursements.write-self",
+		category: "Treasury",
 	},
-	"budgets:delete-self": {
-		translationKey: "permissions.budgets.delete-self",
-		category: "Budgets",
+	"treasury:reimbursements:update": {
+		translationKey: "permissions.treasury.reimbursements.update",
+		category: "Treasury",
 	},
-
-	// Reimbursements
-	"reimbursements:read": {
-		translationKey: "permissions.reimbursements.read",
-		category: "Reimbursements",
+	"treasury:reimbursements:delete": {
+		translationKey: "permissions.treasury.reimbursements.delete",
+		category: "Treasury",
 	},
-	"reimbursements:write": {
-		translationKey: "permissions.reimbursements.write",
-		category: "Reimbursements",
+	"treasury:reimbursements:update-self": {
+		translationKey: "permissions.treasury.reimbursements.update-self",
+		category: "Treasury",
 	},
-	"reimbursements:update": {
-		translationKey: "permissions.reimbursements.update",
-		category: "Reimbursements",
+	"treasury:reimbursements:delete-self": {
+		translationKey: "permissions.treasury.reimbursements.delete-self",
+		category: "Treasury",
 	},
-	"reimbursements:delete": {
-		translationKey: "permissions.reimbursements.delete",
-		category: "Reimbursements",
+	"treasury:reimbursements:read-self": {
+		translationKey: "permissions.treasury.reimbursements.read-self",
+		category: "Treasury",
 	},
-	"reimbursements:update-self": {
-		translationKey: "permissions.reimbursements.update-self",
-		category: "Reimbursements",
+	"treasury:budgets:read": {
+		translationKey: "permissions.treasury.budgets.read",
+		category: "Treasury",
 	},
-	"reimbursements:delete-self": {
-		translationKey: "permissions.reimbursements.delete-self",
-		category: "Reimbursements",
+	"treasury:budgets:read-self": {
+		translationKey: "permissions.treasury.budgets.read-self",
+		category: "Treasury",
+	},
+	"treasury:budgets:write": {
+		translationKey: "permissions.treasury.budgets.write",
+		category: "Treasury",
+	},
+	"treasury:budgets:write-self": {
+		translationKey: "permissions.treasury.budgets.write-self",
+		category: "Treasury",
+	},
+	"treasury:budgets:update": {
+		translationKey: "permissions.treasury.budgets.update",
+		category: "Treasury",
+	},
+	"treasury:budgets:delete": {
+		translationKey: "permissions.treasury.budgets.delete",
+		category: "Treasury",
+	},
+	"treasury:budgets:update-self": {
+		translationKey: "permissions.treasury.budgets.update-self",
+		category: "Treasury",
+	},
+	"treasury:budgets:delete-self": {
+		translationKey: "permissions.treasury.budgets.delete-self",
+		category: "Treasury",
+	},
+	"treasury:receipts:read": {
+		translationKey: "permissions.treasury.receipts.read",
+		category: "Treasury",
+	},
+	"treasury:receipts:read-self": {
+		translationKey: "permissions.treasury.receipts.read-self",
+		category: "Treasury",
+	},
+	"treasury:receipts:write": {
+		translationKey: "permissions.treasury.receipts.write",
+		category: "Treasury",
+	},
+	"treasury:receipts:write-self": {
+		translationKey: "permissions.treasury.receipts.write-self",
+		category: "Treasury",
+	},
+	"treasury:receipts:update": {
+		translationKey: "permissions.treasury.receipts.update",
+		category: "Treasury",
+	},
+	"treasury:receipts:delete": {
+		translationKey: "permissions.treasury.receipts.delete",
+		category: "Treasury",
+	},
+	"treasury:receipts:update-self": {
+		translationKey: "permissions.treasury.receipts.update-self",
+		category: "Treasury",
+	},
+	"treasury:receipts:delete-self": {
+		translationKey: "permissions.treasury.receipts.delete-self",
+		category: "Treasury",
 	},
 
 	// Purchases

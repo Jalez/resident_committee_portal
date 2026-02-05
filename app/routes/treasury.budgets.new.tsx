@@ -32,7 +32,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    await requirePermission(request, "budgets:write", getDatabase);
+    await requirePermission(request, "treasury:budgets:write", getDatabase);
 
     const authUser = await getAuthenticatedUser(request, getDatabase);
 
@@ -66,7 +66,7 @@ const createBudgetSchema = z.object({
 export async function action({ request }: Route.ActionArgs) {
     const authUser = await requirePermission(
         request,
-        "budgets:write",
+        "treasury:budgets:write",
         getDatabase,
     );
 
