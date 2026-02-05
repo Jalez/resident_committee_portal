@@ -31,6 +31,8 @@ export interface TagPickerProps<TItem, TSuggestion> {
 	labelClassName?: string;
 	/** Empty state message when no suggestions match */
 	emptySuggestionsText?: string;
+	/** Optional function to get custom Badge className for each item */
+	getBadgeClassName?: (item: TItem) => string;
 }
 
 export function TagPicker<TItem, TSuggestion>({
@@ -48,6 +50,7 @@ export function TagPicker<TItem, TSuggestion>({
 	disabled = false,
 	labelClassName = "w-48",
 	emptySuggestionsText,
+	getBadgeClassName,
 }: TagPickerProps<TItem, TSuggestion>) {
 	const [query, setQuery] = useState("");
 	const [open, setOpen] = useState(false);
@@ -150,13 +153,18 @@ export function TagPicker<TItem, TSuggestion>({
 							disabled && "opacity-50 cursor-not-allowed",
 						)}
 					>
-						{selectedItems.map((item) => (
-							<Badge
-								key={getItemId(item)}
-								variant="secondary"
-								role="option"
-								className="inline-flex items-center gap-0.5 pr-0.5 text-xs shrink-0"
-							>
+						{selectedItems.map((item) => {
+							const customClassName = getBadgeClassName?.(item);
+							return (
+								<Badge
+									key={getItemId(item)}
+									variant={customClassName ? undefined : "secondary"}
+									role="option"
+									className={cn(
+										"inline-flex items-center gap-0.5 pr-0.5 text-xs shrink-0",
+										customClassName,
+									)}
+								>
 								<span className="max-w-[200px] truncate">
 									{renderItem(item)}
 								</span>
@@ -164,14 +172,15 @@ export function TagPicker<TItem, TSuggestion>({
 									<button
 										type="button"
 										onClick={() => onRemove(getItemId(item))}
-										className="rounded p-0.5 hover:bg-muted-foreground/20"
+										className="rounded p-0.5 hover:bg-black/20 dark:hover:bg-white/20"
 										aria-label="Remove"
 									>
 										<X className="size-3" />
 									</button>
 								)}
 							</Badge>
-						))}
+							);
+						})}
 						{!disabled && (
 							<input
 								ref={inputRef}

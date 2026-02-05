@@ -69,19 +69,16 @@ export function RolePicker({
 			onSelectSuggestion={onSelectSuggestion}
 			getItemId={(r) => r.id}
 			getSuggestionKey={(r) => r.id}
-			renderItem={(r) => (
-				<span
-					className={cn(
-						"px-2 py-0.5 rounded text-xs font-medium text-white",
-						r.color ?? "bg-gray-500",
-					)}
-				>
-					{r.name}
-				</span>
-			)}
+			renderItem={(r) => r.name}
+			getBadgeClassName={(r) =>
+				cn(
+					"border-transparent text-white",
+					r.color ?? "bg-gray-500",
+				)
+			}
 			renderSuggestion={(r) => r.name}
 			label={label}
-			placeholder={t("settings.users.secondary_roles_placeholder")}
+			placeholder={t("settings.users.roles_placeholder")}
 			listId={listId}
 			disabled={disabled}
 			labelClassName={labelClassName}
