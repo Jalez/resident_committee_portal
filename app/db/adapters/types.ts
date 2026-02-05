@@ -3,14 +3,14 @@ import type {
 	CommitteeMailMessage,
 	MailDraft,
 	Faq,
-	FundReservation,
+	FundBudget,
 	InventoryItem,
 	InventoryItemTransaction,
 	Message,
 	NewCommitteeMailMessage,
 	NewMailDraft,
 	NewFaq,
-	NewFundReservation,
+	NewFundBudget,
 	NewInventoryItem,
 	NewMessage,
 	NewNews,
@@ -24,7 +24,7 @@ import type {
 	News,
 	Poll,
 	Purchase,
-	ReservationTransaction,
+	BudgetTransaction,
 	Role,
 	SocialLink,
 	Submission,
@@ -254,47 +254,47 @@ export interface DatabaseAdapter {
 	markMessageAsUnread(messageId: string): Promise<Message | null>;
 	markAllMessagesAsRead(userId: string): Promise<number>;
 
-	// ==================== Fund Reservation Methods ====================
-	/** Get all fund reservations */
-	getFundReservations(): Promise<FundReservation[]>;
-	/** Get fund reservations for a specific year */
-	getFundReservationsByYear(year: number): Promise<FundReservation[]>;
-	/** Get a single fund reservation by ID */
-	getFundReservationById(id: string): Promise<FundReservation | null>;
-	/** Get open fund reservations for a year (for transaction linking) */
-	getOpenFundReservationsByYear(year: number): Promise<FundReservation[]>;
-	/** Create a new fund reservation */
-	createFundReservation(reservation: NewFundReservation): Promise<FundReservation>;
-	/** Update a fund reservation */
-	updateFundReservation(
+	// ==================== Fund Budget Methods ====================
+	/** Get all fund budgets */
+	getFundBudgets(): Promise<FundBudget[]>;
+	/** Get fund budgets for a specific year */
+	getFundBudgetsByYear(year: number): Promise<FundBudget[]>;
+	/** Get a single fund budget by ID */
+	getFundBudgetById(id: string): Promise<FundBudget | null>;
+	/** Get open fund budgets for a year (for transaction linking) */
+	getOpenFundBudgetsByYear(year: number): Promise<FundBudget[]>;
+	/** Create a new fund budget */
+	createFundBudget(budget: NewFundBudget): Promise<FundBudget>;
+	/** Update a fund budget */
+	updateFundBudget(
 		id: string,
-		data: Partial<Omit<NewFundReservation, "id">>,
-	): Promise<FundReservation | null>;
-	/** Delete a fund reservation (only if no linked transactions) */
-	deleteFundReservation(id: string): Promise<boolean>;
-	/** Link a transaction to a reservation with a specific deduction amount */
-	linkTransactionToReservation(
+		data: Partial<Omit<NewFundBudget, "id">>,
+	): Promise<FundBudget | null>;
+	/** Delete a fund budget (only if no linked transactions) */
+	deleteFundBudget(id: string): Promise<boolean>;
+	/** Link a transaction to a budget with a specific deduction amount */
+	linkTransactionToBudget(
 		transactionId: string,
-		reservationId: string,
+		budgetId: string,
 		amount: string,
-	): Promise<ReservationTransaction>;
-	/** Unlink a transaction from a reservation */
-	unlinkTransactionFromReservation(
+	): Promise<BudgetTransaction>;
+	/** Unlink a transaction from a budget */
+	unlinkTransactionFromBudget(
 		transactionId: string,
-		reservationId: string,
+		budgetId: string,
 	): Promise<boolean>;
-	/** Get all transactions linked to a reservation */
-	getReservationTransactions(
-		reservationId: string,
+	/** Get all transactions linked to a budget */
+	getBudgetTransactions(
+		budgetId: string,
 	): Promise<{ transaction: Transaction; amount: string }[]>;
-	/** Get the total used amount for a reservation */
-	getReservationUsedAmount(reservationId: string): Promise<number>;
-	/** Calculate available funds for a year (balance - open reservation amounts) */
+	/** Get the total used amount for a budget */
+	getBudgetUsedAmount(budgetId: string): Promise<number>;
+	/** Calculate available funds for a year (balance - open budget amounts) */
 	getAvailableFundsForYear(year: number): Promise<number>;
-	/** Get reservation linked to a transaction (if any) */
-	getReservationForTransaction(
+	/** Get budget linked to a transaction (if any) */
+	getBudgetForTransaction(
 		transactionId: string,
-	): Promise<{ reservation: FundReservation; amount: string } | null>;
+	): Promise<{ budget: FundBudget; amount: string } | null>;
 
 	// ==================== Poll Methods ====================
 	/** Get all polls */

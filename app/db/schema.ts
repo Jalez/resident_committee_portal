@@ -464,25 +464,25 @@ export type NewMailDraft = typeof mailDrafts.$inferInsert;
 // ============================================
 
 /**
- * Reservation status values
+ * Budget status values
  * - open: Funds are reserved and can be used
- * - closed: Reservation is closed, unused funds returned to available
+ * - closed: Budget is closed, unused funds returned to available
  */
-export type ReservationStatus = "open" | "closed";
+export type BudgetStatus = "open" | "closed";
 
 /**
- * Fund reservations table schema
+ * Fund budgets table schema
  * Allows reserving treasury funds for specific purposes (e.g., "Guitar purchase")
- * Reservations are year-scoped and support partial deductions via transactions
+ * Budgets are year-scoped and support partial deductions via transactions
  */
-export const fundReservations = pgTable("fund_reservations", {
+export const fundBudgets = pgTable("fund_budgets", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(), // e.g., "Guitar purchase"
 	description: text("description"), // Additional details
 	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Reserved amount
-	year: integer("year").notNull(), // Year the reservation applies to
+	year: integer("year").notNull(), // Year the budget applies to
 	status: text("status")
-		.$type<ReservationStatus>()
+		.$type<BudgetStatus>()
 		.notNull()
 		.default("open"),
 	// Creator tracking for self-edit/delete permissions
@@ -492,18 +492,18 @@ export const fundReservations = pgTable("fund_reservations", {
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export type FundReservation = typeof fundReservations.$inferSelect;
-export type NewFundReservation = typeof fundReservations.$inferInsert;
+export type FundBudget = typeof fundBudgets.$inferSelect;
+export type NewFundBudget = typeof fundBudgets.$inferInsert;
 
 /**
- * Junction table for reservation-transaction links
- * Tracks which transactions deduct from which reservations and by how much
- * Supports partial deductions (transaction amount can be less than reservation amount)
+ * Junction table for budget-transaction links
+ * Tracks which transactions deduct from which budgets and by how much
+ * Supports partial deductions (transaction amount can be less than budget amount)
  */
-export const reservationTransactions = pgTable("reservation_transactions", {
+export const budgetTransactions = pgTable("budget_transactions", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	reservationId: uuid("reservation_id")
-		.references(() => fundReservations.id, { onDelete: "cascade" })
+	budgetId: uuid("budget_id")
+		.references(() => fundBudgets.id, { onDelete: "cascade" })
 		.notNull(),
 	transactionId: uuid("transaction_id")
 		.references(() => transactions.id, { onDelete: "cascade" })
@@ -512,8 +512,8 @@ export const reservationTransactions = pgTable("reservation_transactions", {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export type ReservationTransaction = typeof reservationTransactions.$inferSelect;
-export type NewReservationTransaction = typeof reservationTransactions.$inferInsert;
+export type BudgetTransaction = typeof budgetTransactions.$inferSelect;
+export type NewBudgetTransaction = typeof budgetTransactions.$inferInsert;
 
 // ============================================
 // POLLS

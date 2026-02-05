@@ -8,8 +8,8 @@ import {
 	committeeMailMessages,
 	type Faq,
 	faq,
-	type FundReservation,
-	fundReservations,
+	type FundBudget,
+	fundBudgets,
 	type InventoryItem,
 	type InventoryItemTransaction,
 	inventoryItems,
@@ -21,7 +21,7 @@ import {
 	type NewCommitteeMailMessage,
 	type NewMailDraft,
 	type NewFaq,
-	type NewFundReservation,
+	type NewFundBudget,
 	type NewInventoryItem,
 	type NewMessage,
 	type NewNews,
@@ -38,8 +38,8 @@ import {
 	polls,
 	type Purchase,
 	purchases,
-	type ReservationTransaction,
-	reservationTransactions,
+	type BudgetTransaction,
+	budgetTransactions,
 	type Role,
 	roles,
 	type SocialLink,
@@ -115,7 +115,12 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async getAllUsers(limit = 100, offset = 0): Promise<User[]> {
-		return this.db.select().from(users).limit(limit).offset(offset);
+		return this.db
+			.select()
+			.from(users)
+			.orderBy(asc(users.name), asc(users.createdAt))
+			.limit(limit)
+			.offset(offset);
 	}
 
 	async upsertUser(
@@ -1150,123 +1155,123 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length;
 	}
 
-	// ==================== Fund Reservation Methods ====================
-	async getFundReservations(): Promise<FundReservation[]> {
+	// ==================== Fund Budget Methods ====================
+	async getFundBudgets(): Promise<FundBudget[]> {
 		return this.db
 			.select()
-			.from(fundReservations)
-			.orderBy(desc(fundReservations.createdAt));
+			.from(fundBudgets)
+			.orderBy(desc(fundBudgets.createdAt));
 	}
 
-	async getFundReservationsByYear(year: number): Promise<FundReservation[]> {
+	async getFundBudgetsByYear(year: number): Promise<FundBudget[]> {
 		return this.db
 			.select()
-			.from(fundReservations)
-			.where(eq(fundReservations.year, year))
-			.orderBy(desc(fundReservations.createdAt));
+			.from(fundBudgets)
+			.where(eq(fundBudgets.year, year))
+			.orderBy(desc(fundBudgets.createdAt));
 	}
 
-	async getFundReservationById(id: string): Promise<FundReservation | null> {
+	async getFundBudgetById(id: string): Promise<FundBudget | null> {
 		const result = await this.db
 			.select()
-			.from(fundReservations)
-			.where(eq(fundReservations.id, id))
+			.from(fundBudgets)
+			.where(eq(fundBudgets.id, id))
 			.limit(1);
 		return result[0] ?? null;
 	}
 
-	async getOpenFundReservationsByYear(year: number): Promise<FundReservation[]> {
+	async getOpenFundBudgetsByYear(year: number): Promise<FundBudget[]> {
 		return this.db
 			.select()
-			.from(fundReservations)
+			.from(fundBudgets)
 			.where(
 				and(
-					eq(fundReservations.year, year),
-					eq(fundReservations.status, "open"),
+					eq(fundBudgets.year, year),
+					eq(fundBudgets.status, "open"),
 				),
 			)
-			.orderBy(desc(fundReservations.createdAt));
+			.orderBy(desc(fundBudgets.createdAt));
 	}
 
-	async createFundReservation(
-		reservation: NewFundReservation,
-	): Promise<FundReservation> {
+	async createFundBudget(
+		budget: NewFundBudget,
+	): Promise<FundBudget> {
 		const result = await this.db
-			.insert(fundReservations)
-			.values(reservation)
+			.insert(fundBudgets)
+			.values(budget)
 			.returning();
 		return result[0];
 	}
 
-	async updateFundReservation(
+	async updateFundBudget(
 		id: string,
-		data: Partial<Omit<NewFundReservation, "id">>,
-	): Promise<FundReservation | null> {
+		data: Partial<Omit<NewFundBudget, "id">>,
+	): Promise<FundBudget | null> {
 		const result = await this.db
-			.update(fundReservations)
+			.update(fundBudgets)
 			.set({ ...data, updatedAt: new Date() })
-			.where(eq(fundReservations.id, id))
+			.where(eq(fundBudgets.id, id))
 			.returning();
 		return result[0] ?? null;
 	}
 
-	async deleteFundReservation(id: string): Promise<boolean> {
+	async deleteFundBudget(id: string): Promise<boolean> {
 		// Check if there are linked transactions
 		const links = await this.db
 			.select()
-			.from(reservationTransactions)
-			.where(eq(reservationTransactions.reservationId, id));
+			.from(budgetTransactions)
+			.where(eq(budgetTransactions.budgetId, id));
 
 		if (links.length > 0) {
 			return false; // Cannot delete if there are linked transactions
 		}
 
 		const result = await this.db
-			.delete(fundReservations)
-			.where(eq(fundReservations.id, id))
+			.delete(fundBudgets)
+			.where(eq(fundBudgets.id, id))
 			.returning();
 		return result.length > 0;
 	}
 
-	async linkTransactionToReservation(
+	async linkTransactionToBudget(
 		transactionId: string,
-		reservationId: string,
+		budgetId: string,
 		amount: string,
-	): Promise<ReservationTransaction> {
+	): Promise<BudgetTransaction> {
 		const result = await this.db
-			.insert(reservationTransactions)
+			.insert(budgetTransactions)
 			.values({
 				transactionId,
-				reservationId,
+				budgetId,
 				amount,
 			})
 			.returning();
 		return result[0];
 	}
 
-	async unlinkTransactionFromReservation(
+	async unlinkTransactionFromBudget(
 		transactionId: string,
-		reservationId: string,
+		budgetId: string,
 	): Promise<boolean> {
 		const result = await this.db
-			.delete(reservationTransactions)
+			.delete(budgetTransactions)
 			.where(
 				and(
-					eq(reservationTransactions.transactionId, transactionId),
-					eq(reservationTransactions.reservationId, reservationId),
+					eq(budgetTransactions.transactionId, transactionId),
+					eq(budgetTransactions.budgetId, budgetId),
 				),
 			)
 			.returning();
 		return result.length > 0;
 	}
 
-	async getReservationTransactions(
-		reservationId: string,
+	async getBudgetTransactions(
+		budgetId: string,
 	): Promise<{ transaction: Transaction; amount: string }[]> {
 		const links = await this.db
 			.select()
-			.from(reservationTransactions)
-			.where(eq(reservationTransactions.reservationId, reservationId));
+			.from(budgetTransactions)
+			.where(eq(budgetTransactions.budgetId, budgetId));
 
 		if (links.length === 0) return [];
 
@@ -1288,11 +1293,11 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result;
 	}
 
-	async getReservationUsedAmount(reservationId: string): Promise<number> {
+	async getBudgetUsedAmount(budgetId: string): Promise<number> {
 		const links = await this.db
 			.select()
-			.from(reservationTransactions)
-			.where(eq(reservationTransactions.reservationId, reservationId));
+			.from(budgetTransactions)
+			.where(eq(budgetTransactions.budgetId, budgetId));
 
 		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
 	}
@@ -1309,45 +1314,56 @@ export class PostgresAdapter implements DatabaseAdapter {
 				t.reimbursementStatus === "approved",
 		);
 
-		// Calculate balance
+		// Get all transaction IDs that are linked to budgets
+		// These should be excluded from expenses calculation to avoid double-counting
+		const allBudgets = await this.getFundBudgetsByYear(year);
+		const budgetLinkedTransactionIds = new Set<string>();
+		for (const budget of allBudgets) {
+			const budgetTxs = await this.getBudgetTransactions(budget.id);
+			for (const { transaction } of budgetTxs) {
+				budgetLinkedTransactionIds.add(transaction.id);
+			}
+		}
+
+		// Calculate balance (excluding budget-linked expenses)
 		const income = validTransactions
 			.filter((t) => t.type === "income")
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const expenses = validTransactions
-			.filter((t) => t.type === "expense")
+			.filter((t) => t.type === "expense" && !budgetLinkedTransactionIds.has(t.id))
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const balance = income - expenses;
 
-		// Get open reservations for the year
-		const openReservations = await this.getOpenFundReservationsByYear(year);
+		// Get open budgets for the year
+		const openBudgets = await this.getOpenFundBudgetsByYear(year);
 
-		// Calculate total reserved (reservation amount - used amount)
+		// Calculate total reserved (budget amount - used amount)
 		let totalReserved = 0;
-		for (const reservation of openReservations) {
-			const usedAmount = await this.getReservationUsedAmount(reservation.id);
-			const remainingReserved = parseFloat(reservation.amount) - usedAmount;
+		for (const budget of openBudgets) {
+			const usedAmount = await this.getBudgetUsedAmount(budget.id);
+			const remainingReserved = parseFloat(budget.amount) - usedAmount;
 			totalReserved += Math.max(0, remainingReserved);
 		}
 
 		return balance - totalReserved;
 	}
 
-	async getReservationForTransaction(
+	async getBudgetForTransaction(
 		transactionId: string,
-	): Promise<{ reservation: FundReservation; amount: string } | null> {
+	): Promise<{ budget: FundBudget; amount: string } | null> {
 		const link = await this.db
 			.select()
-			.from(reservationTransactions)
-			.where(eq(reservationTransactions.transactionId, transactionId))
+			.from(budgetTransactions)
+			.where(eq(budgetTransactions.transactionId, transactionId))
 			.limit(1);
 
 		if (link.length === 0) return null;
 
-		const reservation = await this.getFundReservationById(link[0].reservationId);
-		if (!reservation) return null;
+		const budget = await this.getFundBudgetById(link[0].budgetId);
+		if (!budget) return null;
 
 		return {
-			reservation,
+			budget,
 			amount: link[0].amount,
 		};
 	}
