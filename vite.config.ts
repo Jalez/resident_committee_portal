@@ -5,6 +5,9 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
 	plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+	optimizeDeps: {
+		include: ["@radix-ui/react-alert-dialog"],
+	},
 	server: {
 		allowedHosts: [".ngrok-free.dev", ".ngrok.io"],
 	},
