@@ -2,8 +2,16 @@
 	"common": {
 		"total": "Gesamt",
 		"fields": {
-			"created_by": "Erstellt von"
-		}
+			"created_by": "Erstellt von",
+			"search": "Suchen"
+		},
+		"actions": {
+			"update": "Aktualisieren"
+		},
+		"filters": {
+			"all": "Alle Kategorien"
+		},
+		"no_results": "Keine Ergebnisse"
 	},
 	"app": {
 		"title": "Mieterausschuss",
@@ -150,6 +158,28 @@
 		"analytics": {
 			"title": "Analytik-Einstellungen"
 		},
+		"roles": {
+			"title": "Rollenverwaltung",
+			"create_new_title": "Neue Rolle erstellen",
+			"name_label": "Name",
+			"color_label": "Farbe",
+			"desc_label": "Beschreibung",
+			"list_title": "Rollen ({{count}})",
+			"system": "Systemrolle",
+			"permissions_count": "{{count}} Berechtigungen",
+			"delete_title": "Rolle löschen",
+			"delete_confirm": "Möchten Sie die Rolle \"{{name}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+			"permissions_header": "Berechtigungen",
+			"select_role_msg": "Wählen Sie eine Rolle links aus, um Berechtigungen zu bearbeiten",
+			"select_role": "Rolle auswählen",
+			"select_role_placeholder": "Rolle wählen...",
+			"search_placeholder": "Berechtigungen suchen...",
+			"category": "Kategorie",
+			"permission_name": "Berechtigungsname",
+			"description": "Beschreibung",
+			"select_role_to_manage": "Wählen Sie oben eine Rolle aus, um Berechtigungen zu verwalten",
+			"show_only_assigned": "Nur zugewiesene Berechtigungen anzeigen"
+		},
 		"common": {
 			"save": "Speichern",
 			"saving": "Speichern...",
@@ -192,7 +222,7 @@
 			"save": "Einstellungen speichern"
 		},
 		"users": {
-			"secondary_roles_placeholder": "Rollenname eingeben und Tab drücken",
+			"roles_placeholder": "Rollenname eingeben und Tab drücken",
 			"no_roles_match": "Keine passenden Rollen"
 		}
 	},
@@ -299,7 +329,7 @@
 		"members": "Mitglieder",
 		"no_members": "Keine Ausschussmitglieder gefunden",
 		"primary_role": "Hauptrolle",
-		"secondary_roles": "Nebenrollen",
+		"roles": "Rollen",
 		"no_description": "Keine Beschreibung"
 	},
 	"faq": {
@@ -375,26 +405,62 @@
 		"treasury": {
 			"read": "Kassenübersicht anzeigen",
 			"export": "Kassendaten nach CSV exportieren",
-			"import": "Kassendaten aus Datei importieren"
-		},
-		"treasury_breakdown": {
-			"read": "Kassenaufschlüsselung anzeigen"
-		},
-		"transactions": {
-			"read": "Transaktionsliste anzeigen",
-			"write": "Transaktionen erstellen",
-			"update": "Transaktionen bearbeiten",
-			"delete": "Transaktionen löschen",
-			"update-self": "Eigene Transaktionen bearbeiten",
-			"delete-self": "Eigene Transaktionen löschen"
-		},
-		"reimbursements": {
-			"read": "Erstattungsanträge anzeigen",
-			"write": "Erstattungsanträge erstellen",
-			"update": "Erstattungen aktualisieren und genehmigen/ablehnen",
-			"delete": "Erstattungsanträge löschen",
-			"update-self": "Eigene Erstattungsanträge bearbeiten",
-			"delete-self": "Eigene Erstattungsanträge löschen"
+			"import": "Kassendaten aus Datei importieren",
+			"breakdown": {
+				"read": "Kassenaufschlüsselung anzeigen",
+				"read-self": "Eigene Kassenaufschlüsselung anzeigen"
+			},
+			"transactions": {
+				"read": "Transaktionsliste anzeigen",
+				"write": "Transaktionen erstellen",
+				"write-self": "Eigene Transaktionen erstellen",
+				"update": "Transaktionen bearbeiten",
+				"delete": "Transaktionen löschen",
+				"update-self": "Eigene Transaktionen bearbeiten",
+				"delete-self": "Eigene Transaktionen löschen",
+				"read-self": "Eigene Transaktionen anzeigen"
+			},
+			"reimbursements": {
+				"read": "Erstattungsanträge anzeigen",
+				"write": "Erstattungsanträge erstellen",
+				"write-self": "Eigene Erstattungsanträge erstellen",
+				"update": "Erstattungen aktualisieren und genehmigen/ablehnen",
+				"delete": "Erstattungsanträge löschen",
+				"update-self": "Eigene Erstattungsanträge bearbeiten",
+				"delete-self": "Eigene Erstattungsanträge löschen",
+				"read-self": "Eigene Erstattungsanträge anzeigen"
+			},
+			"budgets": {
+				"read": "Budget anzeigen",
+				"read-self": "Eigene Budget anzeigen",
+				"write": "Budget erstellen",
+				"write-self": "Eigene Budget erstellen",
+				"update": "Budget bearbeiten",
+				"delete": "Budget löschen",
+				"update-self": "Eigene Budget bearbeiten",
+				"delete-self": "Eigene Budget löschen"
+			},
+			"receipts": {
+				"read": "Quittungen anzeigen",
+				"read-self": "Eigene Quittungen anzeigen",
+				"write": "Quittungen erstellen",
+				"write-self": "Eigene Quittungen erstellen",
+				"update": "Quittungen bearbeiten",
+				"delete": "Quittungen löschen",
+				"update-self": "Eigene Quittungen bearbeiten",
+				"delete-self": "Eigene Quittungen löschen"
+			},
+			"view_scope": {
+				"all": "Sie sehen alle {{itemType}}",
+				"own_only": "Sie sehen nur Ihre eigenen {{itemType}}",
+				"item_types": {
+					"receipts": "Quittungen",
+					"transactions": "Transaktionen",
+					"reimbursements": "Erstattungsanträge",
+					"budgets": "Budgets",
+					"breakdown": "Aufschlüsselung"
+				}
+			}
 		},
 		"purchases": {
 			"read": "Alle Kaufanfragen anzeigen",
@@ -464,8 +530,6 @@
 			"Users": "Benutzer",
 			"Inventory": "Inventar",
 			"Treasury": "Kasse",
-			"Transactions": "Transaktionen",
-			"Reimbursements": "Erstattungen",
 			"Purchases": "Käufe",
 			"Submissions": "Einreichungen",
 			"Social": "Sozial",

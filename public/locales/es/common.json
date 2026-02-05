@@ -2,8 +2,16 @@
 	"common": {
 		"total": "Total",
 		"fields": {
-			"created_by": "Creado por"
-		}
+			"created_by": "Creado por",
+			"search": "Buscar"
+		},
+		"actions": {
+			"update": "Actualizar"
+		},
+		"filters": {
+			"all": "Todas las categorías"
+		},
+		"no_results": "Sin resultados"
 	},
 	"app": {
 		"title": "Comité de Inquilinos",
@@ -239,7 +247,7 @@
 		"members": "Miembros",
 		"no_members": "No se encontraron miembros del comité",
 		"primary_role": "Rol Principal",
-		"secondary_roles": "Roles Secundarios",
+		"roles": "Roles",
 		"no_description": "Sin descripción"
 	},
 	"faq": {
@@ -272,6 +280,28 @@
 	"settings": {
 		"analytics": {
 			"title": "Ajustes de análisis"
+		},
+		"roles": {
+			"title": "Gestión de roles",
+			"create_new_title": "Crear nuevo rol",
+			"name_label": "Nombre",
+			"color_label": "Color",
+			"desc_label": "Descripción",
+			"list_title": "Roles ({{count}})",
+			"system": "Rol del sistema",
+			"permissions_count": "{{count}} permisos",
+			"delete_title": "Eliminar rol",
+			"delete_confirm": "¿Está seguro de que desea eliminar el rol \"{{name}}\"? Esta acción no se puede deshacer.",
+			"permissions_header": "Permisos",
+			"select_role_msg": "Seleccione un rol de la izquierda para editar permisos",
+			"select_role": "Seleccionar rol",
+			"select_role_placeholder": "Elegir un rol...",
+			"search_placeholder": "Buscar permisos...",
+			"category": "Categoría",
+			"permission_name": "Nombre del permiso",
+			"description": "Descripción",
+			"select_role_to_manage": "Seleccione un rol arriba para gestionar permisos",
+			"show_only_assigned": "Mostrar solo permisos asignados"
 		},
 		"common": {
 			"save": "Guardar",
@@ -309,7 +339,7 @@
 			"save": "Guardar ajustes"
 		},
 		"users": {
-			"secondary_roles_placeholder": "Escriba el nombre del rol y pulse Tab para añadir",
+			"roles_placeholder": "Escriba el nombre del rol y pulse Tab para añadir",
 			"no_roles_match": "No hay roles coincidentes"
 		}
 	},
@@ -359,26 +389,62 @@
 		"treasury": {
 			"read": "Ver resumen de tesorería",
 			"export": "Exportar datos de tesorería a CSV",
-			"import": "Importar datos de tesorería desde archivo"
-		},
-		"treasury_breakdown": {
-			"read": "Ver desglose de tesorería"
-		},
-		"transactions": {
-			"read": "Ver lista de transacciones",
-			"write": "Crear transacciones",
-			"update": "Editar transacciones",
-			"delete": "Eliminar transacciones",
-			"update-self": "Editar propias transacciones",
-			"delete-self": "Eliminar propias transacciones"
-		},
-		"reimbursements": {
-			"read": "Ver solicitudes de reembolso",
-			"write": "Crear solicitudes de reembolso",
-			"update": "Actualizar y aprobar/rechazar reembolsos",
-			"delete": "Eliminar solicitudes de reembolso",
-			"update-self": "Editar propias solicitudes de reembolso",
-			"delete-self": "Eliminar propias solicitudes de reembolso"
+			"import": "Importar datos de tesorería desde archivo",
+			"breakdown": {
+				"read": "Ver desglose de tesorería",
+				"read-self": "Ver propio desglose de tesorería"
+			},
+			"transactions": {
+				"read": "Ver lista de transacciones",
+				"write": "Crear transacciones",
+				"write-self": "Crear propias transacciones",
+				"update": "Editar transacciones",
+				"delete": "Eliminar transacciones",
+				"update-self": "Editar propias transacciones",
+				"delete-self": "Eliminar propias transacciones",
+				"read-self": "Ver propias transacciones"
+			},
+			"reimbursements": {
+				"read": "Ver solicitudes de reembolso",
+				"write": "Crear solicitudes de reembolso",
+				"write-self": "Crear propias solicitudes de reembolso",
+				"update": "Actualizar y aprobar/rechazar reembolsos",
+				"delete": "Eliminar solicitudes de reembolso",
+				"update-self": "Editar propias solicitudes de reembolso",
+				"delete-self": "Eliminar propias solicitudes de reembolso",
+				"read-self": "Ver propias solicitudes de reembolso"
+			},
+			"budgets": {
+				"read": "Ver presupuestos",
+				"read-self": "Ver propios presupuestos",
+				"write": "Crear presupuestos",
+				"write-self": "Crear propios presupuestos",
+				"update": "Editar presupuestos",
+				"delete": "Eliminar presupuestos",
+				"update-self": "Editar propios presupuestos",
+				"delete-self": "Eliminar propios presupuestos"
+			},
+			"receipts": {
+				"read": "Ver recibos",
+				"read-self": "Ver propios recibos",
+				"write": "Crear recibos",
+				"write-self": "Crear propios recibos",
+				"update": "Editar recibos",
+				"delete": "Eliminar recibos",
+				"update-self": "Editar propios recibos",
+				"delete-self": "Eliminar propios recibos"
+			},
+			"view_scope": {
+				"all": "Estás viendo todos los {{itemType}}",
+				"own_only": "Estás viendo solo tus propios {{itemType}}",
+				"item_types": {
+					"receipts": "recibos",
+					"transactions": "transacciones",
+					"reimbursements": "solicitudes de reembolso",
+					"budgets": "presupuestos",
+					"breakdown": "desglose"
+				}
+			}
 		},
 		"purchases": {
 			"read": "Ver todas las solicitudes de compra",
@@ -448,8 +514,6 @@
 			"Users": "Usuarios",
 			"Inventory": "Inventario",
 			"Treasury": "Tesorería",
-			"Transactions": "Transacciones",
-			"Reimbursements": "Reembolsos",
 			"Purchases": "Compras",
 			"Submissions": "Envíos",
 			"Social": "Social",
