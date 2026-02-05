@@ -32,6 +32,14 @@ export const NAV_ITEMS: NavItem[] = [
 		icon: "payments",
 		i18nKey: "nav.treasury",
 		permission: "treasury:read",
+		children: [
+			{ path: "/treasury", icon: "account_balance", i18nKey: "treasury.overview" },
+			{ path: "/treasury/breakdown", icon: "pie_chart", i18nKey: "treasury.actions.breakdown" },
+			{ path: "/treasury/transactions", icon: "list_alt", i18nKey: "treasury.actions.transactions" },
+			{ path: "/treasury/receipts", icon: "receipt", i18nKey: "treasury.actions.receipts" },
+			{ path: "/treasury/reimbursements", icon: "request_quote", i18nKey: "treasury.actions.reimbursements" },
+			{ path: "/treasury/reservations", icon: "bookmark", i18nKey: "treasury.actions.reservations" },
+		],
 	},
 	{
 		path: "/minutes",
@@ -69,6 +77,10 @@ export const NAV_ITEMS: NavItem[] = [
 		icon: "ballot",
 		i18nKey: "nav.polls",
 		permission: "polls:read",
+		children: [
+			{ path: "/polls", icon: "ballot", i18nKey: "polls.title" },
+			{ path: "/polls/analytics", icon: "analytics", i18nKey: "polls.analytics" },
+		],
 	},
 	// Committee - requires committee:read permission
 	{

@@ -6,11 +6,11 @@ import {
 	Scripts,
 	ScrollRestoration,
 	useLoaderData,
-	useNavigation,
+	useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
-import { ReceiptsPageSkeleton } from "~/components/treasury/receipts-skeleton";
+import { Subnavbar } from "~/components/subnavbar";
 import "./app.css";
 import type { ClientUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
@@ -209,10 +209,7 @@ export default function App() {
 function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 	const { isInfoReel } = useLanguage();
 	const { t } = useTranslation();
-	const navigation = useNavigation();
-	const isNavigatingToReceipts =
-		navigation.state === "loading" &&
-		navigation.location?.pathname === "/treasury/receipts";
+	const location = useLocation();
 
 	return (
 		<div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
@@ -247,18 +244,21 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 						</div>
 					</header>
 
-					<nav className="pb-1 sm:pb-2 md:pb-4 md:hidden">
-						<Navigation variant="mobile" />
-					</nav>
+					<div className="flex items-stretch min-h-12">
+						<div className="md:hidden w-fit shrink-0 flex items-center pl-2 pr-1 border-r border-border/50">
+							<Navigation variant="mobile" />
+						</div>
+						<div className="flex-1 min-w-0">
+							<Subnavbar
+								key={`${location.pathname}${location.search ?? ""}`}
+							/>
+						</div>
+					</div>
 				</div>
 
-				{/* Main Content Area - show receipts skeleton when navigating to receipts */}
+				{/* Main Content Area */}
 				<ContentFader>
-					{isNavigatingToReceipts ? (
-						<ReceiptsPageSkeleton />
-					) : (
-						<Outlet />
-					)}
+					<Outlet />
 				</ContentFader>
 			</div>
 		</div>

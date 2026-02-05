@@ -41,9 +41,14 @@ export function Navigation({ variant }: NavigationProps) {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [mobileMessagesOpen, setMobileMessagesOpen] = useState(false);
 	const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
-	const [mailSubmenuOpen, setMailSubmenuOpen] = useState(false);
+	const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 	useEffect(() => {
-		if (pathname.startsWith("/mail")) setMailSubmenuOpen(true);
+		const parent = NAV_ITEMS.find(
+			(i) => i.children?.length && pathname.startsWith(i.path),
+		);
+		if (parent) {
+			setOpenSubmenus((prev) => ({ ...prev, [parent.path]: true }));
+		}
 	}, [pathname]);
 	const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
 		if (typeof window === "undefined") return false;
@@ -232,30 +237,37 @@ export function Navigation({ variant }: NavigationProps) {
 		return link;
 	};
 
-	// Mail child active state (pathname + search)
-	const mailSearch = typeof location.search === "string" ? location.search : "";
-	const mailSearchParams = new URLSearchParams(mailSearch);
-	const isMailChildActive = (childPath: string) => {
-		if (childPath === "/mail/drafts") return pathname === "/mail/drafts";
-		if (childPath === "/mail?direction=sent")
-			return pathname === "/mail" && mailSearchParams.get("direction") === "sent";
-		if (childPath === "/mail?compose=new")
-			return pathname === "/mail" && !!mailSearchParams.get("compose");
-		// inbox: /mail without direction=sent and without compose
-		if (childPath === "/mail")
-			return pathname === "/mail" && mailSearchParams.get("direction") !== "sent" && !mailSearchParams.get("compose");
-		return false;
+	// Child active state: mail uses path+search, others use path prefix
+	const search = typeof location.search === "string" ? location.search : "";
+	const searchParams = new URLSearchParams(search);
+	const isChildActive = (parentPath: string, childPath: string) => {
+		if (parentPath === "/mail") {
+			if (childPath === "/mail/drafts") return pathname === "/mail/drafts";
+			if (childPath === "/mail?direction=sent")
+				return pathname === "/mail" && searchParams.get("direction") === "sent";
+			if (childPath === "/mail?compose=new")
+				return pathname === "/mail" && !!searchParams.get("compose");
+			if (childPath === "/mail")
+				return pathname === "/mail" && searchParams.get("direction") !== "sent" && !searchParams.get("compose");
+			return false;
+		}
+		// Index/overview child (same path as parent): only active on exact match
+		if (childPath === parentPath) {
+			return pathname === childPath;
+		}
+		return pathname === childPath || pathname.startsWith(childPath + "/");
 	};
 
 	// Shared menu content used by both mobile Sheet and desktop sidebar
 	const renderMenuContent = (showLabels: boolean, onNavigate?: () => void) => (
 		<>
 			{navItems.map((item) => {
-				// Mail (and any item with children): render as expandable sub-items
+				// Items with children: render as expandable sub-items
 				if (item.children?.length) {
-					const isMailActive = pathname.startsWith(item.path);
+					const isParentActive = pathname.startsWith(item.path);
+					const isOpen = openSubmenus[item.path];
 					if (!showLabels) {
-						// Collapsed sidebar: single link to inbox
+						// Collapsed sidebar: single link to parent (first child)
 						const link = (
 							<Link
 								key={item.path}
@@ -264,8 +276,8 @@ export function Navigation({ variant }: NavigationProps) {
 								className={cn(
 									"relative group flex items-center justify-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 									"hover:bg-primary/10 hover:text-primary",
-									isMailActive && "text-primary bg-primary/10",
-									!isMailActive && "text-gray-500 dark:text-gray-400",
+									isParentActive && "text-primary bg-primary/10",
+									!isParentActive && "text-gray-500 dark:text-gray-400",
 								)}
 							>
 								<span className="material-symbols-outlined text-2xl shrink-0">
@@ -287,11 +299,16 @@ export function Navigation({ variant }: NavigationProps) {
 						<div key={item.path}>
 							<button
 								type="button"
-								onClick={() => setMailSubmenuOpen(!mailSubmenuOpen)}
+								onClick={() =>
+									setOpenSubmenus((prev) => ({
+										...prev,
+										[item.path]: !prev[item.path],
+									}))
+								}
 								className={cn(
 									"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
 									"hover:bg-primary/10 hover:text-primary",
-									isMailActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
+									isParentActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
 								)}
 							>
 								<span className="material-symbols-outlined text-2xl shrink-0">
@@ -303,13 +320,13 @@ export function Navigation({ variant }: NavigationProps) {
 								<span
 									className={cn(
 										"material-symbols-outlined text-lg transition-transform shrink-0",
-										mailSubmenuOpen && "rotate-90",
+										isOpen && "rotate-90",
 									)}
 								>
 									chevron_right
 								</span>
 							</button>
-							{mailSubmenuOpen && (
+							{isOpen && (
 								<div className="pl-4 space-y-0.5 mt-0.5">
 									{item.children.map((child) => (
 										<Link
@@ -319,7 +336,7 @@ export function Navigation({ variant }: NavigationProps) {
 											className={cn(
 												"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
 												"hover:bg-primary/10 hover:text-primary",
-												isMailChildActive(child.path)
+												isChildActive(item.path, child.path)
 													? "text-primary bg-primary/10 font-medium"
 													: "text-gray-500 dark:text-gray-400",
 											)}

@@ -1,11 +1,9 @@
 import { useEffect } from "react";
-import { Link, Outlet, redirect, useLocation, useNavigate, useSearchParams, useActionData } from "react-router";
+import { Outlet, redirect, useNavigate, useSearchParams, useActionData } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { PenSquare } from "lucide-react";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { MailComposeForm } from "../components/mail-compose-form";
-import { Button } from "~/components/ui/button";
 import { Sheet, SheetContent } from "~/components/ui/sheet";
 import { getDatabase, type MailDraft } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
@@ -223,17 +221,10 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function MailLayout(props: Route.ComponentProps) {
 	const { t } = useTranslation();
-	const location = useLocation();
-	const pathname = location.pathname;
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
-	const direction = searchParams.get("direction") || "inbox";
 	const composeParam = searchParams.get("compose");
 
-	const isInbox = pathname === "/mail" && direction !== "sent" && !composeParam;
-	const isSent = pathname === "/mail" && direction === "sent";
-	const isDrafts = pathname === "/mail/drafts";
-	const isCompose = pathname === "/mail" && !!composeParam;
 	const actionData = useActionData<{ sent?: boolean; error?: string }>();
 
 	useEffect(() => {
@@ -270,39 +261,6 @@ export default function MailLayout(props: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6">
-				{/* Toolbar: Inbox, Sent, Drafts, Compose (sub-route style) + New message button */}
-				<div className="flex flex-wrap items-center gap-2 shrink-0">
-					<Button asChild variant={isInbox ? "default" : "secondary"} size="sm" className="gap-1.5">
-						<Link to="/mail">
-							<span className="material-symbols-outlined text-lg">inbox</span>
-							{t("mail.inbox")}
-						</Link>
-					</Button>
-					<Button asChild variant={isSent ? "default" : "secondary"} size="sm" className="gap-1.5">
-						<Link to="/mail?direction=sent">
-							<span className="material-symbols-outlined text-lg">send</span>
-							{t("mail.sent")}
-						</Link>
-					</Button>
-					<Button asChild variant={isDrafts ? "default" : "secondary"} size="sm" className="gap-1.5">
-						<Link to="/mail/drafts">
-							<span className="material-symbols-outlined text-lg">draft</span>
-							{t("mail.drafts")}
-						</Link>
-					</Button>
-					<Button asChild variant={isCompose ? "default" : "secondary"} size="sm" className="gap-1.5">
-						<Link to="/mail?compose=new">
-							<span className="material-symbols-outlined text-lg">edit_note</span>
-							{t("mail.compose")}
-						</Link>
-					</Button>
-					<Button asChild variant="default" size="sm" className="gap-1.5 ml-auto">
-						<Link to="/mail?compose=new">
-							<PenSquare className="size-4" />
-							{t("mail.compose")}
-						</Link>
-					</Button>
-				</div>
 				<main className="min-w-0 flex-1">
 					<Outlet />
 				</main>
