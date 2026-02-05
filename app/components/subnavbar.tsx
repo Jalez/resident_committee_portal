@@ -70,7 +70,12 @@ export function Subnavbar() {
 			(!item.permission || hasPermission(item.permission)),
 	).sort((a, b) => b.path.length - a.path.length)[0];
 
-	if (!section?.children?.length) {
+	// Filter children by permissions
+	const visibleChildren = section?.children?.filter(
+		(child) => !child.permission || hasPermission(child.permission),
+	) ?? [];
+
+	if (!visibleChildren.length) {
 		return (
 			<div
 				className={cn(
@@ -82,7 +87,7 @@ export function Subnavbar() {
 		);
 	}
 
-	const activeChild = section.children.find((child) =>
+	const activeChild = visibleChildren.find((child) =>
 		isChildActive(pathname, search, section.path, child.path),
 	);
 	const menuButtonLabel = activeChild
@@ -120,7 +125,7 @@ export function Subnavbar() {
 					</SheetTitle>
 				</SheetHeader>
 				<nav className="flex flex-col gap-0.5 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
-					{section.children.map((child) => {
+					{visibleChildren.map((child) => {
 						const active = isChildActive(
 							pathname,
 							search,
@@ -155,7 +160,7 @@ export function Subnavbar() {
 	// Desktop (lg+): horizontal strip with icon + text (text from xl to avoid overflow at lg)
 	const desktopStrip = (
 		<div className="custom-scrollbar h-full min-w-0 max-w-full flex items-center justify-center gap-1 px-2 overflow-x-auto overflow-y-hidden">
-			{section.children.map((child) => {
+			{visibleChildren.map((child) => {
 				const active = isChildActive(
 					pathname,
 					search,

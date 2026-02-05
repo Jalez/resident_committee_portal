@@ -5,6 +5,7 @@ export interface NavItemChild {
 	path: string;
 	icon: string;
 	i18nKey: string;
+	permission?: string;
 }
 
 export interface NavItem {
@@ -34,11 +35,11 @@ export const NAV_ITEMS: NavItem[] = [
 		permission: "treasury:read",
 		children: [
 			{ path: "/treasury", icon: "account_balance", i18nKey: "treasury.overview" },
-			{ path: "/treasury/breakdown", icon: "pie_chart", i18nKey: "treasury.actions.breakdown" },
-			{ path: "/treasury/transactions", icon: "list_alt", i18nKey: "treasury.actions.transactions" },
-			{ path: "/treasury/receipts", icon: "receipt", i18nKey: "treasury.actions.receipts" },
-			{ path: "/treasury/reimbursements", icon: "request_quote", i18nKey: "treasury.actions.reimbursements" },
-			{ path: "/treasury/reservations", icon: "bookmark", i18nKey: "treasury.actions.reservations" },
+			{ path: "/treasury/breakdown", icon: "pie_chart", i18nKey: "treasury.actions.breakdown", permission: "treasury_breakdown:read" },
+			{ path: "/treasury/transactions", icon: "list_alt", i18nKey: "treasury.actions.transactions", permission: "transactions:read" },
+			{ path: "/treasury/receipts", icon: "receipt", i18nKey: "treasury.actions.receipts", permission: "treasury:read" },
+			{ path: "/treasury/reimbursements", icon: "request_quote", i18nKey: "treasury.actions.reimbursements", permission: "reimbursements:read" },
+			{ path: "/treasury/budgets", icon: "bookmark", i18nKey: "treasury.actions.budgets", permission: "budgets:read" },
 		],
 	},
 	{
@@ -79,7 +80,7 @@ export const NAV_ITEMS: NavItem[] = [
 		permission: "polls:read",
 		children: [
 			{ path: "/polls", icon: "ballot", i18nKey: "polls.title" },
-			{ path: "/polls/analytics", icon: "analytics", i18nKey: "polls.analytics" },
+			{ path: "/polls/analytics", icon: "analytics", i18nKey: "polls.analytics", permission: "forms:read" },
 		],
 	},
 	// Committee - requires committee:read permission

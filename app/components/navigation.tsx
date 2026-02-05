@@ -328,7 +328,9 @@ export function Navigation({ variant }: NavigationProps) {
 							</button>
 							{isOpen && (
 								<div className="pl-4 space-y-0.5 mt-0.5">
-									{item.children.map((child) => (
+									{item.children
+										.filter((child) => !child.permission || hasPermission(child.permission))
+										.map((child) => (
 										<Link
 											key={child.path}
 											to={child.path}
