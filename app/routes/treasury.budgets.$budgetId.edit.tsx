@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Form, redirect, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -7,6 +8,7 @@ import {
     SplitLayout,
 } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
     Card,
     CardContent,
@@ -46,8 +48,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     // Check permission
     await requirePermissionOrSelf(
         request,
-        "budgets:update",
-        "budgets:update-self",
+        "treasury:budgets:update",
+        "treasury:budgets:update-self",
         budget.createdBy,
         getDatabase,
     );
@@ -92,8 +94,8 @@ export async function action({ request, params }: Route.ActionArgs) {
     // Check permission
     await requirePermissionOrSelf(
         request,
-        "budgets:update",
-        "budgets:update-self",
+        "treasury:budgets:update",
+        "treasury:budgets:update-self",
         budget.createdBy,
         getDatabase,
     );
@@ -180,6 +182,9 @@ export default function TreasuryBudgetsEdit({
     const { budget, availableFunds, languages } = loaderData;
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [confirmAction, setConfirmAction] = useState<"close" | "reopen" | null>(null);
+    const closeFormRef = useRef<HTMLFormElement>(null);
+    const reopenFormRef = useRef<HTMLFormElement>(null);
 
     const formatCurrency = (value: number) => {
         return `${value.toFixed(2).replace(".", ",")} €`;
@@ -302,56 +307,67 @@ export default function TreasuryBudgetsEdit({
                                     </Button>
 
                                     {budget.status === "open" ? (
-                                        <Form method="post" className="inline-block">
-                                            <input type="hidden" name="_action" value="close" />
+                                        <>
+                                            <Form method="post" className="hidden" ref={closeFormRef}>
+                                                <input type="hidden" name="_action" value="close" />
+                                            </Form>
                                             <Button
-                                                type="submit"
+                                                type="button"
                                                 variant="outline"
-                                                onClick={(e) => {
-                                                    const remaining = formatCurrency(
-                                                        Number.parseFloat(budget.amount) -
-                                                            budget.usedAmount,
-                                                    );
-                                                    if (
-                                                        !confirm(
-                                                            t("treasury.budgets.close_confirm", {
-                                                                amount: remaining,
-                                                            }),
-                                                        )
-                                                    ) {
-                                                        e.preventDefault();
-                                                    }
-                                                }}
+                                                onClick={() => setConfirmAction("close")}
                                             >
                                                 <span className="material-symbols-outlined mr-2 text-sm">
                                                     lock
                                                 </span>
                                                 {t("treasury.budgets.actions.close")}
                                             </Button>
-                                        </Form>
+                                        </>
                                     ) : (
-                                        <Form method="post" className="inline-block">
-                                            <input type="hidden" name="_action" value="reopen" />
+                                        <>
+                                            <Form method="post" className="hidden" ref={reopenFormRef}>
+                                                <input type="hidden" name="_action" value="reopen" />
+                                            </Form>
                                             <Button
-                                                type="submit"
+                                                type="button"
                                                 variant="outline"
-                                                onClick={(e) => {
-                                                    if (
-                                                        !confirm(
-                                                            t("treasury.budgets.reopen_confirm"),
-                                                        )
-                                                    ) {
-                                                        e.preventDefault();
-                                                    }
-                                                }}
+                                                onClick={() => setConfirmAction("reopen")}
                                             >
                                                 <span className="material-symbols-outlined mr-2 text-sm">
                                                     lock_open
                                                 </span>
                                                 {t("treasury.budgets.actions.reopen")}
                                             </Button>
-                                        </Form>
+                                        </>
                                     )}
+                                    <ConfirmDialog
+                                        open={confirmAction !== null}
+                                        onOpenChange={(open) => !open && setConfirmAction(null)}
+                                        title={
+                                            confirmAction === "close"
+                                                ? t("treasury.budgets.actions.close")
+                                                : t("treasury.budgets.actions.reopen")
+                                        }
+                                        description={
+                                            confirmAction === "close"
+                                                ? t("treasury.budgets.close_confirm", {
+                                                      amount: formatCurrency(
+                                                          Number.parseFloat(budget.amount) -
+                                                              budget.usedAmount,
+                                                      ),
+                                                  })
+                                                : confirmAction === "reopen"
+                                                  ? t("treasury.budgets.reopen_confirm")
+                                                  : ""
+                                        }
+                                        confirmLabel={t("common.actions.confirm")}
+                                        cancelLabel={t("common.actions.cancel")}
+                                        variant="default"
+                                        onConfirm={() => {
+                                            if (confirmAction === "close") closeFormRef.current?.requestSubmit();
+                                            else if (confirmAction === "reopen") reopenFormRef.current?.requestSubmit();
+                                            setConfirmAction(null);
+                                        }}
+                                    />
                                 </div>
                             </Form>
                         </CardContent>

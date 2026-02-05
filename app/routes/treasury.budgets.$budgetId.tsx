@@ -1,10 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import { Form, Link, redirect, useSearchParams } from "react-router";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
     Card,
     CardContent,
@@ -41,7 +42,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-    await requirePermission(request, "budgets:read", getDatabase);
+    await requirePermission(request, "treasury:budgets:read", getDatabase);
     const authUser = await getAuthenticatedUser(request, getDatabase);
 
     const db = getDatabase();
@@ -96,8 +97,8 @@ export async function action({ request, params }: Route.ActionArgs) {
         // Check delete permission
         await requireDeletePermissionOrSelf(
             request,
-            "budgets:delete",
-            "budgets:delete-self",
+            "treasury:budgets:delete",
+            "treasury:budgets:delete-self",
             budget.createdBy,
             getDatabase,
         );
@@ -128,6 +129,8 @@ export default function TreasuryBudgetsView({
     const { t, i18n } = useTranslation();
     const { hasPermission } = useUser();
     const [searchParams, setSearchParams] = useSearchParams();
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const deleteFormRef = useRef<HTMLFormElement>(null);
 
     useEffect(() => {
         const success = searchParams.get("success");
@@ -146,12 +149,12 @@ export default function TreasuryBudgetsView({
 
     // Permissions
     const canUpdate =
-        hasPermission("budgets:update") ||
-        (hasPermission("budgets:update-self") &&
+        hasPermission("treasury:budgets:update") ||
+        (hasPermission("treasury:budgets:update-self") &&
             budget.createdBy === currentUserId);
     const canDelete =
-        hasPermission("budgets:delete") ||
-        (hasPermission("budgets:delete-self") &&
+        hasPermission("treasury:budgets:delete") ||
+        (hasPermission("treasury:budgets:delete-self") &&
             budget.createdBy === currentUserId);
 
     const formatCurrency = (value: number) => {
@@ -268,25 +271,34 @@ export default function TreasuryBudgetsView({
                                 )}
 
                                 {canDelete && linkedTransactions.length === 0 && (
-                                    <Form method="post">
-                                        <input type="hidden" name="_action" value="delete" />
+                                    <>
+                                        <Form method="post" className="hidden" ref={deleteFormRef}>
+                                            <input type="hidden" name="_action" value="delete" />
+                                        </Form>
                                         <Button
-                                            type="submit"
+                                            type="button"
                                             variant="destructive"
-                                            onClick={(e) => {
-                                                if (
-                                                    !confirm(t("treasury.budgets.delete_confirm"))
-                                                ) {
-                                                    e.preventDefault();
-                                                }
-                                            }}
+                                            onClick={() => setShowDeleteConfirm(true)}
                                         >
                                             <span className="material-symbols-outlined mr-2 text-sm">
                                                 delete
                                             </span>
                                             {t("treasury.budgets.actions.delete")}
                                         </Button>
-                                    </Form>
+                                        <ConfirmDialog
+                                            open={showDeleteConfirm}
+                                            onOpenChange={setShowDeleteConfirm}
+                                            title={t("treasury.budgets.actions.delete")}
+                                            description={t("treasury.budgets.delete_confirm")}
+                                            confirmLabel={t("common.actions.delete")}
+                                            cancelLabel={t("common.actions.cancel")}
+                                            variant="destructive"
+                                            onConfirm={() => {
+                                                deleteFormRef.current?.requestSubmit();
+                                                setShowDeleteConfirm(false);
+                                            }}
+                                        />
+                                    </>
                                 )}
                             </div>
                         </CardContent>

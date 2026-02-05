@@ -1,5 +1,9 @@
-import { Form, Link } from "react-router";
+import { useState } from "react";
+import { Link, useFetcher, useRevalidator } from "react-router";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const LINK_CLASS =
 	"inline-flex items-center gap-1 text-sm text-primary hover:underline";
@@ -32,6 +36,30 @@ export function TreasuryActionCell({
 	copyProps,
 	deleteProps,
 }: TreasuryActionCellProps) {
+	const deleteFetcher = useFetcher();
+	const revalidator = useRevalidator();
+	const { t } = useTranslation();
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+	// Revalidate when delete succeeds
+	useEffect(() => {
+		if (deleteFetcher.state === "idle" && deleteFetcher.data?.success) {
+			revalidator.revalidate();
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, revalidator]);
+
+	const doDelete = () => {
+		if (!deleteProps) return;
+		const formData = new FormData();
+		Object.entries(deleteProps.hiddenFields).forEach(([name, value]) => {
+			formData.append(name, value);
+		});
+		deleteFetcher.submit(formData, {
+			method: "POST",
+			action: deleteProps.action,
+		});
+	};
+
 	return (
 		<div className="flex items-center gap-1">
 			{viewTo && (
@@ -57,29 +85,30 @@ export function TreasuryActionCell({
 				</Button>
 			)}
 			{deleteProps && (
-				<Form
-					method="post"
-					action={deleteProps.action}
-					className="inline-block"
-				>
-					{Object.entries(deleteProps.hiddenFields).map(([name, value]) => (
-						<input key={name} type="hidden" name={name} value={value} />
-					))}
+				<>
 					<Button
-						type="submit"
+						type="button"
 						variant="ghost"
 						size="icon"
-						onClick={(e) => {
-							if (!confirm(deleteProps.confirmMessage)) {
-								e.preventDefault();
-							}
-						}}
+						onClick={() => setShowDeleteConfirm(true)}
+						disabled={deleteFetcher.state !== "idle"}
 						className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 h-8 w-8"
 						title={deleteProps.title}
 					>
 						<span className={ICON_CLASS}>delete</span>
 					</Button>
-				</Form>
+					<ConfirmDialog
+						open={showDeleteConfirm}
+						onOpenChange={setShowDeleteConfirm}
+						title={deleteProps.title}
+						description={deleteProps.confirmMessage}
+						confirmLabel={t("common.actions.delete")}
+						cancelLabel={t("common.actions.cancel")}
+						variant="destructive"
+						onConfirm={doDelete}
+						loading={deleteFetcher.state !== "idle"}
+					/>
+				</>
 			)}
 		</div>
 	);
