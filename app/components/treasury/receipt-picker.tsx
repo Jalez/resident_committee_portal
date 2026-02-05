@@ -44,7 +44,7 @@ interface ReceiptsByYear {
 }
 
 interface ReceiptPickerProps {
-	/** Receipts grouped by year from Google Drive */
+	/** Receipts grouped by year for the picker */
 	receiptsByYear: ReceiptsByYear[];
 	/** Currently selected receipts */
 	selectedReceipts: ReceiptLink[];
@@ -60,8 +60,6 @@ interface ReceiptPickerProps {
 	currentYear: number;
 	/** Whether upload is in progress */
 	isUploading?: boolean;
-	/** URL to the receipts folder for the current year (for manual upload instructions) */
-	receiptsFolderUrl?: string;
 	/** Description to use for naming uploaded receipts */
 	description?: string;
 }
@@ -73,7 +71,6 @@ export function ReceiptPicker({
 	onUploadReceipt,
 	currentYear,
 	isUploading = false,
-	receiptsFolderUrl,
 	description = "",
 }: ReceiptPickerProps) {
 	const refreshFetcher = useFetcher();
@@ -91,7 +88,6 @@ export function ReceiptPicker({
 	// Get receipts for selected year
 	const yearData = receiptsByYear.find((r) => r.year === selectedYear);
 	const receiptsForYear = yearData?.files || [];
-	const folderUrl = yearData?.folderUrl || receiptsFolderUrl || "#";
 
 	// Filter receipts by search query
 	const filteredReceipts = receiptsForYear.filter((r) =>
@@ -240,23 +236,6 @@ export function ReceiptPicker({
 					</Button>
 				</DialogTrigger>
 
-				{/* Link to Drive folder - always visible */}
-				{folderUrl && folderUrl !== "#" && (
-					<div className="flex justify-end">
-						<a
-							href={folderUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-						>
-							<span className="material-symbols-outlined text-base">
-								folder_open
-							</span>
-							{t("receipts.open_drive")}
-						</a>
-					</div>
-				)}
-
 				<DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-6">
 					<DialogHeader>
 						<DialogTitle>{t("receipts.select_receipts")}</DialogTitle>
@@ -338,19 +317,6 @@ export function ReceiptPicker({
 										<p className="text-sm text-yellow-800 dark:text-yellow-200">
 											⚠️ {uploadError}
 										</p>
-										{folderUrl && folderUrl !== "#" && (
-											<a
-												href={folderUrl}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
-											>
-												<span className="material-symbols-outlined text-base">
-													folder_open
-												</span>
-												{t("receipts.open_folder")}
-											</a>
-										)}
 									</div>
 								)}
 
@@ -370,25 +336,12 @@ export function ReceiptPicker({
 
 						{/* Receipts List */}
 						<div className="border rounded-lg divide-y max-h-[300px] overflow-auto">
-							{filteredReceipts.length === 0 ? (
+								{filteredReceipts.length === 0 ? (
 								<div className="p-8 text-center text-muted-foreground">
 									<span className="material-symbols-outlined text-4xl mb-2 block">
 										folder_off
 									</span>
 									<p>{t("receipts.no_receipts", { year: selectedYear })}</p>
-									{folderUrl && folderUrl !== "#" && (
-										<a
-											href={folderUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
-										>
-											<span className="material-symbols-outlined text-base">
-												folder_open
-											</span>
-											{t("receipts.open_folder")}
-										</a>
-									)}
 								</div>
 							) : (
 								filteredReceipts.map((receipt) => {
@@ -424,20 +377,7 @@ export function ReceiptPicker({
 						</div>
 					</div>
 
-					<div className="flex justify-between items-center pt-4 border-t">
-						{folderUrl && folderUrl !== "#" && (
-							<a
-								href={folderUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-							>
-								<span className="material-symbols-outlined text-base">
-									open_in_new
-								</span>
-								{t("receipts.open_drive")}
-							</a>
-						)}
+					<div className="flex justify-end items-center pt-4 border-t">
 						<Button onClick={() => setIsOpen(false)}>
 							{t("receipts.done")} ({selectedReceipts.length}{" "}
 							{t("receipts.selected_count", "selected")})

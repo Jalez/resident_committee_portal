@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 import {
 	type ReceiptLink,
 	ReceiptPicker,
@@ -10,6 +11,7 @@ import {
 	hasRequiredReceipts,
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
+import { buildReceiptPath } from "~/lib/receipts/utils";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -48,8 +50,6 @@ export interface ReimbursementFormProps {
 	receiptsByYear: ReceiptsByYear[];
 	/** Current year for receipt uploads */
 	currentYear: number;
-	/** URL to the receipts folder in Drive */
-	receiptsFolderUrl: string;
 	/** Optional description to prefill for receipt naming */
 	description?: string;
 	/** Whether to show the notes field (default: true) */
@@ -88,7 +88,6 @@ export function ReimbursementForm({
 	emailConfigured,
 	receiptsByYear,
 	currentYear,
-	receiptsFolderUrl,
 	description = "",
 	showNotes = true,
 	showEmailWarning = true,
@@ -98,9 +97,7 @@ export function ReimbursementForm({
 	initialBankAccount = "",
 	initialNotes = "",
 }: ReimbursementFormProps) {
-	const fetcher = useFetcher();
 	const minutesFetcher = useFetcher<{ minutes: MinuteFile[] }>();
-	const ensureFolderFetcher = useFetcher();
 	const [selectedReceipts, setSelectedReceipts] = useState<ReceiptLink[]>([]);
 	const [minutesOptions, setMinutesOptions] = useState<MinuteFile[]>(
 		recentMinutes,
@@ -110,39 +107,9 @@ export function ReimbursementForm({
 	);
 	const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 	const [descriptionValue, setDescriptionValue] = useState(description);
-	const [currentFolderUrl, setCurrentFolderUrl] = useState(receiptsFolderUrl);
 	const { t } = useTranslation();
 	const isMinutesLoading = minutesFetcher.state !== "idle";
-
-	// Ensure receipts folder exists on mount
 	const receiptsValid = hasRequiredReceipts(selectedReceipts, required);
-	useEffect(() => {
-		// Only trigger if we don't already have a valid folder URL
-		if (!receiptsFolderUrl || receiptsFolderUrl === "#") {
-			const formData = new FormData();
-			formData.append("_action", "ensureReceiptsFolder");
-			formData.append("year", currentYear.toString());
-			ensureFolderFetcher.submit(formData, { method: "post" });
-		}
-	}, [currentYear, receiptsFolderUrl, ensureFolderFetcher.submit]);
-
-	// Handle folder creation response
-	useEffect(() => {
-		if (ensureFolderFetcher.state === "idle" && ensureFolderFetcher.data) {
-			const data = ensureFolderFetcher.data as {
-				success: boolean;
-				folderUrl?: string;
-			};
-			if (data.success && data.folderUrl) {
-				setCurrentFolderUrl(data.folderUrl);
-			}
-		}
-	}, [ensureFolderFetcher.state, ensureFolderFetcher.data]);
-
-	// Promise resolver for upload callback
-	const uploadResolverRef = useRef<
-		((receipt: ReceiptLink | null) => void) | null
-	>(null);
 
 	// Sync description prop to internal state
 	useEffect(() => {
@@ -165,35 +132,6 @@ export function ReimbursementForm({
 		}
 	}, [minutesFetcher.data, minutesFetcher.state, selectedMinutes]);
 
-	// Handle receipt upload completion
-	useEffect(() => {
-		if (fetcher.state === "idle" && fetcher.data) {
-			setIsUploadingReceipt(false);
-			const data = fetcher.data as {
-				success: boolean;
-				receipt?: ReceiptLink;
-				error?: string;
-			};
-			if (data.success && data.receipt) {
-				const newReceipt = data.receipt;
-				setSelectedReceipts((prev) => [...prev, newReceipt]);
-				toast.success(t("treasury.new_reimbursement.receipt_uploaded"));
-				// Resolve the upload promise
-				if (uploadResolverRef.current) {
-					uploadResolverRef.current(data.receipt);
-					uploadResolverRef.current = null;
-				}
-			} else if (data.error) {
-				toast.error(`${t("treasury.new_reimbursement.error")}: ${data.error}`);
-				// Resolve with null on error
-				if (uploadResolverRef.current) {
-					uploadResolverRef.current(null);
-					uploadResolverRef.current = null;
-				}
-			}
-		}
-	}, [fetcher.state, fetcher.data, t]);
-
 	const handleUploadReceipt = useCallback(
 		async (
 			file: File,
@@ -201,22 +139,33 @@ export function ReimbursementForm({
 			desc: string,
 		): Promise<ReceiptLink | null> => {
 			setIsUploadingReceipt(true);
-
-			return new Promise((resolve) => {
-				uploadResolverRef.current = resolve;
-
-				const formData = new FormData();
-				formData.append("_action", "uploadReceipt");
-				formData.append("receiptFile", file);
-				formData.append("year", year);
-				formData.append("description", desc || "kuitti");
-				fetcher.submit(formData, {
-					method: "post",
-					encType: "multipart/form-data",
+			try {
+				const pathname = buildReceiptPath(
+					year,
+					file.name,
+					desc || "kuitti",
+				);
+				const blob = await upload(pathname, file, {
+					access: "public",
+					handleUploadUrl: "/api/receipts/upload",
 				});
-			});
+				toast.success(t("treasury.new_reimbursement.receipt_uploaded"));
+				return {
+					id: blob.pathname,
+					name: blob.pathname.split("/").pop() || file.name,
+					url: blob.url,
+				};
+			} catch (error) {
+				console.error("[uploadReceipt] Error:", error);
+				toast.error(
+					`${t("treasury.new_reimbursement.error")}: ${t("receipts.upload_failed")}`,
+				);
+				return null;
+			} finally {
+				setIsUploadingReceipt(false);
+			}
 		},
-		[fetcher],
+		[t],
 	);
 
 	return (
@@ -246,7 +195,6 @@ export function ReimbursementForm({
 					onUploadReceipt={handleUploadReceipt}
 					currentYear={currentYear}
 					isUploading={isUploadingReceipt}
-					receiptsFolderUrl={currentFolderUrl}
 					description={descriptionValue}
 				/>
 				{/* Hidden input for form submission */}

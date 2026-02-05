@@ -19,7 +19,7 @@ import {
 } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getReceiptsByYear } from "~/lib/google.server";
+import { getReceiptsByYear } from "~/lib/receipts";
 import { isEmailConfigured } from "~/lib/email.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.transactions.$transactionId";
@@ -68,9 +68,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Get receipts for picker (for display)
 	const receiptsByYear = await getReceiptsByYear();
 	const currentYear = new Date().getFullYear();
-	const currentYearReceipts = receiptsByYear.find(
-		(r) => r.year === currentYear.toString(),
-	);
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -81,7 +78,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		recentMinutes: [] as MinuteFile[],
 		emailConfigured: isEmailConfigured(),
 		receiptsByYear,
-		receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
 	};
 }
 

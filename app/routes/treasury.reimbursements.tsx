@@ -357,7 +357,7 @@ export default function BudgetReimbursements({
 									className="text-xs font-bold uppercase"
 								>
 									{s === "all"
-										? t("common.common.all")
+										? t("common.actions.all")
 										: t(`treasury.reimbursements.statuses.${s}`)}
 								</Button>
 							),

@@ -48,11 +48,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import {
-	getOrCreateReceiptsFolder,
-	getReceiptsByYear,
-	uploadReceiptToDrive,
-} from "~/lib/google.server";
+import { getReceiptsByYear } from "~/lib/receipts";
 import {
 	getMissingReceiptsError,
 	MISSING_RECEIPTS_ERROR,
@@ -117,7 +113,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 				linkedItems.push({
 					id: item.id,
 					name: item.name,
-					quantity: item.quantity,
 					requestedQuantity: sel.quantity, // The quantity user wants to link
 					value: item.value,
 				});
@@ -143,9 +138,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Get receipts for picker
 	const receiptsByYear = await getReceiptsByYear();
-	const currentYearReceipts = receiptsByYear.find(
-		(r) => r.year === new Date().getFullYear().toString(),
-	);
 
 	// Get purchases without linked transactions (for linking selector)
 	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
@@ -188,7 +180,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		uniqueCategories,
 		// Receipt picker data
 		receiptsByYear,
-		receiptsFolderUrl: currentYearReceipts?.folderUrl || "#",
 		// Unlinked purchases for linking selector
 		unlinkedPurchases,
 		// Open reservations for linking expenses
@@ -234,8 +225,6 @@ export async function action({ request }: Route.ActionArgs) {
 	if (actionType === "updateField") {
 		const itemId = formData.get("itemId") as string;
 		const field = formData.get("field") as string;
-		const value = formData.get("value") as string;
-
 		if (!itemId || !field) {
 			return { success: false, error: "Missing itemId or field" };
 		}
@@ -254,56 +243,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 		await db.updateInventoryItem(itemId, { [field]: parsedValue });
 		return { success: true };
-	}
-
-	// Handle uploadReceipt action for ReceiptPicker
-	if (actionType === "uploadReceipt") {
-		const receiptFile = formData.get("receiptFile") as File;
-		const year = formData.get("year") as string;
-		const description = formData.get("description") as string;
-
-		if (!receiptFile || receiptFile.size === 0) {
-			return { success: false, error: "No file provided" };
-		}
-
-		try {
-			const arrayBuffer = await receiptFile.arrayBuffer();
-			const base64Content = Buffer.from(arrayBuffer).toString("base64");
-
-			const result = await uploadReceiptToDrive(
-				{
-					name: receiptFile.name,
-					content: base64Content,
-					mimeType: receiptFile.type,
-				},
-				year,
-				description,
-			);
-
-			if (result) {
-				return { success: true, receipt: result };
-			} else {
-				return { success: false, error: "Upload failed" };
-			}
-		} catch (error) {
-			console.error("[uploadReceipt] Error:", error);
-			return { success: false, error: "Upload failed" };
-		}
-	}
-
-	// Handle ensureReceiptsFolder action for ReimbursementForm
-	if (actionType === "ensureReceiptsFolder") {
-		const year = formData.get("year") as string;
-		try {
-			const result = await getOrCreateReceiptsFolder(year);
-			if (result) {
-				return { success: true, folderUrl: result.folderUrl };
-			}
-			return { success: false, error: "Could not create receipts folder" };
-		} catch (error) {
-			console.error("[ensureReceiptsFolder] Error:", error);
-			return { success: false, error: "Failed to create receipts folder" };
-		}
 	}
 
 	// Handle refreshReceipts action to clear cache
@@ -500,7 +439,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		uniqueLocations,
 		uniqueCategories,
 		receiptsByYear,
-		receiptsFolderUrl,
 		unlinkedPurchases,
 		openReservations,
 	} = loaderData ?? {
@@ -541,7 +479,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 			folderUrl: string;
 			folderId: string;
 		}>,
-		receiptsFolderUrl: "#",
 		unlinkedPurchases: [] as Purchase[],
 		openReservations: [] as Array<{
 			id: string;
@@ -876,7 +813,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 									emailConfigured={emailConfigured}
 									receiptsByYear={receiptsByYear}
 									currentYear={currentYear}
-									receiptsFolderUrl={receiptsFolderUrl}
 									description={descriptionValue}
 									showNotes={true}
 									required={requestReimbursement}

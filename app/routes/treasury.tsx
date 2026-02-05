@@ -212,6 +212,20 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 				},
 			]
 			: []),
+		...(hasPermission("treasury:read")
+			? [
+				{
+					href: "/treasury/receipts",
+					icon: "receipt",
+					labelPrimary: t("treasury.actions.receipts", {
+						lng: languages.primary,
+					}),
+					labelSecondary: t("treasury.actions.receipts", {
+						lng: languages.secondary,
+					}),
+				},
+			]
+			: []),
 		...(hasPermission("reimbursements:read")
 			? [
 				{
