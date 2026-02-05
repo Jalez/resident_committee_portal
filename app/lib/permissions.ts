@@ -315,6 +315,16 @@ export const PERMISSIONS = {
 		category: "Profile",
 	},
 
+	// Avatars (blob storage admin)
+	"avatars:read": {
+		translationKey: "permissions.avatars.read",
+		category: "Storage",
+	},
+	"avatars:delete": {
+		translationKey: "permissions.avatars.delete",
+		category: "Storage",
+	},
+
 	// Roles (meta-permission)
 	"roles:read": {
 		translationKey: "permissions.roles.read",
