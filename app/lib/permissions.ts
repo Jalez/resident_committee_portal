@@ -119,30 +119,30 @@ export const PERMISSIONS = {
 		category: "Transactions",
 	},
 
-	// Fund Reservations
-	"reservations:read": {
-		translationKey: "permissions.reservations.read",
-		category: "Reservations",
+	// Fund Budgets
+	"budgets:read": {
+		translationKey: "permissions.budgets.read",
+		category: "Budgets",
 	},
-	"reservations:write": {
-		translationKey: "permissions.reservations.write",
-		category: "Reservations",
+	"budgets:write": {
+		translationKey: "permissions.budgets.write",
+		category: "Budgets",
 	},
-	"reservations:update": {
-		translationKey: "permissions.reservations.update",
-		category: "Reservations",
+	"budgets:update": {
+		translationKey: "permissions.budgets.update",
+		category: "Budgets",
 	},
-	"reservations:delete": {
-		translationKey: "permissions.reservations.delete",
-		category: "Reservations",
+	"budgets:delete": {
+		translationKey: "permissions.budgets.delete",
+		category: "Budgets",
 	},
-	"reservations:update-self": {
-		translationKey: "permissions.reservations.update-self",
-		category: "Reservations",
+	"budgets:update-self": {
+		translationKey: "permissions.budgets.update-self",
+		category: "Budgets",
 	},
-	"reservations:delete-self": {
-		translationKey: "permissions.reservations.delete-self",
-		category: "Reservations",
+	"budgets:delete-self": {
+		translationKey: "permissions.budgets.delete-self",
+		category: "Budgets",
 	},
 
 	// Reimbursements
