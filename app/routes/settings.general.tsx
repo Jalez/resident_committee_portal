@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -120,14 +120,13 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 py-8">
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("settings.general.title")}
-					</h1>
-				</div>
-
-				<div className="space-y-6">
+			<SplitLayout
+				header={{
+					primary: t("settings.general.title", { lng: defaults.primary }),
+					secondary: t("settings.general.title", { lng: defaults.secondary ?? defaults.primary }),
+				}}
+			>
+				<div className="max-w-2xl space-y-6">
 					{/* Language Settings */}
 					<Card>
 						<CardHeader>
@@ -246,7 +245,7 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 						</CardContent>
 					</Card>
 				</div>
-			</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

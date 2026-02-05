@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import {
 	DEFAULT_APPROVAL_KEYWORDS,
 	DEFAULT_REJECTION_KEYWORDS,
@@ -61,7 +62,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 		models = await getAvailableModels(apiKey);
 	}
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
+		systemLanguages,
 		settings: {
 			apiKey: apiKey ? "••••••••" : "", // Mask API key
 			hasApiKey: !!apiKey,
@@ -132,7 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
 export default function SettingsReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { settings, models, defaultKeywords } = loaderData;
+	const { settings, models, defaultKeywords, systemLanguages } = loaderData;
 	const { t } = useTranslation();
 	const navigation = useNavigation();
 	const actionData = useActionData<typeof action>();
@@ -173,15 +176,13 @@ export default function SettingsReimbursements({
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 py-8">
-				{/* Header */}
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("settings.reimbursements.title")}
-					</h1>
-				</div>
-
-				<div className="space-y-6">
+			<SplitLayout
+				header={{
+					primary: t("settings.reimbursements.title", { lng: systemLanguages.primary }),
+					secondary: t("settings.reimbursements.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+			>
+				<div className="max-w-2xl space-y-6">
 					{/* API Key missing warning */}
 					{!settings.hasApiKey && (
 						<Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20">
@@ -394,7 +395,7 @@ export default function SettingsReimbursements({
 						</CardContent>
 					</Card>
 				</div>
-			</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

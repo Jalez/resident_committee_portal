@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Form } from "react-router";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { getDatabase, type Submission, type SubmissionStatus } from "~/db";
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/submissions";
@@ -32,11 +33,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		session: user,
 		submissions: sortedSubmissions,
 		canDelete: hasPermission(user, "submissions:delete"),
+		systemLanguages,
 	};
 }
 
@@ -96,7 +99,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Submissions({ loaderData }: Route.ComponentProps) {
-	const { session, submissions, canDelete } = loaderData;
+	const { session, submissions, canDelete, systemLanguages } = loaderData;
 	const { t, i18n } = useTranslation();
 
 	const getStatusLabel = (status: string) => {
@@ -107,24 +110,20 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-6xl mx-auto px-4">
-				{/* Header */}
-				<div className="flex items-center justify-between mb-8">
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("submissions.title")}
-						</h1>
+			<SplitLayout
+				header={{
+					primary: t("submissions.title", { lng: systemLanguages.primary }),
+					secondary: t("submissions.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+				footer={
+					<div className="text-right">
+						<p className="text-sm font-medium text-gray-900 dark:text-white">
+							{session.name || session.email}
+						</p>
+						<p className="text-xs text-gray-500">{session.email}</p>
 					</div>
-					<div className="flex items-center gap-4">
-						<div className="text-right">
-							<p className="text-sm font-medium text-gray-900 dark:text-white">
-								{session.name || session.email}
-							</p>
-							<p className="text-xs text-gray-500">{session.email}</p>
-						</div>
-					</div>
-				</div>
-
+				}
+			>
 				{/* Submissions List - Card View for Mobile */}
 				<div className="space-y-4 md:hidden mb-8">
 					{submissions.length === 0 ? (
@@ -283,7 +282,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 						</table>
 					</div>
 				</div>
-			</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Form, redirect, useNavigate, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { LocalModelSelector } from "~/components/local-model-selector";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { TranslateFieldButton } from "~/components/translate-field-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -164,7 +164,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function NewsEdit({ loaderData }: Route.ComponentProps) {
-	const { item, primaryLabel, secondaryLabel } = loaderData;
+	const { item, primaryLabel, secondaryLabel, systemLanguages } = loaderData;
 	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const { hasPermission } = useUser();
@@ -202,10 +202,21 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 					contentSecondary: item.contentSecondary ?? "",
 				};
 
+	const headerPrimary = canUpdate
+		? t("news.edit_title", { lng: systemLanguages.primary })
+		: item.title;
+	const headerSecondary = canUpdate
+		? t("news.edit_title", { lng: systemLanguages.secondary ?? systemLanguages.primary })
+		: item.titleSecondary ?? item.title;
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="flex items-center gap-4 mb-8">
+			<SplitLayout
+				header={{
+					primary: headerPrimary,
+					secondary: headerSecondary,
+				}}
+				footer={
 					<Button
 						variant="ghost"
 						size="icon"
@@ -214,10 +225,9 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 					>
 						<span className="material-symbols-outlined">arrow_back</span>
 					</Button>
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{canUpdate ? t("news.edit_title") : item.title}
-					</h1>
-				</div>
+				}
+			>
+				<div className="max-w-2xl">
 				{canUpdate ? (
 					<Form method="post" className="space-y-6">
 						{/* Local Model Selector */}
@@ -454,7 +464,8 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 						);
 					})()
 				)}
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

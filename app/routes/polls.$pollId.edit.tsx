@@ -1,10 +1,10 @@
-
-import { useState } from "react";
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { getAnalyticsSheets } from "~/lib/google.server";
 import type { AnalyticsSheet } from "~/lib/google.server";
 import type { Route } from "./+types/polls.$pollId.edit";
@@ -85,12 +85,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         }
     }
 
+    const systemLanguages = await getSystemLanguageDefaults();
     return {
         siteConfig: SITE_CONFIG,
         poll,
         analyticsSheets,
         canUpdate,
         canDelete,
+        systemLanguages,
     };
 }
 
@@ -184,7 +186,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 export default function EditPoll({ loaderData }: Route.ComponentProps) {
     const { t } = useTranslation();
-    const { poll, analyticsSheets, canUpdate, canDelete } = loaderData;
+    const { poll, analyticsSheets, systemLanguages } = loaderData;
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
@@ -194,16 +196,21 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
     const defaultTime = deadlineIso ? deadlineIso.split("T")[1].substring(0, 5) : "";
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-            <div className="flex items-center gap-2 mb-6">
-                <Button asChild variant="ghost" size="sm">
-                    <Link to="/polls">
-                        <span className="material-symbols-outlined text-base">arrow_back</span>
-                    </Link>
-                </Button>
-                <h1 className="text-2xl font-bold">{t("common.actions.edit")} Poll</h1>
-            </div>
-
+        <PageWrapper>
+            <SplitLayout
+                header={{
+                    primary: `${t("common.actions.edit", { lng: systemLanguages.primary })} Poll`,
+                    secondary: `${t("common.actions.edit", { lng: systemLanguages.secondary ?? systemLanguages.primary })} Poll`,
+                }}
+                footer={
+                    <Button asChild variant="ghost" size="sm">
+                        <Link to="/polls">
+                            <span className="material-symbols-outlined text-base">arrow_back</span>
+                        </Link>
+                    </Button>
+                }
+            >
+                <div className="max-w-2xl">
             {actionData?.error && (
                 <Alert variant="destructive" className="mb-6">
                     <AlertTitle>{t("common.error")}</AlertTitle>
@@ -324,6 +331,8 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
                     </Form>
                 </CardContent>
             </Card>
-        </div>
+                </div>
+            </SplitLayout>
+        </PageWrapper>
     );
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Form, redirect, useNavigate, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { LocalModelSelector } from "~/components/local-model-selector";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { TranslateFieldButton } from "~/components/translate-field-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -158,7 +158,7 @@ export async function action({ request }: Route.ActionArgs) {
 export default function NewsNew({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const { primaryLabel, secondaryLabel } = loaderData;
+	const { primaryLabel, secondaryLabel, systemLanguages } = loaderData;
 	type TranslatedData =
 		| { direction: "to_secondary"; titleSecondary: string; summarySecondary: string | null; contentSecondary: string }
 		| { direction: "to_primary"; title: string; summary: string | null; content: string };
@@ -208,8 +208,12 @@ export default function NewsNew({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="flex items-center gap-4 mb-8">
+			<SplitLayout
+				header={{
+					primary: t("news.new_title", { lng: systemLanguages.primary }),
+					secondary: t("news.new_title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+				footer={
 					<Button
 						variant="ghost"
 						size="icon"
@@ -218,10 +222,9 @@ export default function NewsNew({ loaderData }: Route.ComponentProps) {
 					>
 						<span className="material-symbols-outlined">arrow_back</span>
 					</Button>
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("news.new_title")}
-					</h1>
-				</div>
+				}
+			>
+				<div className="max-w-2xl">
 				<Form id="news-new-form" method="post" className="space-y-6">
 					{/* Local Model Selector */}
 					<LocalModelSelector onModelChange={setLocalModel} />
@@ -410,7 +413,8 @@ export default function NewsNew({ loaderData }: Route.ComponentProps) {
 						</Button>
 					</div>
 				</Form>
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

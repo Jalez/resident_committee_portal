@@ -1,12 +1,14 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { updateFormPublishingState } from "~/lib/google.server";
 import type { Route } from "./+types/polls";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import type { Poll } from "~/db/schema";
 
@@ -93,6 +95,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const activePolls = allPolls.filter((p: Poll) => p.status === "active");
     const closedPolls = allPolls.filter((p: Poll) => p.status === "closed");
 
+    const systemLanguages = await getSystemLanguageDefaults();
     return {
         siteConfig: SITE_CONFIG,
         activePolls,
@@ -102,6 +105,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         canDelete,
         canViewAnalytics,
         currentYear,
+        systemLanguages,
     };
 }
 
@@ -240,41 +244,44 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
         canUpdate,
         canDelete,
         canViewAnalytics,
+        systemLanguages,
     } = loaderData;
 
     // Total active count includes only database polls
     const totalActiveCount = activePolls.length;
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">{t("polls.title")}</h1>
-                    <p className="text-muted-foreground">{t("polls.description")}</p>
-                </div>
-                <div className="flex gap-2">
-                    {canWrite && (
-                        <Button asChild>
-                            <Link to="/polls/new">
-                                <span className="material-symbols-outlined mr-1 text-base">add</span>
-                                {t("polls.add_poll")}
-                            </Link>
-                        </Button>
-                    )}
-                    {canViewAnalytics && (
-                        <Button asChild variant="outline">
-                            <Link to="/polls/analytics">
-                                <span className="material-symbols-outlined mr-1 text-base">analytics</span>
-                                {t("polls.analytics")}
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-            </div>
+        <PageWrapper>
+            <SplitLayout
+                header={{
+                    primary: t("polls.title", { lng: systemLanguages.primary }),
+                    secondary: t("polls.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+                }}
+                footer={
+                    <div className="flex gap-2">
+                        {canWrite && (
+                            <Button asChild>
+                                <Link to="/polls/new">
+                                    <span className="material-symbols-outlined mr-1 text-base">add</span>
+                                    {t("polls.add_poll")}
+                                </Link>
+                            </Button>
+                        )}
+                        {canViewAnalytics && (
+                            <Button asChild variant="outline">
+                                <Link to="/polls/analytics">
+                                    <span className="material-symbols-outlined mr-1 text-base">analytics</span>
+                                    {t("polls.analytics")}
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
+                }
+            >
+                <p className="text-muted-foreground mb-8">{t("polls.description")}</p>
 
-            {/* Active Polls Section */}
-            <section className="mb-8">
+                {/* Active Polls Section */}
+                <section className="mb-8">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <span className="material-symbols-outlined text-green-600">radio_button_checked</span>
                     {t("polls.active")} ({totalActiveCount})
@@ -322,6 +329,7 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
                     </div>
                 </section>
             )}
-        </div>
+            </SplitLayout>
+        </PageWrapper>
     );
 }

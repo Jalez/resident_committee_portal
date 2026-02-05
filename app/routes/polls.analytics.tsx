@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import {
     getAnalyticsSheets,
     getSheetData,
@@ -127,7 +129,7 @@ export async function loader({ request }: Route.LoaderArgs) {
                 ...new Set(
                     (sheetData.rows || [])
                         .map((row) => row[header])
-                        .filter((v) => v && v.trim()),
+                        .filter((v) => v?.trim()),
                 ),
             ].sort();
             columnUniqueValues[header] = uniqueVals;
@@ -137,6 +139,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     // Get all rows for chart data (not paginated)
     const allFilteredRows = filteredRows;
 
+    const systemLanguages = await getSystemLanguageDefaults();
     return {
         siteConfig: SITE_CONFIG,
         sheets,
@@ -155,6 +158,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         pageSize,
         canExport,
         hiddenQuestions,
+        systemLanguages,
     };
 }
 
@@ -174,31 +178,31 @@ export default function PollsAnalytics({ loaderData }: Route.ComponentProps) {
         pageSize,
         canExport,
         hiddenQuestions,
+        systemLanguages,
     } = loaderData;
     const [activeChartColumn, setActiveChartColumn] = useState<number>(0);
 
     return (
-        <div className="flex flex-col gap-6 p-4 md:p-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-2">
-                        <Button asChild variant="ghost" size="sm" className="mr-2">
-                            <Link to="/polls">
-                                <span className="material-symbols-outlined text-base">arrow_back</span>
-                            </Link>
-                        </Button>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {t("polls.analytics")}
-                        </h1>
-                    </div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm ml-12">
-                        {t("polls.analytics_description")}
-                    </p>
-                </div>
-            </div>
+        <PageWrapper>
+            <SplitLayout
+                header={{
+                    primary: t("polls.analytics", { lng: systemLanguages.primary }),
+                    secondary: t("polls.analytics", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+                }}
+                footer={
+                    <Button asChild variant="ghost" size="sm">
+                        <Link to="/polls">
+                            <span className="material-symbols-outlined text-base">arrow_back</span>
+                        </Link>
+                    </Button>
+                }
+            >
+                <div className="flex flex-col gap-6">
+                <p className="text-gray-500 dark:text-gray-400 text-sm -mt-6 mb-2">
+                    {t("polls.analytics_description")}
+                </p>
 
-            {/* Sheet Selector & Actions */}
+                {/* Sheet Selector & Actions */}
             <AnalyticsHeader
                 sheets={sheets}
                 selectedSheet={selectedSheet}
@@ -257,6 +261,8 @@ export default function PollsAnalytics({ loaderData }: Route.ComponentProps) {
                     />
                 </>
             )}
-        </div>
+                </div>
+            </SplitLayout>
+        </PageWrapper>
     );
 }

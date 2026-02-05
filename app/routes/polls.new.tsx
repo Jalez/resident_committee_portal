@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import {
     getAnalyticsSheets,
     getGoogleForm,
@@ -83,6 +84,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         }
     }
 
+    const systemLanguages = await getSystemLanguageDefaults();
     return {
         siteConfig: SITE_CONFIG,
         analyticsSheets,
@@ -90,6 +92,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         userId: authUser.userId,
         userEmail: authUser.email,
         serviceAccountEmail: GOOGLE_CONFIG.serviceAccountEmail,
+        systemLanguages,
     };
 }
 
@@ -230,7 +233,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function NewPoll({ loaderData }: Route.ComponentProps) {
     const { t } = useTranslation();
-    const { analyticsSheets, serviceAccountEmail, discoveredForms } = loaderData;
+    const { analyticsSheets, serviceAccountEmail, discoveredForms, systemLanguages } = loaderData;
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
@@ -241,17 +244,21 @@ export default function NewPoll({ loaderData }: Route.ComponentProps) {
 
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-6">
-                <Button asChild variant="ghost" size="sm">
-                    <Link to="/polls">
-                        <span className="material-symbols-outlined text-base">arrow_back</span>
-                    </Link>
-                </Button>
-                <h1 className="text-2xl font-bold">{t("polls.new.title")}</h1>
-            </div>
-
+        <PageWrapper>
+            <SplitLayout
+                header={{
+                    primary: t("polls.new.title", { lng: systemLanguages.primary }),
+                    secondary: t("polls.new.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+                }}
+                footer={
+                    <Button asChild variant="ghost" size="sm">
+                        <Link to="/polls">
+                            <span className="material-symbols-outlined text-base">arrow_back</span>
+                        </Link>
+                    </Button>
+                }
+            >
+                <div className="max-w-2xl">
             {/* Error Alert */}
             {actionData?.error && (
                 <Alert variant="destructive" className="mb-6">
@@ -507,6 +514,8 @@ export default function NewPoll({ loaderData }: Route.ComponentProps) {
                     </CardContent>
                 </Card>
             )}
-        </div>
+                </div>
+            </SplitLayout>
+        </PageWrapper>
     );
 }

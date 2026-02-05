@@ -2,10 +2,11 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase, type Role } from "~/db";
 import { isAdmin, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/settings.users";
 
@@ -52,10 +53,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 		};
 	});
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		users: usersWithRoles,
 		roles,
+		systemLanguages,
 	};
 }
 
@@ -98,21 +101,17 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function AdminUsers({ loaderData }: Route.ComponentProps) {
-	const { users, roles } = loaderData;
+	const { users, roles, systemLanguages } = loaderData;
 	const { t } = useTranslation();
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-6xl mx-auto px-4">
-				{/* Header */}
-				<div className="flex items-center justify-between mb-8">
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("settings.users.title")}
-						</h1>
-					</div>
-				</div>
-
+			<SplitLayout
+				header={{
+					primary: t("settings.users.title", { lng: systemLanguages.primary }),
+					secondary: t("settings.users.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+			>
 				{/* Users Table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
 					<div className="overflow-x-auto">
@@ -158,7 +157,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 						</table>
 					</div>
 				</div>
-			</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
 } from "~/components/ui/select";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import {
     getAnalyticsSheets,
     getSheetData,
@@ -85,6 +86,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         }),
     );
 
+    const systemLanguages = await getSystemLanguageDefaults();
     return {
         apiKey: apiKey ? "••••••••" : "",
         hasApiKey: !!apiKey,
@@ -92,6 +94,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         models,
         hiddenQuestions,
         allQuestions: Array.from(allQuestions).sort(),
+        systemLanguages,
     };
 }
 
@@ -128,7 +131,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) {
-    const { hasApiKey, analyticsModel: serverModel, models, hiddenQuestions: serverHiddenQuestions, allQuestions } = loaderData;
+    const { hasApiKey, analyticsModel: serverModel, models, hiddenQuestions: serverHiddenQuestions, allQuestions, systemLanguages } = loaderData;
     const { t } = useTranslation();
     const navigation = useNavigation();
     const actionData = useActionData<typeof action>();
@@ -165,14 +168,13 @@ export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) 
 
     return (
         <PageWrapper>
-            <div className="w-full max-w-2xl mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-                        Analytics Settings
-                    </h1>
-                </div>
-
-                <div className="space-y-6">
+            <SplitLayout
+                header={{
+                    primary: t("settings.analytics.title", { lng: systemLanguages.primary }),
+                    secondary: t("settings.analytics.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+                }}
+            >
+                <div className="max-w-2xl space-y-6">
                     {!hasApiKey && (
                         <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20">
                             <CardHeader>
@@ -353,7 +355,7 @@ export default function SettingsAnalytics({ loaderData }: Route.ComponentProps) 
                         </CardContent>
                     </Card>
                 </div>
-            </div>
+            </SplitLayout>
         </PageWrapper>
     );
 }

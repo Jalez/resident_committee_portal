@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useActionData, useNavigation } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -18,6 +18,7 @@ import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { getPermissionsByCategory } from "~/lib/permissions";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/settings.roles";
@@ -49,10 +50,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Group permissions by category from permissions.ts (source of truth)
 	const permissionsByCategory = getPermissionsByCategory();
 
+	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		roles: rolesWithPermissions,
 		permissionsByCategory,
+		systemLanguages,
 	};
 }
 
@@ -138,7 +141,7 @@ const ROLE_COLORS = [
 ];
 
 export default function AdminRoles({ loaderData }: Route.ComponentProps) {
-	const { roles, permissionsByCategory } = loaderData;
+	const { roles, permissionsByCategory, systemLanguages } = loaderData;
 	const { t } = useTranslation();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
@@ -174,16 +177,12 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-6xl mx-auto px-4">
-				{/* Header */}
-				<div className="flex items-center justify-between mb-8">
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("settings.roles.title")}
-						</h1>
-					</div>
-				</div>
-
+			<SplitLayout
+				header={{
+					primary: t("settings.roles.title", { lng: systemLanguages.primary }),
+					secondary: t("settings.roles.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+			>
 				{/* New Role Form */}
 				{showNewRoleForm && (
 					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
@@ -464,7 +463,7 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 						)}
 					</div>
 				</div>
-			</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }

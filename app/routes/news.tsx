@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db";
@@ -88,14 +88,12 @@ export default function News({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-4xl mx-auto px-4">
-				{/* Header - same pattern as treasury.reimbursements */}
-				<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("news.title")}
-						</h1>
-					</div>
+			<SplitLayout
+				header={{
+					primary: t("news.title", { lng: systemLanguages.primary }),
+					secondary: t("news.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+				}}
+				footer={
 					<div className="flex items-center gap-2">
 						<SearchMenu
 							fields={[
@@ -117,8 +115,9 @@ export default function News({ loaderData }: Route.ComponentProps) {
 							</Link>
 						)}
 					</div>
-				</div>
-			<div className="space-y-4">
+				}
+			>
+				<div className="space-y-4">
 				{items.length === 0 ? (
 					<div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-8 text-center">
 						<p className="text-gray-600 dark:text-gray-400">
@@ -191,8 +190,8 @@ export default function News({ loaderData }: Route.ComponentProps) {
 						})}
 					</ul>
 				)}
-			</div>
-			</div>
+				</div>
+			</SplitLayout>
 		</PageWrapper>
 	);
 }
