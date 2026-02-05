@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, redirect, useNavigate, useNavigation } from "react-router";
+import { Form, redirect, useNavigation } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
@@ -116,7 +116,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function EventsEdit({ loaderData, actionData }: Route.ComponentProps) {
-	const navigate = useNavigate();
 	const navigation = useNavigation();
 	const { t } = useTranslation();
 	const { event } = loaderData as unknown as { event: NonNullable<Awaited<ReturnType<typeof getCalendarEvent>>> };
@@ -159,20 +158,10 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4">
 				{/* Header */}
-				<div className="flex items-center gap-4 mb-8">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate("/events")}
-						className="h-10 w-10"
-					>
-						<span className="material-symbols-outlined">arrow_back</span>
-					</Button>
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("events.edit.header")}
-						</h1>
-					</div>
+				<div className="mb-8">
+					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
+						{t("events.edit.header")}
+					</h1>
 				</div>
 
 				{/* Error message */}

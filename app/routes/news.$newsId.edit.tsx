@@ -216,16 +216,6 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 					primary: headerPrimary,
 					secondary: headerSecondary,
 				}}
-				footer={
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate("/news")}
-						className="h-10 w-10"
-					>
-						<span className="material-symbols-outlined">arrow_back</span>
-					</Button>
-				}
 			>
 				<div className="max-w-2xl">
 				{canUpdate ? (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
+import { AddItemButton } from "~/components/add-item-button";
 import {
 	ActionButton,
 	ContentArea,
@@ -359,13 +360,11 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
 			{canWrite && !isInfoReel && (
-				<Link
+				<AddItemButton
 					to="/events/new"
-					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 					title={t("events.add_event")}
-				>
-					<span className="material-symbols-outlined text-xl">add</span>
-				</Link>
+					variant="icon"
+				/>
 			)}
 			{calendarUrl && (
 				<ActionButton

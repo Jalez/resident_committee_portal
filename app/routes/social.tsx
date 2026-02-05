@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, Link } from "react-router";
+import { Form } from "react-router";
+import { AddItemButton } from "~/components/add-item-button";
 import {
 	ContentArea,
 	PageWrapper,
@@ -163,13 +164,11 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 	const FooterContent =
 		canWrite && !isInfoReel ? (
 			<div className="flex items-center gap-2">
-				<Link
+				<AddItemButton
 					to="/social/new"
-					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-					title={`${t("common.actions.add")} / Add`}
-				>
-					<span className="material-symbols-outlined text-xl">add</span>
-				</Link>
+					title={t("common.actions.add")}
+					variant="icon"
+				/>
 			</div>
 		) : undefined;
 
@@ -450,12 +449,12 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 							</span>
 							<p className="font-medium">{t("social.no_channels")}</p>
 							{canWrite && (
-								<Link to="/social/new">
-									<Button className="mt-4">
-										<span className="material-symbols-outlined mr-2">add</span>
-										{t("social.add_first")}
-									</Button>
-								</Link>
+								<AddItemButton
+									to="/social/new"
+									title={t("social.add_first")}
+									variant="button"
+									className="mt-4"
+								/>
 							)}
 						</div>
 					)}

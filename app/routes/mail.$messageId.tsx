@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher } from "react-router";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { useFetcher } from "react-router";
+import { Trash2 } from "lucide-react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -59,10 +59,6 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const deleteFetcher = useFetcher();
-	const backTo =
-		message.direction === "sent"
-			? "/mail?direction=sent"
-			: "/mail?direction=inbox";
 
 	const handleConfirmDelete = () => {
 		const formData = new FormData();
@@ -75,13 +71,7 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex items-center justify-between gap-2">
-				<Button variant="ghost" size="sm" asChild>
-					<Link to={backTo}>
-						<ArrowLeft className="size-4" />
-						{t("mail.back")}
-					</Link>
-				</Button>
+			<div className="flex items-center justify-end gap-2">
 				<Button
 					variant="ghost"
 					size="sm"

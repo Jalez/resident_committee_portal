@@ -189,13 +189,6 @@ export default function PollsAnalytics({ loaderData }: Route.ComponentProps) {
                     primary: t("polls.analytics", { lng: systemLanguages.primary }),
                     secondary: t("polls.analytics", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
                 }}
-                footer={
-                    <Button asChild variant="ghost" size="sm">
-                        <Link to="/polls">
-                            <span className="material-symbols-outlined text-base">arrow_back</span>
-                        </Link>
-                    </Button>
-                }
             >
                 <div className="flex flex-col gap-6">
                 <p className="text-gray-500 dark:text-gray-400 text-sm -mt-6 mb-2">

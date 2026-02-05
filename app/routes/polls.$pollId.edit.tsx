@@ -202,13 +202,6 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
                     primary: `${t("common.actions.edit", { lng: systemLanguages.primary })} Poll`,
                     secondary: `${t("common.actions.edit", { lng: systemLanguages.secondary ?? systemLanguages.primary })} Poll`,
                 }}
-                footer={
-                    <Button asChild variant="ghost" size="sm">
-                        <Link to="/polls">
-                            <span className="material-symbols-outlined text-base">arrow_back</span>
-                        </Link>
-                    </Button>
-                }
             >
                 <div className="max-w-2xl">
             {actionData?.error && (

@@ -7,6 +7,7 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { updateFormPublishingState } from "~/lib/google.server";
 import type { Route } from "./+types/polls";
+import { AddItemButton } from "~/components/add-item-button";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -260,20 +261,11 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
                 footer={
                     <div className="flex gap-2">
                         {canWrite && (
-                            <Button asChild>
-                                <Link to="/polls/new">
-                                    <span className="material-symbols-outlined mr-1 text-base">add</span>
-                                    {t("polls.add_poll")}
-                                </Link>
-                            </Button>
-                        )}
-                        {canViewAnalytics && (
-                            <Button asChild variant="outline">
-                                <Link to="/polls/analytics">
-                                    <span className="material-symbols-outlined mr-1 text-base">analytics</span>
-                                    {t("polls.analytics")}
-                                </Link>
-                            </Button>
+                            <AddItemButton
+                                to="/polls/new"
+                                title={t("polls.add_poll")}
+                                variant="button"
+                            />
                         )}
                     </div>
                 }

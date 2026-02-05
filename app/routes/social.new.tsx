@@ -88,20 +88,10 @@ export default function SocialNew() {
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4">
 				{/* Header */}
-				<div className="flex items-center gap-4 mb-8">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate("/social")}
-						className="h-10 w-10"
-					>
-						<span className="material-symbols-outlined">arrow_back</span>
-					</Button>
-					<div>
-						<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-							{t("social.new.header")}
-						</h1>
-					</div>
+				<div className="mb-8">
+					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
+						{t("social.new.header")}
+					</h1>
 				</div>
 
 				{/* Form */}

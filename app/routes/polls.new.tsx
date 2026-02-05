@@ -250,13 +250,6 @@ export default function NewPoll({ loaderData }: Route.ComponentProps) {
                     primary: t("polls.new.title", { lng: systemLanguages.primary }),
                     secondary: t("polls.new.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
                 }}
-                footer={
-                    <Button asChild variant="ghost" size="sm">
-                        <Link to="/polls">
-                            <span className="material-symbols-outlined text-base">arrow_back</span>
-                        </Link>
-                    </Button>
-                }
             >
                 <div className="max-w-2xl">
             {/* Error Alert */}

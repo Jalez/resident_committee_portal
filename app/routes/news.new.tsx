@@ -213,16 +213,6 @@ export default function NewsNew({ loaderData }: Route.ComponentProps) {
 					primary: t("news.new_title", { lng: systemLanguages.primary }),
 					secondary: t("news.new_title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
 				}}
-				footer={
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate("/news")}
-						className="h-10 w-10"
-					>
-						<span className="material-symbols-outlined">arrow_back</span>
-					</Button>
-				}
 			>
 				<div className="max-w-2xl">
 				<Form id="news-new-form" method="post" className="space-y-6">

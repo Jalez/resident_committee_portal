@@ -1,7 +1,7 @@
 import { list } from "@vercel/blob";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLoaderData, useRevalidator } from "react-router";
+import { useLoaderData, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Thumbnail } from "~/components/ui/thumbnail";
@@ -74,16 +74,6 @@ export default function Avatars() {
 					primary: t("avatars.title", { lng: systemLanguages.primary }),
 					secondary: t("avatars.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
 				}}
-				footer={
-					<Button variant="ghost" size="sm" asChild>
-						<Link to="/settings/users" className="inline-flex items-center gap-1">
-							<span className="material-symbols-outlined text-base">
-								arrow_back
-							</span>
-							{t("common.actions.back")}
-						</Link>
-					</Button>
-				}
 			>
 				<p className="text-muted-foreground mb-6 -mt-6">
 					{t("avatars.description")}

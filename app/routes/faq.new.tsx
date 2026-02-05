@@ -196,16 +196,6 @@ export default function FaqNew({ loaderData }: Route.ComponentProps) {
 					primary: t("faq.new_title", { lng: systemLanguages.primary }),
 					secondary: t("faq.new_title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
 				}}
-				footer={
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate("/faq")}
-						className="h-10 w-10"
-					>
-						<span className="material-symbols-outlined">arrow_back</span>
-					</Button>
-				}
 			>
 				<div className="max-w-2xl">
 				<Form id="faq-new-form" method="post" className="space-y-6">

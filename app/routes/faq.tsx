@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
+import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
@@ -104,13 +105,11 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 							]}
 						/>
 						{canWrite && (
-							<Link
+							<AddItemButton
 								to="/faq/new"
-								className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 								title={t("faq.add")}
-							>
-								<span className="material-symbols-outlined text-xl">add</span>
-							</Link>
+								variant="icon"
+							/>
 						)}
 					</div>
 				}
