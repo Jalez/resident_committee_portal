@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { TableCell, TableRow } from "~/components/ui/table";
 
-interface TotalsColumn {
+export interface TotalsColumn {
 	/** The value to sum */
 	value: number;
 	/** Optional: if this is a transaction type, subtract expenses instead of adding */
 	type?: "income" | "expense";
 }
 
-interface TableTotalsRowProps {
+export interface TableTotalsRowProps {
 	/** Number of columns before the summable columns */
 	labelColSpan: number;
 	/** Columns to sum */
