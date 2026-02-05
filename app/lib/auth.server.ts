@@ -56,7 +56,6 @@ import { getSystemLanguageDefaults } from "./settings.server";
 
 export interface AuthenticatedUser extends SessionData {
 	userId: string;
-	roleId: string;
 	roleName?: string;
 	permissions: string[];
 	// Language preferences
@@ -110,16 +109,16 @@ export function isAdmin(email: string): boolean {
 /**
  * Database adapter interface for RBAC operations
  */
-interface RBACDatabaseAdapter {
+export interface RBACDatabaseAdapter {
 	findUserByEmail: (email: string) => Promise<{
 		id: string;
-		roleId: string;
 		primaryLanguage: string;
 		secondaryLanguage: string;
 		localOllamaEnabled: boolean;
 		localOllamaUrl: string;
 	} | null>;
 	getUserPermissions: (userId: string) => Promise<string[]>;
+	getUserRoleIds: (userId: string) => Promise<string[]>;
 	getRoleByName: (
 		name: string,
 	) => Promise<{ id: string; permissions: string[] } | null>;
@@ -194,13 +193,13 @@ export async function getAuthenticatedUser(
 	if (!dbUser) return null;
 
 	const permissions = await db.getUserPermissions(dbUser.id);
-	const role = await db.getRoleById(dbUser.roleId);
+	const roleIds = await db.getUserRoleIds(dbUser.id);
+	const firstRole = roleIds.length > 0 ? await db.getRoleById(roleIds[0]) : null;
 
 	return {
 		...session,
 		userId: dbUser.id,
-		roleId: dbUser.roleId,
-		roleName: role?.name,
+		roleName: firstRole?.name,
 		permissions,
 		primaryLanguage: dbUser.primaryLanguage,
 		secondaryLanguage: dbUser.secondaryLanguage,

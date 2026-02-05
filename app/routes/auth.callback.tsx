@@ -40,27 +40,23 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	// Persist user to database (creates new or updates existing)
 	const db = getDatabase();
 	const isAdminUser = isAdmin(userInfo.email);
-	let roleId: string | undefined;
-
-	// If user is super admin, fetch the Admin role ID
-	if (isAdminUser) {
-		const adminRole = await db.getRoleByName("Admin");
-		if (adminRole) {
-			roleId = adminRole.id;
-		}
-	}
 
 	const user = await db.upsertUser({
 		email: userInfo.email,
 		name: userInfo.name || userInfo.email.split("@")[0],
-		roleId,
 		picture: userInfo.picture || null,
 	});
 
 	// Ensure super admins always have the Admin role (even if they already existed)
-	if (isAdminUser && roleId && user.roleId !== roleId) {
-		await db.updateUser(user.id, { roleId });
-		console.log(`[OAuth Callback] Promoted ${userInfo.email} to Admin role`);
+	if (isAdminUser) {
+		const adminRole = await db.getRoleByName("Admin");
+		if (adminRole) {
+			const currentRoleIds = await db.getUserRoleIds(user.id);
+			if (!currentRoleIds.includes(adminRole.id)) {
+				await db.setUserRoles(user.id, [...currentRoleIds, adminRole.id]);
+				console.log(`[OAuth Callback] Promoted ${userInfo.email} to Admin role`);
+			}
+		}
 	}
 
 	// Update picture from Google only if user has not set a custom avatar

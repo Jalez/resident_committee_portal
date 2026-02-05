@@ -13,8 +13,7 @@ type CommitteeMember = {
 	email: string;
 	description: string | null;
 	picture: string | null;
-	primaryRole: { id: string; name: string; color: string };
-	secondaryRoles: { id: string; name: string; color: string }[];
+	roles: { id: string; name: string; color: string }[];
 };
 
 type CommitteeLoaderData = {
@@ -48,41 +47,30 @@ export async function loader({ request }: Route.LoaderArgs) {
 		};
 	}
 
-	// Get all users with "Board Member" role (primary or secondary)
+	// Get all users with "Board Member" role
 	const committeeUsers = await db.getUsersByRoleId(boardMemberRole.id);
 
 	// Get all roles for color/name lookup
 	const allRoles = await db.getAllRoles();
 	const roleMap = new Map(allRoles.map((r) => [r.id, r]));
 
-	// Get all secondary roles for committee members
-	const allSecondaryRoles = await db.getAllUserSecondaryRoles();
-	const secondaryRolesByUser = new Map<string, string[]>();
-	for (const sr of allSecondaryRoles) {
-		if (!secondaryRolesByUser.has(sr.userId)) {
-			secondaryRolesByUser.set(sr.userId, []);
-		}
-		const userRoles = secondaryRolesByUser.get(sr.userId);
-		if (userRoles) {
-			userRoles.push(sr.roleId);
-		}
+	// Get all user roles
+	const allUserRoles = await db.getAllUserRoles();
+	const rolesByUser = new Map<string, string[]>();
+	for (const ur of allUserRoles) {
+		const list = rolesByUser.get(ur.userId) ?? [];
+		list.push(ur.roleId);
+		rolesByUser.set(ur.userId, list);
 	}
 
 	// Build committee members list
 	const members: CommitteeMember[] = [];
 	for (const user of committeeUsers) {
-		const primaryRole = roleMap.get(user.roleId);
-		if (!primaryRole) continue;
-
-		const secondaryRoleIds = secondaryRolesByUser.get(user.id) || [];
-		const secondaryRoles = secondaryRoleIds
+		const userRoleIds = rolesByUser.get(user.id) || [];
+		const roles = userRoleIds
 			.map((roleId) => {
 				const role = roleMap.get(roleId);
 				if (!role) return null;
-				// Filter out "Board Member" if it's also the primary role to avoid duplication
-				if (role.id === boardMemberRole.id && user.roleId === boardMemberRole.id) {
-					return null;
-				}
 				return {
 					id: role.id,
 					name: role.name,
@@ -97,12 +85,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			email: user.email,
 			description: user.description || null,
 			picture: user.picture || null,
-			primaryRole: {
-				id: primaryRole.id,
-				name: primaryRole.name,
-				color: primaryRole.color,
-			},
-			secondaryRoles,
+			roles,
 		});
 	}
 

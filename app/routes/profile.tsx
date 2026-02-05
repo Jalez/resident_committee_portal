@@ -40,7 +40,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	// Get role name from the user's role
-	const role = await db.getRoleById(user.roleId);
+	const roleIds = await db.getUserRoleIds(user.id);
+	const roles = await Promise.all(
+		roleIds.map((id) => db.getRoleById(id)),
+	);
+	const role = roles.find((r) => r !== null) || null;
 
 	return {
 		siteConfig: SITE_CONFIG,

@@ -5,8 +5,7 @@ export type CommitteeMemberCardMember = {
 	name: string;
 	description: string | null;
 	picture: string | null;
-	primaryRole: { id: string; name: string; color: string };
-	secondaryRoles: { id: string; name: string; color: string }[];
+	roles: { id: string; name: string; color: string }[];
 };
 
 function getInitials(name: string): string {
@@ -22,7 +21,6 @@ type Props = {
 };
 
 export function CommitteeMemberCard({ member, noDescriptionLabel }: Props) {
-	const allRoles = [member.primaryRole, ...member.secondaryRoles];
 
 	return (
 		<div className="p-6 flex flex-col">
@@ -46,7 +44,7 @@ export function CommitteeMemberCard({ member, noDescriptionLabel }: Props) {
 						{member.name}
 					</h3>
 					<div className="mt-2 flex flex-wrap gap-2">
-						{allRoles.map((role) => (
+						{member.roles.map((role) => (
 							<span
 								key={role.id}
 								className={cn(

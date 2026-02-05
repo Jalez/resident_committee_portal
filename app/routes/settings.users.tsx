@@ -33,27 +33,28 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const url = new URL(request.url);
 	const nameParam = url.searchParams.get("name");
 
-	const [users, roles, secondaryRows] = await Promise.all([
+	const [users, roles, userRoleRows] = await Promise.all([
 		db.getAllUsers(),
 		db.getAllRoles(),
-		db.getAllUserSecondaryRoles(),
+		db.getAllUserRoles(),
 	]);
 
-	const secondaryByUser = new Map<string, string[]>();
-	for (const row of secondaryRows) {
-		const list = secondaryByUser.get(row.userId) ?? [];
+	const rolesByUser = new Map<string, string[]>();
+	for (const row of userRoleRows) {
+		const list = rolesByUser.get(row.userId) ?? [];
 		list.push(row.roleId);
-		secondaryByUser.set(row.userId, list);
+		rolesByUser.set(row.userId, list);
 	}
 
-	// Enrich users with role info and secondary role IDs
+	// Enrich users with role info
 	let usersWithRoles = users.map((user) => {
-		const userRole = roles.find((r) => r.id === user.roleId);
+		const userRoleIds = rolesByUser.get(user.id) ?? [];
+		const firstRole = userRoleIds.length > 0 ? roles.find((r) => r.id === userRoleIds[0]) : null;
 		return {
 			...user,
-			roleName: userRole?.name || "Unknown",
-			roleColor: userRole?.color || "bg-gray-500",
-			secondaryRoleIds: secondaryByUser.get(user.id) ?? [],
+			roleName: firstRole?.name || "Unknown",
+			roleColor: firstRole?.color || "bg-gray-500",
+			roleIds: userRoleIds,
 			isSuperAdmin: isAdmin(user.email),
 		};
 	});
@@ -85,12 +86,9 @@ export async function action({ request }: Route.ActionArgs) {
 
 	const formData = await request.formData();
 	const userId = formData.get("userId") as string;
-	const roleId = formData.get("roleId") as string;
-	const secondaryRoleIds = (formData.getAll("secondaryRoleIds") as string[]).filter(
-		Boolean,
-	);
+	const roleIds = (formData.getAll("roleIds") as string[]).filter(Boolean);
 
-	if (!userId || !roleId) {
+	if (!userId) {
 		return { success: false, error: "missing_fields" };
 	}
 
@@ -103,12 +101,11 @@ export async function action({ request }: Route.ActionArgs) {
 			return { success: false, error: "super_admin_protected" };
 		}
 
-		await db.updateUser(userId, { roleId });
-		await db.setUserSecondaryRoles(userId, secondaryRoleIds);
+		await db.setUserRoles(userId, roleIds);
 
 		return { success: true };
 	} catch (error) {
-		console.error("Failed to update user role:", error);
+		console.error("Failed to update user roles:", error);
 		return { success: false, error: "update_failed" };
 	}
 }
@@ -155,13 +152,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 										{t("settings.users.headers.email")}
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-										{t("settings.users.headers.apartment")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-										{t("settings.users.headers.role")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-										{t("settings.users.headers.secondary_roles")}
+										{t("settings.users.headers.roles")}
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
 										{t("settings.users.headers.joined")}
@@ -172,7 +163,7 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 								{users.length === 0 ? (
 									<tr>
 										<td
-											colSpan={6}
+											colSpan={4}
 											className="px-4 py-12 text-center text-gray-500"
 										>
 											{t("settings.users.no_users")}
@@ -197,10 +188,9 @@ interface UserRowProps {
 		id: string;
 		email: string;
 		name: string;
-		roleId: string;
 		roleName: string;
 		roleColor: string;
-		secondaryRoleIds: string[];
+		roleIds: string[];
 		apartmentNumber: string | null;
 		createdAt: Date;
 		isSuperAdmin?: boolean;
@@ -250,72 +240,24 @@ function UserRow({ user, roles }: UserRowProps) {
 			<td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
 				{user.email}
 			</td>
-			<td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-				{user.apartmentNumber || "-"}
-			</td>
-			<td className="px-4 py-4">
-				{user.isSuperAdmin ? (
-					<div
-						className={cn(
-							"px-3 py-1.5 rounded-lg text-sm font-medium border-0 inline-flex items-center gap-1.5 text-white opacity-90 cursor-not-allowed",
-							user.roleColor,
-						)}
-					>
-						<span className="material-symbols-outlined text-base">lock</span>
-						{user.roleName}
-					</div>
-				) : (
-					<fetcher.Form method="post">
-						<input type="hidden" name="userId" value={user.id} />
-						{user.secondaryRoleIds.map((id) => (
-							<input
-								key={id}
-								type="hidden"
-								name="secondaryRoleIds"
-								value={id}
-							/>
-						))}
-						<select
-							name="roleId"
-							defaultValue={user.roleId}
-							onChange={(e) => e.target.form?.requestSubmit()}
-							disabled={fetcher.state !== "idle"}
-							className={cn(
-								"px-3 py-1.5 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors text-white",
-								user.roleColor,
-								fetcher.state !== "idle" && "opacity-50 cursor-wait",
-							)}
-						>
-							{roles.map((role) => (
-								<option key={role.id} value={role.id}>
-									{role.name}
-								</option>
-							))}
-						</select>
-					</fetcher.Form>
-				)}
-			</td>
 			<td className="px-4 py-4">
 				{user.isSuperAdmin ? (
 					<span className="text-sm text-gray-400">—</span>
 				) : (
 					<div className="min-w-[200px]">
 						<RolePicker
-							selectedRoleIds={user.secondaryRoleIds}
-							availableRoles={roles.filter(
-								(r) => r.name !== "Guest" && r.id !== user.roleId,
-							)}
-							onChange={(secondaryRoleIds) => {
+							selectedRoleIds={user.roleIds}
+							availableRoles={roles.filter((r) => r.name !== "Guest")}
+							onChange={(roleIds) => {
 								const formData = new FormData();
 								formData.set("userId", user.id);
-								formData.set("roleId", user.roleId);
-								for (const id of secondaryRoleIds) {
-									formData.append("secondaryRoleIds", id);
+								for (const id of roleIds) {
+									formData.append("roleIds", id);
 								}
 								fetcher.submit(formData, { method: "post" });
 							}}
 							disabled={fetcher.state !== "idle"}
-							listId={`secondary-roles-${user.id}`}
+							listId={`roles-${user.id}`}
 							label=""
 						/>
 					</div>

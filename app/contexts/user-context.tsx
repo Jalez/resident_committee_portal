@@ -9,7 +9,6 @@ export interface ClientUser {
 	email: string;
 	name?: string;
 	roleName: string;
-	roleId: string;
 	permissions: string[];
 	primaryLanguage: string;
 	secondaryLanguage: string;
