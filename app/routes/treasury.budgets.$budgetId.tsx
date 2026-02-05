@@ -1,10 +1,8 @@
-import { Form, Link, redirect, useNavigate } from "react-router";
+import { Form, Link, redirect, useSearchParams } from "react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-    ContentArea,
-    PageWrapper,
-    SplitLayout,
-} from "~/components/layout/page-layout";
+import { toast } from "sonner";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -28,13 +26,12 @@ import {
     requirePermission,
     getAuthenticatedUser,
     requireDeletePermissionOrSelf,
-    requirePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { Route } from "./+types/treasury.reservations.$reservationId";
+import type { Route } from "./+types/treasury.budgets.$budgetId";
 
 export function meta({ data }: Route.MetaArgs) {
-    const name = data?.reservation?.name || "Reservation";
+    const name = data?.budget?.name || "Budget";
     return [
         {
             title: `${data?.siteConfig?.name || "Portal"} - ${name}`,
@@ -44,31 +41,35 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-    await requirePermission(request, "reservations:read", getDatabase);
+    await requirePermission(request, "budgets:read", getDatabase);
     const authUser = await getAuthenticatedUser(request, getDatabase);
 
     const db = getDatabase();
-    const reservation = await db.getFundReservationById(params.reservationId);
+    const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!reservation) {
+    if (!budget) {
         throw new Response("Not Found", { status: 404 });
     }
 
     // Get linked transactions
-    const linkedTransactions = await db.getReservationTransactions(
-        reservation.id,
+    const linkedTransactions = await db.getBudgetTransactions(
+        budget.id,
     );
-    const usedAmount = await db.getReservationUsedAmount(reservation.id);
+    const usedAmount = await db.getBudgetUsedAmount(budget.id);
 
-    // Get creator info - we'll just show "Unknown" if we can't get the user
-    const createdByName = reservation.createdBy ? "—" : null;
+    // Look up creator name when createdBy is set
+    let createdByName: string | null = null;
+    if (budget.createdBy) {
+        const creator = await db.findUserById(budget.createdBy);
+        createdByName = creator?.name ?? null;
+    }
 
     return {
         siteConfig: SITE_CONFIG,
-        reservation: {
-            ...reservation,
+        budget: {
+            ...budget,
             usedAmount,
-            remainingAmount: Number.parseFloat(reservation.amount) - usedAmount,
+            remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
         },
         linkedTransactions,
         createdByName,
@@ -82,9 +83,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export async function action({ request, params }: Route.ActionArgs) {
     const db = getDatabase();
-    const reservation = await db.getFundReservationById(params.reservationId);
+    const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!reservation) {
+    if (!budget) {
         throw new Response("Not Found", { status: 404 });
     }
 
@@ -95,60 +96,30 @@ export async function action({ request, params }: Route.ActionArgs) {
         // Check delete permission
         await requireDeletePermissionOrSelf(
             request,
-            "reservations:delete",
-            "reservations:delete-self",
-            reservation.createdBy,
+            "budgets:delete",
+            "budgets:delete-self",
+            budget.createdBy,
             getDatabase,
         );
 
-        const deleted = await db.deleteFundReservation(params.reservationId);
+        const deleted = await db.deleteFundBudget(params.budgetId);
         if (!deleted) {
             return redirect(
-                `/treasury/reservations/${params.reservationId}?error=has_transactions`,
+                `/treasury/budgets/${params.budgetId}?error=has_transactions`,
             );
         }
 
-        return redirect(`/treasury/reservations?year=${reservation.year}&success=deleted`);
-    }
-
-    if (actionType === "close") {
-        await requirePermissionOrSelf(
-            request,
-            "reservations:update",
-            "reservations:update-self",
-            reservation.createdBy,
-            getDatabase,
-        );
-
-        await db.updateFundReservation(params.reservationId, { status: "closed" });
-        return redirect(
-            `/treasury/reservations/${params.reservationId}?success=closed`,
-        );
-    }
-
-    if (actionType === "reopen") {
-        await requirePermissionOrSelf(
-            request,
-            "reservations:update",
-            "reservations:update-self",
-            reservation.createdBy,
-            getDatabase,
-        );
-
-        await db.updateFundReservation(params.reservationId, { status: "open" });
-        return redirect(
-            `/treasury/reservations/${params.reservationId}?success=reopened`,
-        );
+        return redirect(`/treasury/budgets?year=${budget.year}&success=deleted`);
     }
 
     return null;
 }
 
-export default function TreasuryReservationsView({
+export default function TreasuryBudgetsView({
     loaderData,
 }: Route.ComponentProps) {
     const {
-        reservation,
+        budget,
         linkedTransactions,
         createdByName,
         languages,
@@ -156,17 +127,32 @@ export default function TreasuryReservationsView({
     } = loaderData;
     const { t, i18n } = useTranslation();
     const { hasPermission } = useUser();
-    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const success = searchParams.get("success");
+        if (success) {
+            const successMessages: Record<string, string> = {
+                updated: "treasury.budgets.success.updated",
+                closed: "treasury.budgets.success.closed",
+                reopened: "treasury.budgets.success.reopened",
+            };
+            toast.success(t(successMessages[success] || success));
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("success");
+            setSearchParams(nextParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams, t]);
 
     // Permissions
     const canUpdate =
-        hasPermission("reservations:update") ||
-        (hasPermission("reservations:update-self") &&
-            reservation.createdBy === currentUserId);
+        hasPermission("budgets:update") ||
+        (hasPermission("budgets:update-self") &&
+            budget.createdBy === currentUserId);
     const canDelete =
-        hasPermission("reservations:delete") ||
-        (hasPermission("reservations:delete-self") &&
-            reservation.createdBy === currentUserId);
+        hasPermission("budgets:delete") ||
+        (hasPermission("budgets:delete-self") &&
+            budget.createdBy === currentUserId);
 
     const formatCurrency = (value: number) => {
         return `${value.toFixed(2).replace(".", ",")} €`;
@@ -181,33 +167,33 @@ export default function TreasuryReservationsView({
         <PageWrapper>
             <SplitLayout
                 header={{
-                    primary: t("treasury.reservations.view.title", {
+                    primary: t("treasury.budgets.view.title", {
                         lng: languages.primary,
                     }),
-                    secondary: t("treasury.reservations.view.title", {
+                    secondary: t("treasury.budgets.view.title", {
                         lng: languages.secondary,
                     }),
                 }}
             >
-                <ContentArea className="space-y-6">
+                <div className="space-y-6">
                     {/* Main info card */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-2xl">{reservation.name}</CardTitle>
-                                    {reservation.description && (
+                                    <CardTitle className="text-2xl">{budget.name}</CardTitle>
+                                    {budget.description && (
                                         <CardDescription className="mt-2">
-                                            {reservation.description}
+                                            {budget.description}
                                         </CardDescription>
                                     )}
                                 </div>
                                 <Badge
                                     variant={
-                                        reservation.status === "open" ? "default" : "secondary"
+                                        budget.status === "open" ? "default" : "secondary"
                                     }
                                 >
-                                    {t(`treasury.reservations.statuses.${reservation.status}`)}
+                                    {t(`treasury.budgets.statuses.${budget.status}`)}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -216,28 +202,28 @@ export default function TreasuryReservationsView({
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.reservations.amount")}
+                                        {t("treasury.budgets.amount")}
                                     </p>
                                     <p className="text-2xl font-bold">
-                                        {formatCurrency(Number.parseFloat(reservation.amount))}
+                                        {formatCurrency(Number.parseFloat(budget.amount))}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.reservations.used")}
+                                        {t("treasury.budgets.used")}
                                     </p>
                                     <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                                        {formatCurrency(reservation.usedAmount)}
+                                        {formatCurrency(budget.usedAmount)}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.reservations.remaining")}
+                                        {t("treasury.budgets.remaining")}
                                     </p>
                                     <p
-                                        className={`text-2xl font-bold ${reservation.remainingAmount > 0 ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}
+                                        className={`text-2xl font-bold ${budget.remainingAmount > 0 ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}
                                     >
-                                        {formatCurrency(reservation.remainingAmount)}
+                                        {formatCurrency(budget.remainingAmount)}
                                     </p>
                                 </div>
                             </div>
@@ -246,22 +232,22 @@ export default function TreasuryReservationsView({
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <p className="text-muted-foreground">
-                                        {t("treasury.reservations.year")}
+                                        {t("treasury.budgets.year")}
                                     </p>
-                                    <p className="font-medium">{reservation.year}</p>
+                                    <p className="font-medium">{budget.year}</p>
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground">
-                                        {t("treasury.reservations.created_by")}
+                                        {t("treasury.budgets.created_by")}
                                     </p>
                                     <p className="font-medium">{createdByName || "—"}</p>
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground">
-                                        {t("treasury.reservations.created_at")}
+                                        {t("treasury.budgets.created_at")}
                                     </p>
                                     <p className="font-medium">
-                                        {formatDate(reservation.createdAt)}
+                                        {formatDate(budget.createdAt)}
                                     </p>
                                 </div>
                             </div>
@@ -269,69 +255,16 @@ export default function TreasuryReservationsView({
                             {/* Actions */}
                             <div className="flex gap-2 pt-4 border-t">
                                 {canUpdate && (
-                                    <>
-                                        <Button variant="outline" asChild>
-                                            <Link
-                                                to={`/treasury/reservations/${reservation.id}/edit`}
-                                            >
-                                                <span className="material-symbols-outlined mr-2 text-sm">
-                                                    edit
-                                                </span>
-                                                {t("treasury.reservations.actions.edit")}
-                                            </Link>
-                                        </Button>
-
-                                        {reservation.status === "open" ? (
-                                            <Form method="post">
-                                                <input type="hidden" name="_action" value="close" />
-                                                <Button
-                                                    type="submit"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                        const remaining = formatCurrency(
-                                                            reservation.remainingAmount,
-                                                        );
-                                                        if (
-                                                            !confirm(
-                                                                t("treasury.reservations.close_confirm", {
-                                                                    amount: remaining,
-                                                                }),
-                                                            )
-                                                        ) {
-                                                            e.preventDefault();
-                                                        }
-                                                    }}
-                                                >
-                                                    <span className="material-symbols-outlined mr-2 text-sm">
-                                                        lock
-                                                    </span>
-                                                    {t("treasury.reservations.actions.close")}
-                                                </Button>
-                                            </Form>
-                                        ) : (
-                                            <Form method="post">
-                                                <input type="hidden" name="_action" value="reopen" />
-                                                <Button
-                                                    type="submit"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                        if (
-                                                            !confirm(
-                                                                t("treasury.reservations.reopen_confirm"),
-                                                            )
-                                                        ) {
-                                                            e.preventDefault();
-                                                        }
-                                                    }}
-                                                >
-                                                    <span className="material-symbols-outlined mr-2 text-sm">
-                                                        lock_open
-                                                    </span>
-                                                    {t("treasury.reservations.actions.reopen")}
-                                                </Button>
-                                            </Form>
-                                        )}
-                                    </>
+                                    <Button variant="outline" asChild>
+                                        <Link
+                                            to={`/treasury/budgets/${budget.id}/edit`}
+                                        >
+                                            <span className="material-symbols-outlined mr-2 text-sm">
+                                                edit
+                                            </span>
+                                            {t("treasury.budgets.actions.edit")}
+                                        </Link>
+                                    </Button>
                                 )}
 
                                 {canDelete && linkedTransactions.length === 0 && (
@@ -342,7 +275,7 @@ export default function TreasuryReservationsView({
                                             variant="destructive"
                                             onClick={(e) => {
                                                 if (
-                                                    !confirm(t("treasury.reservations.delete_confirm"))
+                                                    !confirm(t("treasury.budgets.delete_confirm"))
                                                 ) {
                                                     e.preventDefault();
                                                 }
@@ -351,7 +284,7 @@ export default function TreasuryReservationsView({
                                             <span className="material-symbols-outlined mr-2 text-sm">
                                                 delete
                                             </span>
-                                            {t("treasury.reservations.actions.delete")}
+                                            {t("treasury.budgets.actions.delete")}
                                         </Button>
                                     </Form>
                                 )}
@@ -363,7 +296,7 @@ export default function TreasuryReservationsView({
                     <Card>
                         <CardHeader>
                             <CardTitle>
-                                {t("treasury.reservations.linked_transactions")}
+                                {t("treasury.budgets.linked_transactions")}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -405,12 +338,12 @@ export default function TreasuryReservationsView({
                                 </Table>
                             ) : (
                                 <p className="text-center py-6 text-muted-foreground">
-                                    {t("treasury.reservations.no_transactions")}
+                                    {t("treasury.budgets.no_transactions")}
                                 </p>
                             )}
                         </CardContent>
                     </Card>
-                </ContentArea>
+                </div>
             </SplitLayout>
         </PageWrapper>
     );

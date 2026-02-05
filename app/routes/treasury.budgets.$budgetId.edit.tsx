@@ -23,10 +23,10 @@ import {
     requirePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { Route } from "./+types/treasury.reservations.$reservationId.edit";
+import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
-    const name = data?.reservation?.name || "Reservation";
+    const name = data?.budget?.name || "Budget";
     return [
         {
             title: `${data?.siteConfig?.name || "Portal"} - ${name} Edit`,
@@ -37,34 +37,35 @@ export function meta({ data }: Route.MetaArgs) {
 
 export async function loader({ request, params }: Route.LoaderArgs) {
     const db = getDatabase();
-    const reservation = await db.getFundReservationById(params.reservationId);
+    const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!reservation) {
+    if (!budget) {
         throw new Response("Not Found", { status: 404 });
     }
 
     // Check permission
     await requirePermissionOrSelf(
         request,
-        "reservations:update",
-        "reservations:update-self",
-        reservation.createdBy,
+        "budgets:update",
+        "budgets:update-self",
+        budget.createdBy,
         getDatabase,
     );
 
     const authUser = await getAuthenticatedUser(request, getDatabase);
 
     // Get used amount to prevent reducing below it
-    const usedAmount = await db.getReservationUsedAmount(reservation.id);
+    const usedAmount = await db.getBudgetUsedAmount(budget.id);
 
     // Get available funds
-    const availableFunds = await db.getAvailableFundsForYear(reservation.year);
+    const availableFunds = await db.getAvailableFundsForYear(budget.year);
 
     return {
         siteConfig: SITE_CONFIG,
-        reservation: {
-            ...reservation,
+        budget: {
+            ...budget,
             usedAmount,
+            remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
         },
         availableFunds,
         languages: {
@@ -74,7 +75,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     };
 }
 
-const updateReservationSchema = z.object({
+const updateBudgetSchema = z.object({
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
     amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
@@ -82,28 +83,44 @@ const updateReservationSchema = z.object({
 
 export async function action({ request, params }: Route.ActionArgs) {
     const db = getDatabase();
-    const reservation = await db.getFundReservationById(params.reservationId);
+    const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!reservation) {
+    if (!budget) {
         throw new Response("Not Found", { status: 404 });
     }
 
     // Check permission
     await requirePermissionOrSelf(
         request,
-        "reservations:update",
-        "reservations:update-self",
-        reservation.createdBy,
+        "budgets:update",
+        "budgets:update-self",
+        budget.createdBy,
         getDatabase,
     );
 
     const formData = await request.formData();
+    const actionType = formData.get("_action") as string | null;
+
+    if (actionType === "close") {
+        await db.updateFundBudget(params.budgetId, { status: "closed" });
+        return redirect(
+            `/treasury/budgets/${params.budgetId}?success=closed`,
+        );
+    }
+
+    if (actionType === "reopen") {
+        await db.updateFundBudget(params.budgetId, { status: "open" });
+        return redirect(
+            `/treasury/budgets/${params.budgetId}?success=reopened`,
+        );
+    }
+
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const amountStr = formData.get("amount") as string;
 
     // Validate
-    const result = updateReservationSchema.safeParse({
+    const result = updateBudgetSchema.safeParse({
         name,
         description,
         amount: amountStr,
@@ -120,7 +137,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     const newAmount = Number.parseFloat(amountStr.replace(",", "."));
 
     // Get used amount
-    const usedAmount = await db.getReservationUsedAmount(params.reservationId);
+    const usedAmount = await db.getBudgetUsedAmount(params.budgetId);
 
     // Cannot reduce below used amount
     if (newAmount < usedAmount) {
@@ -131,10 +148,10 @@ export async function action({ request, params }: Route.ActionArgs) {
     }
 
     // Check available funds if increasing
-    const currentAmount = Number.parseFloat(reservation.amount);
+    const currentAmount = Number.parseFloat(budget.amount);
     if (newAmount > currentAmount) {
         const increase = newAmount - currentAmount;
-        const availableFunds = await db.getAvailableFundsForYear(reservation.year);
+        const availableFunds = await db.getAvailableFundsForYear(budget.year);
 
         if (increase > availableFunds) {
             return {
@@ -144,23 +161,23 @@ export async function action({ request, params }: Route.ActionArgs) {
         }
     }
 
-    // Update reservation
-    await db.updateFundReservation(params.reservationId, {
+    // Update budget
+    await db.updateFundBudget(params.budgetId, {
         name,
         description: description || null,
         amount: newAmount.toFixed(2),
     });
 
     return redirect(
-        `/treasury/reservations/${params.reservationId}?success=updated`,
+        `/treasury/budgets/${params.budgetId}?success=updated`,
     );
 }
 
-export default function TreasuryReservationsEdit({
+export default function TreasuryBudgetsEdit({
     loaderData,
     actionData,
 }: Route.ComponentProps) {
-    const { reservation, availableFunds, languages } = loaderData;
+    const { budget, availableFunds, languages } = loaderData;
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -172,10 +189,10 @@ export default function TreasuryReservationsEdit({
         <PageWrapper>
             <SplitLayout
                 header={{
-                    primary: t("treasury.reservations.edit.title", {
+                    primary: t("treasury.budgets.edit.title", {
                         lng: languages.primary,
                     }),
-                    secondary: t("treasury.reservations.edit.title", {
+                    secondary: t("treasury.budgets.edit.title", {
                         lng: languages.secondary,
                     }),
                 }}
@@ -183,9 +200,9 @@ export default function TreasuryReservationsEdit({
                 <ContentArea>
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t("treasury.reservations.edit.title")}</CardTitle>
+                            <CardTitle>{t("treasury.budgets.edit.title")}</CardTitle>
                             <CardDescription>
-                                {t("treasury.reservations.available_funds")}:{" "}
+                                {t("treasury.budgets.available_funds")}:{" "}
                                 <span
                                     className={
                                         availableFunds >= 0
@@ -196,9 +213,9 @@ export default function TreasuryReservationsEdit({
                                     {formatCurrency(availableFunds)}
                                 </span>
                                 {" | "}
-                                {t("treasury.reservations.used")}:{" "}
+                                {t("treasury.budgets.used")}:{" "}
                                 <span className="text-gray-600 dark:text-gray-400">
-                                    {formatCurrency(reservation.usedAmount)}
+                                    {formatCurrency(budget.usedAmount)}
                                 </span>
                             </CardDescription>
                         </CardHeader>
@@ -206,7 +223,7 @@ export default function TreasuryReservationsEdit({
                             <Form method="post" className="space-y-4">
                                 {actionData?.error === "insufficient_funds" && (
                                     <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-                                        {t("treasury.reservations.insufficient_funds", {
+                                        {t("treasury.budgets.insufficient_funds", {
                                             available: formatCurrency(
                                                 actionData.availableFunds as number,
                                             ),
@@ -216,33 +233,33 @@ export default function TreasuryReservationsEdit({
 
                                 {actionData?.error === "cannot_reduce" && (
                                     <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-                                        {t("treasury.reservations.cannot_reduce", {
+                                        {t("treasury.budgets.cannot_reduce", {
                                             used: formatCurrency(actionData.usedAmount as number),
                                         })}
                                     </div>
                                 )}
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">{t("treasury.reservations.name")}</Label>
+                                    <Label htmlFor="name">{t("treasury.budgets.name")}</Label>
                                     <Input
                                         id="name"
                                         name="name"
-                                        defaultValue={reservation.name}
-                                        placeholder={t("treasury.reservations.name_placeholder")}
+                                        defaultValue={budget.name}
+                                        placeholder={t("treasury.budgets.name_placeholder")}
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="description">
-                                        {t("treasury.reservations.description")}
+                                        {t("treasury.budgets.description")}
                                     </Label>
                                     <Textarea
                                         id="description"
                                         name="description"
-                                        defaultValue={reservation.description || ""}
+                                        defaultValue={budget.description || ""}
                                         placeholder={t(
-                                            "treasury.reservations.description_placeholder",
+                                            "treasury.budgets.description_placeholder",
                                         )}
                                         rows={3}
                                     />
@@ -250,39 +267,91 @@ export default function TreasuryReservationsEdit({
 
                                 <div className="space-y-2">
                                     <Label htmlFor="amount">
-                                        {t("treasury.reservations.amount")} (€)
+                                        {t("treasury.budgets.amount")} (€)
                                     </Label>
                                     <Input
                                         id="amount"
                                         name="amount"
                                         type="text"
                                         inputMode="decimal"
-                                        defaultValue={Number.parseFloat(reservation.amount)
+                                        defaultValue={Number.parseFloat(budget.amount)
                                             .toFixed(2)
                                             .replace(".", ",")}
                                         placeholder="0,00"
                                         required
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        {t("treasury.reservations.cannot_reduce", {
-                                            used: formatCurrency(reservation.usedAmount),
+                                        {t("treasury.budgets.cannot_reduce", {
+                                            used: formatCurrency(budget.usedAmount),
                                         }).replace("Cannot reduce amount below used amount", "Minimum")}
                                     </p>
                                 </div>
 
-                                <div className="flex gap-3 pt-4">
+                                <div className="flex flex-wrap gap-3 pt-4">
                                     <Button type="submit">
-                                        {t("treasury.reservations.form.save")}
+                                        {t("treasury.budgets.form.save")}
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         onClick={() =>
-                                            navigate(`/treasury/reservations/${reservation.id}`)
+                                            navigate(`/treasury/budgets/${budget.id}`)
                                         }
                                     >
-                                        {t("treasury.reservations.form.cancel")}
+                                        {t("treasury.budgets.form.cancel")}
                                     </Button>
+
+                                    {budget.status === "open" ? (
+                                        <Form method="post" className="inline-block">
+                                            <input type="hidden" name="_action" value="close" />
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    const remaining = formatCurrency(
+                                                        Number.parseFloat(budget.amount) -
+                                                            budget.usedAmount,
+                                                    );
+                                                    if (
+                                                        !confirm(
+                                                            t("treasury.budgets.close_confirm", {
+                                                                amount: remaining,
+                                                            }),
+                                                        )
+                                                    ) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                            >
+                                                <span className="material-symbols-outlined mr-2 text-sm">
+                                                    lock
+                                                </span>
+                                                {t("treasury.budgets.actions.close")}
+                                            </Button>
+                                        </Form>
+                                    ) : (
+                                        <Form method="post" className="inline-block">
+                                            <input type="hidden" name="_action" value="reopen" />
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    if (
+                                                        !confirm(
+                                                            t("treasury.budgets.reopen_confirm"),
+                                                        )
+                                                    ) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                            >
+                                                <span className="material-symbols-outlined mr-2 text-sm">
+                                                    lock_open
+                                                </span>
+                                                {t("treasury.budgets.actions.reopen")}
+                                            </Button>
+                                        </Form>
+                                    )}
                                 </div>
                             </Form>
                         </CardContent>

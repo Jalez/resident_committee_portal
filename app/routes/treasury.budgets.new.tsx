@@ -20,19 +20,19 @@ import { Textarea } from "~/components/ui/textarea";
 import { getDatabase } from "~/db";
 import { requirePermission, getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import type { Route } from "./+types/treasury.reservations.new";
+import type { Route } from "./+types/treasury.budgets.new";
 
 export function meta({ data }: Route.MetaArgs) {
     return [
         {
-            title: `${data?.siteConfig?.name || "Portal"} - Uusi varaus / New Reservation`,
+            title: `${data?.siteConfig?.name || "Portal"} - Uusi budjetti / New Budget`,
         },
         { name: "robots", content: "noindex" },
     ];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    await requirePermission(request, "reservations:write", getDatabase);
+    await requirePermission(request, "budgets:write", getDatabase);
 
     const authUser = await getAuthenticatedUser(request, getDatabase);
 
@@ -56,7 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
 }
 
-const createReservationSchema = z.object({
+const createBudgetSchema = z.object({
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
     amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
@@ -66,7 +66,7 @@ const createReservationSchema = z.object({
 export async function action({ request }: Route.ActionArgs) {
     const authUser = await requirePermission(
         request,
-        "reservations:write",
+        "budgets:write",
         getDatabase,
     );
 
@@ -77,7 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
     const year = Number.parseInt(formData.get("year") as string, 10);
 
     // Validate
-    const result = createReservationSchema.safeParse({
+    const result = createBudgetSchema.safeParse({
         name,
         description,
         amount: amountStr,
@@ -102,27 +102,26 @@ export async function action({ request }: Route.ActionArgs) {
         };
     }
 
-    // Create reservation
-    await db.createFundReservation({
+    // Create budget
+    await db.createFundBudget({
         name,
         description: description || null,
         amount: amount.toFixed(2),
         year,
         status: "open",
-        createdBy: authUser?.userId || null,
+        createdBy: authUser.userId,
     });
 
-    return redirect(`/treasury/reservations?year=${year}&success=created`);
+    return redirect(`/treasury/budgets?year=${year}&success=created`);
 }
 
-export default function TreasuryReservationsNew({
+export default function TreasuryBudgetsNew({
     loaderData,
     actionData,
 }: Route.ComponentProps) {
     const { selectedYear, availableFunds, languages } = loaderData;
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
 
     const formatCurrency = (value: number) => {
         return `${value.toFixed(2).replace(".", ",")} €`;
@@ -132,8 +131,8 @@ export default function TreasuryReservationsNew({
         <PageWrapper>
             <SplitLayout
                 header={{
-                    primary: t("treasury.reservations.new", { lng: languages.primary }),
-                    secondary: t("treasury.reservations.new", {
+                    primary: t("treasury.budgets.new", { lng: languages.primary }),
+                    secondary: t("treasury.budgets.new", {
                         lng: languages.secondary,
                     }),
                 }}
@@ -141,9 +140,9 @@ export default function TreasuryReservationsNew({
                 <ContentArea>
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t("treasury.reservations.new")}</CardTitle>
+                            <CardTitle>{t("treasury.budgets.new")}</CardTitle>
                             <CardDescription>
-                                {t("treasury.reservations.available_funds")}:{" "}
+                                {t("treasury.budgets.available_funds")}:{" "}
                                 <span
                                     className={
                                         availableFunds >= 0
@@ -161,7 +160,7 @@ export default function TreasuryReservationsNew({
 
                                 {actionData?.error === "insufficient_funds" && (
                                     <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-                                        {t("treasury.reservations.insufficient_funds", {
+                                        {t("treasury.budgets.insufficient_funds", {
                                             available: formatCurrency(
                                                 actionData.availableFunds as number,
                                             ),
@@ -170,24 +169,24 @@ export default function TreasuryReservationsNew({
                                 )}
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">{t("treasury.reservations.name")}</Label>
+                                    <Label htmlFor="name">{t("treasury.budgets.name")}</Label>
                                     <Input
                                         id="name"
                                         name="name"
-                                        placeholder={t("treasury.reservations.name_placeholder")}
+                                        placeholder={t("treasury.budgets.name_placeholder")}
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="description">
-                                        {t("treasury.reservations.description")}
+                                        {t("treasury.budgets.description")}
                                     </Label>
                                     <Textarea
                                         id="description"
                                         name="description"
                                         placeholder={t(
-                                            "treasury.reservations.description_placeholder",
+                                            "treasury.budgets.description_placeholder",
                                         )}
                                         rows={3}
                                     />
@@ -195,7 +194,7 @@ export default function TreasuryReservationsNew({
 
                                 <div className="space-y-2">
                                     <Label htmlFor="amount">
-                                        {t("treasury.reservations.amount")} (€)
+                                        {t("treasury.budgets.amount")} (€)
                                     </Label>
                                     <Input
                                         id="amount"
@@ -209,18 +208,18 @@ export default function TreasuryReservationsNew({
 
                                 <div className="flex gap-3 pt-4">
                                     <Button type="submit">
-                                        {t("treasury.reservations.form.create")}
+                                        {t("treasury.budgets.form.create")}
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         onClick={() =>
                                             navigate(
-                                                `/treasury/reservations?year=${selectedYear}`,
+                                                `/treasury/budgets?year=${selectedYear}`,
                                             )
                                         }
                                     >
-                                        {t("treasury.reservations.form.cancel")}
+                                        {t("treasury.budgets.form.cancel")}
                                     </Button>
                                 </div>
                             </Form>
