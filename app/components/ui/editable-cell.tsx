@@ -10,6 +10,8 @@ interface EditableCellProps {
 	type?: string;
 	min?: string | number;
 	step?: string | number;
+	/** Optional class for the trigger button and input (e.g. "w-16" for narrow quantity) */
+	className?: string;
 }
 
 export function EditableCell({
@@ -20,6 +22,7 @@ export function EditableCell({
 	type = "text",
 	min,
 	step,
+	className: customClassName,
 }: EditableCellProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState(value);
@@ -137,7 +140,11 @@ export function EditableCell({
 				onBlur={handleSave}
 				onKeyDown={handleKeyDown}
 				onClick={(e) => e.stopPropagation()}
-				className="h-8 py-0 px-2 text-sm min-w-[100px]"
+				className={
+					customClassName
+						? `h-8 py-0 px-2 text-sm ${customClassName}`
+						: "h-8 py-0 px-2 text-sm min-w-[100px]"
+				}
 			/>
 		);
 	}
@@ -149,7 +156,7 @@ export function EditableCell({
 				e.stopPropagation();
 				setIsEditing(true);
 			}}
-			className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 px-1 py-0.5 rounded transition-colors cursor-text min-w-[60px] inline-block w-full h-full"
+			className={`text-left hover:bg-gray-100 dark:hover:bg-gray-700 px-1 py-0.5 rounded transition-colors cursor-text inline-block w-full h-full ${customClassName ?? "min-w-[60px]"}`}
 			title="Klikkaa muokataksesi / Click to edit"
 		>
 			{value || <span className="text-gray-400">-</span>}

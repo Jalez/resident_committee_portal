@@ -2,8 +2,16 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
 import { Checkbox } from "~/components/ui/checkbox";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { EditableCell } from "~/components/ui/editable-cell";
-import { Input } from "~/components/ui/input";
 import type { InventoryItem } from "~/db";
 import type { ColumnKey } from "./inventory-constants";
 
@@ -23,6 +31,15 @@ interface UseInventoryColumnsProps {
 		quantity: number,
 	) => void;
 	onReduceManualCount?: (itemId: string, quantity: number) => void;
+	// Unknown badge: connect to transaction (submenu) or create new
+	onSelectTransactionForItem?: (
+		item: InventoryItem,
+		quantity: number,
+		transaction: { id: string; description: string; date: Date; amount: string; category: string | null },
+	) => void;
+	onCreateNewTransaction?: (item: InventoryItem, quantity: number) => void;
+	// Inventory-category transactions for the "connect to existing" submenu
+	inventoryTransactions?: { id: string; description: string; date: Date; amount: string; category: string | null }[];
 	// Props for combobox options
 	uniqueLocations: string[];
 	uniqueCategories: string[];
@@ -57,12 +74,16 @@ export function useInventoryColumns({
 	onInlineEdit,
 	onUnlinkFromTransaction,
 	onReduceManualCount,
+	onSelectTransactionForItem,
+	onCreateNewTransaction,
+	inventoryTransactions = [],
 	uniqueLocations,
 	uniqueCategories,
 	itemNames,
 	transactionLinksMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
 	const { t, i18n } = useTranslation();
+	const inventoryOnly = inventoryTransactions.filter((tr) => tr.category === "inventory");
 
 	// Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
 	const columns: ColumnDef<InventoryItem>[] = [];
@@ -183,23 +204,14 @@ export function useInventoryColumns({
 			header: t("inventory.columns.quantity"),
 			cell: ({ row }) =>
 				isStaff && row.original.status === "active" ? (
-					<Input
+					<EditableCell
+						value={String(row.getValue("quantity") ?? "")}
+						onSave={(v) =>
+							onInlineEdit(row.original.id, "quantity", v || "1")
+						}
 						type="number"
 						min="1"
-						className="w-20 h-8 text-center"
-						defaultValue={row.getValue("quantity")}
-						onBlur={(e) => {
-							const newVal = parseInt(e.target.value, 10) || 1;
-							if (newVal !== row.original.quantity) {
-								onInlineEdit(row.original.id, "quantity", newVal.toString());
-							}
-						}}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.currentTarget.blur();
-							}
-						}}
-						onClick={(e) => e.stopPropagation()}
+						className="w-20 text-center"
 					/>
 				) : (
 					<span className="text-gray-600 dark:text-gray-400">
@@ -331,16 +343,87 @@ export function useInventoryColumns({
 							</span>
 						)}
 
-						{/* Unknown / Unaccounted */}
-						{unknownQuantity > 0 && (
-							<span
-								className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-								title="Unaccounted quantity"
-							>
-								unknown
-								<span className="ml-1 font-semibold">({unknownQuantity})</span>
-							</span>
-						)}
+						{/* Unknown / Unaccounted - clickable menu when callbacks provided */}
+						{unknownQuantity > 0 &&
+							(onSelectTransactionForItem || onCreateNewTransaction ? (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<button
+											type="button"
+											onClick={(e) => e.stopPropagation()}
+											className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 cursor-pointer"
+											title={t("inventory.badge_unknown_title")}
+										>
+											unknown
+											<span className="ml-1 font-semibold">
+												({unknownQuantity})
+											</span>
+										</button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()} className="max-h-[min(400px,60vh)] overflow-y-auto">
+										{onSelectTransactionForItem && (
+											<DropdownMenuSub>
+												<DropdownMenuSubTrigger
+													onClick={(e) => e.stopPropagation()}
+													className="gap-2"
+												>
+													{t("inventory.badge_connect_existing")}
+												</DropdownMenuSubTrigger>
+												<DropdownMenuSubContent className="max-h-[min(320px,50vh)] overflow-y-auto min-w-[220px]">
+													{inventoryOnly.length === 0 ? (
+														<div className="px-2 py-3 text-sm text-muted-foreground">
+															{t("inventory.modals.transaction_selector.no_suitable")}
+														</div>
+													) : (
+														inventoryOnly.map((transaction) => (
+															<DropdownMenuItem
+																key={transaction.id}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	onSelectTransactionForItem(item, unknownQuantity, transaction);
+																}}
+																className="flex flex-col items-stretch gap-0.5 py-2"
+															>
+																<span className="font-medium truncate">
+																	{transaction.description}
+																</span>
+																<span className="text-xs text-muted-foreground flex justify-between">
+																	<span>
+																		{new Date(transaction.date).toLocaleDateString(i18n.language)}
+																	</span>
+																	<span className="font-mono">
+																		{parseFloat(transaction.amount).toFixed(2).replace(".", ",")} €
+																	</span>
+																</span>
+															</DropdownMenuItem>
+														))
+													)}
+												</DropdownMenuSubContent>
+											</DropdownMenuSub>
+										)}
+										{onCreateNewTransaction && (
+											<DropdownMenuItem
+												onClick={(e) => {
+													e.stopPropagation();
+													onCreateNewTransaction(item, unknownQuantity);
+												}}
+											>
+												{t("inventory.badge_create_new_transaction")}
+											</DropdownMenuItem>
+										)}
+									</DropdownMenuContent>
+								</DropdownMenu>
+							) : (
+								<span
+									className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+									title="Unaccounted quantity"
+								>
+									unknown
+									<span className="ml-1 font-semibold">
+										({unknownQuantity})
+									</span>
+								</span>
+							))}
 					</div>
 				);
 			},
