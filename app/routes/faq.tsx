@@ -1,9 +1,11 @@
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { getDatabase } from "~/db";
 import {
 	getAuthenticatedUser,
@@ -84,9 +86,30 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 	const canDelete = hasPermission("faq:delete");
 	const useSecondary =
 		systemLanguages.secondary && i18n.language === systemLanguages.secondary;
+	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+	const deleteFormRef = useRef<HTMLFormElement>(null);
 
 	return (
 		<PageWrapper>
+			{canDelete && (
+				<Form method="post" className="hidden" ref={deleteFormRef}>
+					<input type="hidden" name="_action" value="delete" />
+					<input type="hidden" name="id" value={deleteConfirmId ?? ""} />
+				</Form>
+			)}
+			<ConfirmDialog
+				open={deleteConfirmId !== null}
+				onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+				title={t("common.actions.delete")}
+				description={t("faq.confirm_delete")}
+				confirmLabel={t("common.actions.delete")}
+				cancelLabel={t("common.actions.cancel")}
+				variant="destructive"
+				onConfirm={() => {
+					deleteFormRef.current?.requestSubmit();
+					setDeleteConfirmId(null);
+				}}
+			/>
 			<SplitLayout
 				header={{
 					primary: t("faq.title", { lng: systemLanguages.primary }),
@@ -158,22 +181,14 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 											</Button>
 										)}
 										{canDelete && (
-											<Form method="post">
-												<input type="hidden" name="_action" value="delete" />
-												<input type="hidden" name="id" value={item.id} />
-												<Button
-													type="submit"
-													variant="destructive"
-													size="sm"
-													onClick={(e) => {
-														if (!confirm(t("faq.confirm_delete"))) {
-															e.preventDefault();
-														}
-													}}
-												>
-													{t("faq.delete")}
-												</Button>
-											</Form>
+											<Button
+												type="button"
+												variant="destructive"
+												size="sm"
+												onClick={() => setDeleteConfirmId(item.id)}
+											>
+												{t("faq.delete")}
+											</Button>
 										)}
 									</div>
 								)}

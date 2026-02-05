@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useRef, useState } from "react";
+import { Form, Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
@@ -11,6 +12,7 @@ import { AddItemButton } from "~/components/add-item-button";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import type { Poll } from "~/db/schema";
 
 // ============================================================================
@@ -162,10 +164,11 @@ interface PollCardProps {
     canViewAnalytics: boolean;
     canUpdate?: boolean;
     canDelete?: boolean;
+    onDeleteClick?: (pollId: string) => void;
     t: (key: string, options?: Record<string, unknown>) => string;
 }
 
-function PollCard({ poll, canViewAnalytics, canUpdate, canDelete, t }: PollCardProps) {
+function PollCard({ poll, canViewAnalytics, canUpdate, canDelete, onDeleteClick, t }: PollCardProps) {
     const timeRemaining = getTimeRemaining(poll.deadline);
 
     return (
@@ -214,17 +217,16 @@ function PollCard({ poll, canViewAnalytics, canUpdate, canDelete, t }: PollCardP
                             </Link>
                         </Button>
                     )}
-                    {canDelete && (
-                        <form method="post" action={`/polls/${poll.id}/edit`} onSubmit={(e) => {
-                            if (!confirm(t("common.confirm_delete") || "Are you sure?")) {
-                                e.preventDefault();
-                            }
-                        }}>
-                            <input type="hidden" name="actionType" value="delete" />
-                            <Button type="submit" variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                                <span className="material-symbols-outlined text-base">delete</span>
-                            </Button>
-                        </form>
+                    {canDelete && onDeleteClick && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => onDeleteClick(poll.id)}
+                        >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                        </Button>
                     )}
                 </div>
             </CardContent>
@@ -247,12 +249,37 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
         canViewAnalytics,
         systemLanguages,
     } = loaderData;
+    const [deleteConfirmPollId, setDeleteConfirmPollId] = useState<string | null>(null);
+    const deleteFormRef = useRef<HTMLFormElement>(null);
 
     // Total active count includes only database polls
     const totalActiveCount = activePolls.length;
 
     return (
         <PageWrapper>
+            {deleteConfirmPollId && (
+                <Form
+                    ref={deleteFormRef}
+                    method="post"
+                    action={`/polls/${deleteConfirmPollId}/edit`}
+                    className="hidden"
+                >
+                    <input type="hidden" name="actionType" value="delete" />
+                </Form>
+            )}
+            <ConfirmDialog
+                open={deleteConfirmPollId !== null}
+                onOpenChange={(open) => !open && setDeleteConfirmPollId(null)}
+                title={t("common.actions.delete")}
+                description={t("common.confirm_delete") || "Are you sure?"}
+                confirmLabel={t("common.actions.delete")}
+                cancelLabel={t("common.actions.cancel")}
+                variant="destructive"
+                onConfirm={() => {
+                    deleteFormRef.current?.requestSubmit();
+                    setDeleteConfirmPollId(null);
+                }}
+            />
             <SplitLayout
                 header={{
                     primary: t("polls.title", { lng: systemLanguages.primary }),
@@ -293,6 +320,7 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
                                 canViewAnalytics={canViewAnalytics}
                                 canUpdate={canUpdate}
                                 canDelete={canDelete}
+                                onDeleteClick={canDelete ? (id) => setDeleteConfirmPollId(id) : undefined}
                                 t={t}
                             />
                         ))}
@@ -315,6 +343,7 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
                                 canViewAnalytics={canViewAnalytics}
                                 canUpdate={canUpdate}
                                 canDelete={canDelete}
+                                onDeleteClick={canDelete ? (id) => setDeleteConfirmPollId(id) : undefined}
                                 t={t}
                             />
                         ))}

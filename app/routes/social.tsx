@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form } from "react-router";
 import { AddItemButton } from "~/components/add-item-button";
@@ -9,6 +9,7 @@ import {
 	SplitLayout,
 } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -115,6 +116,8 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 	const { t, i18n } = useTranslation();
 	const { hasPermission } = useUser();
 	const canWrite = hasPermission("social:write");
+	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+	const deleteFormRef = useRef<HTMLFormElement>(null);
 
 	const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -183,6 +186,12 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 				footer={FooterContent}
 			>
 				<ContentArea className="space-y-2">
+					{canWrite && (
+						<Form method="post" className="hidden" ref={deleteFormRef}>
+							<input type="hidden" name="_action" value="delete" />
+							<input type="hidden" name="id" value={deleteConfirmId ?? ""} />
+						</Form>
+					)}
 					{displayLinks.map((channel, index) => {
 						const isActive = isInfoReel && index === activeIndex;
 						const isEditing = editingId === channel.id;
@@ -415,33 +424,36 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 												edit
 											</span>
 										</Button>
-										<Form
-											method="post"
-											className="inline"
-											onSubmit={(e) => {
-												if (!confirm(t("social.delete_confirm")))
-													e.preventDefault();
-											}}
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="text-gray-400 hover:text-red-500 h-8 w-8"
+											onClick={() => setDeleteConfirmId(channel.id)}
 										>
-											<input type="hidden" name="_action" value="delete" />
-											<input type="hidden" name="id" value={channel.id} />
-											<Button
-												type="submit"
-												variant="ghost"
-												size="icon"
-												className="text-gray-400 hover:text-red-500 h-8 w-8"
-											>
-												<span className="material-symbols-outlined text-xl">
-													delete
-												</span>
-											</Button>
-										</Form>
+											<span className="material-symbols-outlined text-xl">
+												delete
+											</span>
+										</Button>
 									</div>
 								)}
 							</div>
 						);
 					})}
 
+					<ConfirmDialog
+						open={deleteConfirmId !== null}
+						onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+						title={t("common.actions.delete")}
+						description={t("social.delete_confirm")}
+						confirmLabel={t("common.actions.delete")}
+						cancelLabel={t("common.actions.cancel")}
+						variant="destructive"
+						onConfirm={() => {
+							deleteFormRef.current?.requestSubmit();
+							setDeleteConfirmId(null);
+						}}
+					/>
 					{displayLinks.length === 0 && (
 						<div className="text-center py-12 text-gray-400">
 							<span className="material-symbols-outlined text-5xl mb-4 block opacity-50">
