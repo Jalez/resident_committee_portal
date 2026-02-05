@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { upload } from "@vercel/blob/client";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { data, Form, redirect } from "react-router";
+import { data, Form, redirect, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
@@ -10,6 +11,8 @@ import { getDatabase } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/profile";
+
+const AVATAR_ALLOWED_EXT = ["jpg", "jpeg", "png", "webp"] as const;
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -91,10 +94,14 @@ export default function Profile({
 }: Route.ComponentProps) {
 	const { user } = loaderData;
 	const { t, i18n } = useTranslation();
+	const revalidator = useRevalidator();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [localOllamaEnabled, setLocalOllamaEnabled] = useState(user.localOllamaEnabled);
 	const [localOllamaUrl, setLocalOllamaUrl] = useState(user.localOllamaUrl);
 	const [testingConnection, setTestingConnection] = useState(false);
 	const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
+	const [uploadingPicture, setUploadingPicture] = useState(false);
+	const [settingGooglePicture, setSettingGooglePicture] = useState(false);
 
 	const testConnection = async () => {
 		setTestingConnection(true);
@@ -120,6 +127,73 @@ export default function Profile({
 			setTestingConnection(false);
 		}
 	};
+
+	const uploadPicture = useCallback(
+		async (file: File) => {
+			const ext = file.name.split(".").pop()?.toLowerCase();
+			if (!ext || !AVATAR_ALLOWED_EXT.includes(ext as (typeof AVATAR_ALLOWED_EXT)[number])) {
+				toast.error(t("profile.picture_invalid_type"));
+				return;
+			}
+			const pathname = `avatars/${user.id}.${ext}`;
+			setUploadingPicture(true);
+			try {
+				const blob = await upload(pathname, file, {
+					access: "public",
+					handleUploadUrl: "/api/avatar/upload",
+				});
+				const res = await fetch("/api/avatar/set", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ url: blob.url }),
+				});
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({}));
+					throw new Error((err as { error?: string }).error || "Set avatar failed");
+				}
+				toast.success(t("profile.picture_updated"));
+				revalidator.revalidate();
+			} catch (e) {
+				console.error(e);
+				toast.error(t("profile.picture_upload_error"));
+			} finally {
+				setUploadingPicture(false);
+				if (fileInputRef.current) fileInputRef.current.value = "";
+			}
+		},
+		[user.id, t, revalidator],
+	);
+
+	const onPictureFileChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			uploadPicture(file);
+		},
+		[uploadPicture],
+	);
+
+	const useGooglePicture = useCallback(async () => {
+		setSettingGooglePicture(true);
+		try {
+			const res = await fetch("/api/avatar/set", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ url: null }),
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error((err as { error?: string }).error || "Set avatar failed");
+			}
+			toast.success(t("profile.use_google_picture_success"));
+			revalidator.revalidate();
+		} catch (e) {
+			console.error(e);
+			toast.error(t("profile.picture_upload_error"));
+		} finally {
+			setSettingGooglePicture(false);
+		}
+	}, [t, revalidator]);
 
 	return (
 		<PageWrapper>
@@ -238,26 +312,64 @@ export default function Profile({
 						{/* Profile Picture */}
 						<div>
 							<Label className="mb-2">{t("profile.picture_label")}</Label>
-							{user.picture ? (
-								<div className="flex items-center gap-4">
+							<div className="flex flex-wrap items-start gap-4">
+								{user.picture ? (
 									<img
 										src={user.picture}
 										alt={user.name}
-										className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+										className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shrink-0"
 									/>
-									<div className="flex-1">
-										<p className="text-sm text-gray-600 dark:text-gray-400">
-											{t("profile.picture_help")}
-										</p>
+								) : (
+									<div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
+										<span className="material-symbols-outlined text-4xl text-gray-400">person</span>
 									</div>
-								</div>
-							) : (
-								<div className="px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700">
-									<p className="text-sm text-gray-500 dark:text-gray-400">
+								)}
+								<div className="flex-1 min-w-0 space-y-2">
+									<p className="text-sm text-gray-600 dark:text-gray-400">
 										{t("profile.picture_help")}
 									</p>
+									<div className="flex flex-wrap gap-2">
+										<input
+											ref={fileInputRef}
+											type="file"
+											accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+											onChange={onPictureFileChange}
+											className="hidden"
+											aria-label={t("profile.upload_picture")}
+										/>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											disabled={uploadingPicture}
+											onClick={() => fileInputRef.current?.click()}
+										>
+											{uploadingPicture ? (
+												<span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+											) : (
+												<span className="material-symbols-outlined text-lg">upload</span>
+											)}
+											<span className="ml-1">
+												{uploadingPicture ? t("common.actions.loading") : t("profile.upload_picture")}
+											</span>
+										</Button>
+										{user.picture && (
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												disabled={settingGooglePicture}
+												onClick={useGooglePicture}
+											>
+												{settingGooglePicture ? (
+													<span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+												) : null}
+												<span className="ml-1">{t("profile.use_google_picture")}</span>
+											</Button>
+										)}
+									</div>
 								</div>
-							)}
+							</div>
 						</div>
 
 						{/* Local AI Settings Section */}
