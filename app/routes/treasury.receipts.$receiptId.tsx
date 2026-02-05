@@ -4,7 +4,7 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import { SectionCard } from "~/components/treasury/section-card";
 import { Button } from "~/components/ui/button";
-import { getDatabase } from "~/db";
+import { getDatabase, type Purchase } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";

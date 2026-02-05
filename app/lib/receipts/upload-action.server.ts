@@ -52,8 +52,9 @@ export async function action({ request }: ActionFunctionArgs) {
 		);
 	}
 
-	// Validate MIME type
-	if (!RECEIPT_ALLOWED_MIME_TYPES.includes(file.type)) {
+	// Validate MIME type (file.type is string; check against allowed list)
+	const allowedMime: readonly string[] = RECEIPT_ALLOWED_MIME_TYPES;
+	if (!allowedMime.includes(file.type)) {
 		return new Response(
 			JSON.stringify({
 				error: `Invalid MIME type. Allowed types: ${RECEIPT_ALLOWED_MIME_TYPES.join(", ")}`,
@@ -87,7 +88,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			url: result.url,
 		});
 	} catch (error) {
-		console.error("[api.receipts.upload.server]", error);
+		console.error("[receipts upload-action.server]", error);
 		const message = error instanceof Error ? error.message : "Upload failed";
 		return new Response(JSON.stringify({ error: message }), {
 			status: 500,

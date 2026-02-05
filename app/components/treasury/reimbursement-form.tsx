@@ -143,7 +143,7 @@ export function ReimbursementForm({
 				formData.append("year", year);
 				formData.append("description", desc || "kuitti");
 
-				const response = await fetch("/api/receipts/upload/server", {
+				const response = await fetch("/api/receipts/upload", {
 					method: "POST",
 					body: formData,
 				});

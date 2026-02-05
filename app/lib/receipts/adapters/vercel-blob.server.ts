@@ -138,7 +138,7 @@ export class VercelBlobReceiptStorage implements ReceiptStorageAdapter {
 		options?: UploadOptions,
 	): Promise<UploadResult> {
 		const blob = await put(pathname, file, {
-			access: options?.access || "public",
+			access: "public",
 			addRandomSuffix: options?.addRandomSuffix ?? true,
 		});
 
