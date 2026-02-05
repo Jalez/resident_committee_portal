@@ -135,6 +135,39 @@ bun run db:studio    # Open Drizzle Admin GUI
 bun run db:reset     # WIPE database and reset to fresh state
 ```
 
+## Receipt Storage Configuration
+
+The portal supports multiple storage backends for receipt files. Configure the storage provider using the `RECEIPT_STORAGE_PROVIDER` environment variable in your `.env` file.
+
+### Available Storage Providers
+
+1. **Vercel Blob** (default, recommended for Vercel deployments)
+   - Set `RECEIPT_STORAGE_PROVIDER=vercel-blob`
+   - Requires `BLOB_READ_WRITE_TOKEN` from your Vercel project settings
+   - No additional packages needed
+
+2. **Filesystem** (recommended for self-hosted deployments)
+   - Set `RECEIPT_STORAGE_PROVIDER=filesystem`
+   - Files are stored in `public/receipts/` by default (configurable via `RECEIPT_STORAGE_DIR`)
+   - No additional packages needed
+
+3. **S3-Compatible Storage** (AWS S3, MinIO, DigitalOcean Spaces, etc.)
+   - Set `RECEIPT_STORAGE_PROVIDER=s3`
+   - **Requires installing AWS SDK packages**:
+     ```bash
+     bun add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+     ```
+   - Required environment variables:
+     - `S3_BUCKET` - Your S3 bucket name
+     - `S3_ACCESS_KEY_ID` - Your access key ID
+     - `S3_SECRET_ACCESS_KEY` - Your secret access key
+     - `S3_REGION` - AWS region (default: `us-east-1`)
+     - `S3_ENDPOINT` - Optional, for S3-compatible services (e.g., MinIO: `http://localhost:9000`)
+     - `S3_PUBLIC_URL` - Optional, public CDN URL for accessing files
+     - `S3_FORCE_PATH_STYLE` - Set to `true` for MinIO and similar services
+
+   > **Note**: AWS SDK packages are not included by default to keep bundle size small. They are only loaded dynamically when S3 storage is used, so they won't affect bundle size for users who don't need S3.
+
 ## Google Services Integration
 
 This project integrates with Google Calendar, Drive, and Sheets. To enable these features, you need to set up Google Cloud credentials.
