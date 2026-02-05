@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { TableTotalsRow } from "~/components/treasury/table-totals-row";
 import {
 	Table,
 	TableBody,
@@ -41,6 +42,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
 	const statusParam = url.searchParams.get("status");
+	const categoryParam = url.searchParams.get("category");
+	const typeParam = url.searchParams.get("type");
 	const currentYear = new Date().getFullYear();
 	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
 
@@ -54,7 +57,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Filter by status if specified
 	let transactions = allTransactions;
 	if (statusParam && statusParam !== "all") {
-		transactions = allTransactions.filter((t) => t.status === statusParam);
+		transactions = transactions.filter((t) => t.status === statusParam);
+	}
+
+	// Filter by category if specified
+	if (categoryParam && categoryParam !== "all") {
+		transactions = transactions.filter((t) => t.category === categoryParam);
+	}
+
+	// Filter by type if specified
+	if (typeParam && typeParam !== "all") {
+		transactions = transactions.filter((t) => t.type === typeParam);
 	}
 
 	// Sort by date descending
@@ -80,6 +93,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Get unique statuses for filter
 	const statuses = [...new Set(allTransactions.map((t) => t.status))];
 
+	// Get unique categories for filter (excluding null/empty)
+	const categories = [...new Set(allTransactions.map((t) => t.category).filter((c): c is string => Boolean(c)))];
+
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
@@ -89,6 +105,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalIncome,
 		years,
 		statuses,
+		categories,
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
 		systemLanguages,
@@ -98,7 +115,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function TreasuryTransactions({
 	loaderData,
 }: Route.ComponentProps) {
-	const { year, transactions, totalExpenses, totalIncome, years, statuses, currentStatus, totalCount, systemLanguages } =
+	const { transactions, years, statuses, categories, systemLanguages } =
 		loaderData;
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
@@ -135,40 +152,42 @@ export default function TreasuryTransactions({
 		});
 	}, [searchParams, setSearchParams, t]);
 
-	const handleYearChange = (newYear: number) => {
-		setSearchParams((prev) => {
-			prev.set("year", String(newYear));
-			return prev;
-		});
-	};
-
-	const handleStatusChange = (newStatus: string) => {
-		setSearchParams((prev) => {
-			if (newStatus === "all") {
-				prev.delete("status");
-			} else {
-				prev.set("status", newStatus);
-			}
-			return prev;
-		});
-	};
+	// Configure search fields
+	const statusOptions = ["all", ...statuses];
+	const searchFields: SearchField[] = [
+		{
+			name: "year",
+			label: t("common.fields.year"),
+			type: "select",
+			placeholder: t("treasury.select_year"),
+			options: years.length > 0 ? years.map(String) : [String(new Date().getFullYear())],
+		},
+		{
+			name: "status",
+			label: t("common.fields.status"),
+			type: "select",
+			placeholder: t("treasury.transactions.all"),
+			options: statusOptions,
+		},
+		{
+			name: "category",
+			label: t("treasury.breakdown.category"),
+			type: "select",
+			placeholder: t("common.actions.all"),
+			options: categories.length > 0 ? ["all", ...categories] : ["all"],
+		},
+		{
+			name: "type",
+			label: t("treasury.transactions.type"),
+			type: "select",
+			placeholder: t("common.actions.all"),
+			options: ["all", "income", "expense"],
+		},
+	];
 
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
-			{years.length > 0 && (
-				<div className="flex gap-2">
-					{years.map((y: number) => (
-						<Button
-							key={y}
-							variant={y === year ? "default" : "secondary"}
-							onClick={() => handleYearChange(y)}
-							className="font-bold rounded-xl"
-						>
-							{y}
-						</Button>
-					))}
-				</div>
-			)}
+			<SearchMenu fields={searchFields} />
 			{canWrite && (
 				<AddItemButton
 					to="/treasury/transactions/new"
@@ -191,55 +210,8 @@ export default function TreasuryTransactions({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
-				{/* Summary cards */}
-				<div className="grid grid-cols-2 gap-4">
-					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
-							{t("treasury.transactions.total_income")}
-						</p>
-						<p className="text-xl font-black text-green-600 dark:text-green-400">
-							+{formatCurrency(totalIncome)}
-						</p>
-					</div>
-					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
-							{t("treasury.transactions.total_expenses")}
-						</p>
-						<p className="text-xl font-black text-red-600 dark:text-red-400">
-							-{formatCurrency(totalExpenses)}
-						</p>
-					</div>
-				</div>
-
-				{/* Status filter */}
-				<div className="mb-4 flex flex-wrap gap-2">
-					<Button
-						variant={currentStatus === "all" ? "default" : "secondary"}
-						onClick={() => handleStatusChange("all")}
-						className="font-bold rounded-xl"
-					>
-						{t("treasury.transactions.all")} ({totalCount})
-					</Button>
-					{statuses.map((status: string) => (
-						<Button
-							key={status}
-							variant={currentStatus === status ? "default" : "secondary"}
-							onClick={() => handleStatusChange(status)}
-							className="font-bold rounded-xl"
-						>
-							{t(`treasury.breakdown.edit.statuses.${status}`, { defaultValue: status })}
-						</Button>
-					))}
-				</div>
-
 				{/* Transactions table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-					<div className="p-4 border-b border-gray-200 dark:border-gray-700">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("treasury.breakdown.transactions")} ({transactions.length})
-						</h2>
-					</div>
-
 					{transactions.length === 0 ? (
 						<div className="p-8 text-center text-gray-500">
 							{t("treasury.breakdown.no_transactions")}
@@ -248,9 +220,11 @@ export default function TreasuryTransactions({
 						<Table>
 							<TableHeader>
 								<TableRow>
+									<TableHead className="w-12">#</TableHead>
 									<TableHead>{t("treasury.breakdown.date")}</TableHead>
 									<TableHead>{t("treasury.breakdown.description")}</TableHead>
 									<TableHead>{t("treasury.breakdown.category")}</TableHead>
+									<TableHead>{t("treasury.transactions.type")}</TableHead>
 									<TableHead>{t("treasury.transactions.status")}</TableHead>
 									<TableHead>{t("treasury.transactions.reimbursement_status")}</TableHead>
 									<TableHead className="text-right">
@@ -260,8 +234,11 @@ export default function TreasuryTransactions({
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{transactions.map((transaction: Transaction) => (
+								{transactions.map((transaction: Transaction, index: number) => (
 									<TableRow key={transaction.id}>
+										<TableCell className="text-gray-500 dark:text-gray-400 text-sm font-mono">
+											{index + 1}
+										</TableCell>
 										<TableCell className="font-mono text-sm">
 											{formatDate(transaction.date)}
 										</TableCell>
@@ -270,6 +247,19 @@ export default function TreasuryTransactions({
 										</TableCell>
 										<TableCell className="text-gray-500">
 											{transaction.category || "—"}
+										</TableCell>
+										<TableCell>
+											<span
+												className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+													transaction.type === "income"
+														? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+														: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+												}`}
+											>
+												{t(`treasury.types.${transaction.type}`, {
+													defaultValue: transaction.type,
+												})}
+											</span>
 										</TableCell>
 										<TableCell>
 											<span
@@ -333,6 +323,20 @@ export default function TreasuryTransactions({
 										)}
 									</TableRow>
 								))}
+								<TableTotalsRow
+									labelColSpan={7}
+									columns={[
+										{
+											value: transactions.reduce((sum, t) => {
+												const amount = parseFloat(t.amount);
+												return sum + (t.type === "expense" ? -amount : amount);
+											}, 0),
+										},
+									]}
+									trailingColSpan={(canEditGeneral || canEditSelf) ? 1 : 0}
+									formatCurrency={formatCurrency}
+									rowCount={transactions.length}
+								/>
 							</TableBody>
 						</Table>
 					)}

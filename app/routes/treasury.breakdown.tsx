@@ -1,8 +1,9 @@
-import { Link, useSearchParams } from "react-router";
+import { Link } from "react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { TableTotalsRow } from "~/components/treasury/table-totals-row";
 import {
 	Table,
 	TableBody,
@@ -38,6 +39,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const db = getDatabase();
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
+	const categoryParam = url.searchParams.get("category");
+	const typeParam = url.searchParams.get("type");
 	const currentYear = new Date().getFullYear();
 	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
 
@@ -54,34 +57,54 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Exclude:
 	// - requested: waiting for approval
 	// - declined: rejected, won't be paid
-	const transactions = allTransactionsForYear.filter(
+	let transactions = allTransactionsForYear.filter(
 		(t) =>
 			!t.reimbursementStatus ||
 			t.reimbursementStatus === "not_requested" ||
 			t.reimbursementStatus === "approved",
 	);
 
-	// Sort by date descending
-	const sortedTransactions = transactions.sort(
-		(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+	// Filter by category if specified
+	if (categoryParam && categoryParam !== "all") {
+		transactions = transactions.filter((t) => t.category === categoryParam);
+	}
+
+	// Filter by type if specified
+	if (typeParam && typeParam !== "all") {
+		transactions = transactions.filter((t) => t.type === typeParam);
+	}
+
+	// Calculate totals from transactions before category/type filtering (for summary cards)
+	const transactionsForTotals = allTransactionsForYear.filter(
+		(t) =>
+			!t.reimbursementStatus ||
+			t.reimbursementStatus === "not_requested" ||
+			t.reimbursementStatus === "approved",
 	);
 
-	// Calculate totals: Balance = Income - Expenses
-	const totalExpenses = transactions
+	const totalExpenses = transactionsForTotals
 		.filter((t) => t.type === "expense")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-	const totalIncome = transactions
+	const totalIncome = transactionsForTotals
 		.filter((t) => t.type === "income")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
 	const balance = totalIncome - totalExpenses;
+
+	// Sort by date descending
+	const sortedTransactions = transactions.sort(
+		(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+	);
 
 	// Get all years with transactions for navigation
 	const allTransactions = await db.getAllTransactions();
 	const years = [...new Set(allTransactions.map((t) => t.year))].sort(
 		(a, b) => b - a,
 	);
+
+	// Get unique categories for filter (excluding null/empty)
+	const categories = [...new Set(allTransactionsForYear.map((t) => t.category).filter((c): c is string => Boolean(c)))];
 
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
@@ -92,6 +115,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalIncome,
 		balance,
 		years,
+		categories,
 		systemLanguages,
 	};
 }
@@ -175,9 +199,8 @@ function ImportButton({ year }: { year: number }) {
 export default function TreasuryBreakdown({
 	loaderData,
 }: Route.ComponentProps) {
-	const { year, transactions, totalExpenses, totalIncome, balance, years, systemLanguages } =
+	const { year, transactions, years, categories, systemLanguages } =
 		loaderData;
-	const [_searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
 	const canEditGeneral = hasPermission("transactions:update");
 	const canEditSelf = hasPermission("transactions:update-self");
@@ -203,26 +226,34 @@ export default function TreasuryBreakdown({
 		return new Date(date).toLocaleDateString(i18n.language);
 	};
 
-	const handleYearChange = (newYear: number) => {
-		setSearchParams({ year: String(newYear) });
-	};
+	// Configure search fields
+	const searchFields: SearchField[] = [
+		{
+			name: "year",
+			label: t("common.fields.year"),
+			type: "select",
+			placeholder: t("treasury.select_year"),
+			options: years.length > 0 ? years.map(String) : [String(new Date().getFullYear())],
+		},
+		{
+			name: "category",
+			label: t("treasury.breakdown.category"),
+			type: "select",
+			placeholder: t("common.actions.all"),
+			options: categories.length > 0 ? ["all", ...categories] : ["all"],
+		},
+		{
+			name: "type",
+			label: t("treasury.transactions.type"),
+			type: "select",
+			placeholder: t("common.actions.all"),
+			options: ["all", "income", "expense"],
+		},
+	];
 
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
-			{years.length > 0 && (
-				<div className="flex gap-2">
-					{years.map((y: number) => (
-						<Button
-							key={y}
-							variant={y === year ? "default" : "secondary"}
-							onClick={() => handleYearChange(y)}
-							className="font-bold rounded-xl"
-						>
-							{y}
-						</Button>
-					))}
-				</div>
-			)}
+			<SearchMenu fields={searchFields} />
 			{canImport && <ImportButton year={year} />}
 			{canExport && (
 				<a
@@ -247,44 +278,8 @@ export default function TreasuryBreakdown({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
-				{/* Summary cards */}
-				<div className="grid grid-cols-3 gap-4">
-					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
-							{t("treasury.breakdown.income")}
-						</p>
-						<p className="text-xl font-black text-green-600 dark:text-green-400">
-							+{formatCurrency(totalIncome)}
-						</p>
-					</div>
-					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
-							{t("treasury.breakdown.expenses")}
-						</p>
-						<p className="text-xl font-black text-red-600 dark:text-red-400">
-							-{formatCurrency(totalExpenses)}
-						</p>
-					</div>
-					<div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-						<p className="text-xs font-bold uppercase text-gray-500 mb-1">
-							{t("treasury.breakdown.balance")}
-						</p>
-						<p
-							className={`text-xl font-black ${balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-						>
-							{formatCurrency(balance)}
-						</p>
-					</div>
-				</div>
-
 				{/* Transactions table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-					<div className="p-4 border-b border-gray-200 dark:border-gray-700">
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">
-							{t("treasury.breakdown.transactions")} ({transactions.length})
-						</h2>
-					</div>
-
 					{transactions.length === 0 ? (
 						<div className="p-8 text-center text-gray-500">
 							{t("treasury.breakdown.no_transactions")}
@@ -293,6 +288,7 @@ export default function TreasuryBreakdown({
 						<Table>
 							<TableHeader>
 								<TableRow>
+									<TableHead className="w-12">#</TableHead>
 									<TableHead>{t("treasury.breakdown.date")}</TableHead>
 									<TableHead>{t("treasury.breakdown.description")}</TableHead>
 									<TableHead>{t("treasury.breakdown.category")}</TableHead>
@@ -304,8 +300,11 @@ export default function TreasuryBreakdown({
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{transactions.map((transaction: Transaction) => (
+								{transactions.map((transaction: Transaction, index: number) => (
 									<TableRow key={transaction.id}>
+										<TableCell className="text-gray-500 dark:text-gray-400 text-sm font-mono">
+											{index + 1}
+										</TableCell>
 										<TableCell className="font-mono text-sm">
 											{formatDate(transaction.date)}
 										</TableCell>
@@ -357,15 +356,25 @@ export default function TreasuryBreakdown({
 										)}
 									</TableRow>
 								))}
+								<TableTotalsRow
+									labelColSpan={5}
+									columns={[
+										{
+											value: transactions.reduce((sum, t) => {
+												const amount = parseFloat(t.amount);
+												return sum + (t.type === "expense" ? -amount : amount);
+											}, 0),
+										},
+									]}
+									trailingColSpan={(canEditGeneral || canEditSelf) ? 1 : 0}
+									formatCurrency={formatCurrency}
+									rowCount={transactions.length}
+								/>
 							</TableBody>
 						</Table>
 					)}
 				</div>
 
-				{/* Note about transparency */}
-				<p className="text-sm text-gray-500 text-center">
-					{t("treasury.breakdown.public_info")}
-				</p>
 				</div>
 			</SplitLayout>
 		</PageWrapper>

@@ -10,6 +10,8 @@ import {
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { TableTotalsRow } from "~/components/treasury/table-totals-row";
 import { Button } from "~/components/ui/button";
 import {
 	Table,
@@ -97,19 +99,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => b - a,
 	);
 
-	// Calculate totals by status
-	const totals = {
-		pending: allPurchases
-			.filter((p) => p.status === "pending")
-			.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-		approved: allPurchases
-			.filter((p) => p.status === "approved")
-			.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-		reimbursed: allPurchases
-			.filter((p) => p.status === "reimbursed")
-			.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-	};
-
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
@@ -118,7 +107,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		years,
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
-		totals,
 		systemLanguages,
 	};
 }
@@ -222,7 +210,7 @@ const statusColors = {
 export default function BudgetReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { purchases, purchaseTransactionMap, years, currentYear, currentStatus, totals, systemLanguages } = loaderData;
+	const { purchases, purchaseTransactionMap, years, systemLanguages } = loaderData;
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isStaff =
@@ -255,16 +243,6 @@ export default function BudgetReimbursements({
 			i18n.language === "fi" ? "fi-FI" : "en-US",
 		);
 
-	const handleFilter = (key: string, value: string) => {
-		const params = new URLSearchParams(searchParams);
-		if (value === "all") {
-			params.delete(key);
-		} else {
-			params.set(key, value);
-		}
-		setSearchParams(params);
-	};
-
 	const handleUseAsTemplate = (purchase: Purchase) => {
 		setTemplate({
 			description: purchase.description || "",
@@ -288,8 +266,28 @@ export default function BudgetReimbursements({
 		);
 	}
 
+	// Configure search fields
+	const statusOptions = ["all", "pending", "approved", "reimbursed", "rejected"];
+	const searchFields: SearchField[] = [
+		{
+			name: "year",
+			label: t("common.fields.year"),
+			type: "select",
+			placeholder: t("treasury.select_year"),
+			options: years.length > 0 ? years.map(String) : [String(new Date().getFullYear())],
+		},
+		{
+			name: "status",
+			label: t("common.fields.status"),
+			type: "select",
+			placeholder: t("common.actions.all"),
+			options: statusOptions,
+		},
+	];
+
 	const footerContent = (
 		<div className="flex items-center gap-2">
+			<SearchMenu fields={searchFields} />
 			{isStaff && (
 				<AddItemButton
 					to="/treasury/reimbursement/new"
@@ -310,78 +308,6 @@ export default function BudgetReimbursements({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
-				{/* Summary cards */}
-				<div className="grid grid-cols-3 gap-4">
-					<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">
-						<p className="text-xs font-bold uppercase text-yellow-700 dark:text-yellow-300">
-							{t("treasury.reimbursements.statuses.pending")}
-						</p>
-						<p className="text-xl font-black text-yellow-800 dark:text-yellow-200">
-							{formatCurrency(totals.pending)}
-						</p>
-					</div>
-					<div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-						<p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-300">
-							{t("treasury.reimbursements.statuses.approved")}
-						</p>
-						<p className="text-xl font-black text-blue-800 dark:text-blue-200">
-							{formatCurrency(totals.approved)}
-						</p>
-					</div>
-					<div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
-						<p className="text-xs font-bold uppercase text-green-700 dark:text-green-300">
-							{t("treasury.reimbursements.statuses.reimbursed")}
-						</p>
-						<p className="text-xl font-black text-green-800 dark:text-green-200">
-							{formatCurrency(totals.reimbursed)}
-						</p>
-					</div>
-				</div>
-
-				{/* Filters */}
-				<div className="flex flex-wrap gap-4 mb-6">
-					<div className="flex gap-2">
-						<span className="text-sm text-gray-500 self-center">
-							{t("common.fields.status")}:
-						</span>
-						{["all", "pending", "approved", "reimbursed", "rejected"].map(
-							(s) => (
-								<Button
-									type="button"
-									key={s}
-									variant={currentStatus === s ? "default" : "secondary"}
-									size="sm"
-									onClick={() => handleFilter("status", s)}
-									className="text-xs font-bold uppercase"
-								>
-									{s === "all"
-										? t("common.actions.all")
-										: t(`treasury.reimbursements.statuses.${s}`)}
-								</Button>
-							),
-						)}
-					</div>
-					{years.length > 0 && (
-						<div className="flex gap-2">
-							<span className="text-sm text-gray-500 self-center">
-								{t("treasury.year")}:
-							</span>
-							{years.map((y: number) => (
-								<Button
-									type="button"
-									key={y}
-									variant={currentYear === y ? "default" : "secondary"}
-									size="sm"
-									onClick={() => handleFilter("year", String(y))}
-									className="text-xs font-bold"
-								>
-									{y}
-								</Button>
-							))}
-						</div>
-					)}
-				</div>
-
 				{/* Table */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
 					{purchases.length === 0 ? (
@@ -392,6 +318,7 @@ export default function BudgetReimbursements({
 						<Table>
 							<TableHeader>
 								<TableRow>
+									<TableHead className="w-12">#</TableHead>
 									<TableHead>{t("common.fields.date")}</TableHead>
 									<TableHead>
 										{t("common.fields.description")}
@@ -399,7 +326,6 @@ export default function BudgetReimbursements({
 									<TableHead>
 										{t("treasury.reimbursements.purchaser")}
 									</TableHead>
-									<TableHead>{t("common.fields.amount")}</TableHead>
 									<TableHead>{t("common.fields.status")}</TableHead>
 									<TableHead>{t("treasury.reimbursements.transaction")}</TableHead>
 									<TableHead title={t("treasury.reimbursements.email_sent")}>
@@ -410,6 +336,7 @@ export default function BudgetReimbursements({
 									>
 										💬
 									</TableHead>
+									<TableHead className="text-right">{t("common.fields.amount")}</TableHead>
 									<TableHead></TableHead>
 								</TableRow>
 							</TableHeader>
@@ -420,6 +347,7 @@ export default function BudgetReimbursements({
 											inventoryItem?: InventoryItem | null;
 											hasLinkedTransaction: boolean;
 										},
+										index: number,
 									) => {
 										// Use type assertion to ensure status is a valid key, fallback to pending color if not
 										const statusKey =
@@ -459,6 +387,9 @@ export default function BudgetReimbursements({
 
 										return (
 											<TableRow key={purchase.id}>
+												<TableCell className="text-gray-500 dark:text-gray-400 text-sm font-mono">
+													{index + 1}
+												</TableCell>
 												<TableCell className="font-mono text-sm">
 													{formatDate(purchase.createdAt)}
 												</TableCell>
@@ -466,9 +397,6 @@ export default function BudgetReimbursements({
 													{displayName}
 												</TableCell>
 												<TableCell>{purchase.purchaserName}</TableCell>
-												<TableCell className="font-bold">
-													{formatCurrency(purchase.amount)}
-												</TableCell>
 												<TableCell>
 													{canApprove ? (
 														<Form method="post" className="inline-block">
@@ -570,6 +498,9 @@ export default function BudgetReimbursements({
 														<span className="text-gray-400">—</span>
 													)}
 												</TableCell>
+												<TableCell className="text-right font-bold">
+													{formatCurrency(purchase.amount)}
+												</TableCell>
 												<TableCell>
 													<div className="flex gap-1">
 														{/* Link Transaction button - only show for unlinked purchases */}
@@ -643,6 +574,17 @@ export default function BudgetReimbursements({
 										);
 									},
 								)}
+								<TableTotalsRow
+									labelColSpan={8}
+									columns={[
+										{
+											value: purchases.reduce((sum, p) => sum + parseFloat(p.amount), 0),
+										},
+									]}
+									trailingColSpan={1}
+									formatCurrency={formatCurrency}
+									rowCount={purchases.length}
+								/>
 							</TableBody>
 						</Table>
 					)}
