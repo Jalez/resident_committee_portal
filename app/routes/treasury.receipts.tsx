@@ -1,13 +1,14 @@
 import { upload } from "@vercel/blob/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Await, useLoaderData, useRevalidator } from "react-router";
+import { Await, useLoaderData, useRevalidator, useSearchParams } from "react-router";
 import { Suspense } from "react";
 import { toast } from "sonner";
+import { AddFileButton } from "~/components/add-file-button";
 import { ReceiptsGridSkeletonOnly } from "~/components/treasury/receipts-skeleton";
 import { Thumbnail } from "~/components/ui/thumbnail";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Input } from "~/components/ui/input";
 import { getDatabase } from "~/db";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
@@ -67,14 +68,15 @@ export default function TreasuryReceipts() {
 	const loaderData = useLoaderData<typeof loader>();
 	const revalidator = useRevalidator();
 	const { t } = useTranslation();
+	const [searchParams] = useSearchParams();
 
 	const canWrite = loaderData?.canWrite ?? false;
 	const systemLanguages = loaderData?.systemLanguages ?? { primary: "fi", secondary: "en" };
 	const receiptsByYearPromise = loaderData?.receiptsByYear;
 
-	const [selectedYear, setSelectedYear] = useState(() =>
-		new Date().getFullYear().toString(),
-	);
+	// Get selectedYear from URL params, default to current year
+	const selectedYear = searchParams.get("year") || new Date().getFullYear().toString();
+
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [isUploading, setIsUploading] = useState(false);
@@ -82,7 +84,23 @@ export default function TreasuryReceipts() {
 	const [optimisticReceipts, setOptimisticReceipts] = useState<
 		Map<string, { id: string; name: string; url: string; createdTime: string }[]>
 	>(new Map());
+	const [availableYears, setAvailableYears] = useState<string[]>(() => [
+		new Date().getFullYear().toString(),
+	]);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// Extract years from promise when it resolves for SearchMenu options
+	useEffect(() => {
+		if (receiptsByYearPromise) {
+			receiptsByYearPromise.then((receiptsByYear) => {
+				const years = receiptsByYear.map((r) => r.year);
+				setAvailableYears(years);
+			}).catch(() => {
+				// If promise fails, at least show current year
+				setAvailableYears([new Date().getFullYear().toString()]);
+			});
+		}
+	}, [receiptsByYearPromise]);
 
 	const handleRename = useCallback(
 		async (pathname: string, newName: string) => {
@@ -174,13 +192,27 @@ export default function TreasuryReceipts() {
 				return;
 			}
 			handleUpload(file);
-			e.target.value = "";
+			if (e.target) {
+				e.target.value = "";
+			}
 		},
 		[handleUpload, t],
 	);
 
-	const footerFallback = (
-		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+	// Configure search fields
+	const searchFields: SearchField[] = [
+		{
+			name: "year",
+			label: t("common.fields.year"),
+			type: "select",
+			placeholder: t("treasury.select_year"),
+			options: availableYears.length > 0 ? availableYears : [new Date().getFullYear().toString()],
+		},
+	];
+
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2">
+			<SearchMenu fields={searchFields} />
 			{canWrite && (
 				<>
 					<input
@@ -191,77 +223,18 @@ export default function TreasuryReceipts() {
 						onChange={onFileChange}
 						disabled={isUploading}
 					/>
-					<button
-						type="button"
-						onClick={() => fileInputRef.current?.click()}
-						disabled={isUploading}
-						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+					<AddFileButton
+						onFileChange={onFileChange}
 						title={t("treasury.receipts.add")}
-					>
-						<span
-							className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
-						>
-							{isUploading ? "progress_activity" : "add"}
-						</span>
-					</button>
+						variant="icon"
+						isUploading={isUploading}
+						accept={RECEIPT_ALLOWED_TYPES.join(",")}
+						fileInputRef={fileInputRef}
+					/>
 				</>
 			)}
 		</div>
 	);
-
-	const footerContent =
-		receiptsByYearPromise == null ? (
-			footerFallback
-		) : (
-			<Suspense fallback={footerFallback}>
-				<Await resolve={receiptsByYearPromise}>
-					{(receiptsByYear: ReceiptsByYearItem[]) => (
-						<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
-							{receiptsByYear.length > 0 && (
-								<div className="flex gap-2">
-									{receiptsByYear.map((y) => (
-										<Button
-											key={y.year}
-											type="button"
-											variant={selectedYear === y.year ? "default" : "secondary"}
-											onClick={() => setSelectedYear(y.year)}
-											className="font-bold rounded-xl"
-										>
-											{y.year}
-										</Button>
-									))}
-								</div>
-							)}
-							{canWrite && (
-								<>
-									<input
-										ref={fileInputRef}
-										type="file"
-										className="hidden"
-										accept={RECEIPT_ALLOWED_TYPES.join(",")}
-										onChange={onFileChange}
-										disabled={isUploading}
-									/>
-									<button
-										type="button"
-										onClick={() => fileInputRef.current?.click()}
-										disabled={isUploading}
-										className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-										title={t("treasury.receipts.add")}
-									>
-										<span
-											className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
-										>
-											{isUploading ? "progress_activity" : "add"}
-										</span>
-									</button>
-								</>
-							)}
-						</div>
-					)}
-				</Await>
-			</Suspense>
-		);
 
 	return (
 		<PageWrapper>
@@ -293,6 +266,7 @@ export default function TreasuryReceipts() {
 									deletingId={deletingId}
 									canWrite={canWrite}
 									fileInputRef={fileInputRef}
+									onFileChange={onFileChange}
 									handleRename={handleRename}
 									handleDelete={handleDelete}
 									t={t}
@@ -319,6 +293,7 @@ function ReceiptsContent({
 	deletingId,
 	canWrite,
 	fileInputRef,
+	onFileChange,
 	handleRename,
 	handleDelete,
 	t,
@@ -337,6 +312,7 @@ function ReceiptsContent({
 	deletingId: string | null;
 	canWrite: boolean;
 	fileInputRef: React.RefObject<HTMLInputElement | null>;
+	onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	handleRename: (pathname: string, newName: string) => Promise<void>;
 	handleDelete: (pathname: string) => Promise<void>;
 	t: (key: string, opts?: { defaultValue?: string }) => string;
@@ -372,20 +348,15 @@ function ReceiptsContent({
 				</span>
 				<p className="mt-2 font-medium">{t("treasury.receipts.no_receipts")}</p>
 				{canWrite && (
-					<button
-						type="button"
-						onClick={() => fileInputRef.current?.click()}
-						disabled={isUploading}
-						className="mt-4 inline-flex items-center gap-1 p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+					<AddFileButton
+						onFileChange={onFileChange}
 						title={t("treasury.receipts.add")}
-					>
-						<span
-							className={`material-symbols-outlined text-xl ${isUploading ? "animate-spin" : ""}`}
-						>
-							{isUploading ? "progress_activity" : "add"}
-						</span>
-						{t("treasury.receipts.add")}
-					</button>
+						variant="button"
+						isUploading={isUploading}
+						fileInputRef={fileInputRef}
+						accept={RECEIPT_ALLOWED_TYPES.join(",")}
+						className="mt-4"
+					/>
 				)}
 			</div>
 		);
