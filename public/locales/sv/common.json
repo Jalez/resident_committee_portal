@@ -84,6 +84,7 @@
 		}
 	},
 	"treasury": {
+		"overview": "Översikt",
 		"title": "Kassa {{year}}",
 		"year": "År",
 		"select_year": "Välj år...",
@@ -101,7 +102,10 @@
 		"add_transaction": "Lägg till transaktion",
 		"actions": {
 			"breakdown": "Detaljer",
+			"transactions": "Transaktioner",
+			"receipts": "Kvitton",
 			"reimbursements": "Utlägg",
+			"reservations": "Reservationer",
 			"add": "Lägg till"
 		},
 		"new": {

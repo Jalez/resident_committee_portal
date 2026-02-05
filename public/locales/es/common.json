@@ -301,6 +301,17 @@
 			"save": "Guardar ajustes"
 		}
 	},
+	"treasury": {
+		"overview": "Resumen",
+		"actions": {
+			"breakdown": "Desglose",
+			"transactions": "Transacciones",
+			"receipts": "Recibos",
+			"reimbursements": "Solicitudes de reembolso",
+			"reservations": "Reservas",
+			"add": "Añadir"
+		}
+	},
 	"permissions": {
 		"users": {
 			"read": "Ver lista de usuarios",

@@ -317,6 +317,17 @@
 		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
 	},
+	"treasury": {
+		"overview": "Übersicht",
+		"actions": {
+			"breakdown": "Aufschlüsselung",
+			"transactions": "Transaktionen",
+			"receipts": "Quittungen",
+			"reimbursements": "Erstattungsanträge",
+			"reservations": "Reservierungen",
+			"add": "Hinzufügen"
+		}
+	},
 	"permissions": {
 		"users": {
 			"read": "Benutzerliste anzeigen",

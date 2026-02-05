@@ -179,6 +179,7 @@
 		}
 	},
 	"treasury": {
+		"overview": "Overview",
 		"title": "Treasury {{year}}",
 		"year": "Year",
 		"select_year": "Select year...",
