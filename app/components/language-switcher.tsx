@@ -19,6 +19,8 @@ import { cn } from "~/lib/utils";
 interface LanguageSwitcherProps {
 	/** "standalone" renders as a full dropdown, "submenu" renders as a submenu item for profile dropdown */
 	variant?: "standalone" | "submenu";
+	/** When true, trigger shows only the icon (for collapsed sidebar) */
+	compact?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ interface LanguageSwitcherProps {
  */
 export function LanguageSwitcher({
 	variant = "standalone",
+	compact = false,
 	className,
 }: LanguageSwitcherProps & { className?: string }) {
 	const { t, i18n } = useTranslation();
@@ -149,15 +152,21 @@ export function LanguageSwitcher({
 				<Button
 					variant="ghost"
 					className={cn(
-						"flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/10 hover:text-primary text-gray-500 dark:text-gray-400 text-left justify-start",
-						className || "w-full",
+						"flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/10 hover:text-primary text-gray-500 dark:text-gray-400",
+						compact ? "justify-center px-3 w-full" : "text-left justify-start",
+						!compact && (className || "w-full"),
+						compact && className,
 					)}
 				>
-					<span className="material-symbols-outlined text-2xl">translate</span>
-					<span className="text-sm font-bold">{t("lang.label")}</span>
-					<span className="material-symbols-outlined text-lg opacity-60 ml-auto">
-						expand_more
-					</span>
+					<span className="material-symbols-outlined text-2xl shrink-0">translate</span>
+					{!compact && (
+						<>
+							<span className="text-sm font-bold">{t("lang.label")}</span>
+							<span className="material-symbols-outlined text-lg opacity-60 ml-auto">
+								expand_more
+							</span>
+						</>
+					)}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">

@@ -1,20 +1,9 @@
 import { XIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useFetcher, useRevalidator } from "react-router";
 import { LanguageSwitcher } from "~/components/language-switcher";
 import { Button } from "~/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import {
 	Sheet,
 	SheetClose,
@@ -37,15 +26,13 @@ import { cn } from "~/lib/utils";
 import { useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "~/root";
 
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+
 interface NavigationProps {
-	className?: string;
-	orientation?: "vertical" | "horizontal";
+	variant: "mobile" | "sidebar";
 }
 
-export function Navigation({
-	className,
-	orientation = "vertical",
-}: NavigationProps) {
+export function Navigation({ variant }: NavigationProps) {
 	const location = useLocation();
 	const pathname = location.pathname;
 	const { isInfoReel, fillProgress, opacity } = useInfoReel();
@@ -54,6 +41,26 @@ export function Navigation({
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [mobileMessagesOpen, setMobileMessagesOpen] = useState(false);
 	const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
+	const [mailSubmenuOpen, setMailSubmenuOpen] = useState(false);
+	useEffect(() => {
+		if (pathname.startsWith("/mail")) setMailSubmenuOpen(true);
+	}, [pathname]);
+	const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
+		if (typeof window === "undefined") return false;
+		try {
+			return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+		} catch {
+			return false;
+		}
+	});
+	const setSidebarCollapsed = useCallback((value: boolean) => {
+		setSidebarCollapsedState(value);
+		try {
+			localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value ? "true" : "false");
+		} catch {
+			// ignore
+		}
+	}, []);
 	const { t, i18n } = useTranslation();
 	const fetcher = useFetcher();
 	const revalidator = useRevalidator();
@@ -126,42 +133,40 @@ export function Navigation({
 	});
 
 	const isProfileActive = pathname === "/profile";
-	const isSettingsActive = pathname.startsWith("/settings");
 
-	// Shared nav item renderer
-	const renderNavItem = (item: (typeof navItems)[0], isMobile = false) => {
+	// Shared nav item renderer (showLabels + onNavigate for both mobile sheet and sidebar)
+	const renderNavItem = (
+		item: (typeof navItems)[0],
+		showLabels: boolean,
+		onNavigate?: () => void,
+	) => {
 		const isActive = pathname === item.path;
 		const isAnimating = isActive && isInfoReel;
-
-		// Resolve labels
-		// If InfoReel: Primary = user primary language, Secondary = user secondary language
-		// If Normal: Primary = Current Language
 		const primaryLabel = isInfoReel
 			? t(item.i18nKey, { lng: primaryLanguage })
 			: t(item.i18nKey);
 		const secondaryLabel = t(item.i18nKey, { lng: secondaryLanguage });
 
-		return (
+		const link = (
 			<Link
 				key={item.path}
 				to={item.path}
-				onClick={() => isMobile && setMobileMenuOpen(false)}
+				onClick={onNavigate}
 				className={cn(
-					"relative group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden",
+					"relative group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
 					!isAnimating && isActive && "text-primary bg-primary/10",
 					!isActive && "text-gray-500 dark:text-gray-400",
-					isMobile && "w-full shrink-0",
+					!showLabels && "justify-center px-3",
 				)}
 				style={
 					isAnimating
 						? {
-							color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-						}
+								color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+							}
 						: undefined
 				}
 			>
-				{/* Animated filling background for active item in info reel mode */}
 				{isAnimating && (
 					<div
 						className="absolute inset-0 bg-primary/10"
@@ -171,14 +176,11 @@ export function Navigation({
 						}}
 					/>
 				)}
-
-				<span className="relative material-symbols-outlined text-2xl">
+				<span className="relative material-symbols-outlined text-2xl shrink-0">
 					{item.icon}
 				</span>
-
-				{/* Always show labels in mobile menu */}
-				{isMobile && (
-					<div className="relative flex flex-col items-start leading-none">
+				{showLabels && (
+					<div className="relative flex flex-col items-start leading-none min-w-0">
 						<span className="text-sm font-bold">{primaryLabel}</span>
 						{isInfoReel && (
 							<span className="text-xs opacity-60 font-medium">
@@ -189,818 +191,308 @@ export function Navigation({
 				)}
 			</Link>
 		);
+		return link;
 	};
 
-	// Get current page info for mobile menu button
-	const currentNavItem =
-		navItems.find((item) => item.path === pathname) ||
-		allNavItems.find((item) => item.path === pathname);
-	const isHomePage = pathname === "/";
-
-	// Mobile menu label
-	const mobileMenuLabel = isInfoReel
-		? isHomePage
-			? `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
-			: currentNavItem
-				? `${t(currentNavItem.i18nKey, { lng: primaryLanguage })} / ${t(currentNavItem.i18nKey, { lng: secondaryLanguage })}`
-				: `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
-		: isHomePage
-			? t("nav.menu")
-			: currentNavItem
-				? t(currentNavItem.i18nKey)
-				: t("nav.menu");
-
-	const mobileMenuIcon = isHomePage ? "menu" : currentNavItem?.icon || "menu";
-
-	return (
-		<TooltipProvider delayDuration={200}>
-			{/* Mobile: Hamburger menu button + Sheet */}
-			<div className="md:hidden flex items-center justify-center w-full">
-				<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-					<SheetTrigger asChild>
-						<Button
-							variant="ghost"
-							className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all"
-						>
-							<span className="material-symbols-outlined text-2xl">
-								{mobileMenuIcon}
-							</span>
-							<span className="text-sm font-bold">{mobileMenuLabel}</span>
-							<span className="material-symbols-outlined text-lg opacity-60">
-								expand_more
-							</span>
-						</Button>
-					</SheetTrigger>
-					<SheetContent
-						side="left"
-						className="w-80 h-full flex flex-col"
-						showClose={false}
-					>
-						<SheetHeader className="shrink-0 flex flex-row items-center gap-2 space-y-0">
-							<SheetClose className="p-1 rounded-md hover:bg-muted transition-colors">
-								<XIcon className="size-5" />
-								<span className="sr-only">Close</span>
-							</SheetClose>
-							<SheetTitle className="text-left text-lg font-black">
-								{t("nav.navigation")}
-							</SheetTitle>
-						</SheetHeader>
-						<nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
-							{navItems.map((item) => renderNavItem(item, true))}
-
-							{/* Settings in mobile menu */}
-							{showSettingsMenu && (
-								<div className="mt-4 pt-4 border-t border-border">
-									<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-										{t("nav.settings")}
-									</p>
-									{hasPermission("settings:general") && (
-										<Link
-											to="/settings/general"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/general"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												settings
-											</span>
-											<span className="text-sm font-bold">
-												{t("settings.general.title")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:users") && (
-										<Link
-											to="/settings/users"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/users"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												manage_accounts
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.users")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:roles") && (
-										<Link
-											to="/settings/roles"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/roles"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												shield_person
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.roles")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:reimbursements") && (
-										<Link
-											to="/settings/reimbursements"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/reimbursements"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												smart_toy
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.reimbursements")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:analytics") && (
-										<Link
-											to="/settings/analytics"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/analytics"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												bar_chart
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.analytics")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:news") && (
-										<Link
-											to="/settings/news"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/news"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												article
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.news")}
-											</span>
-										</Link>
-									)}
-									{hasPermission("settings:faqs") && (
-										<Link
-											to="/settings/faqs"
-											onClick={() => setMobileMenuOpen(false)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/settings/faqs"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												help
-											</span>
-											<span className="text-sm font-bold">
-												{t("nav.faq")}
-											</span>
-										</Link>
-									)}
-								</div>
-							)}
-
-							{/* Profile section in mobile menu */}
-							{showProfileMenu && !isInfoReel && (
-								<div className="mt-4 pt-4 border-t border-border">
-									<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-										{t("nav.profile")}
-									</p>
-									<Link
-										to="/profile"
-										onClick={() => setMobileMenuOpen(false)}
-										className={cn(
-											"flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-											"hover:bg-primary/10 hover:text-primary",
-											isProfileActive
-												? "text-primary bg-primary/10"
-												: "text-gray-500 dark:text-gray-400",
-										)}
-									>
-										<span className="material-symbols-outlined text-2xl">
-											edit
-										</span>
-										<span className="text-sm font-bold">
-											{t("nav.edit_profile")}
-										</span>
-									</Link>
-									{/* Messages submenu in mobile menu */}
-									<div>
-										<button
-											type="button"
-											onClick={() => setMobileMessagesOpen(!mobileMessagesOpen)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
-												"hover:bg-primary/10 hover:text-primary",
-												pathname === "/messages"
-													? "text-primary bg-primary/10"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												mail
-											</span>
-											<span className="text-sm font-bold flex-1">
-												{t("nav.messages")}
-											</span>
-											{unreadMessageCount > 0 && (
-												<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
-													{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-												</span>
-											)}
-											<span
-												className={cn(
-													"material-symbols-outlined text-lg transition-transform",
-													mobileMessagesOpen && "rotate-90",
-												)}
-											>
-												chevron_right
-											</span>
-										</button>
-										{mobileMessagesOpen && (
-											<div className="pl-4 space-y-1">
-												{unreadMessages.length === 0 ? (
-													<div className="px-4 py-2 text-sm text-muted-foreground">
-														{t("messages.empty")}
-													</div>
-												) : (
-													<>
-														{unreadMessages.map((message) => (
-															<div
-																key={message.id}
-																className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-colors"
-															>
-																<div className="min-w-0 flex-1 flex flex-col gap-1.5">
-																	<p className="font-medium text-sm line-clamp-1">
-																		{message.title}
-																	</p>
-																	<p className="text-xs text-muted-foreground line-clamp-3">
-																		{message.content}
-																	</p>
-																	<p className="text-xs text-muted-foreground mt-0.5">
-																		{new Date(message.createdAt).toLocaleDateString(
-																			i18n.language === "fi" ? "fi-FI" : "en-US",
-																			{
-																				month: "short",
-																				day: "numeric",
-																				hour: "2-digit",
-																				minute: "2-digit",
-																			},
-																		)}
-																	</p>
-																</div>
-																<div className="flex flex-col items-end gap-2 shrink-0">
-																	{message.relatedNewsId && (
-																		<Link
-																			to={`/news/${message.relatedNewsId}/edit`}
-																			onClick={() => setMobileMenuOpen(false)}
-																			className="text-xs text-primary hover:underline whitespace-nowrap"
-																		>
-																			{t("messages.view_news")}
-																		</Link>
-																	)}
-																	<Button
-																		type="button"
-																		variant="outline"
-																		size="sm"
-																		className="h-8 px-2 text-xs flex items-center gap-1 shrink-0"
-																		onClick={(e) => {
-																			e.preventDefault();
-																			markMessagesAsRead([message.id]);
-																		}}
-																	>
-																		<span className="material-symbols-outlined text-base">
-																			done
-																		</span>
-																		{t("messages.mark_as_read")}
-																	</Button>
-																</div>
-															</div>
-														))}
-													</>
-												)}
-												{/* See all - always at bottom, matches desktop styling */}
-												<div className="border-t border-border mt-2 pt-2">
-													<Link
-														to="/messages"
-														onClick={() => setMobileMenuOpen(false)}
-														className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg hover:bg-primary/10 text-primary text-sm font-medium transition-colors"
-													>
-														{t("messages.see_all")}
-													</Link>
-												</div>
-											</div>
-										)}
-									</div>
-									{/* Language Switcher Mobile - under profile when logged in */}
-									<div>
-										<button
-											type="button"
-											onClick={() => setMobileLanguageOpen(!mobileLanguageOpen)}
-											className={cn(
-												"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full text-left",
-												"hover:bg-primary/10 hover:text-primary",
-												"text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-2xl">
-												translate
-											</span>
-											<span className="text-sm font-bold flex-1">
-												{t("lang.label")}
-											</span>
-											<span
-												className={cn(
-													"material-symbols-outlined text-lg transition-transform",
-													mobileLanguageOpen && "rotate-90",
-												)}
-											>
-												chevron_right
-											</span>
-										</button>
-										{mobileLanguageOpen && (
-											<div className="pl-4 space-y-1">
-												<div className="px-4 py-2">
-													<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-														{t("settings.general.primary_language")}
-													</p>
-													{supportedLanguages.map((lang) => (
-														<button
-															type="button"
-															key={`primary-${lang}`}
-															onClick={() => {
-																i18n.changeLanguage(lang);
-																fetcher.submit(
-																	{ language: lang, type: "primary" },
-																	{ method: "post", action: "/api/set-language" },
-																);
-															}}
-															className={cn(
-																"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-																i18n.language === lang && "bg-primary/10 text-primary",
-															)}
-														>
-															<span>{languageNames[lang] || lang}</span>
-															{i18n.language === lang && (
-																<span className="material-symbols-outlined text-sm">
-																	check
-																</span>
-															)}
-														</button>
-													))}
-												</div>
-												<div className="px-4 py-2">
-													<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-														{t("settings.general.secondary_language")}
-													</p>
-													{supportedLanguages.map((lang) => (
-														<button
-															type="button"
-															key={`secondary-${lang}`}
-															onClick={() => {
-																fetcher.submit(
-																	{ language: lang, type: "secondary" },
-																	{ method: "post", action: "/api/set-language" },
-																);
-																setTimeout(() => {
-																	revalidator.revalidate();
-																}, 100);
-															}}
-															className={cn(
-																"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-																secondaryLanguage === lang && "bg-primary/10 text-primary",
-															)}
-														>
-															<span>{languageNames[lang] || lang}</span>
-															{secondaryLanguage === lang && (
-																<span className="material-symbols-outlined text-sm">
-																	check
-																</span>
-															)}
-														</button>
-													))}
-													<button
-														type="button"
-														key="secondary-none"
-														onClick={() => {
-															fetcher.submit(
-																{ language: "none", type: "secondary" },
-																{ method: "post", action: "/api/set-language" },
-															);
-															setTimeout(() => {
-																revalidator.revalidate();
-															}, 100);
-														}}
-														className={cn(
-															"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-															secondaryLanguage === "none" && "bg-primary/10 text-primary",
-														)}
-													>
-														<span>{t("common.fields.none")}</span>
-														{secondaryLanguage === "none" && (
-															<span className="material-symbols-outlined text-sm">
-																check
-															</span>
-														)}
-													</button>
-												</div>
-											</div>
-										)}
-									</div>
-									<Link
-										to="/auth/logout"
-										onClick={() => setMobileMenuOpen(false)}
-										className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
-									>
-										<span className="material-symbols-outlined text-2xl">
-											logout
-										</span>
-										<span className="text-sm font-bold">
-											{t("nav.log_out")}
-										</span>
-									</Link>
-								</div>
-							)}
-							{/* Language Switcher Mobile - for guests */}
-							{!showProfileMenu && !isInfoReel && (
-								<LanguageSwitcher variant="standalone" />
-							)}
-						</nav>
-					</SheetContent>
-				</Sheet>
-			</div>
-
-			{/* Desktop: Original horizontal/vertical navigation */}
-			<nav
+	// Shared menu link for settings/profile (icon + optional label, optional tooltip when collapsed)
+	const renderMenuLink = (
+		to: string,
+		icon: string,
+		label: string,
+		isActive: boolean,
+		showLabels: boolean,
+		onNavigate?: () => void,
+		destructive?: boolean,
+	) => {
+		const link = (
+			<Link
+				to={to}
+				onClick={onNavigate}
 				className={cn(
-					"hidden md:flex items-center justify-center gap-1",
-					orientation === "vertical" ? "flex-col h-full" : "flex-row w-full",
-					className,
+					"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full shrink-0",
+					"hover:bg-primary/10 hover:text-primary",
+					isActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
+					!showLabels && "justify-center px-3",
+					destructive &&
+						"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
 				)}
 			>
-				{navItems.map((item) => {
-					const isActive = pathname === item.path;
-					const isAnimating = isActive && isInfoReel;
-					const primaryLabel = isInfoReel
+				<span className="material-symbols-outlined text-2xl shrink-0">{icon}</span>
+				{showLabels && <span className="text-sm font-bold">{label}</span>}
+			</Link>
+		);
+		if (!showLabels) {
+			return (
+				<Tooltip key={to}>
+					<TooltipTrigger asChild>{link}</TooltipTrigger>
+					<TooltipContent side="right">{label}</TooltipContent>
+				</Tooltip>
+			);
+		}
+		return link;
+	};
+
+	// Mail child active state (pathname + search)
+	const mailSearch = typeof location.search === "string" ? location.search : "";
+	const mailSearchParams = new URLSearchParams(mailSearch);
+	const isMailChildActive = (childPath: string) => {
+		if (childPath === "/mail/drafts") return pathname === "/mail/drafts";
+		if (childPath === "/mail?direction=sent")
+			return pathname === "/mail" && mailSearchParams.get("direction") === "sent";
+		if (childPath === "/mail?compose=new")
+			return pathname === "/mail" && !!mailSearchParams.get("compose");
+		// inbox: /mail without direction=sent and without compose
+		if (childPath === "/mail")
+			return pathname === "/mail" && mailSearchParams.get("direction") !== "sent" && !mailSearchParams.get("compose");
+		return false;
+	};
+
+	// Shared menu content used by both mobile Sheet and desktop sidebar
+	const renderMenuContent = (showLabels: boolean, onNavigate?: () => void) => (
+		<>
+			{navItems.map((item) => {
+				// Mail (and any item with children): render as expandable sub-items
+				if (item.children?.length) {
+					const isMailActive = pathname.startsWith(item.path);
+					if (!showLabels) {
+						// Collapsed sidebar: single link to inbox
+						const link = (
+							<Link
+								key={item.path}
+								to={item.path}
+								onClick={onNavigate}
+								className={cn(
+									"relative group flex items-center justify-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
+									"hover:bg-primary/10 hover:text-primary",
+									isMailActive && "text-primary bg-primary/10",
+									!isMailActive && "text-gray-500 dark:text-gray-400",
+								)}
+							>
+								<span className="material-symbols-outlined text-2xl shrink-0">
+									{item.icon}
+								</span>
+							</Link>
+						);
+						return (
+							<Tooltip key={item.path}>
+								<TooltipTrigger asChild>{link}</TooltipTrigger>
+								<TooltipContent side="right">
+									{isInfoReel ? t(item.i18nKey, { lng: primaryLanguage }) : t(item.i18nKey)}
+								</TooltipContent>
+							</Tooltip>
+						);
+					}
+					// Expanded: parent toggle + children
+					return (
+						<div key={item.path}>
+							<button
+								type="button"
+								onClick={() => setMailSubmenuOpen(!mailSubmenuOpen)}
+								className={cn(
+									"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
+									"hover:bg-primary/10 hover:text-primary",
+									isMailActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
+								)}
+							>
+								<span className="material-symbols-outlined text-2xl shrink-0">
+									{item.icon}
+								</span>
+								<span className="text-sm font-bold flex-1">
+									{isInfoReel ? t(item.i18nKey, { lng: primaryLanguage }) : t(item.i18nKey)}
+								</span>
+								<span
+									className={cn(
+										"material-symbols-outlined text-lg transition-transform shrink-0",
+										mailSubmenuOpen && "rotate-90",
+									)}
+								>
+									chevron_right
+								</span>
+							</button>
+							{mailSubmenuOpen && (
+								<div className="pl-4 space-y-0.5 mt-0.5">
+									{item.children.map((child) => (
+										<Link
+											key={child.path}
+											to={child.path}
+											onClick={onNavigate}
+											className={cn(
+												"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
+												"hover:bg-primary/10 hover:text-primary",
+												isMailChildActive(child.path)
+													? "text-primary bg-primary/10 font-medium"
+													: "text-gray-500 dark:text-gray-400",
+											)}
+										>
+											<span className="material-symbols-outlined text-xl shrink-0">
+												{child.icon}
+											</span>
+											<span className="font-medium">
+												{t(child.i18nKey)}
+											</span>
+										</Link>
+									))}
+								</div>
+							)}
+						</div>
+					);
+				}
+
+				const itemEl = renderNavItem(item, showLabels, onNavigate);
+				if (!showLabels) {
+					const label = isInfoReel
 						? t(item.i18nKey, { lng: primaryLanguage })
 						: t(item.i18nKey);
-					const secondaryLabel = t(item.i18nKey, { lng: secondaryLanguage });
-
 					return (
 						<Tooltip key={item.path}>
-							<TooltipTrigger asChild>
-								<Link
-									to={item.path}
-									className={cn(
-										"relative group flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 rounded-xl transition-all duration-300 overflow-hidden",
-										"hover:bg-primary/10 hover:text-primary",
-										!isAnimating && isActive && "text-primary bg-primary/10",
-										!isActive && "text-gray-500 dark:text-gray-400",
-									)}
-									style={
-										isAnimating
-											? {
-												color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-											}
-											: undefined
-									}
-								>
-									{/* Animated filling background for active item in info reel mode */}
-									{isAnimating && (
-										<div
-											className="absolute inset-0 bg-primary/10"
-											style={{
-												clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
-												opacity: opacity,
-											}}
-										/>
-									)}
-
-									<span className="relative material-symbols-outlined text-2xl md:text-3xl">
-										{item.icon}
-									</span>
-
-									<div
-										className={cn(
-											"relative flex-col items-start leading-none hidden lg:flex",
-											orientation === "vertical" && "lg:hidden", // Hide even on large if vertical (uses sidebar tooltips)
-										)}
-									>
-										<span className="text-sm md:text-base font-bold">
-											{primaryLabel}
-										</span>
-										{isInfoReel && (
-											<span className="text-[10px] md:text-xs opacity-60 font-medium">
-												{secondaryLabel}
-											</span>
-										)}
-									</div>
-								</Link>
-							</TooltipTrigger>
-							<TooltipContent
-								side={orientation === "vertical" ? "right" : "bottom"}
-								className={cn(
-									"font-bold",
-									// Hide tooltip on large screens when horizontal (labels are visible)
-									orientation === "horizontal" && "lg:hidden",
-								)}
-							>
-								{isInfoReel ? (
-									<>
-										<span>{t(item.i18nKey, { lng: primaryLanguage })}</span>
-										<span className="text-muted-foreground ml-1">
-											/ {t(item.i18nKey, { lng: secondaryLanguage })}
-										</span>
-									</>
-								) : (
-									<span>{t(item.i18nKey)}</span>
-								)}
-							</TooltipContent>
+							<TooltipTrigger asChild>{itemEl}</TooltipTrigger>
+							<TooltipContent side="right">{label}</TooltipContent>
 						</Tooltip>
 					);
-				})}
+				}
+				return itemEl;
+			})}
 
-				{/* Settings Dropdown Menu - Only show for admins */}
-				{showSettingsMenu && (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								className={cn(
-									"relative group flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 rounded-xl transition-all duration-300 overflow-hidden",
-									"hover:bg-primary/10 hover:text-primary cursor-pointer",
-									isSettingsActive
-										? "text-primary bg-primary/10"
-										: "text-gray-500 dark:text-gray-400",
-								)}
-							>
-								<span className="relative material-symbols-outlined text-2xl md:text-3xl">
-									settings
-								</span>
+			{showSettingsMenu && (
+				<div className={cn("mt-4 pt-4 border-t border-border", !showLabels && "mt-2 pt-2")}>
+					{showLabels && (
+						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+							{t("nav.settings")}
+						</p>
+					)}
+					{hasPermission("settings:general") &&
+						renderMenuLink(
+							"/settings/general",
+							"settings",
+							t("settings.general.title"),
+							pathname === "/settings/general",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:users") &&
+						renderMenuLink(
+							"/settings/users",
+							"manage_accounts",
+							t("nav.users"),
+							pathname === "/settings/users",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:roles") &&
+						renderMenuLink(
+							"/settings/roles",
+							"shield_person",
+							t("nav.roles"),
+							pathname === "/settings/roles",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:reimbursements") &&
+						renderMenuLink(
+							"/settings/reimbursements",
+							"smart_toy",
+							t("nav.reimbursements"),
+							pathname === "/settings/reimbursements",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:analytics") &&
+						renderMenuLink(
+							"/settings/analytics",
+							"bar_chart",
+							t("nav.analytics"),
+							pathname === "/settings/analytics",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:news") &&
+						renderMenuLink(
+							"/settings/news",
+							"article",
+							t("nav.news"),
+							pathname === "/settings/news",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:faqs") &&
+						renderMenuLink(
+							"/settings/faqs",
+							"help",
+							t("nav.faq"),
+							pathname === "/settings/faqs",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("avatars:read") &&
+						renderMenuLink(
+							"/avatars",
+							"account_circle",
+							t("nav.avatars"),
+							pathname === "/avatars",
+							showLabels,
+							onNavigate,
+						)}
+				</div>
+			)}
 
-								<div
+			{showProfileMenu && !isInfoReel && (
+				<div className={cn("mt-4 pt-4 border-t border-border", !showLabels && "mt-2 pt-2")}>
+					{showLabels && (
+						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+							{t("nav.profile")}
+						</p>
+					)}
+					{renderMenuLink(
+						"/profile",
+						"edit",
+						t("nav.edit_profile"),
+						isProfileActive,
+						showLabels,
+						onNavigate,
+					)}
+					{showLabels ? (
+						<>
+							<div>
+								<button
+									type="button"
+									onClick={() => setMobileMessagesOpen(!mobileMessagesOpen)}
 									className={cn(
-										"relative flex-col items-start leading-none hidden lg:flex",
-										orientation === "vertical" && "lg:hidden",
+										"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
+										"hover:bg-primary/10 hover:text-primary",
+										pathname === "/messages"
+											? "text-primary bg-primary/10"
+											: "text-gray-500 dark:text-gray-400",
 									)}
 								>
-									<span className="text-sm md:text-base font-bold">
-										{t("nav.settings")}
-									</span>
-								</div>
-
-								{/* Dropdown indicator */}
-								<span className="material-symbols-outlined text-sm opacity-60 hidden lg:block">
-									expand_more
-								</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-56">
-							{hasPermission("settings:general") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/general"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											settings
-										</span>
-										<div>
-											<p className="font-medium">
-												{t("settings.general.title")}
-											</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-							{hasPermission("settings:users") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/users"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											manage_accounts
-										</span>
-										<div>
-											<p className="font-medium">{t("nav.users")}</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-							{hasPermission("settings:roles") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/roles"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											shield_person
-										</span>
-										<div>
-											<p className="font-medium">{t("nav.roles")}</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-							{hasPermission("settings:reimbursements") && (
-								<>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem asChild>
-										<Link
-											to="/settings/reimbursements"
-											className="flex items-center gap-2 cursor-pointer"
-										>
-											<span className="material-symbols-outlined text-lg">
-												smart_toy
-											</span>
-											<div>
-												<p className="font-medium">{t("nav.reimbursements")}</p>
-											</div>
-										</Link>
-									</DropdownMenuItem>
-								</>
-							)}
-							{hasPermission("settings:analytics") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/analytics"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											bar_chart
-										</span>
-										<div>
-											<p className="font-medium">{t("nav.analytics")}</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-							{hasPermission("settings:news") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/news"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											article
-										</span>
-										<div>
-											<p className="font-medium">{t("nav.news")}</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-							{hasPermission("settings:faqs") && (
-								<DropdownMenuItem asChild>
-									<Link
-										to="/settings/faqs"
-										className="flex items-center gap-2 cursor-pointer"
-									>
-										<span className="material-symbols-outlined text-lg">
-											help
-										</span>
-										<div>
-											<p className="font-medium">{t("nav.faq")}</p>
-										</div>
-									</Link>
-								</DropdownMenuItem>
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
-
-				{/* Profile Dropdown Menu - Only show when logged in */}
-				{showProfileMenu && !isInfoReel && (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								className={cn(
-									"relative group flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 rounded-xl transition-all duration-300 overflow-hidden",
-									"hover:bg-primary/10 hover:text-primary cursor-pointer",
-									isProfileActive
-										? "text-primary bg-primary/10"
-										: "text-gray-500 dark:text-gray-400",
-								)}
-							>
-								<span className="relative material-symbols-outlined text-2xl md:text-3xl">
-									person
-								</span>
-
-								<div
-									className={cn(
-										"relative flex-col items-start leading-none hidden lg:flex",
-										orientation === "vertical" && "lg:hidden",
-									)}
-								>
-									<span className="text-sm md:text-base font-bold">
-										{t("nav.profile")}
-									</span>
-								</div>
-
-								{/* Unread messages badge */}
-								{unreadMessageCount > 0 && (
-									<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
-										{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-									</span>
-								)}
-
-								{/* Dropdown indicator */}
-								<span className="material-symbols-outlined text-sm opacity-60 hidden lg:block">
-									expand_more
-								</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-56">
-							<DropdownMenuItem asChild>
-								<Link
-									to="/profile"
-									className="flex items-center gap-2 cursor-pointer"
-								>
-									<span className="material-symbols-outlined text-lg">
-										edit
-									</span>
-									<div>
-										<p className="font-medium">{t("nav.edit_profile")}</p>
-									</div>
-								</Link>
-							</DropdownMenuItem>
-							{/* Messages Submenu */}
-							<DropdownMenuSub>
-								<DropdownMenuSubTrigger className="cursor-pointer relative">
-									<span className="material-symbols-outlined text-lg">
-										mail
-									</span>
-									<div className="flex-1">
-										<Link to="/messages" className="font-medium block">{t("nav.messages")}</Link>
-									</div>
+									<span className="material-symbols-outlined text-2xl">mail</span>
+									<span className="text-sm font-bold flex-1">{t("nav.messages")}</span>
 									{unreadMessageCount > 0 && (
-										<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full mr-2">
+										<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
 											{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
 										</span>
 									)}
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="w-96 max-h-[min(24rem,70vh)] overflow-y-auto">
-									<DropdownMenuLabel>
-										{t("nav.messages")}
-										{unreadMessageCount > 0 && (
-											<span className="ml-2 text-xs text-muted-foreground">
-												({t("messages.unread_count", { count: unreadMessageCount })})
-											</span>
+									<span
+										className={cn(
+											"material-symbols-outlined text-lg transition-transform",
+											mobileMessagesOpen && "rotate-90",
 										)}
-									</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{unreadMessages.length === 0 ? (
-										<DropdownMenuItem disabled className="text-muted-foreground">
-											{t("messages.empty")}
-										</DropdownMenuItem>
-									) : (
-										<>
-											{unreadMessages.map((message) => (
-												<DropdownMenuItem
-													key={message.id}
-													className="py-0 pr-0 focus:bg-transparent"
-													onSelect={(e) => e.preventDefault()}
-												>
-													<div className="flex w-full items-start gap-3 py-3 pr-2">
+									>
+										chevron_right
+									</span>
+								</button>
+								{mobileMessagesOpen && (
+									<div className="pl-4 space-y-1">
+										{unreadMessages.length === 0 ? (
+											<div className="px-4 py-2 text-sm text-muted-foreground">
+												{t("messages.empty")}
+											</div>
+										) : (
+											<>
+												{unreadMessages.map((message) => (
+													<div
+														key={message.id}
+														className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-colors"
+													>
 														<div className="min-w-0 flex-1 flex flex-col gap-1.5">
 															<p className="font-medium text-sm line-clamp-1">
 																{message.title}
@@ -1024,7 +516,7 @@ export function Navigation({
 															{message.relatedNewsId && (
 																<Link
 																	to={`/news/${message.relatedNewsId}/edit`}
-																	onClick={(e) => e.stopPropagation()}
+																	onClick={onNavigate}
 																	className="text-xs text-primary hover:underline whitespace-nowrap"
 																>
 																	{t("messages.view_news")}
@@ -1037,7 +529,6 @@ export function Navigation({
 																className="h-8 px-2 text-xs flex items-center gap-1 shrink-0"
 																onClick={(e) => {
 																	e.preventDefault();
-																	e.stopPropagation();
 																	markMessagesAsRead([message.id]);
 																}}
 															>
@@ -1048,65 +539,289 @@ export function Navigation({
 															</Button>
 														</div>
 													</div>
-												</DropdownMenuItem>
-											))}
-											<>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem asChild>
+												))}
+												<div className="border-t border-border mt-2 pt-2">
 													<Link
 														to="/messages"
-														className="flex items-center justify-center gap-2 cursor-pointer text-primary"
+														onClick={onNavigate}
+														className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg hover:bg-primary/10 text-primary text-sm font-medium transition-colors"
 													>
-														<span className="text-sm font-medium">
-															{t("messages.see_all")}
-														</span>
-													</Link>
-												</DropdownMenuItem>
-											</>
-										</>
-									)}
-									{unreadMessageCount === 0 && (
-										<>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem asChild>
-												<Link
-													to="/messages"
-													className="flex items-center justify-center gap-2 cursor-pointer"
-												>
-													<span className="text-sm font-medium">
 														{t("messages.see_all")}
-													</span>
-												</Link>
-											</DropdownMenuItem>
-										</>
-									)}
-								</DropdownMenuSubContent>
-							</DropdownMenuSub>
-							<DropdownMenuSeparator />
-							<LanguageSwitcher variant="submenu" />
-							<DropdownMenuSeparator />
-							<DropdownMenuItem asChild variant="destructive">
-								<Link
-									to="/auth/logout"
-									className="flex items-center gap-2 cursor-pointer"
-								>
-									<span className="material-symbols-outlined text-lg">
-										logout
-									</span>
-									<div>
-										<p className="font-medium">{t("nav.log_out")}</p>
+													</Link>
+												</div>
+											</>
+										)}
 									</div>
-								</Link>
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
+								)}
+							</div>
+							<div>
+								<button
+									type="button"
+									onClick={() => setMobileLanguageOpen(!mobileLanguageOpen)}
+									className={cn(
+										"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full text-left",
+										"hover:bg-primary/10 hover:text-primary",
+										"text-gray-500 dark:text-gray-400",
+									)}
+								>
+									<span className="material-symbols-outlined text-2xl">translate</span>
+									<span className="text-sm font-bold flex-1">{t("lang.label")}</span>
+									<span
+										className={cn(
+											"material-symbols-outlined text-lg transition-transform",
+											mobileLanguageOpen && "rotate-90",
+										)}
+									>
+										chevron_right
+									</span>
+								</button>
+								{mobileLanguageOpen && (
+									<div className="pl-4 space-y-1">
+										<div className="px-4 py-2">
+											<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+												{t("settings.general.primary_language")}
+											</p>
+											{supportedLanguages.map((lang) => (
+												<button
+													type="button"
+													key={`primary-${lang}`}
+													onClick={() => {
+														i18n.changeLanguage(lang);
+														fetcher.submit(
+															{ language: lang, type: "primary" },
+															{ method: "post", action: "/api/set-language" },
+														);
+													}}
+													className={cn(
+														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+														i18n.language === lang && "bg-primary/10 text-primary",
+													)}
+												>
+													<span>{languageNames[lang] || lang}</span>
+													{i18n.language === lang && (
+														<span className="material-symbols-outlined text-sm">
+															check
+														</span>
+													)}
+												</button>
+											))}
+										</div>
+										<div className="px-4 py-2">
+											<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+												{t("settings.general.secondary_language")}
+											</p>
+											{supportedLanguages.map((lang) => (
+												<button
+													type="button"
+													key={`secondary-${lang}`}
+													onClick={() => {
+														fetcher.submit(
+															{ language: lang, type: "secondary" },
+															{ method: "post", action: "/api/set-language" },
+														);
+														setTimeout(() => revalidator.revalidate(), 100);
+													}}
+													className={cn(
+														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+														secondaryLanguage === lang && "bg-primary/10 text-primary",
+													)}
+												>
+													<span>{languageNames[lang] || lang}</span>
+													{secondaryLanguage === lang && (
+														<span className="material-symbols-outlined text-sm">
+															check
+														</span>
+													)}
+												</button>
+											))}
+											<button
+												type="button"
+												key="secondary-none"
+												onClick={() => {
+													fetcher.submit(
+														{ language: "none", type: "secondary" },
+														{ method: "post", action: "/api/set-language" },
+													);
+													setTimeout(() => revalidator.revalidate(), 100);
+												}}
+												className={cn(
+													"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
+													secondaryLanguage === "none" && "bg-primary/10 text-primary",
+												)}
+											>
+												<span>{t("common.fields.none")}</span>
+												{secondaryLanguage === "none" && (
+													<span className="material-symbols-outlined text-sm">
+														check
+													</span>
+												)}
+											</button>
+										</div>
+									</div>
+								)}
+							</div>
+							{renderMenuLink(
+								"/auth/logout",
+								"logout",
+								t("nav.log_out"),
+								false,
+								true,
+								onNavigate,
+								true,
+							)}
+						</>
+					) : (
+						<>
+							{renderMenuLink(
+								"/messages",
+								"mail",
+								t("nav.messages"),
+								pathname === "/messages",
+								false,
+								onNavigate,
+							)}
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<div className="flex">
+										<LanguageSwitcher variant="standalone" compact />
+									</div>
+								</TooltipTrigger>
+								<TooltipContent side="right">{t("lang.label")}</TooltipContent>
+							</Tooltip>
+							{renderMenuLink(
+								"/auth/logout",
+								"logout",
+								t("nav.log_out"),
+								false,
+								false,
+								onNavigate,
+								true,
+							)}
+						</>
+					)}
+				</div>
+			)}
+			{!showProfileMenu && !isInfoReel && showLabels && (
+				<LanguageSwitcher variant="standalone" />
+			)}
+			{!showProfileMenu && !isInfoReel && !showLabels && (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div className="mt-2 flex">
+							<LanguageSwitcher variant="standalone" compact />
+						</div>
+					</TooltipTrigger>
+					<TooltipContent side="right">{t("lang.label")}</TooltipContent>
+				</Tooltip>
+			)}
+		</>
+	);
 
-				{/* Language Switcher for guests (not logged in) */}
-				{!showProfileMenu && !isInfoReel && (
-					<LanguageSwitcher variant="standalone" className="w-auto" />
+	// Get current page info for mobile menu button
+	const currentNavItem =
+		navItems.find((item) => item.path === pathname) ||
+		allNavItems.find((item) => item.path === pathname);
+	const isHomePage = pathname === "/";
+
+	const mobileMenuLabel = isInfoReel
+		? isHomePage
+			? `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
+			: currentNavItem
+				? `${t(currentNavItem.i18nKey, { lng: primaryLanguage })} / ${t(currentNavItem.i18nKey, { lng: secondaryLanguage })}`
+				: `${t("nav.menu", { lng: primaryLanguage })} / ${t("nav.menu", { lng: secondaryLanguage })}`
+		: isHomePage
+			? t("nav.menu")
+			: currentNavItem
+				? t(currentNavItem.i18nKey)
+				: t("nav.menu");
+
+	const mobileMenuIcon = isHomePage ? "menu" : currentNavItem?.icon || "menu";
+
+	if (variant === "mobile") {
+		return (
+			<TooltipProvider delayDuration={200}>
+				<div className="flex items-center justify-center w-full">
+					<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+						<SheetTrigger asChild>
+							<Button
+								variant="ghost"
+								className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all"
+							>
+								<span className="material-symbols-outlined text-2xl">
+									{mobileMenuIcon}
+								</span>
+								<span className="text-sm font-bold">{mobileMenuLabel}</span>
+								<span className="material-symbols-outlined text-lg opacity-60">
+									expand_more
+								</span>
+							</Button>
+						</SheetTrigger>
+						<SheetContent
+							side="left"
+							className="w-80 h-full flex flex-col"
+							showClose={false}
+						>
+							<SheetHeader className="shrink-0 flex flex-row items-center gap-2 space-y-0">
+								<SheetClose className="p-1 rounded-md hover:bg-muted transition-colors">
+									<XIcon className="size-5" />
+									<span className="sr-only">Close</span>
+								</SheetClose>
+								<SheetTitle className="text-left text-lg font-black">
+									{t("nav.navigation")}
+								</SheetTitle>
+							</SheetHeader>
+							<nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
+								{renderMenuContent(true, () => setMobileMenuOpen(false))}
+							</nav>
+						</SheetContent>
+					</Sheet>
+				</div>
+			</TooltipProvider>
+		);
+	}
+
+	// Sidebar variant: persistent left sidebar, collapsible, same look as mobile menu
+	return (
+		<TooltipProvider delayDuration={200}>
+			<aside
+				className={cn(
+					"hidden md:flex flex-col shrink-0 sticky top-0 h-screen border-r border-border bg-background transition-[width] duration-200 overflow-hidden z-40",
+					sidebarCollapsed ? "w-[4.5rem]" : "w-80",
 				)}
-			</nav>
+			>
+				<div className="flex flex-col flex-1 min-h-0">
+					<div className="shrink-0 flex items-center justify-between gap-2 px-3 py-3 border-b border-border">
+						{!sidebarCollapsed && (
+							<span className="text-lg font-black truncate">
+								{t("nav.navigation")}
+							</span>
+						)}
+						<Button
+							variant="ghost"
+							size="icon"
+							className="shrink-0 rounded-xl"
+							onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+							aria-label={
+								sidebarCollapsed
+									? t("nav.sidebar_expand")
+									: t("nav.sidebar_collapse")
+							}
+						>
+							<span
+								className={cn(
+									"material-symbols-outlined text-2xl transition-transform",
+									sidebarCollapsed ? "rotate-180" : "",
+								)}
+							>
+								chevron_left
+							</span>
+						</Button>
+					</div>
+					<nav className="flex flex-col gap-1 mt-2 overflow-y-auto min-h-0 flex-1 pb-4 px-2">
+						{renderMenuContent(!sidebarCollapsed)}
+					</nav>
+				</div>
+			</aside>
 		</TooltipProvider>
 	);
 }

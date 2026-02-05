@@ -6,9 +6,11 @@ import {
 	Scripts,
 	ScrollRestoration,
 	useLoaderData,
+	useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { ReceiptsPageSkeleton } from "~/components/treasury/receipts-skeleton";
 import "./app.css";
 import type { ClientUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
@@ -207,47 +209,58 @@ export default function App() {
 function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 	const { isInfoReel } = useLanguage();
 	const { t } = useTranslation();
+	const navigation = useNavigation();
+	const isNavigatingToReceipts =
+		navigation.state === "loading" &&
+		navigation.location?.pathname === "/treasury/receipts";
 
 	return (
-		<div className="flex flex-col min-h-screen bg-background text-foreground">
-			<div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0 sticky top-0">
-				<header className="flex items-center justify-center px-4 pb-2">
-					<div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
-						<span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
-							{siteConfig.shortName || siteConfig.name}
-						</span>
-						<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
-							{/* Info Reel: Show FI and EN */}
-							{isInfoReel && (
-								<>
+		<div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
+			<Navigation variant="sidebar" />
+			<div className="flex-1 flex flex-col min-w-0">
+				<div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0 sticky top-0">
+					<header className="flex items-center justify-center px-4 pb-2">
+						<div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
+							<span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
+								{siteConfig.shortName || siteConfig.name}
+							</span>
+							<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
+								{/* Info Reel: Show FI and EN */}
+								{isInfoReel && (
+									<>
+										<span className="text-sm sm:text-2xl md:text-3xl">
+											{t("app.title", { lng: "fi" })}
+										</span>
+										<span className="opacity-90 text-[9px] sm:text-xl md:text-2xl mt-0.5 md:mt-2">
+											{t("app.title", { lng: "en" })}
+										</span>
+									</>
+								)}
+
+								{/* Normal Mode: Show current language */}
+								{!isInfoReel && (
 									<span className="text-sm sm:text-2xl md:text-3xl">
-										{t("app.title", { lng: "fi" })}
+										{t("app.title")}
 									</span>
-									<span className="opacity-90 text-[9px] sm:text-xl md:text-2xl mt-0.5 md:mt-2">
-										{t("app.title", { lng: "en" })}
-									</span>
-								</>
-							)}
-
-							{/* Normal Mode: Show current language */}
-							{!isInfoReel && (
-								<span className="text-sm sm:text-2xl md:text-3xl">
-									{t("app.title")}
-								</span>
-							)}
+								)}
+							</div>
 						</div>
-					</div>
-				</header>
+					</header>
 
-				<nav className="pb-1 sm:pb-2 md:pb-4">
-					<Navigation orientation="horizontal" />
-				</nav>
+					<nav className="pb-1 sm:pb-2 md:pb-4 md:hidden">
+						<Navigation variant="mobile" />
+					</nav>
+				</div>
+
+				{/* Main Content Area - show receipts skeleton when navigating to receipts */}
+				<ContentFader>
+					{isNavigatingToReceipts ? (
+						<ReceiptsPageSkeleton />
+					) : (
+						<Outlet />
+					)}
+				</ContentFader>
 			</div>
-
-			{/* Main Content Area - fades during info reel transitions */}
-			<ContentFader>
-				<Outlet />
-			</ContentFader>
 		</div>
 	);
 }

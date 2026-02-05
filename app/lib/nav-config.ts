@@ -1,6 +1,12 @@
 // Shared navigation configuration used by both Navigation component and InfoReelProvider
 // This ensures info reel cycles through routes that match what guests can see in navigation
 
+export interface NavItemChild {
+	path: string;
+	icon: string;
+	i18nKey: string;
+}
+
 export interface NavItem {
 	path: string;
 	icon: string;
@@ -8,6 +14,8 @@ export interface NavItem {
 	permission?: string;
 	showWhen?: "logged-out";
 	infoReelDuration?: number; // Optional override duration for info reel (ms)
+	/** Sub-items (e.g. Mail > Inbox, Sent, Drafts, Compose) */
+	children?: NavItemChild[];
 }
 
 // All navigation items with their permissions
@@ -83,12 +91,18 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.submissions",
 		permission: "submissions:read",
 	},
-	// Mail (direct communication) - requires committee:email
+	// Mail (direct communication) - requires committee:email; sub-items in nav
 	{
 		path: "/mail",
 		icon: "send",
 		i18nKey: "nav.committee_mail",
 		permission: "committee:email",
+		children: [
+			{ path: "/mail", icon: "inbox", i18nKey: "mail.inbox" },
+			{ path: "/mail?direction=sent", icon: "send", i18nKey: "mail.sent" },
+			{ path: "/mail/drafts", icon: "draft", i18nKey: "mail.drafts" },
+			{ path: "/mail?compose=new", icon: "edit_note", i18nKey: "mail.compose" },
+		],
 	},
 ];
 
