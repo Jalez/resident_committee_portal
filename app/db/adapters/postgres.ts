@@ -1032,6 +1032,14 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
+	async deleteCommitteeMailMessage(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(committeeMailMessages)
+			.where(eq(committeeMailMessages.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
 	// ==================== Mail Drafts Methods ====================
 	async insertMailDraft(draft: NewMailDraft): Promise<MailDraft> {
 		const result = await this.db

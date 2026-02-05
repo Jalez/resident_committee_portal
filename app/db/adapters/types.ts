@@ -230,6 +230,7 @@ export interface DatabaseAdapter {
 	committeeMailMessageExistsByMessageId(
 		messageId: string,
 	): Promise<boolean>;
+	deleteCommitteeMailMessage(id: string): Promise<boolean>;
 
 	// ==================== Mail Drafts Methods ====================
 	insertMailDraft(draft: NewMailDraft): Promise<MailDraft>;
