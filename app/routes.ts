@@ -21,6 +21,15 @@ export default [
 		"routes/treasury.transactions.$transactionId.edit.tsx",
 	),
 	route("treasury/receipts", "routes/treasury.receipts.tsx"),
+	route("treasury/receipts/new", "routes/treasury.receipts.new.tsx"),
+	route(
+		"treasury/receipts/:receiptId",
+		"routes/treasury.receipts.$receiptId.tsx",
+	),
+	route(
+		"treasury/receipts/:receiptId/edit",
+		"routes/treasury.receipts.$receiptId.edit.tsx",
+	),
 	route("treasury/reimbursements", "routes/treasury.reimbursements.tsx"),
 	route(
 		"treasury/reimbursements/:purchaseId",
@@ -96,7 +105,7 @@ export default [
 	route("api/avatar/upload", "routes/api.avatar.upload.tsx"),
 	route("api/avatar/set", "routes/api.avatar.set.tsx"),
 	route("api/avatars/delete", "routes/api.avatars.delete.tsx"),
-	route("api/receipts/upload", "routes/api.receipts.upload.tsx"),
+	route("api/receipts/upload/server", "routes/api.receipts.upload.server.tsx"),
 	route("api/receipts/thumbnail", "routes/api.receipts.thumbnail.tsx"),
 	route("api/receipts/rename", "routes/api.receipts.rename.tsx"),
 	route("api/receipts/delete", "routes/api.receipts.delete.tsx"),

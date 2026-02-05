@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
-import { upload } from "@vercel/blob/client";
 import {
 	type ReceiptLink,
 	ReceiptPicker,
@@ -11,7 +10,6 @@ import {
 	hasRequiredReceipts,
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
-import { buildReceiptPath } from "~/lib/receipts/utils";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -140,25 +138,33 @@ export function ReimbursementForm({
 		): Promise<ReceiptLink | null> => {
 			setIsUploadingReceipt(true);
 			try {
-				const pathname = buildReceiptPath(
-					year,
-					file.name,
-					desc || "kuitti",
-				);
-				const blob = await upload(pathname, file, {
-					access: "public",
-					handleUploadUrl: "/api/receipts/upload",
+				const formData = new FormData();
+				formData.append("file", file);
+				formData.append("year", year);
+				formData.append("description", desc || "kuitti");
+
+				const response = await fetch("/api/receipts/upload/server", {
+					method: "POST",
+					body: formData,
 				});
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({ error: "Upload failed" }));
+					throw new Error(errorData.error || "Upload failed");
+				}
+
+				const data = await response.json();
 				toast.success(t("treasury.new_reimbursement.receipt_uploaded"));
 				return {
-					id: blob.pathname,
-					name: blob.pathname.split("/").pop() || file.name,
-					url: blob.url,
+					id: data.pathname,
+					name: data.pathname.split("/").pop() || file.name,
+					url: data.url,
 				};
 			} catch (error) {
 				console.error("[uploadReceipt] Error:", error);
+				const errorMessage = error instanceof Error ? error.message : t("receipts.upload_failed");
 				toast.error(
-					`${t("treasury.new_reimbursement.error")}: ${t("receipts.upload_failed")}`,
+					`${t("treasury.new_reimbursement.error")}: ${errorMessage}`,
 				);
 				return null;
 			} finally {

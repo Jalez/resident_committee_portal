@@ -1,7 +1,7 @@
-import { head } from "@vercel/blob";
 import type { LoaderFunctionArgs } from "react-router";
 import { getDatabase } from "~/db";
 import { requireAnyPermission } from "~/lib/auth.server";
+import { getReceiptStorage } from "~/lib/receipts";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 import sharp from "sharp";
 
@@ -26,8 +26,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		request,
 		[
 			"treasury:read",
-			"reimbursements:write",
-			"transactions:write",
+			"treasury:reimbursements:write",
+			"treasury:transactions:write",
 			"inventory:write",
 		],
 		getDatabase,
@@ -45,8 +45,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	}
 
 	try {
-		const meta = await head(pathname);
-		if (!IMAGE_CONTENT_TYPES.has(meta.contentType)) {
+		const storage = getReceiptStorage();
+		const meta = await storage.getFileMetadata(pathname);
+		if (!meta || !IMAGE_CONTENT_TYPES.has(meta.contentType)) {
 			return new Response("Not an image", { status: 404 });
 		}
 
@@ -63,7 +64,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			.jpeg({ quality: 80 })
 			.toBuffer();
 
-		return new Response(resized, {
+		return new Response(resized as unknown as BodyInit, {
 			status: 200,
 			headers: {
 				"Content-Type": "image/jpeg",

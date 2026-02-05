@@ -1,9 +1,9 @@
-import { copy, del, head } from "@vercel/blob";
 import type { ActionFunctionArgs } from "react-router";
 import { getDatabase } from "~/db";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
+import { getReceiptStorage } from "~/lib/receipts";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 
 function isSafePathname(pathname: string): boolean {
@@ -59,7 +59,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	await requireAnyPermission(
 		request,
-		["reimbursements:write", "transactions:write", "inventory:write"],
+		["treasury:receipts:update", "treasury:reimbursements:write", "treasury:transactions:write", "inventory:write"],
 		getDatabase,
 	);
 
@@ -100,9 +100,11 @@ export async function action({ request }: ActionFunctionArgs) {
 		return Response.json({ pathname, url: "" });
 	}
 
-	try {
-		await head(pathname);
-	} catch {
+	const storage = getReceiptStorage();
+
+	// Check if file exists
+	const metadata = await storage.getFileMetadata(pathname);
+	if (!metadata) {
 		return new Response(JSON.stringify({ error: "Receipt not found" }), {
 			status: 404,
 			headers: { "Content-Type": "application/json" },
@@ -110,8 +112,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 
 	try {
-		const result = await copy(pathname, toPathname, { access: "public" });
-		await del(pathname);
+		const result = await storage.renameFile(pathname, toPathname);
 		clearCache("RECEIPTS_BY_YEAR");
 		return Response.json({
 			pathname: result.pathname,
