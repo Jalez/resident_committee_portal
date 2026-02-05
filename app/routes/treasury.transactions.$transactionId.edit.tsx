@@ -203,6 +203,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		});
 	}
 
+	// Get current year for year options
+	const currentYear = new Date().getFullYear();
+
 	return {
 		siteConfig: SITE_CONFIG,
 		transaction,
