@@ -1,19 +1,16 @@
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
-import { TableTotalsRow } from "~/components/treasury/table-totals-row";
+import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "~/components/ui/table";
+	TreasuryTable,
+	TREASURY_TABLE_STYLES,
+} from "~/components/treasury/treasury-table";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
@@ -96,6 +93,22 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Get unique categories for filter (excluding null/empty)
 	const categories = [...new Set(allTransactions.map((t) => t.category).filter((c): c is string => Boolean(c)))];
 
+	// Batch resolve creator names
+	const creatorIds = [
+		...new Set(
+			sortedTransactions
+				.map((t) => t.createdBy)
+				.filter((id): id is string => Boolean(id)),
+		),
+	];
+	const creatorUsers = await Promise.all(
+		creatorIds.map((id) => db.findUserById(id)),
+	);
+	const creatorsMap = new Map<string, string>();
+	creatorIds.forEach((id, i) => {
+		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
+	});
+
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
@@ -109,14 +122,24 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
 		systemLanguages,
+		creatorsMap: Object.fromEntries(creatorsMap),
 	};
 }
 
 export default function TreasuryTransactions({
 	loaderData,
 }: Route.ComponentProps) {
-	const { transactions, years, statuses, categories, systemLanguages } =
-		loaderData;
+	const {
+		transactions,
+		years,
+		statuses,
+		categories,
+		systemLanguages,
+		creatorsMap: creatorsMapRaw,
+	} = loaderData;
+	const creatorsMap = new Map(
+		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
 	const canEditGeneral = hasPermission("transactions:update");
@@ -130,6 +153,15 @@ export default function TreasuryTransactions({
 			return true;
 		}
 		return false;
+	};
+
+	const canDeleteTransaction = (transaction: Transaction) => {
+		const canDeleteGeneral = hasPermission("transactions:delete");
+		const canDeleteSelf =
+			hasPermission("transactions:delete-self") &&
+			transaction.createdBy &&
+			user?.userId === transaction.createdBy;
+		return canDeleteGeneral || canDeleteSelf;
 	};
 	const { t, i18n } = useTranslation();
 
@@ -198,6 +230,119 @@ export default function TreasuryTransactions({
 		</div>
 	);
 
+	const TYPE_VARIANT_MAP: Record<string, string> = {
+		income:
+			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+		expense: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+	};
+	const STATUS_VARIANT_MAP: Record<string, string> = {
+		complete:
+			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+		pending:
+			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+		paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+	};
+	const REIMBURSEMENT_VARIANT_MAP: Record<string, string> = {
+		approved:
+			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+		requested:
+			"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+	};
+
+	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
+	const columns = [
+		{
+			key: "date",
+			header: t("treasury.breakdown.date"),
+			cell: (row: Transaction) => formatDate(row.date),
+			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
+		},
+		{
+			key: "description",
+			header: t("treasury.breakdown.description"),
+			cell: (row: Transaction) => row.description,
+			cellClassName: "font-medium",
+		},
+		{
+			key: "category",
+			header: t("treasury.breakdown.category"),
+			cell: (row: Transaction) => row.category || "—",
+			cellClassName: "text-gray-500",
+		},
+		{
+			key: "type",
+			header: t("treasury.transactions.type"),
+			cell: (row: Transaction) => (
+				<TreasuryStatusPill
+					value={row.type}
+					variantMap={TYPE_VARIANT_MAP}
+					label={t(`treasury.types.${row.type}`, {
+						defaultValue: row.type,
+					})}
+				/>
+			),
+		},
+		{
+			key: "status",
+			header: t("treasury.transactions.status"),
+			cell: (row: Transaction) => (
+				<TreasuryStatusPill
+					value={row.status}
+					variantMap={STATUS_VARIANT_MAP}
+					label={t(
+						`treasury.breakdown.edit.statuses.${row.status}`,
+						{ defaultValue: row.status },
+					)}
+				/>
+			),
+		},
+		{
+			key: "createdBy",
+			header: t("common.fields.created_by"),
+			cell: (row: Transaction) =>
+				row.createdBy ? creatorsMap.get(row.createdBy) ?? "—" : "—",
+			cellClassName: "text-gray-500",
+		},
+		{
+			key: "reimbursement",
+			header: t("treasury.transactions.reimbursement_status"),
+			cell: (row: Transaction) =>
+				row.reimbursementStatus &&
+				row.reimbursementStatus !== "not_requested" ? (
+					<TreasuryStatusPill
+						value={row.reimbursementStatus}
+						variantMap={REIMBURSEMENT_VARIANT_MAP}
+						label={t(
+							`treasury.breakdown.edit.reimbursement_statuses.${row.reimbursementStatus}`,
+							{ defaultValue: row.reimbursementStatus },
+						)}
+					/>
+				) : (
+					<span className="text-gray-400">—</span>
+				),
+		},
+		{
+			key: "amount",
+			header: t("treasury.breakdown.amount"),
+			headerClassName: "text-right",
+			align: "right" as const,
+			cell: (row: Transaction) => (
+				<>
+					{row.type === "expense" ? "-" : "+"}
+					{formatCurrency(row.amount)}
+				</>
+			),
+			cellClassName: (row: Transaction) =>
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
+					row.type === "expense"
+						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				}`,
+		},
+	];
+
 	return (
 		<PageWrapper>
 			<SplitLayout
@@ -210,137 +355,48 @@ export default function TreasuryTransactions({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
-				{/* Transactions table */}
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-					{transactions.length === 0 ? (
-						<div className="p-8 text-center text-gray-500">
-							{t("treasury.breakdown.no_transactions")}
-						</div>
-					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className="w-12">#</TableHead>
-									<TableHead>{t("treasury.breakdown.date")}</TableHead>
-									<TableHead>{t("treasury.breakdown.description")}</TableHead>
-									<TableHead>{t("treasury.breakdown.category")}</TableHead>
-									<TableHead>{t("treasury.transactions.type")}</TableHead>
-									<TableHead>{t("treasury.transactions.status")}</TableHead>
-									<TableHead>{t("treasury.transactions.reimbursement_status")}</TableHead>
-									<TableHead className="text-right">
-										{t("treasury.breakdown.amount")}
-									</TableHead>
-									{(canEditGeneral || canEditSelf) && <TableHead className="w-16"></TableHead>}
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{transactions.map((transaction: Transaction, index: number) => (
-									<TableRow key={transaction.id}>
-										<TableCell className="text-gray-500 dark:text-gray-400 text-sm font-mono">
-											{index + 1}
-										</TableCell>
-										<TableCell className="font-mono text-sm">
-											{formatDate(transaction.date)}
-										</TableCell>
-										<TableCell className="font-medium">
-											{transaction.description}
-										</TableCell>
-										<TableCell className="text-gray-500">
-											{transaction.category || "—"}
-										</TableCell>
-										<TableCell>
-											<span
-												className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-													transaction.type === "income"
-														? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-														: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-												}`}
-											>
-												{t(`treasury.types.${transaction.type}`, {
-													defaultValue: transaction.type,
-												})}
-											</span>
-										</TableCell>
-										<TableCell>
-											<span
-												className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-													transaction.status === "complete"
-														? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-														: transaction.status === "pending"
-															? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-															: transaction.status === "paused"
-																? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-																: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-												}`}
-											>
-												{t(
-													`treasury.breakdown.edit.statuses.${transaction.status}`,
-													{ defaultValue: transaction.status },
-												)}
-											</span>
-										</TableCell>
-										<TableCell>
-											{transaction.reimbursementStatus && transaction.reimbursementStatus !== "not_requested" ? (
-												<span
-													className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-														transaction.reimbursementStatus === "approved"
-															? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-															: transaction.reimbursementStatus === "requested"
-																? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-																: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-													}`}
-												>
-													{t(
-														`treasury.breakdown.edit.reimbursement_statuses.${transaction.reimbursementStatus}`,
-														{ defaultValue: transaction.reimbursementStatus },
-													)}
-												</span>
-											) : (
-												<span className="text-gray-400">—</span>
-											)}
-										</TableCell>
-										<TableCell
-											className={`text-right font-bold ${
-												transaction.type === "expense"
-													? "text-red-600 dark:text-red-400"
-													: "text-green-600 dark:text-green-400"
-											}`}
-										>
-											{transaction.type === "expense" ? "-" : "+"}
-											{formatCurrency(transaction.amount)}
-										</TableCell>
-										{canEditTransaction(transaction) && (
-											<TableCell>
-												<Link
-													to={`/treasury/transactions/${transaction.id}/edit`}
-													className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-												>
-													<span className="material-symbols-outlined text-base">
-														edit
-													</span>
-												</Link>
-											</TableCell>
-										)}
-									</TableRow>
-								))}
-								<TableTotalsRow
-									labelColSpan={7}
-									columns={[
-										{
-											value: transactions.reduce((sum, t) => {
-												const amount = parseFloat(t.amount);
-												return sum + (t.type === "expense" ? -amount : amount);
-											}, 0),
-										},
-									]}
-									trailingColSpan={(canEditGeneral || canEditSelf) ? 1 : 0}
-									formatCurrency={formatCurrency}
-									rowCount={transactions.length}
-								/>
-							</TableBody>
-						</Table>
-					)}
-				</div>
+					<TreasuryTable<Transaction>
+						data={transactions}
+						columns={columns}
+						getRowKey={(row) => row.id}
+						renderActions={(transaction) => (
+							<TreasuryActionCell
+								viewTo={`/treasury/transactions/${transaction.id}`}
+								viewTitle={t("common.actions.view")}
+								editTo={`/treasury/transactions/${transaction.id}/edit`}
+								editTitle={t("common.actions.edit")}
+								canEdit={canEditTransaction(transaction)}
+								deleteProps={
+									canDeleteTransaction(transaction)
+										? {
+												action: `/treasury/transactions/${transaction.id}/edit`,
+												hiddenFields: { _action: "delete" },
+												confirmMessage: t(
+													"treasury.breakdown.edit.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
+										: undefined
+								}
+							/>
+						)}
+						emptyState={{
+							title: t("treasury.breakdown.no_transactions"),
+						}}
+						totals={{
+							labelColSpan: 8,
+							columns: [
+								{
+									value: transactions.reduce((sum, tx) => {
+										const amount = parseFloat(tx.amount);
+										return sum + (tx.type === "expense" ? -amount : amount);
+									}, 0),
+								},
+							],
+							trailingColSpan: 1,
+							formatCurrency,
+						}}
+					/>
 				</div>
 			</SplitLayout>
 		</PageWrapper>

@@ -11,16 +11,12 @@ import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
-import { TableTotalsRow } from "~/components/treasury/table-totals-row";
-import { Button } from "~/components/ui/button";
+import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "~/components/ui/table";
+	TreasuryTable,
+	TREASURY_TABLE_STYLES,
+} from "~/components/treasury/treasury-table";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
 import {
 	getDatabase,
@@ -99,6 +95,22 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => b - a,
 	);
 
+	// Batch resolve creator names
+	const creatorIds = [
+		...new Set(
+			enrichedPurchases
+				.map((p) => p.createdBy)
+				.filter((id): id is string => Boolean(id)),
+		),
+	];
+	const creatorUsers = await Promise.all(
+		creatorIds.map((id) => db.findUserById(id)),
+	);
+	const creatorsMap = new Map<string, string>();
+	creatorIds.forEach((id, i) => {
+		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
+	});
+
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
@@ -108,6 +120,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
 		systemLanguages,
+		creatorsMap: Object.fromEntries(creatorsMap),
 	};
 }
 
@@ -210,7 +223,16 @@ const statusColors = {
 export default function BudgetReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { purchases, purchaseTransactionMap, years, systemLanguages } = loaderData;
+	const {
+		purchases,
+		purchaseTransactionMap,
+		years,
+		systemLanguages,
+		creatorsMap: creatorsMapRaw,
+	} = loaderData;
+	const creatorsMap = new Map(
+		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isStaff =
@@ -298,6 +320,154 @@ export default function BudgetReimbursements({
 		</div>
 	);
 
+	type PurchaseRow = Purchase & {
+		inventoryItem?: InventoryItem | null;
+		hasLinkedTransaction: boolean;
+	};
+
+	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
+	const columns = [
+		{
+			key: "date",
+			header: t("common.fields.date"),
+			cell: (row: PurchaseRow) => formatDate(row.createdAt),
+			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
+		},
+		{
+			key: "description",
+			header: t("common.fields.description"),
+			cell: (row: PurchaseRow) =>
+				row.inventoryItem?.name || row.description || "—",
+			cellClassName: "font-medium max-w-[200px] truncate",
+		},
+		{
+			key: "purchaser",
+			header: t("treasury.reimbursements.purchaser"),
+			cell: (row: PurchaseRow) => row.purchaserName,
+		},
+		{
+			key: "status",
+			header: t("common.fields.status"),
+			cell: (row: PurchaseRow) => {
+				const canApprove =
+					rootData?.user?.permissions?.includes("reimbursements:update") ||
+					rootData?.user?.permissions?.includes("*");
+				const statusKey = row.status as keyof typeof statusColors;
+				const statusColor =
+					statusColors[statusKey] || statusColors.pending;
+				if (canApprove) {
+					return (
+						<Form method="post" className="inline-block">
+							<input type="hidden" name="_action" value="updateStatus" />
+							<input type="hidden" name="purchaseId" value={row.id} />
+							<select
+								name="status"
+								defaultValue={row.status}
+								onChange={(e) => e.target.form?.requestSubmit()}
+								className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer border-0 ${statusColor}`}
+							>
+								<option value="pending">
+									{t("treasury.reimbursements.statuses.pending")}
+								</option>
+								<option value="approved">
+									{t("treasury.reimbursements.statuses.approved")}
+								</option>
+								<option value="reimbursed">
+									{t("treasury.reimbursements.statuses.reimbursed")}
+								</option>
+								<option value="rejected">
+									{t("treasury.reimbursements.statuses.rejected")}
+								</option>
+							</select>
+						</Form>
+					);
+				}
+				return (
+					<TreasuryStatusPill
+						value={row.status}
+						variantMap={statusColors}
+						label={t(`treasury.reimbursements.statuses.${row.status}`)}
+					/>
+				);
+			},
+		},
+		{
+			key: "createdBy",
+			header: t("common.fields.created_by"),
+			cell: (row: PurchaseRow) =>
+				row.createdBy ? creatorsMap.get(row.createdBy) ?? "—" : "—",
+			cellClassName: "text-gray-500",
+		},
+		{
+			key: "transaction",
+			header: t("treasury.reimbursements.transaction"),
+			cell: (row: PurchaseRow) =>
+				purchaseTransactionMap[row.id] ? (
+					<Link
+						to={`/treasury/transactions/${purchaseTransactionMap[row.id]}`}
+						className="inline-flex items-center text-primary hover:underline"
+						title={t("treasury.reimbursements.view_transaction")}
+					>
+						<span className="material-symbols-outlined text-base">
+							link
+						</span>
+					</Link>
+				) : (
+					<span className="text-gray-400">—</span>
+				),
+		},
+		{
+			key: "email",
+			header: "📧",
+			headerClassName: "text-center",
+			cell: (row: PurchaseRow) =>
+				row.emailSent ? (
+					<span
+						className="text-green-600"
+						title={t("treasury.reimbursements.email_sent")}
+					>
+						✓
+					</span>
+				) : row.emailError ? (
+					<span
+						className="text-red-600"
+						title={row.emailError}
+					>
+						✗
+					</span>
+				) : (
+					<span className="text-gray-400">—</span>
+				),
+		},
+		{
+			key: "reply",
+			header: "💬",
+			headerClassName: "text-center",
+			cell: (row: PurchaseRow) =>
+				row.emailReplyReceived ? (
+					<span
+						className="text-blue-600 cursor-help"
+						title={
+							row.emailReplyContent ||
+							t("treasury.reimbursements.reply_received")
+						}
+					>
+						💬
+					</span>
+				) : (
+					<span className="text-gray-400">—</span>
+				),
+		},
+		{
+			key: "amount",
+			header: t("common.fields.amount"),
+			headerClassName: "text-right",
+			align: "right" as const,
+			cell: (row: PurchaseRow) => formatCurrency(row.amount),
+			cellClassName: TREASURY_TABLE_STYLES.AMOUNT_CELL,
+		},
+	];
+
 	return (
 		<PageWrapper>
 			<SplitLayout
@@ -308,287 +478,79 @@ export default function BudgetReimbursements({
 				footer={footerContent}
 			>
 				<div className="space-y-6">
-				{/* Table */}
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-					{purchases.length === 0 ? (
-						<div className="p-8 text-center text-gray-500">
-							{t("treasury.no_transactions")}
-						</div>
-					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className="w-12">#</TableHead>
-									<TableHead>{t("common.fields.date")}</TableHead>
-									<TableHead>
-										{t("common.fields.description")}
-									</TableHead>
-									<TableHead>
-										{t("treasury.reimbursements.purchaser")}
-									</TableHead>
-									<TableHead>{t("common.fields.status")}</TableHead>
-									<TableHead>{t("treasury.reimbursements.transaction")}</TableHead>
-									<TableHead title={t("treasury.reimbursements.email_sent")}>
-										📧
-									</TableHead>
-									<TableHead
-										title={t("treasury.reimbursements.reply_received")}
-									>
-										💬
-									</TableHead>
-									<TableHead className="text-right">{t("common.fields.amount")}</TableHead>
-									<TableHead></TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{purchases.map(
-									(
-										purchase: Purchase & {
-											inventoryItem?: InventoryItem | null;
-											hasLinkedTransaction: boolean;
-										},
-										index: number,
-									) => {
-										// Use type assertion to ensure status is a valid key, fallback to pending color if not
-										const statusKey =
-											purchase.status as keyof typeof statusColors;
-										const statusColor =
-											statusColors[statusKey] || statusColors.pending;
-										const displayName =
-											purchase.inventoryItem?.name ||
-											purchase.description ||
-											"—";
-										const canApprove =
-											rootData?.user?.permissions?.includes(
-												"reimbursements:update",
-											) || rootData?.user?.permissions?.includes("*");
-										const canDeleteGeneral =
-											rootData?.user?.permissions?.includes(
-												"reimbursements:delete",
-											) || rootData?.user?.permissions?.includes("*");
-										const canDeleteSelf =
-											rootData?.user?.permissions?.includes(
-												"reimbursements:delete-self",
-											) &&
-											purchase.createdBy &&
-											rootData?.user?.userId === purchase.createdBy;
-										const canDelete = canDeleteGeneral || canDeleteSelf;
-										const canUpdateGeneral =
-											rootData?.user?.permissions?.includes(
-												"reimbursements:update",
-											) || rootData?.user?.permissions?.includes("*");
-										const canUpdateSelf =
-											rootData?.user?.permissions?.includes(
-												"reimbursements:update-self",
-											) &&
-											purchase.createdBy &&
-											rootData?.user?.userId === purchase.createdBy;
-										const canUpdate = canUpdateGeneral || canUpdateSelf;
+					<TreasuryTable<PurchaseRow>
+						data={purchases}
+						columns={columns}
+						getRowKey={(row) => row.id}
+						renderActions={(purchase) => {
+							const canDeleteGeneral =
+								rootData?.user?.permissions?.includes(
+									"reimbursements:delete",
+								) || rootData?.user?.permissions?.includes("*");
+							const canDeleteSelf =
+								rootData?.user?.permissions?.includes(
+									"reimbursements:delete-self",
+								) &&
+								purchase.createdBy &&
+								rootData?.user?.userId === purchase.createdBy;
+							const canDelete = canDeleteGeneral || canDeleteSelf;
+							const canUpdateGeneral =
+								rootData?.user?.permissions?.includes(
+									"reimbursements:update",
+								) || rootData?.user?.permissions?.includes("*");
+							const canUpdateSelf =
+								rootData?.user?.permissions?.includes(
+									"reimbursements:update-self",
+								) &&
+								purchase.createdBy &&
+								rootData?.user?.userId === purchase.createdBy;
+							const canUpdate = canUpdateGeneral || canUpdateSelf;
 
-										return (
-											<TableRow key={purchase.id}>
-												<TableCell className="text-gray-500 dark:text-gray-400 text-sm font-mono">
-													{index + 1}
-												</TableCell>
-												<TableCell className="font-mono text-sm">
-													{formatDate(purchase.createdAt)}
-												</TableCell>
-												<TableCell className="font-medium max-w-[200px] truncate">
-													{displayName}
-												</TableCell>
-												<TableCell>{purchase.purchaserName}</TableCell>
-												<TableCell>
-													{canApprove ? (
-														<Form method="post" className="inline-block">
-															<input
-																type="hidden"
-																name="_action"
-																value="updateStatus"
-															/>
-															<input
-																type="hidden"
-																name="purchaseId"
-																value={purchase.id}
-															/>
-															<select
-																name="status"
-																defaultValue={purchase.status}
-																onChange={(e) => e.target.form?.requestSubmit()}
-																className={`px-2 py-1 rounded text-xs font-bold cursor-pointer border-0 ${statusColor}`}
-															>
-																<option value="pending">
-																	{t(
-																		"treasury.reimbursements.statuses.pending",
-																	)}
-																</option>
-																<option value="approved">
-																	{t(
-																		"treasury.reimbursements.statuses.approved",
-																	)}
-																</option>
-																<option value="reimbursed">
-																	{t(
-																		"treasury.reimbursements.statuses.reimbursed",
-																	)}
-																</option>
-																<option value="rejected">
-																	{t(
-																		"treasury.reimbursements.statuses.rejected",
-																	)}
-																</option>
-															</select>
-														</Form>
-													) : (
-														<span
-															className={`px-2 py-1 rounded text-xs font-bold ${statusColor}`}
-														>
-															{t(
-																`treasury.reimbursements.statuses.${purchase.status}`,
-															)}
-														</span>
-													)}
-												</TableCell>
-												<TableCell>
-													{purchaseTransactionMap[purchase.id] ? (
-														<Link
-															to={`/treasury/transactions/${purchaseTransactionMap[purchase.id]}`}
-															className="inline-flex items-center text-primary hover:underline"
-															title={t("treasury.reimbursements.view_transaction")}
-														>
-															<span className="material-symbols-outlined text-lg">
-																link
-															</span>
-														</Link>
-													) : (
-														<span className="text-gray-400">—</span>
-													)}
-												</TableCell>
-												<TableCell>
-													{purchase.emailSent ? (
-														<span
-															className="text-green-600"
-															title={t("treasury.reimbursements.email_sent")}
-														>
-															✓
-														</span>
-													) : purchase.emailError ? (
-														<span
-															className="text-red-600"
-															title={purchase.emailError}
-														>
-															✗
-														</span>
-													) : (
-														<span className="text-gray-400">—</span>
-													)}
-												</TableCell>
-												<TableCell>
-													{/* Show reply indicator if email reply received */}
-													{purchase.emailReplyReceived ? (
-														<span
-															className="text-blue-600 cursor-help"
-															title={
-																purchase.emailReplyContent ||
-																t("treasury.reimbursements.reply_received")
-															}
-														>
-															💬
-														</span>
-													) : (
-														<span className="text-gray-400">—</span>
-													)}
-												</TableCell>
-												<TableCell className="text-right font-bold">
-													{formatCurrency(purchase.amount)}
-												</TableCell>
-												<TableCell>
-													<div className="flex gap-1">
-														{/* Link Transaction button - only show for unlinked purchases */}
-
-														{canUpdate && (
-															<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
-																<Button
-																	type="button"
-																	variant="ghost"
-																	size="icon"
-																	className="text-gray-500 hover:text-primary h-8 w-8"
-																	title={t("treasury.reimbursements.edit.title")}
-																>
-																	<span className="material-symbols-outlined text-lg">
-																		edit
-																	</span>
-																</Button>
-															</Link>
-														)}
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon"
-															onClick={() => handleUseAsTemplate(purchase)}
-															className="text-gray-500 hover:text-primary h-8 w-8"
-															title={t("treasury.reimbursements.use_as_template")}
-														>
-															<span className="material-symbols-outlined text-lg">
-																content_copy
-															</span>
-														</Button>
-														{canDelete && (
-															<Form method="post" className="inline-block">
-																<input
-																	type="hidden"
-																	name="_action"
-																	value="delete"
-																/>
-																<input
-																	type="hidden"
-																	name="purchaseId"
-																	value={purchase.id}
-																/>
-																<Button
-																	type="submit"
-																	variant="ghost"
-																	size="icon"
-																	onClick={(e) => {
-																		if (
-																			!confirm(
-																				t(
-																					"treasury.reimbursements.delete_confirm",
-																				),
-																			)
-																		) {
-																			e.preventDefault();
-																		}
-																	}}
-																	className="text-red-500 hover:text-red-700 h-8 w-8"
-																	title={t("common.actions.delete")}
-																>
-																	<span className="material-symbols-outlined text-lg">
-																		delete
-																	</span>
-																</Button>
-															</Form>
-														)}
-													</div>
-												</TableCell>
-											</TableRow>
-										);
-									},
-								)}
-								<TableTotalsRow
-									labelColSpan={8}
-									columns={[
-										{
-											value: purchases.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-										},
-									]}
-									trailingColSpan={1}
-									formatCurrency={formatCurrency}
-									rowCount={purchases.length}
+							return (
+								<TreasuryActionCell
+									viewTo={`/treasury/reimbursements/${purchase.id}`}
+									viewTitle={t("common.actions.view")}
+									editTo={`/treasury/reimbursements/${purchase.id}/edit`}
+									editTitle={t("common.actions.edit")}
+									canEdit={Boolean(canUpdate)}
+									copyProps={{
+										onClick: () => handleUseAsTemplate(purchase),
+										title: t("treasury.reimbursements.use_as_template"),
+									}}
+									deleteProps={
+										canDelete
+											? {
+													hiddenFields: {
+														_action: "delete",
+														purchaseId: purchase.id,
+													},
+													confirmMessage: t(
+														"treasury.reimbursements.delete_confirm",
+													),
+													title: t("common.actions.delete"),
+												}
+											: undefined
+									}
 								/>
-							</TableBody>
-						</Table>
-					)}
-				</div>
+							);
+						}}
+						emptyState={{
+							title: t("treasury.no_transactions"),
+						}}
+						totals={{
+							labelColSpan: 9,
+							columns: [
+								{
+									value: purchases.reduce(
+										(sum, p) => sum + parseFloat(p.amount),
+										0,
+									),
+								},
+							],
+							trailingColSpan: 1,
+							formatCurrency,
+						}}
+					/>
 				</div>
 			</SplitLayout>
 		</PageWrapper>

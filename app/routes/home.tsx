@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import {
 	ContentArea,
 	PageWrapper,
@@ -108,9 +109,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 			>
 				<ContentArea className="space-y-4">
 					{options.map((option) => (
-						<a
+						<Link
 							key={option.id}
-							href={`/contact?type=${option.id}`}
+							to={`/contact?type=${option.id}`}
 							className="flex items-center gap-3 dark:bg-card transition-all cursor-pointer group hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-2xl p-2 -ml-2"
 						>
 							<div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -131,7 +132,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							<span className="material-symbols-outlined text-2xl text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all">
 								arrow_forward
 							</span>
-						</a>
+						</Link>
 					))}
 				</ContentArea>
 			</SplitLayout>

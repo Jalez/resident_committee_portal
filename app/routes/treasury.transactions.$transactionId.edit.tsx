@@ -25,7 +25,7 @@ import {
 	LinkExistingSelector,
 	purchasesToLinkableItems,
 } from "~/components/treasury/link-existing-selector";
-import { ReservationLinkSection } from "~/components/treasury/reservation-link-section";
+import { BudgetLinkSection } from "~/components/treasury/budget-link-section";
 import { CheckboxOption } from "~/components/treasury/checkbox-option";
 import { Divider } from "~/components/treasury/divider";
 import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
@@ -155,15 +155,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		unlinkedPurchases.unshift(purchase);
 	}
 
-	// Get open reservations for the transaction year and current link (if any)
-	const reservationYear = transaction.year;
-	const openReservations = await db.getOpenFundReservationsByYear(
-		reservationYear,
+	// Get open budgets for the transaction year and current link (if any)
+	const budgetYear = transaction.year;
+	const openBudgets = await db.getOpenFundBudgetsByYear(
+		budgetYear,
 	);
-	const reservationLink = await db.getReservationForTransaction(
+	const budgetLink = await db.getBudgetForTransaction(
 		params.transactionId,
 	);
-	const enrichedReservations = [] as Array<{
+	const enrichedBudgets = [] as Array<{
 		id: string;
 		name: string;
 		amount: string;
@@ -176,28 +176,28 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		usedAmount: number;
 		remainingAmount: number;
 	}>;
-	for (const reservation of openReservations) {
-		const usedAmount = await db.getReservationUsedAmount(reservation.id);
-		const remainingAmount = Number.parseFloat(reservation.amount) - usedAmount;
-		enrichedReservations.push({
-			...reservation,
+	for (const budget of openBudgets) {
+		const usedAmount = await db.getBudgetUsedAmount(budget.id);
+		const remainingAmount = Number.parseFloat(budget.amount) - usedAmount;
+		enrichedBudgets.push({
+			...budget,
 			usedAmount,
 			remainingAmount,
 		});
 	}
 	if (
-		reservationLink &&
-		!enrichedReservations.find(
-			(reservation) => reservation.id === reservationLink.reservation.id,
+		budgetLink &&
+		!enrichedBudgets.find(
+			(budget) => budget.id === budgetLink.budget.id,
 		)
 	) {
-		const usedAmount = await db.getReservationUsedAmount(
-			reservationLink.reservation.id,
+		const usedAmount = await db.getBudgetUsedAmount(
+			budgetLink.budget.id,
 		);
 		const remainingAmount =
-			Number.parseFloat(reservationLink.reservation.amount) - usedAmount;
-		enrichedReservations.unshift({
-			...reservationLink.reservation,
+			Number.parseFloat(budgetLink.budget.amount) - usedAmount;
+		enrichedBudgets.unshift({
+			...budgetLink.budget,
 			usedAmount,
 			remainingAmount,
 		});
@@ -220,8 +220,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		emailConfigured: isEmailConfigured(),
 		receiptsByYear,
 		unlinkedPurchases,
-		openReservations: enrichedReservations,
-		reservationLink,
+		openBudgets: enrichedBudgets,
+		budgetLink,
 	};
 }
 
@@ -438,8 +438,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const amount = amountStr
 		? amountStr.replace(",", ".")
 		: transaction?.amount.toString();
-	const reservationId = formData.get("reservationId") as string;
-	const reservationAmount = formData.get("reservationAmount") as string;
+	const budgetId = formData.get("budgetId") as string;
+	const budgetAmount = formData.get("budgetAmount") as string;
 
 	// Handle purchase linking/creation
 	const linkPurchaseId = formData.get("linkPurchaseId") as string;
@@ -559,40 +559,40 @@ export async function action({ request, params }: Route.ActionArgs) {
 		purchaseId: newPurchaseId,
 	});
 
-	// Update reservation link if provided (expense-only)
-	const currentReservationLink = await db.getReservationForTransaction(
+	// Update budget link if provided (expense-only)
+	const currentBudgetLink = await db.getBudgetForTransaction(
 		params.transactionId,
 	);
-	const shouldLinkReservation =
-		transaction.type === "expense" && !!reservationId;
-	const normalizedReservationAmount = reservationAmount
-		? reservationAmount.replace(",", ".")
+	const shouldLinkBudget =
+		transaction.type === "expense" && !!budgetId;
+	const normalizedBudgetAmount = budgetAmount
+		? budgetAmount.replace(",", ".")
 		: amount || transaction.amount.toString();
 
-	if (!shouldLinkReservation) {
-		if (currentReservationLink) {
-			await db.unlinkTransactionFromReservation(
+	if (!shouldLinkBudget) {
+		if (currentBudgetLink) {
+			await db.unlinkTransactionFromBudget(
 				params.transactionId,
-				currentReservationLink.reservation.id,
+				currentBudgetLink.budget.id,
 			);
 		}
 	} else if (
-		!currentReservationLink ||
-		currentReservationLink.reservation.id !== reservationId ||
-		currentReservationLink.amount !== normalizedReservationAmount
+		!currentBudgetLink ||
+		currentBudgetLink.budget.id !== budgetId ||
+		currentBudgetLink.amount !== normalizedBudgetAmount
 	) {
-		if (currentReservationLink) {
-			await db.unlinkTransactionFromReservation(
+		if (currentBudgetLink) {
+			await db.unlinkTransactionFromBudget(
 				params.transactionId,
-				currentReservationLink.reservation.id,
+				currentBudgetLink.budget.id,
 			);
 		}
-		const reservation = await db.getFundReservationById(reservationId);
-		if (reservation) {
-			await db.linkTransactionToReservation(
+		const budget = await db.getFundBudgetById(budgetId);
+		if (budget) {
+			await db.linkTransactionToBudget(
 				params.transactionId,
-				reservationId,
-				normalizedReservationAmount,
+				budgetId,
+				normalizedBudgetAmount,
 			);
 		}
 	}
@@ -624,8 +624,8 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		emailConfigured,
 		receiptsByYear,
 		unlinkedPurchases,
-		openReservations,
-		reservationLink,
+		openBudgets,
+		budgetLink,
 	} = loaderData as {
 		transaction: Transaction;
 		purchase: Purchase | null;
@@ -648,7 +648,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 			folderId: string;
 		}>;
 		unlinkedPurchases: Purchase[];
-		openReservations: Array<{
+		openBudgets: Array<{
 			id: string;
 			name: string;
 			amount: string;
@@ -661,7 +661,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 			usedAmount: number;
 			remainingAmount: number;
 		}>;
-		reservationLink: { reservation: { id: string }; amount: string } | null;
+		budgetLink: { budget: { id: string }; amount: string } | null;
 	};
 	const navigate = useNavigate();
 	const navigation = useNavigation();
@@ -707,8 +707,8 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	);
 	const [requestReimbursement, setRequestReimbursement] = useState(false);
 	const isLinkingToExisting = !!selectedPurchaseId;
-	const [selectedReservationId, setSelectedReservationId] = useState(
-		reservationLink?.reservation.id || "",
+	const [selectedBudgetId, setSelectedBudgetId] = useState(
+		budgetLink?.budget.id || "",
 	);
 
 	// Handle selection change - uncheck checkbox when selecting existing purchase
@@ -1017,12 +1017,12 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 						</div>
 					)}
 
-					{/* Fund Reservation Section - Only for expenses when reservations exist */}
+					{/* Fund Budget Section - Only for expenses when budgets exist */}
 					{transactionType === "expense" && (
-						<ReservationLinkSection
-							openReservations={openReservations}
-							selectedReservationId={selectedReservationId}
-							onSelectionChange={setSelectedReservationId}
+						<BudgetLinkSection
+							openBudgets={openBudgets}
+							selectedBudgetId={selectedBudgetId}
+							onSelectionChange={setSelectedBudgetId}
 							amount={amount}
 						/>
 					)}

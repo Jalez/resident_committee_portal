@@ -13,6 +13,10 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/profile";
 
 const AVATAR_ALLOWED_EXT = ["jpg", "jpeg", "png", "webp"] as const;
+// Maximum file size: 2MB (2 * 1024 * 1024 bytes)
+const AVATAR_MAX_SIZE_BYTES = 2 * 1024 * 1024;
+// Maximum dimensions: 1024x1024px (for high-DPI displays)
+const AVATAR_MAX_DIMENSION = 1024;
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -135,6 +139,42 @@ export default function Profile({
 				toast.error(t("profile.picture_invalid_type"));
 				return;
 			}
+
+			// Validate file size
+			if (file.size > AVATAR_MAX_SIZE_BYTES) {
+				const maxSizeMB = AVATAR_MAX_SIZE_BYTES / (1024 * 1024);
+				toast.error(t("profile.picture_too_large", { maxSize: maxSizeMB }));
+				return;
+			}
+
+			// Validate image dimensions
+			try {
+				const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+					const img = new Image();
+					const objectUrl = URL.createObjectURL(file);
+					img.onload = () => {
+						URL.revokeObjectURL(objectUrl);
+						resolve({ width: img.width, height: img.height });
+					};
+					img.onerror = () => {
+						URL.revokeObjectURL(objectUrl);
+						reject(new Error("Failed to load image"));
+					};
+					img.src = objectUrl;
+				});
+
+				if (
+					dimensions.width > AVATAR_MAX_DIMENSION ||
+					dimensions.height > AVATAR_MAX_DIMENSION
+				) {
+					toast.error(t("profile.picture_too_large_dimensions", { maxDimension: AVATAR_MAX_DIMENSION }));
+					return;
+				}
+			} catch (error) {
+				console.error("Failed to validate image dimensions:", error);
+				// Continue with upload if dimension validation fails (non-critical)
+			}
+
 			const pathname = `avatars/${user.id}.${ext}`;
 			setUploadingPicture(true);
 			try {
