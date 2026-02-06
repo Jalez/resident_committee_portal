@@ -21,3 +21,5 @@ package-lock.json
 test-*.png
 test-*.jpg
 *.tmp
+
+.claude
