@@ -19,10 +19,15 @@ interface ContentAreaProps {
 }
 
 export function ContentArea({ children, className }: ContentAreaProps) {
+	const { isInfoReel } = useInfoReel();
+
 	return (
 		<div
-			className={cn("overflow-y-auto overflow-x-hidden", className)}
-			style={{ height: CONTENT_AREA_HEIGHT, width: CONTENT_AREA_WIDTH }}
+			className={cn("overflow-y-auto overflow-x-hidden flex-1 w-full", className)}
+			style={{
+				height: isInfoReel ? CONTENT_AREA_HEIGHT : undefined,
+				width: isInfoReel ? CONTENT_AREA_WIDTH : undefined,
+			}}
 		>
 			{children}
 		</div>
@@ -38,11 +43,11 @@ export function PageWrapper({ children, className }: PageWrapperProps) {
 	return (
 		<div
 			className={cn(
-				"font-sans text-[#111418] dark:text-gray-100 flex flex-col overflow-x-hidden selection:bg-primary/30 min-h-0",
+				"font-sans text-[#111418] dark:text-gray-100 flex flex-col overflow-y-auto selection:bg-primary/30 min-h-0 h-full",
 				className,
 			)}
 		>
-			<div className="flex flex-col items-center justify-start w-full min-h-0">
+			<div className="flex flex-col items-center justify-start w-full min-h-0 flex-1 h-full">
 				{children}
 			</div>
 		</div>
@@ -148,11 +153,11 @@ export function SplitLayout({
 	return (
 		<div
 			className={cn(
-				"w-full overflow-hidden flex flex-col h-full flex-1",
+				"w-full overflow-hidden flex flex-col flex-1 h-full",
 				className,
 			)}
 		>
-			<div className="flex flex-col px-2 lg:px-12 pt-2 lg:pt-4 pb-2 lg:pb-12 relative">
+			<div className="flex flex-col px-2 lg:px-12 pt-2 lg:pt-4 pb-2 lg:pb-12 relative flex-1 min-h-0 overflow-hidden">
 				{/* Header row with optional action button on right */}
 				{/* Header row - hidden on mobile since nav shows page name */}
 				{header && (
@@ -178,7 +183,7 @@ export function SplitLayout({
 					</div>
 				)}
 				{/* Mobile: just show footer if present */}
-				{footer && <div className="md:hidden mb-4">{footer}</div>}
+				{footer && <div className="md:hidden mb-4 flex justify-end">{footer}</div>}
 				{/* If no header but has footer, show footer separately */}
 				{!header && footer && <div className="mb-8">{footer}</div>}
 				{children}
