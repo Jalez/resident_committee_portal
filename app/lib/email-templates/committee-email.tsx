@@ -34,10 +34,12 @@ export function CommitteeEmail({
 			{previewText && <Preview>{previewText}</Preview>}
 			<Body style={bodyStyle}>
 				<Container style={containerStyle}>
-					<Section
-						// biome-ignore lint/security/noDangerouslySetInnerHtml: committee email body content
-						dangerouslySetInnerHTML={{ __html: bodyHtml }}
-					/>
+					<Section>
+						<div
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: committee email body content
+							dangerouslySetInnerHTML={{ __html: bodyHtml }}
+						/>
+					</Section>
 					{signature && (
 						<>
 							<Hr style={hrStyle} />
@@ -51,13 +53,14 @@ export function CommitteeEmail({
 								On {quotedReply.date}, {quotedReply.fromName || quotedReply.fromEmail}{" "}
 								&lt;{quotedReply.fromEmail}&gt; wrote:
 							</Text>
-							<Section
-								style={quotedBodyStyle}
-								// biome-ignore lint/security/noDangerouslySetInnerHtml: quoted reply from original email
-								dangerouslySetInnerHTML={{
-									__html: quotedReply.bodyHtml,
-								}}
-							/>
+							<Section style={quotedBodyStyle}>
+								<div
+									// biome-ignore lint/security/noDangerouslySetInnerHtml: quoted reply from original email
+									dangerouslySetInnerHTML={{
+										__html: quotedReply.bodyHtml,
+									}}
+								/>
+							</Section>
 						</>
 					)}
 				</Container>
