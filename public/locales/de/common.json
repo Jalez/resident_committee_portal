@@ -191,6 +191,12 @@
 		}
 	},
 	"settings": {
+		"receipt_ocr_title": "Beleg-OCR",
+		"receipt_ocr_description": "Konfigurieren Sie KI-Einstellungen für die automatische Belegerkennung.",
+		"receipt_ocr_requires_api_key": "OCR-Auswertung erfordert einen OpenRouter API-Schlüssel in den Allgemeinen Einstellungen.",
+		"ai_model": "KI-Modell",
+		"select_model": "Modell auswählen...",
+		"receipt_ai_model_help": "Wählen Sie ein leistungsfähiges Modell (z. B. Gemini Flash 1.5, GPT-4o-mini) für beste Ergebnisse.",
 		"general": {
 			"title": "Allgemein",
 			"languages_title": "Standardsprachen",

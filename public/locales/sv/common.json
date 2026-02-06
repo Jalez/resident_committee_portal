@@ -534,6 +534,12 @@
 		}
 	},
 	"settings": {
+		"receipt_ocr_title": "Kvittos OCR",
+		"receipt_ocr_description": "Konfigurera AI-inställningar för automatisk kvittotolkning.",
+		"receipt_ocr_requires_api_key": "OCR-tolkning kräver en OpenRouter API-nyckel i Allmänna inställningar.",
+		"ai_model": "AI-modell",
+		"select_model": "Välj en modell...",
+		"receipt_ai_model_help": "Välj en kapabel modell (t.ex. Gemini Flash 1.5, GPT-4o-mini) för bästa resultat.",
 		"general": {
 			"title": "Allmänt",
 			"languages_title": "Standardspråk",
@@ -556,6 +562,11 @@
 		},
 		"reimbursements": {
 			"title": "Utläggsinställningar",
+			"recipient_email_title": "Mottagarens e-post",
+			"recipient_email_desc": "Ange e-postadressen som tar emot utläggsärenden.",
+			"recipient_email_label": "Mottagarens e-post",
+			"recipient_email_placeholder": "kassa@example.com",
+			"recipient_email_fallback": "Använder miljöstandard: {{email}}",
 			"api_key_title": "OpenRouter API-nyckel",
 			"api_key_desc": "Hämta din API-nyckel från openrouter.ai/keys",
 			"ai_parsing_title": "AI-tolkning",

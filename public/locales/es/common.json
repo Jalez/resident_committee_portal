@@ -323,6 +323,12 @@
 		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
 	},
 	"settings": {
+		"receipt_ocr_title": "OCR de recibos",
+		"receipt_ocr_description": "Configura los ajustes de IA para el análisis automático de recibos.",
+		"receipt_ocr_requires_api_key": "El análisis OCR requiere una clave API de OpenRouter en Ajustes generales.",
+		"ai_model": "Modelo de IA",
+		"select_model": "Seleccionar un modelo...",
+		"receipt_ai_model_help": "Selecciona un modelo capaz (p. ej., Gemini Flash 1.5, GPT-4o-mini) para mejores resultados.",
 		"analytics": {
 			"title": "Ajustes de análisis"
 		},

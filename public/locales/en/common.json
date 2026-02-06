@@ -157,7 +157,8 @@
 		"delete": "Remove",
 		"select_existing_or_upload": "Select existing receipts or upload a new one.",
 		"allowed": "Allowed",
-		"selected_count": "selected"
+		"selected_count": "selected",
+		"analyze_with_ai": "Analyze with AI (OCR)"
 	},
 	"lang": {
 		"name": "English",
@@ -254,7 +255,19 @@
 				"linked": "Linked",
 				"unlinked": "Unlinked",
 				"link": "Gallery"
-			}
+			},
+			"ai_analysis": "AI Analysis",
+			"no_analysis_yet": "No AI analysis performed yet for this receipt.",
+			"analyze_now": "Analyze with AI",
+			"ai_results": "AI Results",
+			"store": "Store",
+			"date": "Date",
+			"total": "Total Amount",
+			"extracted_items": "Extracted Items",
+			"quantity": "Qty",
+			"price": "Price",
+			"raw_text": "Raw Text",
+			"re_analyze": "Re-analyze"
 		},
 		"actions": {
 			"breakdown": "Breakdown",
@@ -798,736 +811,777 @@
 			"receipts.unlinked": "Unlinked",
 			"receipts.reimbursement_request": "Reimbursement Request",
 			"avatars.title": "Avatars",
-			"avatars.description": "All user avatar images stored in the system.",
-			"avatars.empty": "No avatars",
-			"avatars.delete": "Delete",
-			"avatars.delete_confirm": "Are you sure you want to delete this avatar?",
-			"avatars.delete_success": "Avatar deleted",
-			"avatars.delete_error": "Delete failed"
-		}
-	},
-	"local_ai": {
-		"model_selector": {
-			"label": "Local Model",
-			"placeholder": "Select model...",
-			"loading": "Loading...",
-			"not_connected": "Not connected to Ollama",
-			"no_models": "No models found",
-			"connection_failed": "Connection failed",
-			"connection_error": "Connection error",
-			"select_model": "Select model",
-			"disabled": "Disabled",
-			"model_count": "{{count}} models"
-		},
-		"translate": {
-			"button_tooltip": "{{source}} → {{target}} (Translate)",
-			"tooltip": "Translate with local AI",
-			"translating": "Translating...",
-			"input_not_found": "Source or target field not found",
-			"empty_source": "Source field is empty",
-			"success": "Translation complete",
-			"failed": "Translation failed: {{error}}"
+			"avatars.description": "All user avatars stored in the system.",
+			"avatars.empty": "No avatars"
 		}
 	},
 	"settings": {
-		"general": {
-			"title": "General",
-			"languages_title": "Default Languages",
-			"languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
-			"primary_language": "Primary Language",
-			"secondary_language": "Secondary Language",
-			"saved": "Settings saved",
-			"error": "Failed to save settings"
-		},
-		"reimbursements": {
-			"title": "Reimbursement Settings",
-			"api_key_title": "OpenRouter API Key",
-			"api_key_desc": "Get your API key from openrouter.ai/keys",
-			"ai_parsing_title": "AI Parsing",
-			"ai_parsing_desc": "Enable AI-assisted parsing for more accurate reply interpretation",
-			"enable_ai": "Enable AI Parsing",
-			"enable_ai_desc": "Use AI to interpret email replies before falling back to keywords",
-			"sort_by": "Sort by",
-			"price": "Price",
-			"name": "Name",
-			"ai_model_label": "AI Model",
-			"select_model": "Select a model...",
-			"showing_models": "Showing {{count}} of {{total}} models",
-			"no_api_key_msg": "Add an API key above to enable AI parsing and select a model.",
-			"keywords_title": "Keywords",
-			"keywords_desc": "Custom keywords for detecting approval or rejection in emails",
-			"default_approval": "Default Approval Keywords",
-			"additional_approval": "Additional Approval Keywords",
-			"approval_placeholder": "paid, done, accepted (comma-separated)",
-			"default_rejection": "Default Rejection Keywords",
-			"additional_rejection": "Additional Rejection Keywords",
-			"rejection_placeholder": "refused, cancelled (comma-separated)"
-		},
-		"analytics": {
-			"title": "Analytics Settings"
-		},
-		"news": {
-			"title": "News Settings",
-			"ai_disabled_title": "AI Features Disabled",
-			"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
-			"go_to_general": "Go to General Settings",
-			"ai_model_title": "AI News Model",
-			"ai_model_desc": "Select the AI model used for translating news between primary and secondary languages.",
-			"sort_by": "Sort by",
-			"price": "Price",
-			"name": "Name",
-			"select_model": "Select model",
-			"select_model_placeholder": "Select a model...",
-			"showing_models": "Showing {{count}} of {{total}} models"
-		},
-		"faqs": {
-			"title": "FAQ Settings",
-			"ai_disabled_title": "AI Features Disabled",
-			"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
-			"go_to_general": "Go to General Settings",
-			"ai_model_title": "AI FAQ Model",
-			"ai_model_desc": "Select the AI model used for translating FAQ entries between primary and secondary languages.",
-			"sort_by": "Sort by",
-			"price": "Price",
-			"name": "Name",
-			"select_model": "Select model",
-			"select_model_placeholder": "Select a model...",
-			"showing_models": "Showing {{count}} of {{total}} models"
-		},
-		"roles": {
-			"title": "Role Management",
-			"create_new_title": "Create New Role",
-			"name_label": "Name",
-			"color_label": "Color",
-			"desc_label": "Description",
-			"list_title": "Roles ({{count}})",
-			"system": "System Role",
-			"permissions_count": "{{count}} permissions",
-			"delete_title": "Delete Role",
-			"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
-			"permissions_header": "Permissions",
-			"select_role_msg": "Select a role from the left to edit permissions",
-			"select_role": "Select Role",
-			"select_role_placeholder": "Choose a role...",
-			"search_placeholder": "Search permissions...",
-			"category": "Category",
-			"permission_name": "Permission Name",
-			"description": "Description",
-			"select_role_to_manage": "Select a role above to manage permissions",
-			"show_only_assigned": "Show only assigned permissions"
-		},
-		"users": {
-			"title": "User Management",
-			"headers": {
-				"name": "Name",
-				"email": "Email",
-				"apartment": "Apartment",
-				"role": "Primary role",
-				"roles": "Roles",
-				"joined": "Joined"
-			},
-			"no_users": "No users yet",
-			"roles_placeholder": "Type role name and press Tab to add",
-			"no_roles_match": "No matching roles",
-			"super_admin": "Super Admin",
-			"role_updated": "Role updated",
-			"cannot_change_super_admin": "Cannot change Super Admin role",
-			"update_failed": "Failed to update role"
-		}
+		"receipt_ocr_title": "Receipt OCR",
+		"receipt_ocr_description": "Configure AI settings for automatic receipt parsing.",
+		"receipt_ocr_requires_api_key": "OCR AI parsing requires an OpenRouter API Key to be configured in General Settings.",
+		"provider": "Provider",
+		"api_key": "API Key",
+		"model": "Model",
+		"enable_ai_parsing": "Enable automatic AI parsing",
+		"approval_keywords": "Approval Keywords",
+		"rejection_keywords": "Rejection Keywords",
+		"save_success": "Settings saved",
+		"test_connection": "Test Connection",
+		"testing_connection": "Testing...",
+		"connection_success": "Connection successful!",
+		"connection_error": "Connection error",
+		"loading_models": "Loading models..."
 	},
-	"committee": {
-		"title": "Committee",
-		"members": "Members",
-		"no_members": "No committee members found",
-		"primary_role": "Primary Role",
-		"roles": "Roles",
-		"no_description": "No description",
-		"mail": {
-			"title": "Committee Email",
-			"description": "Send email to a role (recipients: everyone with that role as primary or secondary).",
-			"not_configured": "Email is not configured. Set SMTP and COMMITTEE_FROM_EMAIL environment variables.",
-			"to": "To",
-			"cc": "CC",
-			"bcc": "BCC",
-			"select_role": "Select role",
-			"add_role": "Add role's members",
-			"add_email": "Add email",
-			"add_email_placeholder": "email@example.com",
-			"type_to_add": "Type a name or role and press Tab to add",
-			"remove": "Remove recipient",
-			"loading": "Loading...",
-			"recipients": "Recipients",
-			"no_recipients": "No users have this role.",
-			"suggestions": "Suggestions",
-			"no_suggestions": "No suggestions",
-			"role": "Role",
-			"subject": "Subject",
-			"subject_placeholder": "Email subject",
-			"body": "Message",
-			"body_placeholder": "Write your message...",
-			"send": "Send",
-			"sending": "Sending...",
-			"sent_success": "{{count}} message sent",
-			"sent_partial": "{{success}} sent, {{fail}} failed"
-		}
-	},
-	"mail": {
-		"inbox": "Inbox",
-		"sent": "Sent",
-		"compose": "Compose",
-		"drafts": "Drafts",
-		"draft_saved_at": "Draft saved at {{time}}",
-		"send_tooltip": "Send",
-		"no_drafts": "No drafts",
-		"no_subject": "(No subject)",
-		"refresh": "Refresh",
-		"refreshed": "{{count}} new messages fetched",
-		"no_messages": "No messages",
-		"from": "From",
-		"to": "To",
-		"cc": "CC",
-		"date": "Date",
-		"back": "Back",
-		"delete": "Delete",
-		"delete_draft": "Delete draft",
-		"delete_confirm": "Are you sure you want to delete this message?",
-		"delete_draft_confirm": "Are you sure you want to delete this draft?",
-		"delete_success": "Deleted successfully",
-		"delete_error": "Delete failed",
-		"select": "Select",
-		"delete_selected": "Delete selected",
-		"reply": "Reply",
-		"reply_all": "Reply All",
-		"forward": "Forward",
-		"forwarded_message": "Forwarded message",
-		"messages_in_thread": "{{count}} messages",
-		"compose_new": "New Message",
-		"compose_reply": "Reply",
-		"compose_reply_all": "Reply All",
-		"compose_forward": "Forward",
-		"quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:",
-		"back_to_inbox": "Back to Inbox"
-	},
-	"contact": {
-		"title": "Contact",
-		"description": "Contact the Tenant Committee",
-		"header": "Contact Us",
-		"select_topic": "Select Topic",
-		"select_topic_prompt": "Select a topic to begin",
-		"types": {
-			"committee": {
-				"title": "Apply for Committee",
-				"placeholder": "Tell us about yourself and why you'd like to join the committee..."
-			},
-			"events": {
-				"title": "Suggest an Event",
-				"placeholder": "Describe your event idea: what, when, where..."
-			},
-			"purchases": {
-				"title": "Request a Purchase",
-				"placeholder": "What would you like to purchase and how would it benefit residents?"
-			},
-			"questions": {
-				"title": "Ask a Question",
-				"placeholder": "Write your question here..."
-			}
-		},
-		"form": {
-			"name": "Name",
-			"email": "Email",
-			"apartment": "Apartment",
-			"apartment_placeholder": "e.g. A 123",
-			"update_apartment_profile": "Update apartment number in my profile",
-			"message": "Message",
-			"send": "Send"
-		},
-		"success": {
-			"title": "Message Sent!",
-			"message": "Thank you for contacting us! We will respond as soon as possible.",
-			"back_home": "Back to Home"
-		}
-	},
-	"social": {
-		"title": "Social",
-		"description": "Follow us on social media",
-		"header": "Social Media",
-		"delete_confirm": "Delete?",
-		"no_channels": "No social channels",
-		"add_first": "Add first",
-		"primary_badge": "Primary",
-		"set_primary": "Set as primary",
-		"clear_primary": "Remove primary",
-		"new": {
-			"title": "New Social Channel",
-			"header": "New Social Channel",
-			"hidden_desc": "Hidden channels only visible to staff",
-			"sort_desc": "Lower numbers appear first",
-			"primary_desc": "Primary channel will be highlighted."
-		},
-		"colors": {
-			"blue": "Blue",
-			"dark_blue": "Dark Blue",
-			"pink": "Pink",
-			"purple": "Purple",
-			"red": "Red",
-			"green": "Green",
-			"orange": "Orange",
-			"gray": "Gray"
-		},
-		"icons": {
-			"telegram": "Telegram",
-			"instagram": "Instagram",
-			"facebook": "Facebook",
-			"website": "Website",
-			"email": "Email",
-			"discord": "Discord",
-			"youtube": "YouTube",
-			"link": "Link"
-		}
-	},
-	"submissions": {
-		"title": "Submissions",
-		"header": "Submissions",
-		"no_submissions": "No submissions yet",
-		"delete_confirm": "Are you sure you want to delete this submission?",
-		"apartment": "Apartment",
-		"table": {
-			"time": "Time",
-			"type": "Type",
-			"sender": "Sender",
-			"message": "Message",
-			"status": "Status"
-		}
-	},
-	"events": {
-		"title": "Events",
-		"header": "Events",
-		"upcoming": "Upcoming",
-		"no_upcoming": "No upcoming events",
-		"no_results": "No results",
-		"open_calendar": "Open Calendar",
-		"all_day": "All Day",
-		"add_event": "Add Event",
-		"new": {
-			"title": "New Event",
-			"header": "New Event",
-			"recurrence": "Recurrence",
-			"reminders": "Reminders",
-			"success": "Event created successfully!",
-			"error": "Failed to create event"
-		},
-		"form": {
-			"location_placeholder": "Event location (optional)",
-			"frequency": "Frequency",
-			"interval": "Interval",
-			"recurrence_end": "Recurrence ends",
-			"end_never": "Never",
-			"end_after": "After",
-			"occurrences": "occurrences",
-			"end_on": "On date",
-			"add_reminder": "Add reminder",
-			"no_reminders": "No reminders set",
-			"attendees_placeholder": "Email addresses (comma separated)",
-			"attendees_help": "Enter attendee email addresses separated by commas"
-		},
-		"frequency": {
-			"daily": "Daily",
-			"weekly": "Weekly",
-			"monthly": "Monthly",
-			"yearly": "Yearly"
-		},
-		"reminder": {
-			"popup": "Popup",
-			"email": "Email",
-			"10min": "10 minutes before",
-			"30min": "30 minutes before",
-			"1hour": "1 hour before",
-			"1day": "1 day before",
-			"1week": "1 week before"
-		},
-		"edit": {
-			"title": "Edit Event",
-			"header": "Edit Event",
-			"success": "Event updated!",
-			"error": "Failed to update event"
-		},
-		"delete": {
-			"confirm": "Are you sure you want to delete this event?",
-			"success": "Event deleted!",
-			"error": "Failed to delete event"
-		}
-	},
-	"news": {
-		"title": "News",
-		"add": "Add news",
-		"edit": "Edit",
-		"delete": "Delete",
-		"empty": "No news yet.",
-		"no_results": "No results for your search.",
-		"search_placeholder": "Search news...",
-		"confirm_delete": "Are you sure you want to delete this news item?",
-		"new_title": "News",
-		"edit_title": "Edit news",
-		"save": "Save",
-		"cancel": "Cancel",
-		"form": {
-			"title": "Title",
-			"title_placeholder": "News title",
-			"summary": "Summary",
-			"summary_placeholder": "Short summary (optional)",
-			"content": "Content",
-			"content_placeholder": "News content",
-			"default_language": "Default language ({{language}})",
-			"secondary_language": "Secondary language ({{language}})"
-		},
-		"translate_with_ai": "Translate with AI:",
-		"translating": "Translating...",
-		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-	},
-	"faq": {
-		"title": "FAQ",
-		"add": "Add question",
-		"edit": "Edit",
-		"delete": "Delete",
-		"empty": "No questions yet.",
-		"no_results": "No results for your search.",
-		"search_placeholder": "Search FAQ...",
-		"confirm_delete": "Are you sure you want to delete this question?",
-		"new_title": "New question",
-		"edit_title": "Edit question",
-		"save": "Save",
-		"cancel": "Cancel",
-		"form": {
-			"question": "Question",
-			"question_placeholder": "Enter question",
-			"answer": "Answer",
-			"answer_placeholder": "Enter answer",
-			"sort_order": "Sort order",
-			"default_language": "Default language ({{language}})",
-			"secondary_language": "Secondary language ({{language}})"
-		},
-		"translate_with_ai": "Translate with AI:",
-		"translating": "Translating...",
-		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-	},
-	"polls": {
-		"title": "Polls",
-		"description": "View and manage polls",
-		"active": "Active",
-		"closed": "Closed",
-		"no_active_polls": "No active polls at the moment",
-		"no_closed_polls": "No closed polls",
-		"no_sheets": "No unlinked Google Sheets",
-		"time_remaining": "{{time}} left",
-		"ends_today": "Ends today",
-		"ends_tomorrow": "Ends tomorrow",
-		"status_closed": "Closed",
-		"fill_poll": "Fill out poll",
-		"view_results": "View Results",
-		"add_poll": "Add Poll",
-		"analytics": "Analytics",
-		"analytics_description": "View and analyze poll responses",
-		"google_form": "Google Form",
-		"google_sheets": "Google Sheets",
-		"no_sheets_found": "No Analytics Sheets Found",
-		"no_sheets_found_description": "Create an 'analytics' folder in your year folder and add Google Sheets. Share with service account.",
-		"select_sheet": "Select a Sheet",
-		"select_sheet_description": "Choose a sheet from the dropdown above to view its data.",
-		"new": {
-			"title": "Add Poll",
-			"form_title": "Poll Details",
-			"form_description": "Add a new poll by providing a link and optional deadline",
-			"choose_type": "Choose Poll Type",
-			"type_managed": "Create New Google Form",
-			"type_managed_desc": "Create a form via Google Forms API. The service account owns it, you become an editor.",
-			"type_linked": "Link Existing Google Form",
-			"type_linked_desc": "Connect a Google Form you've already created. Share it with the service account.",
-			"type_external": "External Poll Link",
-			"type_external_desc": "Link to any external poll (non-Google), like SurveyMonkey, Typeform, etc.",
-			"managed_info": "A new Google Form will be created. You'll be added as an editor automatically.",
-			"linked_info": "Link a Google Form you already own. Remember to share it with the service account.",
-			"external_info": "Link to any poll, survey, or form URL.",
-			"name": "Poll Name",
-			"name_placeholder": "E.g. Event feedback",
-			"description": "Description",
-			"description_placeholder": "What is this poll about?",
-			"url": "Poll URL",
-			"url_placeholder": "https://forms.google.com/...",
-			"url_help": "Link where users can fill out the poll",
-			"google_form_url": "Google Form URL",
-			"share_instruction_title": "Important: Share with Service Account",
-			"share_instruction": "For the app to read responses, share your form with: {{email}}",
-			"deadline": "Deadline",
-			"deadline_help": "When should the poll close? (optional)",
-			"analytics_sheet": "Link to Analytics Sheet",
-			"analytics_sheet_help": "Optional: Select a sheet to view responses in analytics",
-			"no_sheet": "Don't link to a sheet",
-			"submit": "Add Poll",
-			"create_form": "Create Form",
-			"creating": "Creating form..."
-		},
-		"instructions": {
-			"title": "Creating a New Google Form",
-			"step1": "Go to forms.google.com and create a new form",
-			"step2": "Set up your questions and configure form settings",
-			"step3": "In form settings, enable 'Collect email addresses' if needed",
-			"step4": "Click 'Send' and copy the form link",
-			"step5": "Paste the link above to add the poll",
-			"auto_discovery": "For automatic response analytics:",
-			"share_with_sa": "Share the linked Google Sheet with the service account email"
-		},
-		"success": {
-			"created": "Poll added",
-			"updated": "Poll updated",
-			"deleted": "Poll deleted"
-		}
-	},
-	"email": {
-		"reimbursement": {
-			"subject": "Reimbursement Request",
-			"title": "Reimbursement Request",
-			"item": "Item",
-			"amount": "Amount",
-			"purchaser": "Purchaser",
-			"bank_account": "Bank Account",
-			"minutes": "Minutes",
-			"receipts": "Receipts",
-			"notes": "Notes",
-			"attached": "attached",
-			"not_specified": "Not specified",
-			"reply_instruction": "Reply to this email to approve or reject the request."
-		},
-		"reimbursement_status": {
-			"approved": {
-				"subject": "Reimbursement Request Approved",
-				"title": "Reimbursement Approved",
-				"message": "Your reimbursement request has been approved."
-			},
-			"declined": {
-				"subject": "Reimbursement Request Declined",
-				"title": "Reimbursement Declined",
-				"message": "Your reimbursement request has been declined."
-			},
-			"status": "Status",
-			"view_details": "View Details"
-		}
-	},
-	"messages": {
-		"title": "Messages",
-		"empty": "No new messages yet",
-		"date": "Date",
-		"content": "Content",
-		"mark_as_read": "Mark as read",
-		"mark_all_read": "Mark all as read",
-		"marked_as_read": "Message marked as read",
-		"view": "View",
-		"view_purchase": "View Purchase",
-		"unread_count": "{{count}} unread",
-		"reimbursement_approved": {
-			"title": "Reimbursement Approved",
-			"content": "Your reimbursement request for {description} ({amount} €) has been approved."
-		},
-		"reimbursement_declined": {
-			"title": "Reimbursement Declined",
-			"content": "Your reimbursement request for {description} ({amount} €) has been declined."
-		},
-		"news_published": {
-			"title": "News",
-			"content": "{title}"
-		},
-		"ai_news_translation_failed": {
-			"title": "News translation failed",
-			"content": "AI translation for news failed. Check settings and try again."
-		},
-		"ai_faq_translation_failed": {
-			"title": "FAQ translation failed",
-			"content": "AI translation for FAQ failed. Check settings and try again."
-		},
-		"view_news": "View news",
-		"unknown_item": "Unknown item",
-		"see_all": "See all messages",
-		"select_all": "Select all",
-		"selected_count": "{{count}} selected",
-		"mark_selected_read": "Mark selected as read",
-		"mark_selected_unread": "Mark selected as unread",
-		"clear_selection": "Clear selection"
-	},
-	"permissions": {
-		"users": {
-			"read": "View user list",
-			"write": "Create and update users",
-			"delete": "Delete users",
-			"manage_roles": "Assign roles to users"
-		},
-		"inventory": {
-			"read": "View inventory items",
-			"write": "Create and edit inventory items",
-			"delete": "Delete inventory items",
-			"export": "Export inventory to CSV",
-			"import": "Import inventory from file"
-		},
-		"treasury": {
-			"read": "View treasury overview",
-			"export": "Export treasury data to CSV",
-			"import": "Import treasury data from file",
-			"breakdown": {
-				"read": "View treasury breakdown",
-				"read-self": "View own treasury breakdown"
-			},
-			"transactions": {
-				"read": "View transaction list",
-				"write": "Create transactions",
-				"write-self": "Create own transactions",
-				"update": "Edit transactions",
-				"delete": "Delete transactions",
-				"update-self": "Edit own transactions",
-				"delete-self": "Delete own transactions",
-				"read-self": "View own transactions"
-			},
-			"reimbursements": {
-				"read": "View reimbursement requests",
-				"write": "Create reimbursement requests",
-				"write-self": "Create own reimbursement requests",
-				"update": "Update and approve/reject reimbursements",
-				"delete": "Delete reimbursement requests",
-				"update-self": "Edit own reimbursement requests",
-				"delete-self": "Delete own reimbursement requests",
-				"read-self": "View own reimbursement requests"
-			},
-			"budgets": {
-				"read": "View budgets",
-				"read-self": "View own budgets",
-				"write": "Create budgets",
-				"write-self": "Create own budgets",
-				"update": "Edit budgets",
-				"delete": "Delete budgets",
-				"update-self": "Edit own budgets",
-				"delete-self": "Delete own budgets"
-			},
-			"receipts": {
-				"read": "View receipts",
-				"read-self": "View own receipts",
-				"write": "Create receipts",
-				"write-self": "Create own receipts",
-				"update": "Edit receipts",
-				"delete": "Delete receipts",
-				"update-self": "Edit own receipts",
-				"delete-self": "Delete own receipts"
-			},
-			"view_scope": {
-				"all": "You are viewing all {{itemType}}",
-				"own_only": "You are viewing only your own {{itemType}}",
-				"item_types": {
-					"receipts": "receipts",
-					"transactions": "transactions",
-					"reimbursements": "reimbursement requests",
-					"budgets": "budgets",
-					"breakdown": "breakdown"
-				}
-			}
-		},
-		"purchases": {
-			"read": "View all purchase requests",
-			"manage": "Update purchase status",
-			"delete": "Delete purchase requests"
-		},
-		"submissions": {
-			"read": "View contact form submissions",
-			"write": "Update submission status",
-			"delete": "Delete submissions"
-		},
-		"social": {
-			"read": "View social links",
-			"write": "Create and edit social links",
-			"delete": "Delete social links"
-		},
-		"minutes": {
-			"read": "View and download minutes",
-			"guide": "View naming convention guide"
-		},
-		"events": {
-			"read": "View calendar events",
-			"write": "Create calendar events",
-			"update": "Edit calendar events",
-			"delete": "Delete calendar events"
-		},
-		"news": {
-			"read": "View news",
-			"write": "Create news",
-			"update": "Edit news",
-			"delete": "Delete news"
-		},
-		"faq": {
-			"read": "View FAQ",
-			"write": "Create FAQ entries",
-			"update": "Edit FAQ entries",
-			"delete": "Delete FAQ entries"
-		},
-		"forms": {
-			"read": "View form responses and analytics",
-			"export": "Export form data to CSV"
-		},
-		"polls": {
-			"read": "View polls",
-			"write": "Create and manage own polls",
-			"delete": "Delete any poll"
-		},
-		"profile": {
-			"read": {
-				"own": "View own profile"
-			},
-			"write": {
-				"own": "Edit own profile"
-			}
-		},
-		"avatars": {
-			"read": "View avatar blob list",
-			"delete": "Delete avatar blobs"
-		},
-		"admin": {
-			"storage": {
-				"read": "View storage admin",
-				"write": "Manage storage admin"
-			}
-		},
-		"roles": {
-			"read": "View roles and permissions",
-			"write": "Create and edit roles",
-			"delete": "Delete roles"
-		},
-		"settings": {
-			"general": "Access general settings",
-			"users": "Access user management settings",
-			"roles": "Access role management settings",
-			"reimbursements": "Access reimbursement settings (AI, keywords)",
-			"analytics": "Access analytics settings (AI models)",
-			"news": "Access news settings (AI translation model)",
-			"faqs": "Access FAQ settings (AI translation model)"
-		},
-		"committee": {
-			"email": "Send email to role members",
-			"read": "View committee members"
-		},
-		"categories": {
-			"Users": "Users",
-			"Inventory": "Inventory",
-			"Treasury": "Treasury",
-			"Purchases": "Purchases",
-			"Submissions": "Submissions",
-			"Social": "Social",
-			"Minutes": "Minutes",
-			"Events": "Events",
-			"News": "News",
-			"FAQ": "FAQ",
-			"Forms": "Forms",
-			"Polls": "Polls",
-			"Profile": "Profile",
-			"Roles": "Roles",
-			"Settings": "Settings",
-			"Storage": "Storage",
-			"Admin": "Admin"
-		}
+"admin": {
+"storage": {
+	"receipts": "Kuitit",
+		"avatars": "Avatars",
+		"receipts.title": "Receipt Gallery",
+		"receipts.description": "All receipts. Linked receipts are attached to a reimbursement request and cannot be deleted.",
+		"receipts.empty": "No receipts",
+		"receipts.delete_confirm": "Are you sure you want to delete this receipt?",
+		"receipts.delete_success": "Receipt deleted",
+		"receipts.delete_error": "Delete failed",
+		"receipts.open_pdf": "Open PDF",
+		"receipts.linked": "Linked",
+		"receipts.unlinked": "Unlinked",
+		"receipts.reimbursement_request": "Reimbursement Request",
+		"avatars.title": "Avatars",
+		"avatars.description": "All user avatar images stored in the system.",
+		"avatars.empty": "No avatars",
+		"avatars.delete": "Delete",
+		"avatars.delete_confirm": "Are you sure you want to delete this avatar?",
+		"avatars.delete_success": "Avatar deleted",
+		"avatars.delete_error": "Delete failed"
 	}
+},
+"local_ai": {
+"model_selector": {
+"label": "Local Model",
+"placeholder": "Select model...",
+"loading": "Loading...",
+"not_connected": "Not connected to Ollama",
+"no_models": "No models found",
+"connection_failed": "Connection failed",
+"connection_error": "Connection error",
+"select_model": "Select model",
+"disabled": "Disabled",
+"model_count": "{{count}} models"
+},
+"translate": {
+"button_tooltip": "{{source}} → {{target}} (Translate)",
+"tooltip": "Translate with local AI",
+"translating": "Translating...",
+"input_not_found": "Source or target field not found",
+"empty_source": "Source field is empty",
+"success": "Translation complete",
+"failed": "Translation failed: {{error}}"
+}
+},
+"settings": {
+"general": {
+"title": "General",
+"languages_title": "Default Languages",
+"languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
+"primary_language": "Primary Language",
+"secondary_language": "Secondary Language",
+"saved": "Settings saved",
+"error": "Failed to save settings"
+},
+"reimbursements": {
+"title": "Reimbursement Settings",
+"recipient_email_title": "Recipient Email",
+"recipient_email_desc": "Set the email address that receives reimbursement requests.",
+"recipient_email_label": "Recipient Email",
+"recipient_email_placeholder": "treasury@example.com",
+"recipient_email_fallback": "Using environment default: {{email}}",
+"api_key_title": "OpenRouter API Key",
+"api_key_desc": "Get your API key from openrouter.ai/keys",
+"ai_parsing_title": "AI Parsing",
+"ai_parsing_desc": "Enable AI-assisted parsing for more accurate reply interpretation",
+"enable_ai": "Enable AI Parsing",
+"enable_ai_desc": "Use AI to interpret email replies before falling back to keywords",
+"sort_by": "Sort by",
+"price": "Price",
+"name": "Name",
+"ai_model_label": "AI Model",
+"select_model": "Select a model...",
+"showing_models": "Showing {{count}} of {{total}} models",
+"no_api_key_msg": "Add an API key above to enable AI parsing and select a model.",
+"keywords_title": "Keywords",
+"keywords_desc": "Custom keywords for detecting approval or rejection in emails",
+"default_approval": "Default Approval Keywords",
+"additional_approval": "Additional Approval Keywords",
+"approval_placeholder": "paid, done, accepted (comma-separated)",
+"default_rejection": "Default Rejection Keywords",
+"additional_rejection": "Additional Rejection Keywords",
+"rejection_placeholder": "refused, cancelled (comma-separated)"
+},
+"analytics": {
+"title": "Analytics Settings"
+},
+"news": {
+"title": "News Settings",
+"ai_disabled_title": "AI Features Disabled",
+"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
+"go_to_general": "Go to General Settings",
+"ai_model_title": "AI News Model",
+"ai_model_desc": "Select the AI model used for translating news between primary and secondary languages.",
+"sort_by": "Sort by",
+"price": "Price",
+"name": "Name",
+"select_model": "Select model",
+"select_model_placeholder": "Select a model...",
+"showing_models": "Showing {{count}} of {{total}} models"
+},
+"faqs": {
+"title": "FAQ Settings",
+"ai_disabled_title": "AI Features Disabled",
+"ai_disabled_desc": "Please configure the OpenRouter API Key in General Settings first.",
+"go_to_general": "Go to General Settings",
+"ai_model_title": "AI FAQ Model",
+"ai_model_desc": "Select the AI model used for translating FAQ entries between primary and secondary languages.",
+"sort_by": "Sort by",
+"price": "Price",
+"name": "Name",
+"select_model": "Select model",
+"select_model_placeholder": "Select a model...",
+"showing_models": "Showing {{count}} of {{total}} models"
+},
+"roles": {
+"title": "Role Management",
+"create_new_title": "Create New Role",
+"name_label": "Name",
+"color_label": "Color",
+"desc_label": "Description",
+"list_title": "Roles ({{count}})",
+"system": "System Role",
+"permissions_count": "{{count}} permissions",
+"delete_title": "Delete Role",
+"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
+"permissions_header": "Permissions",
+"select_role_msg": "Select a role from the left to edit permissions",
+"select_role": "Select Role",
+"select_role_placeholder": "Choose a role...",
+"search_placeholder": "Search permissions...",
+"category": "Category",
+"permission_name": "Permission Name",
+"description": "Description",
+"select_role_to_manage": "Select a role above to manage permissions",
+"show_only_assigned": "Show only assigned permissions"
+},
+"users": {
+"title": "User Management",
+"headers": {
+	"name": "Name",
+	"email": "Email",
+	"apartment": "Apartment",
+	"role": "Primary role",
+	"roles": "Roles",
+	"joined": "Joined"
+},
+"no_users": "No users yet",
+"roles_placeholder": "Type role name and press Tab to add",
+"no_roles_match": "No matching roles",
+"super_admin": "Super Admin",
+"role_updated": "Role updated",
+"cannot_change_super_admin": "Cannot change Super Admin role",
+"update_failed": "Failed to update role"
+}
+},
+"committee": {
+"title": "Committee",
+"members": "Members",
+"no_members": "No committee members found",
+"primary_role": "Primary Role",
+"roles": "Roles",
+"no_description": "No description",
+"mail": {
+"title": "Committee Email",
+"description": "Send email to a role (recipients: everyone with that role as primary or secondary).",
+"not_configured": "Email is not configured. Set SMTP and COMMITTEE_FROM_EMAIL environment variables.",
+"to": "To",
+"cc": "CC",
+"bcc": "BCC",
+"select_role": "Select role",
+"add_role": "Add role's members",
+"add_email": "Add email",
+"add_email_placeholder": "email@example.com",
+"type_to_add": "Type a name or role and press Tab to add",
+"remove": "Remove recipient",
+"loading": "Loading...",
+"recipients": "Recipients",
+"no_recipients": "No users have this role.",
+"suggestions": "Suggestions",
+"no_suggestions": "No suggestions",
+"role": "Role",
+"subject": "Subject",
+"subject_placeholder": "Email subject",
+"body": "Message",
+"body_placeholder": "Write your message...",
+"send": "Send",
+"sending": "Sending...",
+"sent_success": "{{count}} message sent",
+"sent_partial": "{{success}} sent, {{fail}} failed"
+}
+},
+"mail": {
+"inbox": "Inbox",
+"sent": "Sent",
+"compose": "Compose",
+"drafts": "Drafts",
+"draft_saved_at": "Draft saved at {{time}}",
+"send_tooltip": "Send",
+"no_drafts": "No drafts",
+"no_subject": "(No subject)",
+"refresh": "Refresh",
+"refreshed": "{{count}} new messages fetched",
+"no_messages": "No messages",
+"from": "From",
+"to": "To",
+"cc": "CC",
+"date": "Date",
+"back": "Back",
+"delete": "Delete",
+"delete_draft": "Delete draft",
+"delete_confirm": "Are you sure you want to delete this message?",
+"delete_draft_confirm": "Are you sure you want to delete this draft?",
+"delete_success": "Deleted successfully",
+"delete_error": "Delete failed",
+"select": "Select",
+"delete_selected": "Delete selected",
+"reply": "Reply",
+"reply_all": "Reply All",
+"forward": "Forward",
+"forwarded_message": "Forwarded message",
+"messages_in_thread": "{{count}} messages",
+"compose_new": "New Message",
+"compose_reply": "Reply",
+"compose_reply_all": "Reply All",
+"compose_forward": "Forward",
+"quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:",
+"back_to_inbox": "Back to Inbox"
+},
+"contact": {
+"title": "Contact",
+"description": "Contact the Tenant Committee",
+"header": "Contact Us",
+"select_topic": "Select Topic",
+"select_topic_prompt": "Select a topic to begin",
+"types": {
+"committee": {
+	"title": "Apply for Committee",
+	"placeholder": "Tell us about yourself and why you'd like to join the committee..."
+},
+"events": {
+	"title": "Suggest an Event",
+	"placeholder": "Describe your event idea: what, when, where..."
+},
+"purchases": {
+	"title": "Request a Purchase",
+	"placeholder": "What would you like to purchase and how would it benefit residents?"
+},
+"questions": {
+	"title": "Ask a Question",
+	"placeholder": "Write your question here..."
+}
+},
+"form": {
+"name": "Name",
+"email": "Email",
+"apartment": "Apartment",
+"apartment_placeholder": "e.g. A 123",
+"update_apartment_profile": "Update apartment number in my profile",
+"message": "Message",
+"send": "Send"
+},
+"success": {
+"title": "Message Sent!",
+"message": "Thank you for contacting us! We will respond as soon as possible.",
+"back_home": "Back to Home"
+}
+},
+"social": {
+"title": "Social",
+"description": "Follow us on social media",
+"header": "Social Media",
+"delete_confirm": "Delete?",
+"no_channels": "No social channels",
+"add_first": "Add first",
+"primary_badge": "Primary",
+"set_primary": "Set as primary",
+"clear_primary": "Remove primary",
+"new": {
+"title": "New Social Channel",
+"header": "New Social Channel",
+"hidden_desc": "Hidden channels only visible to staff",
+"sort_desc": "Lower numbers appear first",
+"primary_desc": "Primary channel will be highlighted."
+},
+"colors": {
+"blue": "Blue",
+"dark_blue": "Dark Blue",
+"pink": "Pink",
+"purple": "Purple",
+"red": "Red",
+"green": "Green",
+"orange": "Orange",
+"gray": "Gray"
+},
+"icons": {
+"telegram": "Telegram",
+"instagram": "Instagram",
+"facebook": "Facebook",
+"website": "Website",
+"email": "Email",
+"discord": "Discord",
+"youtube": "YouTube",
+"link": "Link"
+}
+},
+"submissions": {
+"title": "Submissions",
+"header": "Submissions",
+"no_submissions": "No submissions yet",
+"delete_confirm": "Are you sure you want to delete this submission?",
+"apartment": "Apartment",
+"table": {
+"time": "Time",
+"type": "Type",
+"sender": "Sender",
+"message": "Message",
+"status": "Status"
+}
+},
+"events": {
+"title": "Events",
+"header": "Events",
+"upcoming": "Upcoming",
+"no_upcoming": "No upcoming events",
+"no_results": "No results",
+"open_calendar": "Open Calendar",
+"all_day": "All Day",
+"add_event": "Add Event",
+"new": {
+"title": "New Event",
+"header": "New Event",
+"recurrence": "Recurrence",
+"reminders": "Reminders",
+"success": "Event created successfully!",
+"error": "Failed to create event"
+},
+"form": {
+"location_placeholder": "Event location (optional)",
+"frequency": "Frequency",
+"interval": "Interval",
+"recurrence_end": "Recurrence ends",
+"end_never": "Never",
+"end_after": "After",
+"occurrences": "occurrences",
+"end_on": "On date",
+"add_reminder": "Add reminder",
+"no_reminders": "No reminders set",
+"attendees_placeholder": "Email addresses (comma separated)",
+"attendees_help": "Enter attendee email addresses separated by commas"
+},
+"frequency": {
+"daily": "Daily",
+"weekly": "Weekly",
+"monthly": "Monthly",
+"yearly": "Yearly"
+},
+"reminder": {
+"popup": "Popup",
+"email": "Email",
+"10min": "10 minutes before",
+"30min": "30 minutes before",
+"1hour": "1 hour before",
+"1day": "1 day before",
+"1week": "1 week before"
+},
+"edit": {
+"title": "Edit Event",
+"header": "Edit Event",
+"success": "Event updated!",
+"error": "Failed to update event"
+},
+"delete": {
+"confirm": "Are you sure you want to delete this event?",
+"success": "Event deleted!",
+"error": "Failed to delete event"
+}
+},
+"news": {
+"title": "News",
+"add": "Add news",
+"edit": "Edit",
+"delete": "Delete",
+"empty": "No news yet.",
+"no_results": "No results for your search.",
+"search_placeholder": "Search news...",
+"confirm_delete": "Are you sure you want to delete this news item?",
+"new_title": "News",
+"edit_title": "Edit news",
+"save": "Save",
+"cancel": "Cancel",
+"form": {
+"title": "Title",
+"title_placeholder": "News title",
+"summary": "Summary",
+"summary_placeholder": "Short summary (optional)",
+"content": "Content",
+"content_placeholder": "News content",
+"default_language": "Default language ({{language}})",
+"secondary_language": "Secondary language ({{language}})"
+},
+"translate_with_ai": "Translate with AI:",
+"translating": "Translating...",
+"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+},
+"faq": {
+"title": "FAQ",
+"add": "Add question",
+"edit": "Edit",
+"delete": "Delete",
+"empty": "No questions yet.",
+"no_results": "No results for your search.",
+"search_placeholder": "Search FAQ...",
+"confirm_delete": "Are you sure you want to delete this question?",
+"new_title": "New question",
+"edit_title": "Edit question",
+"save": "Save",
+"cancel": "Cancel",
+"form": {
+"question": "Question",
+"question_placeholder": "Enter question",
+"answer": "Answer",
+"answer_placeholder": "Enter answer",
+"sort_order": "Sort order",
+"default_language": "Default language ({{language}})",
+"secondary_language": "Secondary language ({{language}})"
+},
+"translate_with_ai": "Translate with AI:",
+"translating": "Translating...",
+"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+},
+"polls": {
+"title": "Polls",
+"description": "View and manage polls",
+"active": "Active",
+"closed": "Closed",
+"no_active_polls": "No active polls at the moment",
+"no_closed_polls": "No closed polls",
+"no_sheets": "No unlinked Google Sheets",
+"time_remaining": "{{time}} left",
+"ends_today": "Ends today",
+"ends_tomorrow": "Ends tomorrow",
+"status_closed": "Closed",
+"fill_poll": "Fill out poll",
+"view_results": "View Results",
+"add_poll": "Add Poll",
+"analytics": "Analytics",
+"analytics_description": "View and analyze poll responses",
+"google_form": "Google Form",
+"google_sheets": "Google Sheets",
+"no_sheets_found": "No Analytics Sheets Found",
+"no_sheets_found_description": "Create an 'analytics' folder in your year folder and add Google Sheets. Share with service account.",
+"select_sheet": "Select a Sheet",
+"select_sheet_description": "Choose a sheet from the dropdown above to view its data.",
+"new": {
+"title": "Add Poll",
+"form_title": "Poll Details",
+"form_description": "Add a new poll by providing a link and optional deadline",
+"choose_type": "Choose Poll Type",
+"type_managed": "Create New Google Form",
+"type_managed_desc": "Create a form via Google Forms API. The service account owns it, you become an editor.",
+"type_linked": "Link Existing Google Form",
+"type_linked_desc": "Connect a Google Form you've already created. Share it with the service account.",
+"type_external": "External Poll Link",
+"type_external_desc": "Link to any external poll (non-Google), like SurveyMonkey, Typeform, etc.",
+"managed_info": "A new Google Form will be created. You'll be added as an editor automatically.",
+"linked_info": "Link a Google Form you already own. Remember to share it with the service account.",
+"external_info": "Link to any poll, survey, or form URL.",
+"name": "Poll Name",
+"name_placeholder": "E.g. Event feedback",
+"description": "Description",
+"description_placeholder": "What is this poll about?",
+"url": "Poll URL",
+"url_placeholder": "https://forms.google.com/...",
+"url_help": "Link where users can fill out the poll",
+"google_form_url": "Google Form URL",
+"share_instruction_title": "Important: Share with Service Account",
+"share_instruction": "For the app to read responses, share your form with: {{email}}",
+"deadline": "Deadline",
+"deadline_help": "When should the poll close? (optional)",
+"analytics_sheet": "Link to Analytics Sheet",
+"analytics_sheet_help": "Optional: Select a sheet to view responses in analytics",
+"no_sheet": "Don't link to a sheet",
+"submit": "Add Poll",
+"create_form": "Create Form",
+"creating": "Creating form..."
+},
+"instructions": {
+"title": "Creating a New Google Form",
+"step1": "Go to forms.google.com and create a new form",
+"step2": "Set up your questions and configure form settings",
+"step3": "In form settings, enable 'Collect email addresses' if needed",
+"step4": "Click 'Send' and copy the form link",
+"step5": "Paste the link above to add the poll",
+"auto_discovery": "For automatic response analytics:",
+"share_with_sa": "Share the linked Google Sheet with the service account email"
+},
+"success": {
+"created": "Poll added",
+"updated": "Poll updated",
+"deleted": "Poll deleted"
+}
+},
+"email": {
+"reimbursement": {
+"subject": "Reimbursement Request",
+"title": "Reimbursement Request",
+"item": "Item",
+"amount": "Amount",
+"purchaser": "Purchaser",
+"bank_account": "Bank Account",
+"minutes": "Minutes",
+"receipts": "Receipts",
+"notes": "Notes",
+"attached": "attached",
+"not_specified": "Not specified",
+"reply_instruction": "Reply to this email to approve or reject the request."
+},
+"reimbursement_status": {
+"approved": {
+	"subject": "Reimbursement Request Approved",
+	"title": "Reimbursement Approved",
+	"message": "Your reimbursement request has been approved."
+},
+"declined": {
+	"subject": "Reimbursement Request Declined",
+	"title": "Reimbursement Declined",
+	"message": "Your reimbursement request has been declined."
+},
+"status": "Status",
+"view_details": "View Details"
+}
+},
+"messages": {
+"title": "Messages",
+"empty": "No new messages yet",
+"date": "Date",
+"content": "Content",
+"mark_as_read": "Mark as read",
+"mark_all_read": "Mark all as read",
+"marked_as_read": "Message marked as read",
+"view": "View",
+"view_purchase": "View Purchase",
+"unread_count": "{{count}} unread",
+"reimbursement_approved": {
+"title": "Reimbursement Approved",
+"content": "Your reimbursement request for {description} ({amount} €) has been approved."
+},
+"reimbursement_declined": {
+"title": "Reimbursement Declined",
+"content": "Your reimbursement request for {description} ({amount} €) has been declined."
+},
+"news_published": {
+"title": "News",
+"content": "{title}"
+},
+"ai_news_translation_failed": {
+"title": "News translation failed",
+"content": "AI translation for news failed. Check settings and try again."
+},
+"ai_faq_translation_failed": {
+"title": "FAQ translation failed",
+"content": "AI translation for FAQ failed. Check settings and try again."
+},
+"view_news": "View news",
+"unknown_item": "Unknown item",
+"see_all": "See all messages",
+"select_all": "Select all",
+"selected_count": "{{count}} selected",
+"mark_selected_read": "Mark selected as read",
+"mark_selected_unread": "Mark selected as unread",
+"clear_selection": "Clear selection"
+},
+"permissions": {
+"users": {
+"read": "View user list",
+"write": "Create and update users",
+"delete": "Delete users",
+"manage_roles": "Assign roles to users"
+},
+"inventory": {
+"read": "View inventory items",
+"write": "Create and edit inventory items",
+"delete": "Delete inventory items",
+"export": "Export inventory to CSV",
+"import": "Import inventory from file"
+},
+"treasury": {
+"read": "View treasury overview",
+"export": "Export treasury data to CSV",
+"import": "Import treasury data from file",
+"breakdown": {
+	"read": "View treasury breakdown",
+	"read-self": "View own treasury breakdown"
+},
+"transactions": {
+	"read": "View transaction list",
+	"write": "Create transactions",
+	"write-self": "Create own transactions",
+	"update": "Edit transactions",
+	"delete": "Delete transactions",
+	"update-self": "Edit own transactions",
+	"delete-self": "Delete own transactions",
+	"read-self": "View own transactions"
+},
+"reimbursements": {
+	"read": "View reimbursement requests",
+	"write": "Create reimbursement requests",
+	"write-self": "Create own reimbursement requests",
+	"update": "Update and approve/reject reimbursements",
+	"delete": "Delete reimbursement requests",
+	"update-self": "Edit own reimbursement requests",
+	"delete-self": "Delete own reimbursement requests",
+	"read-self": "View own reimbursement requests"
+},
+"budgets": {
+	"read": "View budgets",
+	"read-self": "View own budgets",
+	"write": "Create budgets",
+	"write-self": "Create own budgets",
+	"update": "Edit budgets",
+	"delete": "Delete budgets",
+	"update-self": "Edit own budgets",
+	"delete-self": "Delete own budgets"
+},
+"receipts": {
+	"read": "View receipts",
+	"read-self": "View own receipts",
+	"write": "Create receipts",
+	"write-self": "Create own receipts",
+	"update": "Edit receipts",
+	"delete": "Delete receipts",
+	"update-self": "Edit own receipts",
+	"delete-self": "Delete own receipts"
+},
+"view_scope": {
+	"all": "You are viewing all {{itemType}}",
+	"own_only": "You are viewing only your own {{itemType}}",
+	"item_types": {
+		"receipts": "receipts",
+		"transactions": "transactions",
+		"reimbursements": "reimbursement requests",
+		"budgets": "budgets",
+		"breakdown": "breakdown"
+	}
+}
+},
+"purchases": {
+"read": "View all purchase requests",
+"manage": "Update purchase status",
+"delete": "Delete purchase requests"
+},
+"submissions": {
+"read": "View contact form submissions",
+"write": "Update submission status",
+"delete": "Delete submissions"
+},
+"social": {
+"read": "View social links",
+"write": "Create and edit social links",
+"delete": "Delete social links"
+},
+"minutes": {
+"read": "View and download minutes",
+"guide": "View naming convention guide"
+},
+"events": {
+"read": "View calendar events",
+"write": "Create calendar events",
+"update": "Edit calendar events",
+"delete": "Delete calendar events"
+},
+"news": {
+"read": "View news",
+"write": "Create news",
+"update": "Edit news",
+"delete": "Delete news"
+},
+"faq": {
+"read": "View FAQ",
+"write": "Create FAQ entries",
+"update": "Edit FAQ entries",
+"delete": "Delete FAQ entries"
+},
+"forms": {
+"read": "View form responses and analytics",
+"export": "Export form data to CSV"
+},
+"polls": {
+"read": "View polls",
+"write": "Create and manage own polls",
+"delete": "Delete any poll"
+},
+"profile": {
+"read": {
+	"own": "View own profile"
+},
+"write": {
+	"own": "Edit own profile"
+}
+},
+"avatars": {
+"read": "View avatar blob list",
+"delete": "Delete avatar blobs"
+},
+"admin": {
+"storage": {
+	"read": "View storage admin",
+	"write": "Manage storage admin"
+}
+},
+"roles": {
+"read": "View roles and permissions",
+"write": "Create and edit roles",
+"delete": "Delete roles"
+},
+"settings": {
+"general": "Access general settings",
+"users": "Access user management settings",
+"roles": "Access role management settings",
+"reimbursements": "Access reimbursement settings (AI, keywords)",
+"analytics": "Access analytics settings (AI models)",
+"news": "Access news settings (AI translation model)",
+"faqs": "Access FAQ settings (AI translation model)"
+},
+"committee": {
+"email": "Send email to role members",
+"read": "View committee members"
+},
+"categories": {
+"Users": "Users",
+"Inventory": "Inventory",
+"Treasury": "Treasury",
+"Purchases": "Purchases",
+"Submissions": "Submissions",
+"Social": "Social",
+"Minutes": "Minutes",
+"Events": "Events",
+"News": "News",
+"FAQ": "FAQ",
+"Forms": "Forms",
+"Polls": "Polls",
+"Profile": "Profile",
+"Roles": "Roles",
+"Settings": "Settings",
+"Storage": "Storage",
+"Admin": "Admin"
+}
+}
 }

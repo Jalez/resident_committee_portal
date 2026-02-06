@@ -153,7 +153,8 @@
 		"delete": "Poista",
 		"select_existing_or_upload": "Valitse olemassa olevat kuitit tai lataa uusi kuitti.",
 		"allowed": "Sallitut",
-		"selected_count": "valittu"
+		"selected_count": "valittu",
+		"analyze_with_ai": "Analysoi tekoälyllä (OCR)"
 	},
 	"lang": {
 		"name": "Suomi",
@@ -257,7 +258,19 @@
 				"linked": "Linkitetty",
 				"unlinked": "Ei linkitetty",
 				"link": "Galleria"
-			}
+			},
+			"ai_analysis": "Tekoälyanalyysi",
+			"no_analysis_yet": "Kuittia ei ole vielä analysoitu tekoälyllä.",
+			"analyze_now": "Analysoi tekoälyllä",
+			"ai_results": "Tekoälyn tulokset",
+			"store": "Liike",
+			"date": "Päivämäärä",
+			"total": "Loppusumma",
+			"extracted_items": "Tunnistetut tuotteet",
+			"quantity": "Määrä",
+			"price": "Hinta",
+			"raw_text": "Raakateksti",
+			"re_analyze": "Analysoi uudelleen"
 		},
 		"actions": {
 			"breakdown": "Erittely",
@@ -828,6 +841,12 @@
 		}
 	},
 	"settings": {
+		"receipt_ocr_title": "Kuittien OCR",
+		"receipt_ocr_description": "Määritä tekoälyasetukset kuittien automaattiseen tulkintaan.",
+		"receipt_ocr_requires_api_key": "Kuittien OCR-tulkinta vaatii OpenRouter API-avaimen yleisasetuksissa.",
+		"ai_model": "AI-malli",
+		"select_model": "Valitse malli...",
+		"receipt_ai_model_help": "Valitse tehokas malli (esim. Gemini Flash 1.5, GPT-4o-mini) parhaan tuloksen saamiseksi.",
 		"general": {
 			"title": "Yleiset",
 			"languages_title": "Oletuskielet",
@@ -839,6 +858,11 @@
 		},
 		"reimbursements": {
 			"title": "Korvausasetukset",
+			"recipient_email_title": "Vastaanottajan sähköposti",
+			"recipient_email_desc": "Määritä sähköpostiosoite, johon kulukorvauspyynnöt lähetetään.",
+			"recipient_email_label": "Vastaanottajan sähköposti",
+			"recipient_email_placeholder": "rahastonhoito@example.com",
+			"recipient_email_fallback": "Käytössä ympäristömuuttuja: {{email}}",
 			"api_key_title": "OpenRouter API-avain",
 			"api_key_desc": "Hae API-avain osoitteesta openrouter.ai/keys",
 			"ai_parsing_title": "AI-tulkinta",
@@ -1419,7 +1443,7 @@
 				"own_only": "Näet vain omat {{itemType}}",
 				"item_types": {
 					"receipts": "kuitit",
-					"transactions": "tapahtumat",
+					"transactions": "transaktiot",
 					"reimbursements": "kulukorvaushakemukset",
 					"budgets": "budjetit",
 					"breakdown": "yhteenveto"
