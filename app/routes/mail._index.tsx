@@ -1,13 +1,16 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-	Form,
 	useActionData,
 	useFetcher,
 	useSearchParams,
+	useNavigation,
+	useRevalidator,
+	Form,
 } from "react-router";
-import { Mail } from "lucide-react";
+import { Loader2, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "~/components/ui/button";
 import { MailItem } from "~/components/mail/mail-item";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
@@ -96,6 +99,10 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 	const actionData = useActionData<typeof action>();
 	const currentDirection = searchParams.get("direction") || "inbox";
 	const deleteFetcher = useFetcher();
+	const navigation = useNavigation();
+	const revalidator = useRevalidator();
+	const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+	const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
 	const handleDeleteMessage = useCallback(
 		(messageId: string) => {
@@ -132,30 +139,87 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 		}
 	}, [deleteFetcher.data, t]);
 
+	// Update timestamp when action completes or loader revalidates
+	useEffect(() => {
+		if (
+			(actionData && "refreshed" in actionData) ||
+			navigation.state === "idle"
+		) {
+			setLastRefreshed(new Date());
+		}
+	}, [actionData, navigation.state]);
+
+	// Auto-refresh every 60s
+	useEffect(() => {
+		if (!autoRefreshEnabled) return;
+		const interval = setInterval(() => {
+			if (document.visibilityState === "visible") {
+				revalidator.revalidate();
+			}
+		}, 60000);
+		return () => clearInterval(interval);
+	}, [autoRefreshEnabled, revalidator]);
+
 	return (
 		<div className="flex flex-col">
-			{/* Toolbar: Refresh for inbox */}
+			{/* Toolbar */}
 			<div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
 				<h2 className="text-lg font-semibold text-gray-900 dark:text-white">
 					{currentDirection === "sent"
 						? t("mail.sent")
 						: t("mail.inbox")}
 				</h2>
-				{currentDirection === "inbox" && (
-					<Form method="post">
-						<input
-							type="hidden"
-							name="_action"
-							value="refreshInbox"
-						/>
-						<button
-							type="submit"
-							className="text-sm text-primary hover:underline"
+				<div className="flex items-center gap-4">
+					<span className="text-xs text-gray-500 dark:text-gray-400">
+						{t("mail.last_refreshed", {
+							defaultValue: "Updated: {{time}}",
+							time: lastRefreshed.toLocaleTimeString([], {
+								hour: "2-digit",
+								minute: "2-digit",
+							}),
+						})}
+					</span>
+					{currentDirection === "inbox" ? (
+						<Form method="post" className="flex">
+							<input
+								type="hidden"
+								name="_action"
+								value="refreshInbox"
+							/>
+							<Button
+								variant="ghost"
+								size="sm"
+								type="submit"
+								disabled={navigation.state === "submitting"}
+								className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+							>
+								{navigation.state === "submitting" &&
+									navigation.formData?.get("_action") ===
+									"refreshInbox" ? (
+									<Loader2 className="mr-2 size-4 animate-spin" />
+								) : (
+									<RefreshCw className="mr-2 size-4" />
+								)}
+								{t("mail.refresh")}
+							</Button>
+						</Form>
+					) : (
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => revalidator.revalidate()}
+							disabled={navigation.state === "loading"}
+							className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
 						>
+							{navigation.state === "loading" ? (
+								<Loader2 className="mr-2 size-4 animate-spin" />
+							) : (
+								<RefreshCw className="mr-2 size-4" />
+							)}
 							{t("mail.refresh")}
-						</button>
-					</Form>
-				)}
+						</Button>
+					)}
+				</div>
 			</div>
 
 			{/* Thread list */}
@@ -179,12 +243,12 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 								primaryText={
 									direction === "sent"
 										? formatRecipients(
-												msg.toJson,
-												"sent",
-											)
+											msg.toJson,
+											"sent",
+										)
 										: msg.fromName ||
-											msg.fromAddress ||
-											""
+										msg.fromAddress ||
+										""
 								}
 								secondaryText={
 									msg.subject || t("mail.no_subject")

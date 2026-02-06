@@ -7,6 +7,7 @@ import {
 	useNavigate,
 	useNavigation,
 	useSearchParams,
+	useActionData,
 } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Send, Trash2 } from "lucide-react";
@@ -289,11 +290,11 @@ export async function action({ request }: Route.ActionArgs) {
 		const bodyHtml = body.replace(/\n/g, "<br>\n");
 		let quotedReply:
 			| {
-					date: string;
-					fromName: string;
-					fromEmail: string;
-					bodyHtml: string;
-			  }
+				date: string;
+				fromName: string;
+				fromEmail: string;
+				bodyHtml: string;
+			}
 			| undefined;
 
 		if (
@@ -358,13 +359,13 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 		const ccJson = cc?.length
 			? JSON.stringify(
-					cc.map((r) => ({ email: r.email, name: r.name })),
-				)
+				cc.map((r) => ({ email: r.email, name: r.name })),
+			)
 			: null;
 		const bccJson = bcc?.length
 			? JSON.stringify(
-					bcc.map((r) => ({ email: r.email, name: r.name })),
-				)
+				bcc.map((r) => ({ email: r.email, name: r.name })),
+			)
 			: null;
 
 		// Compute thread ID for the sent message
@@ -445,6 +446,13 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 	const navigate = useNavigate();
 	const navigation = useNavigation();
 	const [searchParams] = useSearchParams();
+	const actionData = useActionData<{ sent?: boolean; error?: string }>();
+
+	useEffect(() => {
+		if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData]);
 
 	const composeMode = initialComposeMode as ComposeMode;
 
@@ -602,20 +610,20 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		const ccJson =
 			ccRecipients.length > 0
 				? JSON.stringify(
-						ccRecipients.map((r) => ({
-							email: r.email,
-							name: r.name,
-						})),
-					)
+					ccRecipients.map((r) => ({
+						email: r.email,
+						name: r.name,
+					})),
+				)
 				: "";
 		const bccJson =
 			bccRecipients.length > 0
 				? JSON.stringify(
-						bccRecipients.map((r) => ({
-							email: r.email,
-							name: r.name,
-						})),
-					)
+					bccRecipients.map((r) => ({
+						email: r.email,
+						name: r.name,
+					})),
+				)
 				: "";
 		updateFetcherRef.current.submit(
 			{

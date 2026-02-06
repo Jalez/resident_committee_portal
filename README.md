@@ -268,9 +268,9 @@ Used for the **Mail** tab in the portal, allowing committee members to send and 
   SMTP_HOST=smtp.example.com
   SMTP_PORT=587
   SMTP_SECURE=false
-  SMTP_USER=committee@example.com
+  SMTP_USER=committee@example.com      # Username for logging in (often same as email)
   SMTP_PASS=secure-password
-  COMMITTEE_FROM_EMAIL=committee@example.com
+  COMMITTEE_FROM_EMAIL=committee@example.com  # The address displayed as "From"
   # Optional:
   COMMITTEE_FROM_NAME=Committee Name
   
@@ -288,11 +288,22 @@ If you want to use a Gmail account to send emails:
 2. Go to [App Passwords](https://myaccount.google.com/apppasswords) and create a new app password.
 3. Add these to your `.env` file:
    ```env
+   # Sending (SMTP)
    SMTP_HOST=smtp.gmail.com
    SMTP_PORT=587
    SMTP_SECURE=false
    SMTP_USER=your-email@gmail.com
    SMTP_PASS=your-16-char-app-password
+   
+   # Receiving (IMAP) - Required to view inbox
+   IMAP_HOST=imap.gmail.com
+   IMAP_PORT=993
+   IMAP_SECURE=true
+   IMAP_USER=your-email@gmail.com
+   IMAP_PASS=your-16-char-app-password
+
+   # NOTE: Google displays the password with spaces (e.g., "abcd efgh..."). 
+   # You MUST remove the spaces when pasting it here.
    ```
 
 ---
