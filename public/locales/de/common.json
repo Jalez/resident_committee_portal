@@ -40,7 +40,8 @@
 		"login": "Anmelden",
 		"submissions": "Einreichungen",
 		"sidebar_collapse": "Seitenleiste einklappen",
-		"sidebar_expand": "Seitenleiste erweitern"
+		"sidebar_expand": "Seitenleiste erweitern",
+		"admin": "Admin"
 	},
 	"receipts": {
 		"select_receipts": "Quittungen auswählen",
@@ -99,7 +100,19 @@
 		"delete_success": "Erfolgreich gelöscht",
 		"delete_error": "Löschen fehlgeschlagen",
 		"select": "Auswählen",
-		"delete_selected": "Ausgewählte löschen"
+		"delete_selected": "Ausgewählte löschen",
+		"delete_draft": "Entwurf löschen",
+		"reply": "Antworten",
+		"reply_all": "Allen antworten",
+		"forward": "Weiterleiten",
+		"forwarded_message": "Weitergeleitete Nachricht",
+		"messages_in_thread": "{{count}} Nachrichten",
+		"compose_new": "Neue Nachricht",
+		"compose_reply": "Antworten",
+		"compose_reply_all": "Allen antworten",
+		"compose_forward": "Weiterleiten",
+		"quoted_reply_header": "Am {{date}} schrieb {{name}} <{{email}}>:",
+		"back_to_inbox": "Zurück zum Posteingang"
 	},
 	"home": {
 		"header": "Mitmachen",
@@ -144,6 +157,38 @@
 		"picture_too_large": "Datei ist zu groß. Maximale Größe ist {{maxSize}}MB.",
 		"picture_too_large_dimensions": "Bildabmessungen sind zu groß. Maximale Größe ist {{maxDimension}}x{{maxDimension}}px.",
 		"save_changes": "Änderungen speichern"
+	},
+	"avatars": {
+		"title": "Avatare",
+		"description": "Profilbilder im Blob-Speicher gespeichert. Löschen zum Aufräumen.",
+		"empty": "Noch keine Avatare hochgeladen.",
+		"delete": "Löschen",
+		"delete_confirm": "Möchten Sie diesen Avatar wirklich löschen?",
+		"delete_success": "Avatar gelöscht",
+		"delete_error": "Löschen fehlgeschlagen"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Quittungen",
+			"avatars": "Avatare",
+			"receipts.title": "Quittungsgalerie",
+			"receipts.description": "Alle Quittungsdateien. Verknüpfte Quittungen sind an einen Erstattungsantrag angehängt und können nicht gelöscht werden.",
+			"receipts.empty": "Keine Quittungen",
+			"receipts.delete_confirm": "Sind Sie sicher, dass Sie diese Quittung löschen möchten?",
+			"receipts.delete_success": "Quittung gelöscht",
+			"receipts.delete_error": "Löschen fehlgeschlagen",
+			"receipts.open_pdf": "PDF öffnen",
+			"receipts.linked": "Verknüpft",
+			"receipts.unlinked": "Nicht verknüpft",
+			"receipts.reimbursement_request": "Erstattungsantrag",
+			"avatars.title": "Avatare",
+			"avatars.description": "Alle im System gespeicherten Benutzer-Avatar-Bilder.",
+			"avatars.empty": "Keine Avatare",
+			"avatars.delete": "Löschen",
+			"avatars.delete_confirm": "Möchten Sie diesen Avatar wirklich löschen?",
+			"avatars.delete_success": "Avatar gelöscht",
+			"avatars.delete_error": "Löschen fehlgeschlagen"
+		}
 	},
 	"settings": {
 		"general": {
@@ -540,7 +585,15 @@
 			"Forms": "Formulare",
 			"Profile": "Profil",
 			"Roles": "Rollen",
-			"Settings": "Einstellungen"
+			"Settings": "Einstellungen",
+			"Storage": "Speicher",
+			"Admin": "Admin"
+		},
+		"admin": {
+			"storage": {
+				"read": "Speicher-Admin anzeigen",
+				"write": "Speicher-Admin verwalten"
+			}
 		}
 	}
 }

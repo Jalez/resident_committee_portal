@@ -44,7 +44,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import { getReceiptsByYear } from "~/lib/receipts";
+import { getReceiptsForPurchaseEdit } from "~/lib/receipts";
 import {
 	getMissingReceiptsError,
 	MISSING_RECEIPTS_ERROR,
@@ -88,8 +88,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
 	}
 
-	// Get receipts for picker
-	const receiptsByYear = await getReceiptsByYear();
+	// Get receipts for picker (unconnected + linked to this purchase)
+	const receiptsByYear = await getReceiptsForPurchaseEdit(params.purchaseId);
 	const currentYear = new Date().getFullYear();
 
 	// Get inventory items available for picker (active, non-legacy, with available quantity)

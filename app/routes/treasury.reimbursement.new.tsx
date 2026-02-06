@@ -45,7 +45,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import { getReceiptsByYear } from "~/lib/receipts";
+import { getUnconnectedReceiptsByYear } from "~/lib/receipts";
 import {
 	getMissingReceiptsError,
 	MISSING_RECEIPTS_ERROR,
@@ -67,8 +67,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "treasury:reimbursements:write", getDatabase);
 	const db = getDatabase();
 
-	// Get receipts for picker
-	const receiptsByYear = await getReceiptsByYear();
+	// Get receipts for picker (only unconnected)
+	const receiptsByYear = await getUnconnectedReceiptsByYear();
 	const currentYear = new Date().getFullYear();
 
 	// Get inventory items available for picker (active, non-legacy, with available quantity)

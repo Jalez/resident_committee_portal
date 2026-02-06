@@ -40,7 +40,8 @@
 		"login": "Iniciar sesión",
 		"submissions": "Envíos",
 		"sidebar_collapse": "Contraer barra lateral",
-		"sidebar_expand": "Expandir barra lateral"
+		"sidebar_expand": "Expandir barra lateral",
+		"admin": "Admin"
 	},
 	"receipts": {
 		"select_receipts": "Seleccionar recibos",
@@ -99,7 +100,19 @@
 		"delete_success": "Eliminado correctamente",
 		"delete_error": "Error al eliminar",
 		"select": "Seleccionar",
-		"delete_selected": "Eliminar seleccionados"
+		"delete_selected": "Eliminar seleccionados",
+		"delete_draft": "Eliminar borrador",
+		"reply": "Responder",
+		"reply_all": "Responder a todos",
+		"forward": "Reenviar",
+		"forwarded_message": "Mensaje reenviado",
+		"messages_in_thread": "{{count}} mensajes",
+		"compose_new": "Nuevo mensaje",
+		"compose_reply": "Responder",
+		"compose_reply_all": "Responder a todos",
+		"compose_forward": "Reenviar",
+		"quoted_reply_header": "El {{date}}, {{name}} <{{email}}> escribió:",
+		"back_to_inbox": "Volver a la bandeja de entrada"
 	},
 	"home": {
 		"header": "Involúcrate",
@@ -173,6 +186,38 @@
 		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión",
 		"picture_too_large": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
 		"picture_too_large_dimensions": "Las dimensiones de la imagen son demasiado grandes. El tamaño máximo es {{maxDimension}}x{{maxDimension}}px."
+	},
+	"avatars": {
+		"title": "Avatares",
+		"description": "Imágenes de perfil almacenadas en blob storage. Eliminar para limpiar.",
+		"empty": "Aún no se han subido avatares.",
+		"delete": "Eliminar",
+		"delete_confirm": "¿Estás seguro de que quieres eliminar este avatar?",
+		"delete_success": "Avatar eliminado",
+		"delete_error": "Error al eliminar"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Recibos",
+			"avatars": "Avatares",
+			"receipts.title": "Galería de Recibos",
+			"receipts.description": "Todos los archivos de recibos. Los recibos vinculados están adjuntos a una solicitud de reembolso y no se pueden eliminar.",
+			"receipts.empty": "Sin recibos",
+			"receipts.delete_confirm": "¿Estás seguro de que quieres eliminar este recibo?",
+			"receipts.delete_success": "Recibo eliminado",
+			"receipts.delete_error": "Error al eliminar",
+			"receipts.open_pdf": "Abrir PDF",
+			"receipts.linked": "Vinculado",
+			"receipts.unlinked": "No vinculado",
+			"receipts.reimbursement_request": "Solicitud de Reembolso",
+			"avatars.title": "Avatares",
+			"avatars.description": "Todas las imágenes de avatar de usuario almacenadas en el sistema.",
+			"avatars.empty": "Sin avatares",
+			"avatars.delete": "Eliminar",
+			"avatars.delete_confirm": "¿Estás seguro de que quieres eliminar este avatar?",
+			"avatars.delete_success": "Avatar eliminado",
+			"avatars.delete_error": "Error al eliminar"
+		}
 	},
 	"messages": {
 		"title": "Mensajes",
@@ -524,7 +569,15 @@
 			"Forms": "Formularios",
 			"Profile": "Perfil",
 			"Roles": "Roles",
-			"Settings": "Configuración"
+			"Settings": "Configuración",
+			"Storage": "Almacenamiento",
+			"Admin": "Admin"
+		},
+		"admin": {
+			"storage": {
+				"read": "Ver administración de almacenamiento",
+				"write": "Gestionar administración de almacenamiento"
+			}
 		}
 	}
 }

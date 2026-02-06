@@ -442,15 +442,6 @@ export function Navigation({ variant }: NavigationProps) {
 							showLabels,
 							onNavigate,
 						)}
-					{hasPermission("avatars:read") &&
-						renderMenuLink(
-							"/avatars",
-							"account_circle",
-							t("nav.avatars"),
-							pathname === "/avatars",
-							showLabels,
-							onNavigate,
-						)}
 				</div>
 			)}
 

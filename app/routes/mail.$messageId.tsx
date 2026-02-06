@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher } from "react-router";
-import { Trash2 } from "lucide-react";
+import { Link, redirect, useFetcher } from "react-router";
+import { Forward, Reply, ReplyAll, Trash2 } from "lucide-react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -37,6 +37,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const db = getDatabase();
 	const message = await db.getCommitteeMailMessageById(messageId);
 	if (!message) throw new Response("Not Found", { status: 404 });
+
+	// Redirect to thread view if message has a thread
+	if (message.threadId) {
+		return redirect(
+			`/mail/thread/${encodeURIComponent(message.threadId)}`,
+		);
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		message,
@@ -48,7 +56,9 @@ function formatRecipientsJson(json: string | null): string {
 	try {
 		const arr = JSON.parse(json) as { email: string; name?: string }[];
 		if (!Array.isArray(arr)) return "";
-		return arr.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email)).join(", ");
+		return arr
+			.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email))
+			.join(", ");
 	} catch {
 		return "";
 	}
@@ -71,7 +81,30 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex items-center justify-end gap-2">
+			{/* Action buttons */}
+			<div className="flex items-center justify-between gap-2">
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" asChild>
+						<Link to={`/mail/compose?replyTo=${message.id}`}>
+							<Reply className="mr-1 size-4" />
+							{t("mail.reply", { defaultValue: "Reply" })}
+						</Link>
+					</Button>
+					<Button variant="outline" size="sm" asChild>
+						<Link to={`/mail/compose?replyAllTo=${message.id}`}>
+							<ReplyAll className="mr-1 size-4" />
+							{t("mail.reply_all", {
+								defaultValue: "Reply All",
+							})}
+						</Link>
+					</Button>
+					<Button variant="outline" size="sm" asChild>
+						<Link to={`/mail/compose?forward=${message.id}`}>
+							<Forward className="mr-1 size-4" />
+							{t("mail.forward", { defaultValue: "Forward" })}
+						</Link>
+					</Button>
+				</div>
 				<Button
 					variant="ghost"
 					size="sm"
@@ -87,13 +120,17 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>{t("mail.delete")}</AlertDialogTitle>
+						<AlertDialogTitle>
+							{t("mail.delete")}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{t("mail.delete_confirm")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+						<AlertDialogCancel>
+							{t("common.actions.cancel")}
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleConfirmDelete}
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -105,13 +142,15 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 			</AlertDialog>
 
 			{/* Header */}
-			<div className="space-y-2 border-b border-gray-200 dark:border-gray-700 pb-4">
+			<div className="space-y-2 border-b border-gray-200 pb-4 dark:border-gray-700">
 				<h1 className="text-xl font-semibold text-gray-900 dark:text-white">
 					{message.subject || "(No subject)"}
 				</h1>
 				<div className="grid gap-1 text-sm text-gray-600 dark:text-gray-400">
 					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">{t("mail.from")}:</span>
+						<span className="shrink-0 font-medium">
+							{t("mail.from")}:
+						</span>
 						<span>
 							{message.fromName
 								? `${message.fromName} <${message.fromAddress}>`
@@ -119,28 +158,41 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 						</span>
 					</div>
 					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">{t("mail.to")}:</span>
-						<span>{formatRecipientsJson(message.toJson)}</span>
+						<span className="shrink-0 font-medium">
+							{t("mail.to")}:
+						</span>
+						<span>
+							{formatRecipientsJson(message.toJson)}
+						</span>
 					</div>
 					{message.ccJson && (
 						<div className="flex gap-2">
-							<span className="shrink-0 font-medium">{t("mail.cc")}:</span>
-							<span>{formatRecipientsJson(message.ccJson)}</span>
+							<span className="shrink-0 font-medium">
+								{t("mail.cc")}:
+							</span>
+							<span>
+								{formatRecipientsJson(message.ccJson)}
+							</span>
 						</div>
 					)}
 					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">{t("mail.date")}:</span>
+						<span className="shrink-0 font-medium">
+							{t("mail.date")}:
+						</span>
 						<span>
-							{new Date(message.date).toLocaleString(undefined, {
-								dateStyle: "medium",
-								timeStyle: "short",
-							})}
+							{new Date(message.date).toLocaleString(
+								undefined,
+								{
+									dateStyle: "medium",
+									timeStyle: "short",
+								},
+							)}
 						</span>
 					</div>
 				</div>
 			</div>
 
-			{/* Body - email HTML from sent/inbox storage */}
+			{/* Body */}
 			<div
 				className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB (sent by us or fetched via IMAP)

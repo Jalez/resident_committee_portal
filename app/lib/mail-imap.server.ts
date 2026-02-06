@@ -6,6 +6,7 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import type { DatabaseAdapter } from "~/db/adapters/types";
+import { computeThreadId } from "./mail-threading.server";
 
 const config = {
 	host: process.env.IMAP_HOST || "",
@@ -71,11 +72,18 @@ export async function fetchInboxMessages(
 				}
 				let bodyHtml = "";
 				let bodyText: string | null = null;
+				let inReplyTo: string | null = null;
+				let references: string[] | null = null;
 				if (msg.source) {
 					try {
 						const parsed = await simpleParser(msg.source);
 						bodyHtml = parsed.html || "";
 						bodyText = parsed.text || null;
+						inReplyTo = parsed.inReplyTo || null;
+						const refs = parsed.references;
+						if (refs) {
+							references = Array.isArray(refs) ? refs : [refs];
+						}
 					} catch {
 						bodyHtml = String(msg.source).slice(0, 50_000);
 					}
@@ -95,6 +103,7 @@ export async function fetchInboxMessages(
 					: null;
 				const subject = envelope?.subject?.trim() || "(No subject)";
 				const date = envelope?.date || new Date();
+				const threadId = computeThreadId(messageId, inReplyTo, references);
 				await db.insertCommitteeMailMessage({
 					direction: "inbox",
 					fromAddress,
@@ -107,6 +116,9 @@ export async function fetchInboxMessages(
 					bodyText,
 					date,
 					messageId,
+					inReplyTo,
+					referencesJson: references ? JSON.stringify(references) : null,
+					threadId,
 				});
 				stored++;
 			}

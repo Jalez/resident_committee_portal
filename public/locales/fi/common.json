@@ -129,7 +129,8 @@
 		"submissions": "Yhteydenotot",
 		"committee_mail": "Sähköposti",
 		"sidebar_collapse": "Kutista valikko",
-		"sidebar_expand": "Laajenna valikko"
+		"sidebar_expand": "Laajenna valikko",
+		"admin": "Ylläpito"
 	},
 	"receipts": {
 		"select_receipts": "Valitse kuitit",
@@ -248,6 +249,14 @@
 			"success": {
 				"receipt_created": "Kuitti luotu",
 				"receipt_updated": "Kuitti päivitetty"
+			},
+			"gallery": {
+				"title": "Kuittigalleria",
+				"description": "Kaikki kuittitiedostot. Linkitetyt kuitit on liitetty kulukorvaushakemukseen eikä niitä voi poistaa.",
+				"empty": "Ei kuitteja",
+				"linked": "Linkitetty",
+				"unlinked": "Ei linkitetty",
+				"link": "Galleria"
 			}
 		},
 		"actions": {
@@ -772,6 +781,29 @@
 		"delete_success": "Avatar poistettu",
 		"delete_error": "Poisto epäonnistui"
 	},
+	"admin": {
+		"storage": {
+			"receipts": "Kuitit",
+			"avatars": "Avatarit",
+			"receipts.title": "Kuittivalikoima",
+			"receipts.description": "Kaikki kuittitiedostot. Linkitetyt kuitit on liitetty korvauspyyntöön, eikä niitä voi poistaa.",
+			"receipts.empty": "Ei kuitteja",
+			"receipts.delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
+			"receipts.delete_success": "Kuitti poistettu",
+			"receipts.delete_error": "Poisto epäonnistui",
+			"receipts.open_pdf": "Avaa PDF",
+			"receipts.linked": "Linkitetty",
+			"receipts.unlinked": "Ei linkitetty",
+			"receipts.reimbursement_request": "Korvauspyyntö",
+			"avatars.title": "Avatarit",
+			"avatars.description": "Kaikki järjestelmään tallennetut käyttäjien avatar-kuvat.",
+			"avatars.empty": "Ei avatar-kuvia",
+			"avatars.delete": "Poista",
+			"avatars.delete_confirm": "Haluatko varmasti poistaa tämän avatarin?",
+			"avatars.delete_success": "Avatar poistettu",
+			"avatars.delete_error": "Poistaminen epäonnistui"
+		}
+	},
 	"local_ai": {
 		"model_selector": {
 			"label": "Paikallinen malli",
@@ -955,12 +987,24 @@
 		"date": "Päivä",
 		"back": "Takaisin",
 		"delete": "Poista",
+		"delete_draft": "Poista luonnos",
 		"delete_confirm": "Haluatko varmasti poistaa tämän viestin?",
 		"delete_draft_confirm": "Haluatko varmasti poistaa tämän luonnoksen?",
 		"delete_success": "Poistettu onnistuneesti",
 		"delete_error": "Poisto epäonnistui",
 		"select": "Valitse",
-		"delete_selected": "Poista valitut"
+		"delete_selected": "Poista valitut",
+		"reply": "Vastaa",
+		"reply_all": "Vastaa kaikille",
+		"forward": "Välitä",
+		"forwarded_message": "Välitetty viesti",
+		"messages_in_thread": "{{count}} viestiä",
+		"compose_new": "Uusi viesti",
+		"compose_reply": "Vastaus",
+		"compose_reply_all": "Vastaus kaikille",
+		"compose_forward": "Välitys",
+		"quoted_reply_header": "{{date}}, {{name}} <{{email}}> kirjoitti:",
+		"back_to_inbox": "Takaisin saapuneisiin"
 	},
 	"contact": {
 		"title": "Ota yhteyttä",
@@ -1440,6 +1484,12 @@
 			"read": "Näytä avatar-kuvalista",
 			"delete": "Poista avatar-kuvia"
 		},
+		"admin": {
+			"storage": {
+				"read": "Näytä tallennustilan ylläpito",
+				"write": "Hallinnoi tallennustilan ylläpitoa"
+			}
+		},
 		"roles": {
 			"read": "Näytä roolit ja oikeudet",
 			"write": "Luo ja muokkaa rooleja",
@@ -1474,7 +1524,8 @@
 			"Profile": "Profiili",
 			"Roles": "Roolit",
 			"Settings": "Asetukset",
-			"Storage": "Tallennus"
+			"Storage": "Tallennus",
+			"Admin": "Ylläpito"
 		}
 	}
 }

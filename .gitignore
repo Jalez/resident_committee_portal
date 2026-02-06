@@ -8,7 +8,9 @@
 
 service_account_key.json
 .vercel
-
+.kiro
+.cursor
+.vscode
 
 data/
 

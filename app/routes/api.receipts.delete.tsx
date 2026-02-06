@@ -12,7 +12,7 @@ function isSafePathname(pathname: string): boolean {
 	return true;
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request: _request }: LoaderFunctionArgs) {
 	// This route only handles POST/DELETE requests via action
 	return new Response(JSON.stringify({ error: "Method not allowed" }), {
 		status: 405,
@@ -63,15 +63,28 @@ export async function action({ request }: ActionFunctionArgs) {
 		});
 	}
 
+	// Reject delete if receipt is linked to a reimbursement request
+	const db = getDatabase();
+	const receipts = await db.getReceipts();
+	const receipt = receipts.find((r) => r.pathname === pathname);
+	if (receipt?.purchaseId) {
+		return new Response(
+			JSON.stringify({
+				error: "Cannot delete receipt linked to a reimbursement request",
+			}),
+			{
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
+
 	try {
 		// Delete from storage
 		const storage = getReceiptStorage();
 		await storage.deleteFile(pathname);
-		
-		// Delete from database if record exists
-		const db = getDatabase();
-		const receipts = await db.getReceipts();
-		const receipt = receipts.find((r) => r.pathname === pathname);
+
+		// Delete from database if record exists (receipt from above, no purchaseId)
 		if (receipt) {
 			await db.deleteReceipt(receipt.id);
 		}

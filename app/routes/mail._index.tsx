@@ -24,12 +24,17 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "committee:email", getDatabase);
 	const url = new URL(request.url);
-	const direction = (url.searchParams.get("direction") || "inbox") as "inbox" | "sent";
+	const direction = (url.searchParams.get("direction") || "inbox") as
+		| "inbox"
+		| "sent";
 	const db = getDatabase();
-	const messages = await db.getCommitteeMailMessages(direction, 50, 0);
+
+	// Use threaded view
+	const threads = await db.getCommitteeMailThreads(direction, 50, 0);
+
 	return {
 		siteConfig: SITE_CONFIG,
-		messages,
+		threads,
 		direction,
 	};
 }
@@ -72,7 +77,10 @@ function formatDate(date: Date | string): string {
 		d.getMonth() === now.getMonth() &&
 		d.getFullYear() === now.getFullYear();
 	if (sameDay) {
-		return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+		return d.toLocaleTimeString(undefined, {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	}
 	return d.toLocaleDateString(undefined, {
 		month: "short",
@@ -82,7 +90,7 @@ function formatDate(date: Date | string): string {
 }
 
 export default function MailIndex({ loaderData }: Route.ComponentProps) {
-	const { messages, direction } = loaderData;
+	const { threads, direction } = loaderData;
 	const { t } = useTranslation();
 	const [searchParams] = useSearchParams();
 	const actionData = useActionData<typeof action>();
@@ -95,7 +103,10 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 			formData.set("_action", "deleteMessage");
 			formData.set("messageId", messageId);
 			formData.set("direction", currentDirection);
-			deleteFetcher.submit(formData, { action: "/mail", method: "post" });
+			deleteFetcher.submit(formData, {
+				action: "/mail",
+				method: "post",
+			});
 		},
 		[currentDirection, deleteFetcher],
 	);
@@ -111,22 +122,32 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 
 	useEffect(() => {
 		if (deleteFetcher.data && "deleted" in deleteFetcher.data) {
-			const data = deleteFetcher.data as { deleted?: boolean; error?: string };
+			const data = deleteFetcher.data as {
+				deleted?: boolean;
+				error?: string;
+			};
 			if (data.deleted) toast.success(t("mail.delete_success"));
-			else if (data.error) toast.error(data.error || t("mail.delete_error"));
+			else if (data.error)
+				toast.error(data.error || t("mail.delete_error"));
 		}
 	}, [deleteFetcher.data, t]);
 
 	return (
 		<div className="flex flex-col">
 			{/* Toolbar: Refresh for inbox */}
-			<div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
+			<div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
 				<h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-					{currentDirection === "sent" ? t("mail.sent") : t("mail.inbox")}
+					{currentDirection === "sent"
+						? t("mail.sent")
+						: t("mail.inbox")}
 				</h2>
 				{currentDirection === "inbox" && (
 					<Form method="post">
-						<input type="hidden" name="_action" value="refreshInbox" />
+						<input
+							type="hidden"
+							name="_action"
+							value="refreshInbox"
+						/>
 						<button
 							type="submit"
 							className="text-sm text-primary hover:underline"
@@ -137,30 +158,44 @@ export default function MailIndex({ loaderData }: Route.ComponentProps) {
 				)}
 			</div>
 
-			{/* Message list */}
+			{/* Thread list */}
 			<div className="divide-y divide-gray-200 dark:divide-gray-700">
-				{messages.length === 0 ? (
+				{threads.length === 0 ? (
 					<div className="py-12 text-center text-gray-500 dark:text-gray-400">
 						<Mail className="mx-auto size-12 opacity-50" />
 						<p className="mt-2">{t("mail.no_messages")}</p>
 					</div>
 				) : (
-					messages.map((msg) => (
-						<MailItem
-							key={msg.id}
-							type="message"
-							id={msg.id}
-							primaryText={
-								direction === "sent"
-									? formatRecipients(msg.toJson, "sent")
-									: msg.fromName || msg.fromAddress || ""
-							}
-							secondaryText={msg.subject || t("mail.no_subject")}
-							date={formatDate(msg.date)}
-							href={`/mail/${msg.id}`}
-							onDelete={handleDeleteMessage}
-						/>
-					))
+					threads.map((thread) => {
+						const msg = thread.latestMessage;
+						const threadHref = msg.threadId
+							? `/mail/thread/${encodeURIComponent(msg.threadId)}`
+							: `/mail/${msg.id}`;
+						return (
+							<MailItem
+								key={thread.threadId}
+								type="message"
+								id={msg.id}
+								primaryText={
+									direction === "sent"
+										? formatRecipients(
+												msg.toJson,
+												"sent",
+											)
+										: msg.fromName ||
+											msg.fromAddress ||
+											""
+								}
+								secondaryText={
+									msg.subject || t("mail.no_subject")
+								}
+								date={formatDate(msg.date)}
+								href={threadHref}
+								onDelete={handleDeleteMessage}
+								threadCount={thread.messageCount}
+							/>
+						);
+					})
 				)}
 			</div>
 		</div>

@@ -1065,6 +1065,73 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
+	async getCommitteeMailMessagesByThreadId(
+		threadId: string,
+	): Promise<CommitteeMailMessage[]> {
+		return this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(eq(committeeMailMessages.threadId, threadId))
+			.orderBy(asc(committeeMailMessages.date));
+	}
+
+	async getCommitteeMailThreads(
+		direction?: "sent" | "inbox",
+		limit = 50,
+		offset = 0,
+	): Promise<
+		{
+			threadId: string;
+			latestMessage: CommitteeMailMessage;
+			messageCount: number;
+		}[]
+	> {
+		const conditions = direction
+			? [eq(committeeMailMessages.direction, direction)]
+			: [];
+		const allMessages = await this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(conditions.length > 0 ? conditions[0] : undefined)
+			.orderBy(desc(committeeMailMessages.date));
+
+		const threadMap = new Map<
+			string,
+			{ latestMessage: CommitteeMailMessage; messageCount: number }
+		>();
+		for (const msg of allMessages) {
+			const tid = msg.threadId || msg.id;
+			const existing = threadMap.get(tid);
+			if (!existing) {
+				threadMap.set(tid, { latestMessage: msg, messageCount: 1 });
+			} else {
+				existing.messageCount++;
+			}
+		}
+
+		const threads = Array.from(threadMap.entries())
+			.map(([threadId, data]) => ({ threadId, ...data }))
+			.sort(
+				(a, b) =>
+					new Date(b.latestMessage.date).getTime() -
+					new Date(a.latestMessage.date).getTime(),
+			)
+			.slice(offset, offset + limit);
+
+		return threads;
+	}
+
+	async getCommitteeMailMessageByMessageId(
+		messageId: string,
+	): Promise<CommitteeMailMessage | null> {
+		const result = await this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(eq(committeeMailMessages.messageId, messageId))
+			.limit(1);
+		return result[0] || null;
+	}
+
 	// ==================== Mail Drafts Methods ====================
 	async insertMailDraft(draft: NewMailDraft): Promise<MailDraft> {
 		const result = await this.db
@@ -1498,6 +1565,14 @@ export class NeonAdapter implements DatabaseAdapter {
 			.select()
 			.from(receipts)
 			.where(eq(receipts.purchaseId, purchaseId))
+			.orderBy(desc(receipts.createdAt));
+	}
+
+	async getReceiptsUnlinked(): Promise<Receipt[]> {
+		return this.db
+			.select()
+			.from(receipts)
+			.where(isNull(receipts.purchaseId))
 			.orderBy(desc(receipts.createdAt));
 	}
 

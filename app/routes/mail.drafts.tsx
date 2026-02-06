@@ -100,7 +100,7 @@ export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 								secondaryText={subject}
 								date={formatDraftDate(draft.updatedAt)}
 								preview={preview || undefined}
-								href={`/mail/drafts?compose=${draft.id}`}
+								href={`/mail/compose?draftId=${draft.id}`}
 								onDelete={handleDeleteDraft}
 							/>
 						);

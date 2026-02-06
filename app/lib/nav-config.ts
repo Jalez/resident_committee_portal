@@ -114,7 +114,18 @@ export const NAV_ITEMS: NavItem[] = [
 			{ path: "/mail", icon: "inbox", i18nKey: "mail.inbox" },
 			{ path: "/mail?direction=sent", icon: "send", i18nKey: "mail.sent" },
 			{ path: "/mail/drafts", icon: "draft", i18nKey: "mail.drafts" },
-			{ path: "/mail?compose=new", icon: "edit_note", i18nKey: "mail.compose" },
+			{ path: "/mail/compose", icon: "edit_note", i18nKey: "mail.compose" },
+		],
+	},
+	// Admin - requires admin:storage:read permission
+	{
+		path: "/admin",
+		icon: "admin_panel_settings",
+		i18nKey: "nav.admin",
+		permission: "admin:storage:read",
+		children: [
+			{ path: "/admin/storage/receipts", icon: "receipt_long", i18nKey: "admin.storage.receipts", permission: "admin:storage:read" },
+			{ path: "/admin/storage/avatars", icon: "account_circle", i18nKey: "admin.storage.avatars", permission: "admin:storage:read" },
 		],
 	},
 ];

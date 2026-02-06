@@ -233,6 +233,26 @@ export interface DatabaseAdapter {
 		messageId: string,
 	): Promise<boolean>;
 	deleteCommitteeMailMessage(id: string): Promise<boolean>;
+	/** Get all messages in a thread, sorted chronologically */
+	getCommitteeMailMessagesByThreadId(
+		threadId: string,
+	): Promise<CommitteeMailMessage[]>;
+	/** Get threaded message list: latest message per thread with count */
+	getCommitteeMailThreads(
+		direction?: "sent" | "inbox",
+		limit?: number,
+		offset?: number,
+	): Promise<
+		{
+			threadId: string;
+			latestMessage: CommitteeMailMessage;
+			messageCount: number;
+		}[]
+	>;
+	/** Look up a message by its email message-ID header (not DB UUID) */
+	getCommitteeMailMessageByMessageId(
+		messageId: string,
+	): Promise<CommitteeMailMessage | null>;
 
 	// ==================== Mail Drafts Methods ====================
 	insertMailDraft(draft: NewMailDraft): Promise<MailDraft>;
@@ -324,6 +344,8 @@ export interface DatabaseAdapter {
 	getReceiptById(id: string): Promise<Receipt | null>;
 	/** Get all receipts for a purchase (reimbursement request) */
 	getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]>;
+	/** Get receipts not linked to any purchase */
+	getReceiptsUnlinked(): Promise<Receipt[]>;
 	/** Create a new receipt */
 	createReceipt(receipt: NewReceipt): Promise<Receipt>;
 	/** Update a receipt */

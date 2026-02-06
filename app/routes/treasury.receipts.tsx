@@ -233,6 +233,13 @@ export default function TreasuryReceipts({
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
 			<SearchMenu fields={searchFields} />
+			<Link
+				to="/admin/storage/receipts"
+				className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+			>
+				<span className="material-symbols-outlined text-base">imagesmode</span>
+				{t("treasury.receipts.gallery.link", { defaultValue: "Gallery" })}
+			</Link>
 			{canWrite && (
 				<AddItemButton
 					to="/treasury/receipts/new"

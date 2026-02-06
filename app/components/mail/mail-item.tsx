@@ -30,6 +30,8 @@ export interface MailItemProps {
 	selectable?: boolean;
 	selected?: boolean;
 	onSelectChange?: (selected: boolean) => void;
+	/** Number of messages in the thread (shown as badge when > 1) */
+	threadCount?: number;
 }
 
 export function MailItem({
@@ -44,6 +46,7 @@ export function MailItem({
 	selectable = false,
 	selected = false,
 	onSelectChange,
+	threadCount,
 }: MailItemProps) {
 	const { t } = useTranslation();
 	const [deleteOpen, setDeleteOpen] = useState(false);
@@ -94,6 +97,11 @@ export function MailItem({
 					<div className="flex items-center justify-between gap-2">
 						<span className="truncate text-sm font-medium text-gray-900 dark:text-white">
 							{primaryText}
+							{threadCount != null && threadCount > 1 && (
+								<span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 px-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+									{threadCount}
+								</span>
+							)}
 						</span>
 						<div className="flex items-center gap-1 shrink-0">
 							<span className="text-xs text-gray-500 dark:text-gray-400">

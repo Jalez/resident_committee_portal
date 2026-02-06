@@ -1,9 +1,50 @@
 import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
+import { getDatabase } from "~/db";
 import { FilesystemReceiptStorage } from "./adapters/filesystem.server";
 import { VercelBlobReceiptStorage } from "./adapters/vercel-blob.server";
 import type { ReceiptStorageAdapter, ReceiptsByYear } from "./types";
 
 export type ReceiptStorageProvider = "vercel-blob" | "filesystem";
+
+function receiptToFile(receipt: { pathname: string; name: string | null; url: string; createdAt: Date }) {
+	const filename = receipt.pathname.split("/").pop() || "receipt";
+	return {
+		id: receipt.pathname,
+		name: receipt.name || filename,
+		url: receipt.url,
+		createdTime: new Date(receipt.createdAt).toISOString(),
+	};
+}
+
+function groupReceiptsByYear(
+	receipts: Array<{ pathname: string; name: string | null; url: string; createdAt: Date }>,
+): ReceiptsByYear[] {
+	const byYear = new Map<string, ReceiptsByYear>();
+	for (const r of receipts) {
+		const match = r.pathname.match(/receipts\/(\d{4})/);
+		const year = match ? match[1] : new Date(r.createdAt).getFullYear().toString();
+		const entry = byYear.get(year) || {
+			year,
+			files: [],
+			folderUrl: "#",
+			folderId: "",
+		};
+		entry.files.push(receiptToFile(r));
+		byYear.set(year, entry);
+	}
+	const currentYear = new Date().getFullYear().toString();
+	if (!byYear.has(currentYear)) {
+		byYear.set(currentYear, {
+			year: currentYear,
+			files: [],
+			folderUrl: "#",
+			folderId: "",
+		});
+	}
+	return Array.from(byYear.values()).sort(
+		(a, b) => parseInt(b.year, 10) - parseInt(a.year, 10),
+	);
+}
 
 interface ReceiptStorageConfig {
 	provider: ReceiptStorageProvider;
@@ -43,6 +84,29 @@ export function resetReceiptStorage(): void {
 
 export async function getReceiptsByYear(): Promise<ReceiptsByYear[]> {
 	return getReceiptStorage().listReceiptsByYear();
+}
+
+export async function getUnconnectedReceiptsByYear(): Promise<ReceiptsByYear[]> {
+	const db = getDatabase();
+	const unlinked = await db.getReceiptsUnlinked();
+	return groupReceiptsByYear(unlinked);
+}
+
+export async function getReceiptsForPurchaseEdit(
+	purchaseId: string,
+): Promise<ReceiptsByYear[]> {
+	const db = getDatabase();
+	const unlinked = await db.getReceiptsUnlinked();
+	const forPurchase = await db.getReceiptsByPurchaseId(purchaseId);
+	const merged = [...unlinked, ...forPurchase];
+	// Dedupe by pathname (in case of edge case)
+	const seen = new Set<string>();
+	const unique = merged.filter((r) => {
+		if (seen.has(r.pathname)) return false;
+		seen.add(r.pathname);
+		return true;
+	});
+	return groupReceiptsByYear(unique);
 }
 
 export async function getReceiptContentBase64(

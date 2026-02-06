@@ -66,7 +66,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import { getReceiptsByYear } from "~/lib/receipts";
+import { getUnconnectedReceiptsByYear } from "~/lib/receipts";
 import {
 	getMissingReceiptsError,
 	MISSING_RECEIPTS_ERROR,
@@ -145,8 +145,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		),
 	].sort();
 
-	// Get receipts for picker (for new reimbursements)
-	const receiptsByYear = await getReceiptsByYear();
+	// Get receipts for picker (only unconnected)
+	const receiptsByYear = await getUnconnectedReceiptsByYear();
 
 	// Get purchases without linked transactions + include current purchase if linked
 	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
@@ -490,6 +490,29 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 		const purchase = await db.createPurchase(newPurchase);
 		newPurchaseId = purchase.id;
+
+		// Create receipt records for linked receipts
+		if (receiptLinks.length > 0) {
+			const existingReceipts = await db.getReceipts();
+			for (const receiptLink of receiptLinks) {
+				const pathname = receiptLink.id;
+				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
+				if (existingReceipt) {
+					await db.updateReceipt(existingReceipt.id, {
+						purchaseId: purchase.id,
+					});
+				} else {
+					await db.createReceipt({
+						name: receiptLink.name || null,
+						description: null,
+						url: receiptLink.url,
+						pathname,
+						purchaseId: purchase.id,
+						createdBy: user.userId,
+					});
+				}
+			}
+		}
 
 		// Send email with minutes + receipt attachments in background
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);

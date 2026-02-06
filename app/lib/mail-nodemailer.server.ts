@@ -62,6 +62,7 @@ export interface CommitteeMailRecipient {
 export interface CommitteeMailResult {
 	success: boolean;
 	error?: string;
+	messageId?: string;
 }
 
 /**
@@ -74,12 +75,16 @@ export async function sendCommitteeEmail({
 	bcc,
 	subject,
 	html,
+	inReplyTo,
+	references,
 }: {
 	to: CommitteeMailRecipient[];
 	cc?: CommitteeMailRecipient[];
 	bcc?: CommitteeMailRecipient[];
 	subject: string;
 	html: string;
+	inReplyTo?: string;
+	references?: string[];
 }): Promise<CommitteeMailResult> {
 	if (!isCommitteeMailConfigured()) {
 		return {
@@ -97,15 +102,17 @@ export async function sendCommitteeEmail({
 		r.name ? `"${r.name}" <${r.email}>` : r.email;
 
 	try {
-		await transport.sendMail({
+		const info = await transport.sendMail({
 			from,
 			to: to.map(formatAddress),
 			cc: cc?.length ? cc.map(formatAddress) : undefined,
 			bcc: bcc?.length ? bcc.map(formatAddress) : undefined,
 			subject,
 			html,
+			...(inReplyTo && { inReplyTo }),
+			...(references?.length && { references: references.join(" ") }),
 		});
-		return { success: true };
+		return { success: true, messageId: info.messageId };
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "Unknown error";
 		return { success: false, error: message };

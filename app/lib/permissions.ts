@@ -369,6 +369,16 @@ export const PERMISSIONS = {
 		category: "Profile",
 	},
 
+	// Admin - Storage Management
+	"admin:storage:read": {
+		translationKey: "permissions.admin.storage.read",
+		category: "Admin",
+	},
+	"admin:storage:write": {
+		translationKey: "permissions.admin.storage.write",
+		category: "Admin",
+	},
+
 	// Avatars (blob storage admin)
 	"avatars:read": {
 		translationKey: "permissions.avatars.read",

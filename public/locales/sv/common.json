@@ -41,7 +41,8 @@
 		"submissions": "Inskickat",
 		"committee_mail": "E-post",
 		"sidebar_collapse": "Fäll ihop sidofältet",
-		"sidebar_expand": "Expandera sidofältet"
+		"sidebar_expand": "Expandera sidofältet",
+		"admin": "Admin"
 	},
 	"receipts": {
 		"select_receipts": "Välj kvitton",
@@ -500,6 +501,38 @@
 		"picture_too_large_dimensions": "Bildens dimensioner är för stora. Maximal storlek är {{maxDimension}}x{{maxDimension}}px.",
 		"save_changes": "Spara ändringar"
 	},
+	"avatars": {
+		"title": "Avatarer",
+		"description": "Profilbilder lagrade i blob-lagring. Ta bort för att rensa upp.",
+		"empty": "Inga avatarer uppladdade än.",
+		"delete": "Ta bort",
+		"delete_confirm": "Är du säker på att du vill ta bort denna avatar?",
+		"delete_success": "Avatar borttagen",
+		"delete_error": "Borttagning misslyckades"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Kvitton",
+			"avatars": "Avatarer",
+			"receipts.title": "Kvittogalleri",
+			"receipts.description": "Alla kvittofiler. Länkade kvitton är bifogade till en ersättningsansökan och kan inte tas bort.",
+			"receipts.empty": "Inga kvitton",
+			"receipts.delete_confirm": "Är du säker på att du vill ta bort detta kvitto?",
+			"receipts.delete_success": "Kvitto borttaget",
+			"receipts.delete_error": "Borttagning misslyckades",
+			"receipts.open_pdf": "Öppna PDF",
+			"receipts.linked": "Länkad",
+			"receipts.unlinked": "Inte länkad",
+			"receipts.reimbursement_request": "Ersättningsansökan",
+			"avatars.title": "Avatarer",
+			"avatars.description": "Alla användaravatar-bilder lagrade i systemet.",
+			"avatars.empty": "Inga avatarer",
+			"avatars.delete": "Ta bort",
+			"avatars.delete_confirm": "Är du säker på att du vill ta bort denna avatar?",
+			"avatars.delete_success": "Avatar borttagen",
+			"avatars.delete_error": "Borttagning misslyckades"
+		}
+	},
 	"settings": {
 		"general": {
 			"title": "Allmänt",
@@ -680,7 +713,19 @@
 		"delete_success": "Borttaget",
 		"delete_error": "Borttagning misslyckades",
 		"select": "Välj",
-		"delete_selected": "Ta bort valda"
+		"delete_selected": "Ta bort valda",
+		"delete_draft": "Ta bort utkast",
+		"reply": "Svara",
+		"reply_all": "Svara alla",
+		"forward": "Vidarebefordra",
+		"forwarded_message": "Vidarebefordrat meddelande",
+		"messages_in_thread": "{{count}} meddelanden",
+		"compose_new": "Nytt meddelande",
+		"compose_reply": "Svara",
+		"compose_reply_all": "Svara alla",
+		"compose_forward": "Vidarebefordra",
+		"quoted_reply_header": "Den {{date}} skrev {{name}} <{{email}}>:",
+		"back_to_inbox": "Tillbaka till inkorg"
 	},
 	"contact": {
 		"title": "Kontakt",
@@ -1037,6 +1082,16 @@
 				"own": "Redigera egen profil"
 			}
 		},
+		"avatars": {
+			"read": "Visa avatarlista",
+			"delete": "Ta bort avatarer"
+		},
+		"admin": {
+			"storage": {
+				"read": "Visa lagringsadministration",
+				"write": "Hantera lagringsadministration"
+			}
+		},
 		"roles": {
 			"read": "Visa roller och behörigheter",
 			"write": "Skapa och redigera roller",
@@ -1069,7 +1124,9 @@
 			"Forms": "Formulär",
 			"Profile": "Profil",
 			"Roles": "Roller",
-			"Settings": "Inställningar"
+			"Settings": "Inställningar",
+			"Storage": "Lagring",
+			"Admin": "Admin"
 		}
 	}
 }

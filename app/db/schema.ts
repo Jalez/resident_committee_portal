@@ -429,6 +429,9 @@ export const committeeMailMessages = pgTable("committee_mail_messages", {
 	bodyText: text("body_text"), // optional plain text (inbox)
 	date: timestamp("date").notNull(),
 	messageId: text("message_id"), // for IMAP threading / dedupe
+	inReplyTo: text("in_reply_to"), // In-Reply-To header value
+	referencesJson: text("references_json"), // JSON array of References header message-IDs
+	threadId: text("thread_id"), // thread root message-ID for grouping conversations
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -442,6 +445,8 @@ export type NewCommitteeMailMessage = typeof committeeMailMessages.$inferInsert;
 /**
  * Mail drafts – unsent compose content, saved so refresh does not lose it.
  */
+export type MailDraftType = "new" | "reply" | "replyAll" | "forward";
+
 export const mailDrafts = pgTable("mail_drafts", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	toJson: text("to_json").notNull(), // JSON array of { email, name? }
@@ -449,6 +454,9 @@ export const mailDrafts = pgTable("mail_drafts", {
 	bccJson: text("bcc_json"),
 	subject: text("subject"),
 	body: text("body"),
+	replyToMessageId: text("reply_to_message_id"), // DB id of message being replied to
+	forwardFromMessageId: text("forward_from_message_id"), // DB id of message being forwarded
+	draftType: text("draft_type").$type<MailDraftType>().notNull().default("new"),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 });

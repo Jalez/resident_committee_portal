@@ -75,12 +75,16 @@ export default [
 	route("mail", "routes/mail.tsx", [
 		index("routes/mail._index.tsx"),
 		route("new", "routes/mail.new.redirect.tsx"),
+		route("compose", "routes/mail.compose.tsx"),
 		route("drafts", "routes/mail.drafts.tsx"),
+		route("thread/:threadId", "routes/mail.thread.$threadId.tsx"),
 		route(":messageId", "routes/mail.$messageId.tsx"),
 	]),
 	route("committee/mail", "routes/committee.mail.redirect.tsx"),
-	// Avatars admin (avatars:read)
-	route("avatars", "routes/avatars.tsx"),
+
+	// Admin routes
+	route("admin/storage/receipts", "routes/admin.storage.receipts.tsx"),
+	route("admin/storage/avatars", "routes/admin.storage.avatars.tsx"),
 
 	// Settings routes (admin only)
 	route("settings/general", "routes/settings.general.tsx"),

@@ -233,6 +233,70 @@ This project integrates with Google Calendar, Drive, and Sheets. To enable these
  
 ---
 
+## Email Configuration
+
+The portal uses two separate email systems for different purposes. You can configure one or both depending on your needs.
+
+### 1. System Emails (Resend)
+Used for automated transactional emails, such as **reimbursement request notifications**.
+
+- **Required for**: Reimbursement workflow.
+- **Provider**: [Resend](https://resend.com/)
+- **Configuration**:
+  Add these to your `.env` file:
+  ```env
+  RESEND_API_KEY=re_123456789
+  SENDER_EMAIL=notifications@yourdomain.com
+  RECIPIENT_EMAIL=treasurer@yourdomain.com
+  ```
+
+#### Inbound Replies (Optional)
+Allows the system to process replies to reimbursement emails (e.g., to automatically update status).
+```env
+RESEND_INBOUND_EMAIL=start@your-resend-domain.com
+RESEND_WEBHOOK_SECRET=whsec_...
+```
+
+### 2. Committee Mail (SMTP / IMAP)
+Used for the **Mail** tab in the portal, allowing committee members to send and view emails directly from the dashboard.
+
+- **Required for**: "Mail" route functionality.
+- **Provider**: Any SMTP provider (Gmail, Outlook, custom SMTP).
+- **Configuration**:
+  Add these to your `.env` file:
+  ```env
+  SMTP_HOST=smtp.example.com
+  SMTP_PORT=587
+  SMTP_SECURE=false
+  SMTP_USER=committee@example.com
+  SMTP_PASS=secure-password
+  COMMITTEE_FROM_EMAIL=committee@example.com
+  # Optional:
+  COMMITTEE_FROM_NAME=Committee Name
+  
+  # Optional: For viewing inbox
+  IMAP_HOST=imap.example.com
+  IMAP_PORT=993
+  IMAP_SECURE=true
+  IMAP_USER=committee@example.com
+  IMAP_PASS=secure-password
+  ```
+
+#### Example: Gmail
+If you want to use a Gmail account to send emails:
+1. Enable **2-Step Verification** in your Google Account.
+2. Go to [App Passwords](https://myaccount.google.com/apppasswords) and create a new app password.
+3. Add these to your `.env` file:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-16-char-app-password
+   ```
+
+---
+
 ## Internationalization (i18n)
 
 The portal supports multiple languages. Languages are automatically discovered from the filesystem.

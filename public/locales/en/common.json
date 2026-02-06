@@ -133,7 +133,8 @@
 		"submissions": "Submissions",
 		"committee_mail": "Email",
 		"sidebar_collapse": "Collapse sidebar",
-		"sidebar_expand": "Expand sidebar"
+		"sidebar_expand": "Expand sidebar",
+		"admin": "Admin"
 	},
 	"receipts": {
 		"select_receipts": "Select Receipts",
@@ -245,6 +246,14 @@
 			"success": {
 				"receipt_created": "Receipt created",
 				"receipt_updated": "Receipt updated"
+			},
+			"gallery": {
+				"title": "Receipt Gallery",
+				"description": "All receipt files. Linked receipts are attached to a reimbursement request and cannot be deleted.",
+				"empty": "No receipts",
+				"linked": "Linked",
+				"unlinked": "Unlinked",
+				"link": "Gallery"
 			}
 		},
 		"actions": {
@@ -774,6 +783,29 @@
 		"delete_success": "Avatar deleted",
 		"delete_error": "Delete failed"
 	},
+	"admin": {
+		"storage": {
+			"receipts": "Receipts",
+			"avatars": "Avatars",
+			"receipts.title": "Receipt Gallery",
+			"receipts.description": "All receipt files. Linked receipts are attached to a reimbursement request and cannot be deleted.",
+			"receipts.empty": "No receipts",
+			"receipts.delete_confirm": "Are you sure you want to delete this receipt?",
+			"receipts.delete_success": "Receipt deleted",
+			"receipts.delete_error": "Delete failed",
+			"receipts.open_pdf": "Open PDF",
+			"receipts.linked": "Linked",
+			"receipts.unlinked": "Unlinked",
+			"receipts.reimbursement_request": "Reimbursement Request",
+			"avatars.title": "Avatars",
+			"avatars.description": "All user avatar images stored in the system.",
+			"avatars.empty": "No avatars",
+			"avatars.delete": "Delete",
+			"avatars.delete_confirm": "Are you sure you want to delete this avatar?",
+			"avatars.delete_success": "Avatar deleted",
+			"avatars.delete_error": "Delete failed"
+		}
+	},
 	"local_ai": {
 		"model_selector": {
 			"label": "Local Model",
@@ -957,12 +989,24 @@
 		"date": "Date",
 		"back": "Back",
 		"delete": "Delete",
+		"delete_draft": "Delete draft",
 		"delete_confirm": "Are you sure you want to delete this message?",
 		"delete_draft_confirm": "Are you sure you want to delete this draft?",
 		"delete_success": "Deleted successfully",
 		"delete_error": "Delete failed",
 		"select": "Select",
-		"delete_selected": "Delete selected"
+		"delete_selected": "Delete selected",
+		"reply": "Reply",
+		"reply_all": "Reply All",
+		"forward": "Forward",
+		"forwarded_message": "Forwarded message",
+		"messages_in_thread": "{{count}} messages",
+		"compose_new": "New Message",
+		"compose_reply": "Reply",
+		"compose_reply_all": "Reply All",
+		"compose_forward": "Forward",
+		"quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:",
+		"back_to_inbox": "Back to Inbox"
 	},
 	"contact": {
 		"title": "Contact",
@@ -1442,6 +1486,12 @@
 			"read": "View avatar blob list",
 			"delete": "Delete avatar blobs"
 		},
+		"admin": {
+			"storage": {
+				"read": "View storage admin",
+				"write": "Manage storage admin"
+			}
+		},
 		"roles": {
 			"read": "View roles and permissions",
 			"write": "Create and edit roles",
@@ -1476,7 +1526,8 @@
 			"Profile": "Profile",
 			"Roles": "Roles",
 			"Settings": "Settings",
-			"Storage": "Storage"
+			"Storage": "Storage",
+			"Admin": "Admin"
 		}
 	}
 }

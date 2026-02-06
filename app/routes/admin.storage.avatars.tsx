@@ -8,11 +8,11 @@ import { Thumbnail } from "~/components/ui/thumbnail";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { getDatabase } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import { requireAnyPermission } from "~/lib/auth.server";
 import { getAvatarsPrefix } from "~/lib/avatars/utils";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import type { Route } from "./+types/avatars";
+import type { Route } from "./+types/admin.storage.avatars";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -24,7 +24,11 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "avatars:read", getDatabase);
+	await requireAnyPermission(
+		request,
+		["admin:storage:read", "avatars:read"],
+		getDatabase,
+	);
 	const prefix = getAvatarsPrefix();
 	const { blobs } = await list({ prefix, limit: 500 });
 	const systemLanguages = await getSystemLanguageDefaults();
@@ -38,7 +42,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	};
 }
 
-export default function Avatars() {
+export default function AdminStorageAvatars() {
 	const { blobs, systemLanguages } = useLoaderData<typeof loader>();
 	const revalidator = useRevalidator();
 	const { t } = useTranslation();
@@ -56,10 +60,10 @@ export default function Avatars() {
 				});
 				if (!res.ok) {
 					const data = await res.json().catch(() => ({}));
-					toast.error(data?.error ?? t("avatars.delete_error"));
+					toast.error(data?.error ?? t("admin.storage.avatars.delete_error"));
 					return;
 				}
-				toast.success(t("avatars.delete_success"));
+				toast.success(t("admin.storage.avatars.delete_success"));
 				revalidator.revalidate();
 			} finally {
 				setDeletingPathname(null);
@@ -78,7 +82,7 @@ export default function Avatars() {
 				open={deleteConfirmPathname !== null}
 				onOpenChange={(open) => !open && setDeleteConfirmPathname(null)}
 				title={t("common.actions.delete")}
-				description={t("avatars.delete_confirm")}
+				description={t("admin.storage.avatars.delete_confirm")}
 				confirmLabel={t("common.actions.delete")}
 				cancelLabel={t("common.actions.cancel")}
 				variant="destructive"
@@ -91,12 +95,20 @@ export default function Avatars() {
 			/>
 			<SplitLayout
 				header={{
-					primary: t("avatars.title", { lng: systemLanguages.primary }),
-					secondary: t("avatars.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
+					primary: t("admin.storage.avatars.title", {
+						lng: systemLanguages.primary,
+						defaultValue: "Avatars",
+					}),
+					secondary: t("admin.storage.avatars.title", {
+						lng: systemLanguages.secondary ?? systemLanguages.primary,
+						defaultValue: "Avatars",
+					}),
 				}}
 			>
 				<p className="text-muted-foreground mb-6 -mt-6">
-					{t("avatars.description")}
+					{t("admin.storage.avatars.description", {
+						defaultValue: "All user avatar images stored in the system.",
+					})}
 				</p>
 
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -105,7 +117,11 @@ export default function Avatars() {
 							<span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">
 								account_circle
 							</span>
-							<p className="mt-2 font-medium">{t("avatars.empty")}</p>
+							<p className="mt-2 font-medium">
+								{t("admin.storage.avatars.empty", {
+									defaultValue: "No avatars",
+								})}
+							</p>
 						</div>
 					) : (
 						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -131,7 +147,9 @@ export default function Avatars() {
 										>
 											{deletingPathname === blob.pathname
 												? t("common.actions.loading", { defaultValue: "..." })
-												: t("avatars.delete")}
+												: t("admin.storage.avatars.delete", {
+														defaultValue: "Delete",
+													})}
 										</Button>
 									</div>
 									<div className="p-2">
