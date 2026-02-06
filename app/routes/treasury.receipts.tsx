@@ -44,7 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
-	
+
 	// Check if user can read all receipts or only their own
 	const canReadAll = hasAnyPermission(user, [
 		"treasury:receipts:read",
@@ -53,7 +53,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		"treasury:transactions:write",
 		"inventory:write",
 	]);
-	
+
 	const canWrite = hasAnyPermission(user, [
 		"treasury:receipts:write",
 		"treasury:receipts:update",
@@ -83,12 +83,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Fetch receipts from database
 	let allReceipts = await db.getReceipts();
-	
+
 	// Filter receipts: if user only has read-self, show only their own receipts
 	if (!canReadAll) {
 		allReceipts = allReceipts.filter((r) => r.createdBy === user.userId);
 	}
-	
+
 	// Filter by year if specified (extract year from pathname or createdAt)
 	let receipts = allReceipts;
 	if (yearParam && yearParam !== "all") {
@@ -233,13 +233,6 @@ export default function TreasuryReceipts({
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
 			<SearchMenu fields={searchFields} />
-			<Link
-				to="/admin/storage/receipts"
-				className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-			>
-				<span className="material-symbols-outlined text-base">imagesmode</span>
-				{t("treasury.receipts.gallery.link", { defaultValue: "Gallery" })}
-			</Link>
 			{canWrite && (
 				<AddItemButton
 					to="/treasury/receipts/new"
@@ -331,16 +324,16 @@ export default function TreasuryReceipts({
 								deleteProps={
 									canDelete
 										? {
-												action: `/api/receipts/delete`,
-												hiddenFields: { 
-													_action: "delete",
-													pathname: receipt.pathname,
-												},
-												confirmMessage: t(
-													"treasury.receipts.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/api/receipts/delete`,
+											hiddenFields: {
+												_action: "delete",
+												pathname: receipt.pathname,
+											},
+											confirmMessage: t(
+												"treasury.receipts.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

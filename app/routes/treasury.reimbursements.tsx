@@ -114,12 +114,30 @@ export async function loader({ request }: Route.LoaderArgs) {
 		purchaseReceiptsMap.set(purchase.id, receipts.map((r) => r.id));
 	}
 
+	// Map reimbursement emails to committee mail threads
+	const purchaseMailLinkMap = new Map<
+		string,
+		{ threadId?: string; messageId?: string }
+	>();
+	for (const purchase of purchases) {
+		if (!purchase.emailMessageId) continue;
+		const mailMessage = await db.getCommitteeMailMessageByMessageId(
+			purchase.emailMessageId,
+		);
+		if (!mailMessage) continue;
+		purchaseMailLinkMap.set(purchase.id, {
+			threadId: mailMessage.threadId || undefined,
+			messageId: mailMessage.id,
+		});
+	}
+
 	// Enrich purchases
 	const enrichedPurchases = purchases.map((p) => ({
 		...p,
 		inventoryItem: p.inventoryItemId ? itemsMap.get(p.inventoryItemId) : null,
 		hasLinkedTransaction: purchasesWithLinkedTransactions.has(p.id),
 		receiptIds: purchaseReceiptsMap.get(p.id) || [],
+		mailLink: purchaseMailLinkMap.get(p.id),
 	}));
 
 	// Get unique years from purchases
@@ -372,6 +390,7 @@ export default function BudgetReimbursements({
 		inventoryItem?: InventoryItem | null;
 		hasLinkedTransaction: boolean;
 		receiptIds: string[];
+		mailLink?: { threadId?: string; messageId?: string };
 	};
 
 	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
@@ -512,31 +531,50 @@ export default function BudgetReimbursements({
 			key: "email",
 			header: "📧",
 			headerClassName: "text-center",
-			cell: (row: PurchaseRow) =>
-				row.emailSent ? (
-					<span
-						className="text-green-600"
-						title={t("treasury.reimbursements.email_sent")}
-					>
-						✓
-					</span>
-				) : row.emailError ? (
-					<span
-						className="text-red-600"
-						title={row.emailError}
-					>
-						✗
-					</span>
-				) : (
-					<span className="text-gray-400">—</span>
-				),
+			cell: (row: PurchaseRow) => {
+				const mailHref = row.mailLink?.threadId
+					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
+					: row.mailLink?.messageId
+						? `/mail/${row.mailLink.messageId}`
+						: null;
+				if (row.emailSent) {
+					const icon = (
+						<span
+							className="text-green-600"
+							title={t("treasury.reimbursements.email_sent")}
+						>
+							✓
+						</span>
+					);
+					return mailHref ? <Link to={mailHref}>{icon}</Link> : icon;
+				}
+				if (row.emailError) {
+					return (
+						<span
+							className="text-red-600"
+							title={row.emailError}
+						>
+							✗
+						</span>
+					);
+				}
+				return <span className="text-gray-400">—</span>;
+			},
 		},
 		{
 			key: "reply",
 			header: "💬",
 			headerClassName: "text-center",
-			cell: (row: PurchaseRow) =>
-				row.emailReplyReceived ? (
+			cell: (row: PurchaseRow) => {
+				const mailHref = row.mailLink?.threadId
+					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
+					: row.mailLink?.messageId
+						? `/mail/${row.mailLink.messageId}`
+						: null;
+				if (!row.emailReplyReceived) {
+					return <span className="text-gray-400">—</span>;
+				}
+				const replyIcon = (
 					<span
 						className="text-blue-600 cursor-help"
 						title={
@@ -546,9 +584,9 @@ export default function BudgetReimbursements({
 					>
 						💬
 					</span>
-				) : (
-					<span className="text-gray-400">—</span>
-				),
+				);
+				return mailHref ? <Link to={mailHref}>{replyIcon}</Link> : replyIcon;
+			},
 		},
 		{
 			key: "amount",

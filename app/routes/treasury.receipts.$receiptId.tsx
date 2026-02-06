@@ -8,6 +8,7 @@ import { getDatabase, type Purchase } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
+import { ReceiptContentsDisplay } from "~/components/treasury/receipt-contents-display";
 import type { Route } from "./+types/treasury.receipts.$receiptId";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -46,16 +47,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Get creator name
 	const creator = receipt.createdBy ? await db.findUserById(receipt.createdBy) : null;
 
+	// Get OCR content
+	const receiptContent = await db.getReceiptContentByReceiptId(receipt.id);
+
 	return {
 		siteConfig: SITE_CONFIG,
 		receipt,
 		linkedPurchase,
 		creatorName: creator?.name || null,
+		receiptContent,
 	};
 }
 
 export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
-	const { receipt, linkedPurchase, creatorName } = loaderData;
+	const { receipt, linkedPurchase, creatorName, receiptContent } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t, i18n } = useTranslation();
 
@@ -202,6 +207,13 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 							)}
 						</div>
 					</SectionCard>
+
+					{/* OCR Content Display */}
+					<ReceiptContentsDisplay
+						receiptId={receipt.id}
+						receiptUrl={receipt.url}
+						content={receiptContent}
+					/>
 
 					{/* Actions */}
 					<div className="flex gap-3">

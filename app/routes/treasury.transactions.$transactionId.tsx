@@ -76,7 +76,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedItems,
 		currentYear,
 		recentMinutes: [] as MinuteFile[],
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		receiptsByYear,
 	};
 }

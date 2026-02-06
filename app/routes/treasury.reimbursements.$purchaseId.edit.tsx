@@ -123,7 +123,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedTransaction,
 		currentYear,
 		recentMinutes: [] as MinuteFile[],
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		receiptsByYear,
 		// Inventory picker data
 		pickerItems,
@@ -427,6 +427,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 					purchase.id,
 					minutesAttachment || undefined,
 					receiptAttachments,
+					db,
 				),
 			)
 			.then(async (emailResult) => {

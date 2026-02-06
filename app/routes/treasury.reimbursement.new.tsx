@@ -94,7 +94,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		recentMinutes: [] as MinuteFile[],
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		currentYear,
 		receiptsByYear,
 		// Inventory picker data
@@ -291,6 +291,7 @@ export async function action({ request }: Route.ActionArgs) {
 					purchase.id,
 					minutesAttachment || undefined,
 					receiptAttachments,
+					db,
 				),
 			)
 			.then(async (emailResult) => {
@@ -432,6 +433,7 @@ export async function action({ request }: Route.ActionArgs) {
 					purchase.id,
 					minutesAttachment || undefined,
 					receiptAttachments,
+					db,
 				),
 			)
 			.then(async (emailResult) => {
@@ -499,6 +501,7 @@ export async function action({ request }: Route.ActionArgs) {
 					purchase.id,
 					minutesAttachment || undefined,
 					receiptAttachments,
+					db,
 				),
 			)
 			.then(async (emailResult) => {

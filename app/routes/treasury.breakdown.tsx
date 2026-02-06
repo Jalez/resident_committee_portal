@@ -35,7 +35,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		request,
 		[
 			"treasury:breakdown:read",
-			"treasury:breakdown:read-self",
 		],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
@@ -235,7 +234,7 @@ export default function TreasuryBreakdown({
 	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canExport = hasPermission("treasury:export");
 	const canImport = hasPermission("treasury:import");
-	
+
 	// Helper to check if user can edit a specific transaction
 	const canViewTransaction = (transaction: Transaction) =>
 		hasPermission("treasury:transactions:read") ||
@@ -374,10 +373,9 @@ export default function TreasuryBreakdown({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -410,13 +408,13 @@ export default function TreasuryBreakdown({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-												action: `/treasury/transactions/${transaction.id}/edit`,
-												hiddenFields: { _action: "delete" },
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/transactions/${transaction.id}/edit`,
+											hiddenFields: { _action: "delete" },
+											confirmMessage: t(
+												"treasury.breakdown.edit.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

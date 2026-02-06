@@ -217,7 +217,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		// New fields for shared components
 		currentYear,
 		recentMinutes: [] as MinuteFile[],
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		receiptsByYear,
 		unlinkedPurchases,
 		openBudgets: enrichedBudgets,

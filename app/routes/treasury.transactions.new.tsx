@@ -109,15 +109,15 @@ export async function loader({ request }: Route.LoaderArgs) {
 	if (itemSelections.length > 0) {
 		for (const sel of itemSelections) {
 			const item = await db.getInventoryItemById(sel.itemId);
-		if (item) {
-			linkedItems.push({
-				id: item.id,
-				name: item.name,
-				quantity: item.quantity,
-				requestedQuantity: sel.quantity, // The quantity user wants to link
-				value: item.value,
-			});
-		}
+			if (item) {
+				linkedItems.push({
+					id: item.id,
+					name: item.name,
+					quantity: item.quantity,
+					requestedQuantity: sel.quantity, // The quantity user wants to link
+					value: item.value,
+				});
+			}
 		}
 	}
 
@@ -163,7 +163,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		siteConfig: SITE_CONFIG,
 		currentYear,
 		recentMinutes: [] as MinuteFile[],
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		// Pre-fill data
 		prefill: {
 			amount: prefillAmount,

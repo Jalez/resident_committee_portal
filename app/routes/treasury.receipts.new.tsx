@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import {
 	PageWrapper,
-	SplitLayout,
 } from "~/components/layout/page-layout";
+import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { FileUpload } from "~/components/ui/file-upload";
 import {
@@ -30,7 +30,9 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
 import { getReceiptStorage } from "~/lib/receipts";
 import { buildReceiptPath } from "~/lib/receipts/utils";
+import { processReceiptOCR } from "~/lib/receipt-ocr.server";
 import type { Route } from "./+types/treasury.receipts.new";
+import { PageHeader } from "~/components/layout/page-header";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -86,8 +88,10 @@ export async function action({ request }: Route.ActionArgs) {
 	const file = formData.get("file") as File | null;
 	const name = formData.get("name") as string;
 	const description = formData.get("description") as string;
+
 	const purchaseId = formData.get("purchaseId") as string;
 	const year = Number.parseInt(formData.get("year") as string, 10);
+	const ocrEnabled = formData.get("ocr_enabled") === "on";
 
 	if (!file) {
 		return { error: "File is required" };
@@ -143,7 +147,20 @@ export async function action({ request }: Route.ActionArgs) {
 		createdBy: authUser.userId,
 	};
 
-	await db.createReceipt(newReceipt);
+	const savedReceipt = await db.createReceipt(newReceipt);
+
+	// Process OCR if enabled
+	if (ocrEnabled && savedReceipt) {
+		// Fire and forget or await? Awaiting for now to ensure data is ready or at least started reliably
+		// But don't block too long on AI if response time is high.
+		try {
+			// Trigger OCR
+			await processReceiptOCR(savedReceipt.url, savedReceipt.id);
+		} catch (error) {
+			console.error("[Receipt New] OCR failed:", error);
+			// We don't fail the request, just log error
+		}
+	}
 
 	return redirect(`/treasury/receipts?year=${year}&success=receipt_created`);
 }
@@ -160,14 +177,7 @@ export default function TreasuryReceiptsNew({
 
 	return (
 		<PageWrapper>
-			<SplitLayout
-				header={{
-					primary: t("treasury.receipts.new", { lng: languages.primary }),
-					secondary: t("treasury.receipts.new", {
-						lng: languages.secondary,
-					}),
-				}}
-			>
+			<PageHeader title={t("treasury.receipts.new", "New Receipt")} />
 				<div className="space-y-6">
 					<Card>
 						<CardHeader>
@@ -229,6 +239,16 @@ export default function TreasuryReceiptsNew({
 									/>
 								</div>
 
+								<div className="flex items-center space-x-2 pb-2">
+									<Checkbox id="ocr_enabled" name="ocr_enabled" defaultChecked />
+									<label
+										htmlFor="ocr_enabled"
+										className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+									>
+										{t("treasury.receipts.analyze_with_ai", { defaultValue: "Analyze with AI (OCR)" })}
+									</label>
+								</div>
+
 								<div className="space-y-2">
 									<Label htmlFor="purchaseId">
 										{t("treasury.receipts.link_to_reimbursement")}
@@ -284,7 +304,6 @@ export default function TreasuryReceiptsNew({
 						</CardContent>
 					</Card>
 				</div>
-			</SplitLayout>
 		</PageWrapper>
 	);
 }
