@@ -805,7 +805,39 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					: "mail.compose_new";
 
 	return (
-		<div className="flex flex-col gap-4">
+		<Form
+			id="mail-compose-form"
+			method="post"
+			className="flex flex-col gap-4"
+		>
+			<input type="hidden" name="_action" value="send" />
+			<input type="hidden" name="composeMode" value={composeMode} />
+			{draftId && <input type="hidden" name="draftId" value={draftId} />}
+			{originalMessage &&
+				(composeMode === "reply" || composeMode === "replyAll") && (
+					<input
+						type="hidden"
+						name="replyToMessageId"
+						value={originalMessage.id}
+					/>
+				)}
+			{originalMessage && composeMode === "forward" && (
+				<input
+					type="hidden"
+					name="forwardFromMessageId"
+					value={originalMessage.id}
+				/>
+			)}
+			{toRecipients.map((r) => (
+				<input key={r.id} type="hidden" name="to" value={r.email} />
+			))}
+			{ccRecipients.map((r) => (
+				<input key={r.id} type="hidden" name="cc" value={r.email} />
+			))}
+			{bccRecipients.map((r) => (
+				<input key={r.id} type="hidden" name="bcc" value={r.email} />
+			))}
+
 			{/* Header */}
 			<div className="flex items-center justify-between border-b border-gray-200 pb-3 dark:border-gray-700">
 				<div className="flex items-center gap-2">
@@ -820,7 +852,9 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						</Link>
 					</Button>
 					<h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-						{t(composeTitleKey, { defaultValue: t("mail.compose") })}
+						{t(composeTitleKey, {
+							defaultValue: t("mail.compose"),
+						})}
 					</h1>
 				</div>
 				<div className="flex items-center gap-2">
@@ -828,6 +862,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						<Button
 							variant="ghost"
 							size="sm"
+							type="button"
 							className="text-destructive hover:text-destructive hover:bg-destructive/10"
 							onClick={handleDeleteDraft}
 						>
@@ -839,7 +874,6 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					)}
 					<Button
 						type="submit"
-						form="mail-compose-form"
 						disabled={!canSubmit || isSubmitting}
 						size="sm"
 					>
@@ -849,58 +883,8 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 				</div>
 			</div>
 
-			{/* Compose form */}
-			<Form
-				id="mail-compose-form"
-				method="post"
-				className="flex flex-col gap-4"
-			>
-				<input type="hidden" name="_action" value="send" />
-				<input type="hidden" name="composeMode" value={composeMode} />
-				{draftId && (
-					<input type="hidden" name="draftId" value={draftId} />
-				)}
-				{originalMessage &&
-					(composeMode === "reply" ||
-						composeMode === "replyAll") && (
-						<input
-							type="hidden"
-							name="replyToMessageId"
-							value={originalMessage.id}
-						/>
-					)}
-				{originalMessage && composeMode === "forward" && (
-					<input
-						type="hidden"
-						name="forwardFromMessageId"
-						value={originalMessage.id}
-					/>
-				)}
-				{toRecipients.map((r) => (
-					<input
-						key={r.id}
-						type="hidden"
-						name="to"
-						value={r.email}
-					/>
-				))}
-				{ccRecipients.map((r) => (
-					<input
-						key={r.id}
-						type="hidden"
-						name="cc"
-						value={r.email}
-					/>
-				))}
-				{bccRecipients.map((r) => (
-					<input
-						key={r.id}
-						type="hidden"
-						name="bcc"
-						value={r.email}
-					/>
-				))}
-
+			{/* Compose form fields */}
+			<div className="flex flex-col gap-4">
 				<RecipientField
 					field="to"
 					recipients={toRecipients}
@@ -992,7 +976,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						</p>
 					)}
 				</div>
-			</Form>
+			</div>
 
 			{/* Quoted reply preview (non-editable) */}
 			{originalMessage &&
@@ -1024,7 +1008,11 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 			{originalMessage && composeMode === "forward" && (
 				<div className="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
 					<p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-						---------- {t("mail.forwarded_message", { defaultValue: "Forwarded message" })} ----------
+						----------{" "}
+						{t("mail.forwarded_message", {
+							defaultValue: "Forwarded message",
+						})}{" "}
+						----------
 					</p>
 					<div className="mb-2 grid gap-1 text-xs text-gray-500 dark:text-gray-400">
 						<p>
@@ -1035,9 +1023,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						</p>
 						<p>
 							{t("mail.date")}:{" "}
-							{new Date(
-								originalMessage.date,
-							).toLocaleString()}
+							{new Date(originalMessage.date).toLocaleString()}
 						</p>
 						<p>
 							{t("committee.mail.subject")}:{" "}
@@ -1053,6 +1039,6 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					/>
 				</div>
 			)}
-		</div>
+		</Form>
 	);
 }
