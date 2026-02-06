@@ -99,6 +99,13 @@
       "when": 1770334831619,
       "tag": "0013_abandoned_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1770393293150,
+      "tag": "0014_far_rictor",
+      "breakpoints": true
     }
   ]
 }
