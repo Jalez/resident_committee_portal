@@ -111,6 +111,7 @@ export function Navigation({ variant }: NavigationProps) {
 			"settings:news",
 			"settings:faqs",
 			"settings:general",
+			"settings:receipts",
 		]);
 
 	// Use shared nav items configuration
@@ -167,8 +168,8 @@ export function Navigation({ variant }: NavigationProps) {
 				style={
 					isAnimating
 						? {
-								color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-							}
+							color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+						}
 						: undefined
 				}
 			>
@@ -219,7 +220,7 @@ export function Navigation({ variant }: NavigationProps) {
 					isActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
 					!showLabels && "justify-center px-3",
 					destructive &&
-						"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
+					"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
 				)}
 			>
 				<span className="material-symbols-outlined text-2xl shrink-0">{icon}</span>
@@ -331,26 +332,26 @@ export function Navigation({ variant }: NavigationProps) {
 									{item.children
 										.filter((child) => !child.permission || hasPermission(child.permission))
 										.map((child) => (
-										<Link
-											key={child.path}
-											to={child.path}
-											onClick={onNavigate}
-											className={cn(
-												"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
-												"hover:bg-primary/10 hover:text-primary",
-												isChildActive(item.path, child.path)
-													? "text-primary bg-primary/10 font-medium"
-													: "text-gray-500 dark:text-gray-400",
-											)}
-										>
-											<span className="material-symbols-outlined text-xl shrink-0">
-												{child.icon}
-											</span>
-											<span className="font-medium">
-												{t(child.i18nKey)}
-											</span>
-										</Link>
-									))}
+											<Link
+												key={child.path}
+												to={child.path}
+												onClick={onNavigate}
+												className={cn(
+													"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
+													"hover:bg-primary/10 hover:text-primary",
+													isChildActive(item.path, child.path)
+														? "text-primary bg-primary/10 font-medium"
+														: "text-gray-500 dark:text-gray-400",
+												)}
+											>
+												<span className="material-symbols-outlined text-xl shrink-0">
+													{child.icon}
+												</span>
+												<span className="font-medium">
+													{t(child.i18nKey)}
+												</span>
+											</Link>
+										))}
 								</div>
 							)}
 						</div>
@@ -439,6 +440,16 @@ export function Navigation({ variant }: NavigationProps) {
 							"help",
 							t("nav.faq"),
 							pathname === "/settings/faqs",
+							showLabels,
+							onNavigate,
+						)}
+
+					{hasPermission("settings:receipts") &&
+						renderMenuLink(
+							"/settings/receipts",
+							"receipt_long",
+							t("settings.receipt_ocr_title", { defaultValue: "Receipt OCR" }),
+							pathname === "/settings/receipts",
 							showLabels,
 							onNavigate,
 						)}

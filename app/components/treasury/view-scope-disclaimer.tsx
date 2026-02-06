@@ -13,21 +13,16 @@ export function ViewScopeDisclaimer({
 }: ViewScopeDisclaimerProps) {
 	const { t } = useTranslation();
 
-	const itemTypeKey = `treasury.view_scope.item_types.${itemType}`;
+	const itemTypeKey = `permissions.treasury.view_scope.item_types.${itemType}`;
 	const itemTypeLabel = t(itemTypeKey, {
 		defaultValue: itemType,
 	});
 
 	const messageKey = canReadAll
-		? "treasury.view_scope.all"
-		: "treasury.view_scope.own_only";
+		? "permissions.treasury.view_scope.all"
+		: "permissions.treasury.view_scope.own_only";
 
-	const message = t(messageKey, {
-		itemType: itemTypeLabel,
-		defaultValue: canReadAll
-			? `You are viewing all ${itemType}`
-			: `You are viewing only your own ${itemType}`,
-	});
+	const message = t(messageKey, { itemType: itemTypeLabel });
 
 	return (
 		<Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">

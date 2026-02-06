@@ -94,6 +94,7 @@ export default [
 	route("settings/analytics", "routes/settings.analytics.tsx"),
 	route("settings/news", "routes/settings.news.tsx"),
 	route("settings/faqs", "routes/settings.faqs.tsx"),
+	route("settings/receipts", "routes/settings.receipts.tsx"),
 
 	// Analytics (redirect to polls/analytics)
 	route("analytics", "routes/analytics.tsx"),
@@ -113,8 +114,10 @@ export default [
 	route("api/receipts/thumbnail", "routes/api.receipts.thumbnail.tsx"),
 	route("api/receipts/rename", "routes/api.receipts.rename.tsx"),
 	route("api/receipts/delete", "routes/api.receipts.delete.tsx"),
+	route("api/receipts/ocr", "routes/api.receipts.ocr.tsx"),
 	route("api/analytics/export", "routes/api.analytics.export.tsx"),
 	route("api/analytics/analyze", "routes/api.analytics.analyze.tsx"),
+	route("api/analytics/questions", "routes/api.analytics.questions.tsx"),
 	route("api/inventory/export", "routes/api.inventory.export.tsx"),
 	route("api/inventory/import", "routes/api.inventory.import.tsx"),
 	route("api/webhooks/resend", "routes/api.webhooks.resend.tsx"),

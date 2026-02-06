@@ -158,7 +158,7 @@ function ContentFader({ children }: { children: React.ReactNode }) {
 
 	return (
 		<div
-			className="w-full transition-opacity duration-100 pb-8"
+			className="w-full h-full transition-opacity duration-100 pb-8"
 			style={isInfoReel ? { opacity } : undefined}
 		>
 			{children}
@@ -210,23 +210,23 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 	const location = useLocation();
 
 	return (
-		<div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
+		<div className="flex flex-col md:flex-row h-[100dvh] overflow-hidden bg-background text-foreground">
 			<Navigation variant="sidebar" />
-			<div className="flex-1 flex flex-col min-w-0">
-				<div className="z-50 bg-background/80 backdrop-blur-md transition-all duration-300 shrink-0 sticky top-0">
+			<div className="flex-1 flex flex-col min-w-0 h-full">
+				<div className="transition-all duration-300 shrink-0">
 					<header className="flex items-center justify-center px-4 pb-2">
-						<div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mt-1 sm:mt-2 md:mt-4">
-							<span className="text-xl sm:text-3xl md:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none">
+						<div className="flex items-center justify-center mt-1 sm:mt-2 md:mt-4 flex-1">
+							<span className="text-xl sm:text-3xl lg:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none pr-3 sm:pr-4 lg:pr-10">
 								{siteConfig.shortName || siteConfig.name}
 							</span>
-							<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 md:pl-10 py-1 md:py-2">
+							<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 lg:pl-10 py-1 md:py-2">
 								{/* Info Reel: Show FI and EN */}
 								{isInfoReel && (
 									<>
-										<span className="text-sm sm:text-2xl md:text-3xl">
+										<span className="text-sm sm:text-2xl lg:text-3xl">
 											{t("app.title", { lng: "fi" })}
 										</span>
-										<span className="opacity-90 text-[9px] sm:text-xl md:text-2xl mt-0.5 md:mt-2">
+										<span className="opacity-90 text-[9px] sm:text-xl lg:text-2xl mt-0.5 md:mt-2">
 											{t("app.title", { lng: "en" })}
 										</span>
 									</>
@@ -234,7 +234,7 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 
 								{/* Normal Mode: Show current language */}
 								{!isInfoReel && (
-									<span className="text-sm sm:text-2xl md:text-3xl">
+									<span className="text-sm sm:text-2xl lg:text-5xl">
 										{t("app.title")}
 									</span>
 								)}
@@ -255,9 +255,11 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 				</div>
 
 				{/* Main Content Area */}
-				<ContentFader>
-					<Outlet />
-				</ContentFader>
+				<div className="flex-1 min-h-0 overflow-hidden relative">
+					<ContentFader>
+						<Outlet />
+					</ContentFader>
+				</div>
 			</div>
 		</div>
 	);

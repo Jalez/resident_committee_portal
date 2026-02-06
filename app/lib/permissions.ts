@@ -84,10 +84,6 @@ export const PERMISSIONS = {
 		translationKey: "permissions.treasury.breakdown.read",
 		category: "Treasury",
 	},
-	"treasury:breakdown:read-self": {
-		translationKey: "permissions.treasury.breakdown.read-self",
-		category: "Treasury",
-	},
 	"treasury:export": {
 		translationKey: "permissions.treasury.export",
 		category: "Treasury",
@@ -430,6 +426,10 @@ export const PERMISSIONS = {
 	},
 	"settings:faqs": {
 		translationKey: "permissions.settings.faqs",
+		category: "Settings",
+	},
+	"settings:receipts": {
+		translationKey: "permissions.settings.receipts",
 		category: "Settings",
 	},
 

@@ -37,7 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
 			{ path: "/treasury", icon: "account_balance", i18nKey: "treasury.overview" },
 			{ path: "/treasury/breakdown", icon: "pie_chart", i18nKey: "treasury.actions.breakdown", permission: "treasury:breakdown:read" },
 			{ path: "/treasury/transactions", icon: "list_alt", i18nKey: "treasury.actions.transactions", permission: "treasury:transactions:read" },
-			{ path: "/treasury/receipts", icon: "receipt_long", i18nKey: "treasury.actions.receipts", permission: "treasury:read" },
+			{ path: "/treasury/receipts", icon: "receipt_long", i18nKey: "treasury.actions.receipts", permission: "treasury:receipts:read" },
 			{ path: "/treasury/reimbursements", icon: "request_quote", i18nKey: "treasury.actions.reimbursements", permission: "treasury:reimbursements:read" },
 			{ path: "/treasury/budgets", icon: "bookmark", i18nKey: "treasury.actions.budgets", permission: "treasury:budgets:read" },
 		],

@@ -79,7 +79,7 @@ export function Subnavbar() {
 		return (
 			<div
 				className={cn(
-					"shrink-0 border-b border-border/50 bg-background/50",
+					"shrink-0",
 					SUBNAVBAR_HEIGHT,
 				)}
 				aria-hidden
