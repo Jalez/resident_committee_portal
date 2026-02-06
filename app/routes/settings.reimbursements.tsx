@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, useActionData, useNavigation } from "react-router";
+import { useFetcher } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
+import { PageHeader, PageWrapper } from "~/components/layout/page-layout";
 import {
 	Card,
 	CardContent,
@@ -12,16 +10,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
-import { Switch } from "~/components/ui/switch";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
@@ -33,6 +24,19 @@ import {
 	SETTINGS_KEYS,
 } from "~/lib/openrouter.server";
 import type { Route } from "./+types/settings.reimbursements";
+import {
+	AiParsingSettings,
+} from "~/components/settings/ai-parsing-settings";
+import {
+	handleAiParsingSettingsAction,
+} from "~/components/settings/ai-parsing-settings.server";
+import {
+	KeywordSettings,
+} from "~/components/settings/keyword-settings";
+import {
+	handleKeywordSettingsAction,
+} from "~/components/settings/keyword-settings.server";
+import { MissingApiKeyWarning } from "~/components/missing-api-key-warning";
 
 export function meta() {
 	return [
@@ -47,13 +51,21 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const db = getDatabase();
 
 	// Get all settings
-	const [apiKey, aiModel, aiEnabled, customApproval, customRejection] =
+	const [
+		apiKey,
+		aiModel,
+		aiEnabled,
+		customApproval,
+		customRejection,
+		recipientEmail,
+	] =
 		await Promise.all([
 			db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
 			db.getSetting(SETTINGS_KEYS.AI_MODEL),
 			db.getSetting(SETTINGS_KEYS.AI_PARSING_ENABLED),
 			db.getSetting(SETTINGS_KEYS.APPROVAL_KEYWORDS),
 			db.getSetting(SETTINGS_KEYS.REJECTION_KEYWORDS),
+			db.getSetting(SETTINGS_KEYS.REIMBURSEMENT_RECIPIENT_EMAIL),
 		]);
 
 	// Fetch available models if API key is set
@@ -72,330 +84,143 @@ export async function loader({ request }: Route.LoaderArgs) {
 			aiEnabled: aiEnabled === "true",
 			customApproval: customApproval || "",
 			customRejection: customRejection || "",
+			recipientEmail: recipientEmail || "",
 		},
 		models,
 		defaultKeywords: {
 			approval: DEFAULT_APPROVAL_KEYWORDS,
 			rejection: DEFAULT_REJECTION_KEYWORDS,
 		},
+		recipientEmailFallback: process.env.RECIPIENT_EMAIL || "",
 	};
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "settings:reimbursements", getDatabase);
+	try {
+		await requirePermission(request, "settings:reimbursements", getDatabase);
+	} catch (_error) {
+		throw new Response("Not Found", { status: 404 });
+	}
 
+	const db = getDatabase();
 	const formData = await request.formData();
 	const intent = formData.get("intent") as string;
-	const db = getDatabase();
 
-	try {
-		if (intent === "save-ai-settings") {
-			const aiEnabled = formData.get("aiEnabled") === "true";
-			const aiModel = formData.get("aiModel") as string;
-
-			await db.setSetting(
-				SETTINGS_KEYS.AI_PARSING_ENABLED,
-				aiEnabled ? "true" : "false",
-				"Enable AI-assisted parsing",
-			);
-			if (aiModel) {
-				await db.setSetting(
-					SETTINGS_KEYS.AI_MODEL,
-					aiModel,
-					"Selected AI model for parsing",
-				);
-			}
-			return { success: true, message: "AI settings saved" };
-		}
-
-		if (intent === "save-keywords") {
-			const customApproval = formData.get("customApproval") as string;
-			const customRejection = formData.get("customRejection") as string;
-
-			await db.setSetting(
-				SETTINGS_KEYS.APPROVAL_KEYWORDS,
-				customApproval,
-				"Custom approval keywords",
-			);
-			await db.setSetting(
-				SETTINGS_KEYS.REJECTION_KEYWORDS,
-				customRejection,
-				"Custom rejection keywords",
-			);
-			return { success: true, message: "Keywords saved" };
-		}
-
-		return { error: "Unknown action" };
-	} catch (error) {
-		console.error("[Settings] Error:", error);
-		return { error: "Failed to save settings" };
+	if (intent === "save-ai-settings") {
+		return handleAiParsingSettingsAction(db, formData);
 	}
-}
 
+	if (
+		intent === "save-approval-keywords" ||
+		intent === "save-rejection-keywords"
+	) {
+		return handleKeywordSettingsAction(db, formData);
+	}
+
+	if (intent === "save-recipient-email") {
+		const recipientEmail =
+			(formData.get("recipientEmail") as string | null)?.trim() || "";
+		if (!recipientEmail) {
+			await db.deleteSetting(SETTINGS_KEYS.REIMBURSEMENT_RECIPIENT_EMAIL);
+			return { success: true, message: "Recipient email cleared" };
+		}
+		await db.setSetting(
+			SETTINGS_KEYS.REIMBURSEMENT_RECIPIENT_EMAIL,
+			recipientEmail,
+			"Recipient email for reimbursement requests",
+		);
+		return { success: true, message: "Recipient email saved" };
+	}
+
+	return { error: "Unknown action" };
+}
 export default function SettingsReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
-	const { settings, models, defaultKeywords, systemLanguages } = loaderData;
+	const { settings, models, defaultKeywords, recipientEmailFallback } =
+		loaderData;
 	const { t } = useTranslation();
-	const navigation = useNavigation();
-	const actionData = useActionData<typeof action>();
-	const isSubmitting = navigation.state === "submitting";
-
-	const [aiEnabled, setAiEnabled] = useState(settings.aiEnabled);
-	const [aiModel, setAiModel] = useState(settings.aiModel);
-	const [customApproval, setCustomApproval] = useState(settings.customApproval);
-	const [customRejection, setCustomRejection] = useState(
-		settings.customRejection,
-	);
-	const [sortBy, setSortBy] = useState<"price" | "name">("price");
-
-	// Sort models
-	const sortedModels = [...models].sort((a, b) => {
-		if (sortBy === "price") {
-			return a.pricing.prompt - b.pricing.prompt;
-		}
-		return a.name.localeCompare(b.name);
-	});
+	const recipientEmailFetcher = useFetcher();
 
 	useEffect(() => {
-		if (actionData) {
-			if (actionData.error) {
-				toast.error(actionData.error, { id: "settings-error" });
-			} else if (actionData.message) {
-				toast.success(actionData.message, { id: "settings-success" });
-			}
+		const data = recipientEmailFetcher.data;
+		if (!data) return;
+		if ("error" in data) {
+			toast.error(String(data.error));
+			return;
 		}
-	}, [actionData]);
-
-	// Format price for display
-	const formatPrice = (price: number) => {
-		if (price === 0) return t("common.fields.free");
-		if (price < 0.01) return `$${price.toFixed(4)}`;
-		return `$${price.toFixed(2)}`;
-	};
+		if ("message" in data) {
+			toast.success(String(data.message));
+		}
+	}, [recipientEmailFetcher.data]);
 
 	return (
 		<PageWrapper>
-			<SplitLayout
-				header={{
-					primary: t("settings.reimbursements.title", { lng: systemLanguages.primary }),
-					secondary: t("settings.reimbursements.title", { lng: systemLanguages.secondary ?? systemLanguages.primary }),
-				}}
-			>
-				<div className="max-w-2xl space-y-6">
-					{/* API Key missing warning */}
-					{!settings.hasApiKey && (
-						<Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20">
-							<CardHeader>
-								<CardTitle className="text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
-									<span className="material-symbols-outlined">warning</span>
-									AI Features Disabled
-								</CardTitle>
-								<CardDescription className="text-yellow-700 dark:text-yellow-300">
-									You need to configure the OpenRouter API Key in General Settings to use AI features.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<Button variant="outline" asChild>
-									<a href="/settings/general">Go to General Settings</a>
-								</Button>
-							</CardContent>
-						</Card>
-					)}
+			<PageHeader
+				primary={t("settings.reimbursements.title")}
+				secondary={t("settings.reimbursements.description")}
+			/>
 
-					{/* AI Model Selection */}
-					<Card className={!settings.hasApiKey ? "opacity-50 pointer-events-none" : ""}>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<span className="material-symbols-outlined">smart_toy</span>
-								{t("settings.reimbursements.ai_parsing_title")}
-							</CardTitle>
-							<CardDescription>
-								{t("settings.reimbursements.ai_parsing_desc")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Form method="post" className="space-y-4">
-								<input type="hidden" name="intent" value="save-ai-settings" />
-								<input
-									type="hidden"
-									name="aiEnabled"
-									value={aiEnabled ? "true" : "false"}
+			<div className="max-w-2xl space-y-6">
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							{t("settings.reimbursements.recipient_email_title")}
+						</CardTitle>
+						<CardDescription>
+							{t("settings.reimbursements.recipient_email_desc")}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<recipientEmailFetcher.Form method="post" className="space-y-4">
+							<input
+								type="hidden"
+								name="intent"
+								value="save-recipient-email"
+							/>
+							<div className="space-y-2">
+								<Label htmlFor="recipientEmail">
+									{t("settings.reimbursements.recipient_email_label")}
+								</Label>
+								<Input
+									id="recipientEmail"
+									name="recipientEmail"
+									type="email"
+									defaultValue={settings.recipientEmail}
+									placeholder={
+										recipientEmailFallback ||
+										t("settings.reimbursements.recipient_email_placeholder")
+									}
 								/>
-								<input type="hidden" name="aiModel" value={aiModel} />
-
-								<div className="flex items-center justify-between">
-									<div>
-										<Label>{t("settings.reimbursements.enable_ai")}</Label>
-										<p className="text-sm text-muted-foreground">
-											{t("settings.reimbursements.enable_ai_desc")}
-										</p>
-									</div>
-									<Switch
-										checked={aiEnabled}
-										onCheckedChange={setAiEnabled}
-										disabled={!settings.hasApiKey}
-									/>
-								</div>
-
-								{settings.hasApiKey && models.length > 0 && (
-									<>
-										<div className="flex items-center gap-2 mb-2">
-											<Label>{t("common.actions.sort")}</Label>
-											<Button
-												type="button"
-												variant={sortBy === "price" ? "default" : "outline"}
-												size="sm"
-												onClick={() => setSortBy("price")}
-											>
-												{t("common.fields.price")}
-											</Button>
-											<Button
-												type="button"
-												variant={sortBy === "name" ? "default" : "outline"}
-												size="sm"
-												onClick={() => setSortBy("name")}
-											>
-												{t("common.fields.name")}
-											</Button>
-										</div>
-
-										<div className="space-y-2">
-											<Label>
-												{t("settings.reimbursements.ai_model_label")}
-											</Label>
-											<Select value={aiModel} onValueChange={setAiModel}>
-												<SelectTrigger>
-													<SelectValue
-														placeholder={t(
-															"settings.reimbursements.select_model",
-														)}
-													/>
-												</SelectTrigger>
-												<SelectContent className="max-h-64">
-													{sortedModels.slice(0, 50).map((model) => (
-														<SelectItem key={model.id} value={model.id}>
-															<div className="flex items-center gap-2">
-																<span className="truncate max-w-[200px]">
-																	{model.name}
-																</span>
-																<Badge variant="secondary" className="text-xs">
-																	{formatPrice(model.pricing.prompt)}/1M
-																</Badge>
-															</div>
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<p className="text-xs text-muted-foreground">
-												{t("settings.reimbursements.showing_models", {
-													count: Math.min(50, sortedModels.length),
-													total: sortedModels.length,
-												})}
-											</p>
-										</div>
-									</>
+								{recipientEmailFallback && !settings.recipientEmail && (
+									<p className="text-xs text-muted-foreground">
+										{t(
+											"settings.reimbursements.recipient_email_fallback",
+											{ email: recipientEmailFallback },
+										)}
+									</p>
 								)}
-
-								<Button
-									type="submit"
-									disabled={isSubmitting || !settings.hasApiKey}
-								>
-									{isSubmitting
-										? t("common.status.saving")
-										: t("common.actions.save")}
-								</Button>
-							</Form>
-						</CardContent>
-					</Card>
-
-					{/* Custom Keywords */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<span className="material-symbols-outlined">checklist</span>
-								{t("settings.reimbursements.keywords_title")}
-							</CardTitle>
-							<CardDescription>
-								{t("settings.reimbursements.keywords_desc")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Form method="post" className="space-y-4">
-								<input type="hidden" name="intent" value="save-keywords" />
-
-								<div className="space-y-2">
-									<Label>{t("settings.reimbursements.default_approval")}</Label>
-									<div className="flex flex-wrap gap-1">
-										{defaultKeywords.approval.map((kw: string) => (
-											<Badge
-												key={kw}
-												variant="outline"
-												className="text-green-600 border-green-300"
-											>
-												{kw}
-											</Badge>
-										))}
-									</div>
-								</div>
-
-								<div className="space-y-2">
-									<Label htmlFor="customApproval">
-										{t("settings.reimbursements.additional_approval")}
-									</Label>
-									<Input
-										id="customApproval"
-										name="customApproval"
-										value={customApproval}
-										onChange={(e) => setCustomApproval(e.target.value)}
-										placeholder={t(
-											"settings.reimbursements.approval_placeholder",
-										)}
-									/>
-								</div>
-
-								<div className="space-y-2">
-									<Label>
-										{t("settings.reimbursements.default_rejection")}
-									</Label>
-									<div className="flex flex-wrap gap-1">
-										{defaultKeywords.rejection.map((kw: string) => (
-											<Badge
-												key={kw}
-												variant="outline"
-												className="text-red-600 border-red-300"
-											>
-												{kw}
-											</Badge>
-										))}
-									</div>
-								</div>
-
-								<div className="space-y-2">
-									<Label htmlFor="customRejection">
-										{t("settings.reimbursements.additional_rejection")}
-									</Label>
-									<Input
-										id="customRejection"
-										name="customRejection"
-										value={customRejection}
-										onChange={(e) => setCustomRejection(e.target.value)}
-										placeholder={t(
-											"settings.reimbursements.rejection_placeholder",
-										)}
-									/>
-								</div>
-
-								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting
-										? t("common.status.saving")
-										: t("common.actions.save")}
-								</Button>
-							</Form>
-						</CardContent>
-					</Card>
-				</div>
-			</SplitLayout>
+							</div>
+							<Button
+								type="submit"
+								disabled={recipientEmailFetcher.state !== "idle"}
+							>
+								{recipientEmailFetcher.state === "idle"
+									? t("common.actions.save")
+									: t("common.status.saving")}
+							</Button>
+						</recipientEmailFetcher.Form>
+					</CardContent>
+				</Card>
+				<AiParsingSettings settings={settings} models={models} />
+				<KeywordSettings
+					settings={{
+						approvalKeywords: settings.customApproval,
+						rejectionKeywords: settings.customRejection,
+					}}
+					defaultKeywords={defaultKeywords}
+				/>
+			</div>
 		</PageWrapper>
 	);
 }
