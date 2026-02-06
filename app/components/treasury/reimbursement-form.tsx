@@ -135,6 +135,7 @@ export function ReimbursementForm({
 			file: File,
 			year: string,
 			desc: string,
+			ocrEnabled = false,
 		): Promise<ReceiptLink | null> => {
 			setIsUploadingReceipt(true);
 			try {
@@ -142,6 +143,7 @@ export function ReimbursementForm({
 				formData.append("file", file);
 				formData.append("year", year);
 				formData.append("description", desc || "kuitti");
+				formData.append("ocr_enabled", String(ocrEnabled));
 
 				const response = await fetch("/api/receipts/upload", {
 					method: "POST",

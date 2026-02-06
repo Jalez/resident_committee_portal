@@ -55,6 +55,7 @@ interface ReceiptPickerProps {
 		file: File,
 		year: string,
 		description: string,
+		ocrEnabled?: boolean,
 	) => Promise<ReceiptLink | null>;
 	/** Current year for uploads */
 	currentYear: number;
@@ -79,6 +80,7 @@ export function ReceiptPicker({
 	const [selectedYear, setSelectedYear] = useState(currentYear.toString());
 	const [uploadError, setUploadError] = useState<string | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [ocrEnabled, setOcrEnabled] = useState(true);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { t } = useTranslation();
 
@@ -156,7 +158,7 @@ export function ReceiptPicker({
 		}
 
 		// Upload the file
-		const result = await onUploadReceipt(file, selectedYear, description);
+		const result = await onUploadReceipt(file, selectedYear, description, ocrEnabled);
 		if (result) {
 			// Add to selection automatically
 			onSelectionChange([...selectedReceipts, result]);
@@ -301,6 +303,21 @@ export function ReceiptPicker({
 										className="flex-1"
 									/>
 								</div>
+
+								<div className="flex items-center space-x-2 py-2">
+									<Checkbox
+										id="picker_ocr_enabled"
+										checked={ocrEnabled}
+										onCheckedChange={(checked) => setOcrEnabled(!!checked)}
+									/>
+									<label
+										htmlFor="picker_ocr_enabled"
+										className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+									>
+										{t("receipts.analyze_with_ai", { defaultValue: "Analyze with AI (OCR)" })}
+									</label>
+								</div>
+
 								<p className="text-xs text-muted-foreground">
 									{t("receipts.allowed", "Allowed")}: {" "}
 									{RECEIPT_ALLOWED_TYPES.join(", ")}
@@ -336,7 +353,7 @@ export function ReceiptPicker({
 
 						{/* Receipts List */}
 						<div className="border rounded-lg divide-y max-h-[300px] overflow-auto">
-								{filteredReceipts.length === 0 ? (
+							{filteredReceipts.length === 0 ? (
 								<div className="p-8 text-center text-muted-foreground">
 									<span className="material-symbols-outlined text-4xl mb-2 block">
 										folder_off
