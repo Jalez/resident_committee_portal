@@ -36,6 +36,7 @@ export function CommitteeEmail({
 				<Container style={containerStyle}>
 					<Section>
 						<div
+							style={bodyContentStyle}
 							// biome-ignore lint/security/noDangerouslySetInnerHtml: committee email body content
 							dangerouslySetInnerHTML={{ __html: bodyHtml }}
 						/>
@@ -55,6 +56,7 @@ export function CommitteeEmail({
 							</Text>
 							<Section style={quotedBodyStyle}>
 								<div
+									style={bodyContentStyle}
 									// biome-ignore lint/security/noDangerouslySetInnerHtml: quoted reply from original email
 									dangerouslySetInnerHTML={{
 										__html: quotedReply.bodyHtml,
@@ -87,6 +89,10 @@ const containerStyle = {
 const hrStyle = {
 	borderTop: "1px solid #e0e0e0",
 	margin: "16px 0",
+};
+
+const bodyContentStyle = {
+	textAlign: "left" as const,
 };
 
 const signatureStyle = {
