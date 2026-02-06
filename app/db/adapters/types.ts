@@ -17,6 +17,7 @@ import type {
 	NewPoll,
 	NewPurchase,
 	NewReceipt,
+	NewReceiptContent,
 	NewRole,
 	NewSocialLink,
 	NewSubmission,
@@ -27,6 +28,7 @@ import type {
 	Purchase,
 	BudgetTransaction,
 	Receipt,
+	ReceiptContent,
 	Role,
 	SocialLink,
 	Submission,
@@ -355,4 +357,12 @@ export interface DatabaseAdapter {
 	): Promise<Receipt | null>;
 	/** Delete a receipt */
 	deleteReceipt(id: string): Promise<boolean>;
+
+	// ==================== Receipt Content Methods (OCR) ====================
+	/** Get OCR/AI content for a receipt */
+	getReceiptContentByReceiptId(receiptId: string): Promise<ReceiptContent | null>;
+	/** Save OCR/AI content */
+	createReceiptContent(content: NewReceiptContent): Promise<ReceiptContent>;
+	/** Delete receipt content */
+	deleteReceiptContent(id: string): Promise<boolean>;
 }

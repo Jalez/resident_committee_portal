@@ -575,6 +575,10 @@ export type NewPoll = typeof polls.$inferInsert;
 // RECEIPTS
 // ============================================
 
+// ============================================
+// RECEIPTS
+// ============================================
+
 /**
  * Receipts table schema
  * Stores receipt metadata and links to purchases (reimbursement requests)
@@ -599,6 +603,31 @@ export const receipts = pgTable("receipts", {
 
 export type Receipt = typeof receipts.$inferSelect;
 export type NewReceipt = typeof receipts.$inferInsert;
+
+/**
+ * Receipt contents table schema
+ * Stores OCR-extracted text and AI-parsed structured data from receipts
+ */
+export const receiptContents = pgTable("receipt_contents", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	receiptId: uuid("receipt_id")
+		.references(() => receipts.id, { onDelete: "cascade" })
+		.notNull()
+		.unique(),
+	rawText: text("raw_text"), // Full text extracted by OCR
+	storeName: text("store_name"),
+	// JSON string of {name, quantity, unitPrice, totalPrice}[]
+	items: text("items"),
+	totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
+	currency: text("currency").default("EUR"),
+	purchaseDate: timestamp("purchase_date"),
+	aiModel: text("ai_model"), // Model used for parsing (e.g., "google/gemini-flash-1.5")
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type ReceiptContent = typeof receiptContents.$inferSelect;
+export type NewReceiptContent = typeof receiptContents.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS

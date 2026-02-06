@@ -28,6 +28,7 @@ import {
 	type NewPoll,
 	type NewPurchase,
 	type NewReceipt,
+	type NewReceiptContent,
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
@@ -42,7 +43,9 @@ import {
 	type BudgetTransaction,
 	budgetTransactions,
 	type Receipt,
+	type ReceiptContent,
 	receipts,
+	receiptContents,
 	type Role,
 	roles,
 	type SocialLink,
@@ -142,7 +145,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		}
 		// Create new user without roleId
 		const newUser = await this.createUser(user);
-		
+
 		// For new users, automatically assign the Resident role via junction table
 		const residentRole = await this.getRoleByName("Resident");
 		if (!residentRole) {
@@ -151,7 +154,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 			);
 		}
 		await this.setUserRoles(newUser.id, [residentRole.id]);
-		
+
 		return newUser;
 	}
 
@@ -279,7 +282,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		await this.db
 			.delete(userRoles)
 			.where(eq(userRoles.userId, userId));
-		
+
 		// If no roles provided, assign default "Resident" role to prevent users from having no roles
 		let finalRoleIds = roleIds;
 		if (finalRoleIds.length === 0) {
@@ -291,7 +294,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 			}
 			finalRoleIds = [residentRole.id];
 		}
-		
+
 		await this.db.insert(userRoles).values(
 			finalRoleIds.map((roleId) => ({ userId, roleId })),
 		);
@@ -1585,6 +1588,36 @@ export class PostgresAdapter implements DatabaseAdapter {
 		const result = await this.db
 			.delete(receipts)
 			.where(eq(receipts.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	// ==================== Receipt Content Methods ====================
+	async getReceiptContentByReceiptId(
+		receiptId: string,
+	): Promise<ReceiptContent | null> {
+		const result = await this.db
+			.select()
+			.from(receiptContents)
+			.where(eq(receiptContents.receiptId, receiptId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async createReceiptContent(
+		content: NewReceiptContent,
+	): Promise<ReceiptContent> {
+		const result = await this.db
+			.insert(receiptContents)
+			.values(content)
+			.returning();
+		return result[0];
+	}
+
+	async deleteReceiptContent(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(receiptContents)
+			.where(eq(receiptContents.id, id))
 			.returning();
 		return result.length > 0;
 	}
