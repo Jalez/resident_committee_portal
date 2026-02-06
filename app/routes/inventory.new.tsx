@@ -81,7 +81,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		siteConfig: SITE_CONFIG,
 		recentMinutes: [] as MinuteFile[],
 		recentTransactions,
-		emailConfigured: isEmailConfigured(),
+		emailConfigured: await isEmailConfigured(),
 		currentYear,
 		existingItems: uniqueItems,
 		receiptsByYear,

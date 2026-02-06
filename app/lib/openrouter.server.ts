@@ -14,10 +14,12 @@ export const SETTINGS_KEYS = {
 	AI_PARSING_ENABLED: "ai_parsing_enabled",
 	APPROVAL_KEYWORDS: "approval_keywords",
 	REJECTION_KEYWORDS: "rejection_keywords",
+	REIMBURSEMENT_RECIPIENT_EMAIL: "reimbursement_recipient_email",
 	ANALYTICS_AI_MODEL: "analytics_ai_model",
 	ANALYTICS_HIDDEN_QUESTIONS: "analytics_hidden_questions",
 	NEWS_AI_MODEL: "news_ai_model",
 	FAQ_AI_MODEL: "faq_ai_model",
+	RECEIPT_AI_MODEL: "receipt_ai_model",
 } as const;
 
 // Default keywords (Finnish + English)
