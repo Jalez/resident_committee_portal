@@ -997,9 +997,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						<div
 							className="prose prose-sm dark:prose-invert max-w-none border-l-2 border-gray-300 pl-3 text-gray-500 dark:border-gray-600 dark:text-gray-400"
 							// biome-ignore lint/security/noDangerouslySetInnerHtml: original email body from DB
-							dangerouslySetInnerHTML={{
-								__html: originalMessage.bodyHtml,
-							}}
+							dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
 						/>
 					</div>
 				)}
@@ -1033,9 +1031,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					<div
 						className="prose prose-sm dark:prose-invert max-w-none text-gray-500 dark:text-gray-400"
 						// biome-ignore lint/security/noDangerouslySetInnerHtml: forwarded email body from DB
-						dangerouslySetInnerHTML={{
-							__html: originalMessage.bodyHtml,
-						}}
+						dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
 					/>
 				</div>
 			)}

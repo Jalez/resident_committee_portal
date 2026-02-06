@@ -20,6 +20,8 @@ interface CommitteeMailConfig {
 	fromName: string;
 }
 
+const SMTP_TIMEOUT_MS = Number(process.env.SMTP_TIMEOUT_MS) || 15000;
+
 const config: CommitteeMailConfig = {
 	host: process.env.SMTP_HOST || "",
 	port: Number(process.env.SMTP_PORT) || 587,
@@ -42,6 +44,9 @@ function getTransporter(): Transporter {
 				config.user && config.pass
 					? { user: config.user, pass: config.pass }
 					: undefined,
+			connectionTimeout: SMTP_TIMEOUT_MS,
+			greetingTimeout: SMTP_TIMEOUT_MS,
+			socketTimeout: SMTP_TIMEOUT_MS,
 		});
 	}
 	return transporter;
