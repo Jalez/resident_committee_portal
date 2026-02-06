@@ -70,6 +70,12 @@ export interface CommitteeMailResult {
 	messageId?: string;
 }
 
+export interface CommitteeMailAttachment {
+	filename: string;
+	content: string;
+	contentType?: string;
+}
+
 /**
  * Send one committee email with To, CC, and BCC.
  * Uses COMMITTEE_FROM_EMAIL and COMMITTEE_FROM_NAME as sender.
@@ -82,6 +88,8 @@ export async function sendCommitteeEmail({
 	html,
 	inReplyTo,
 	references,
+	replyTo,
+	attachments,
 }: {
 	to: CommitteeMailRecipient[];
 	cc?: CommitteeMailRecipient[];
@@ -90,6 +98,8 @@ export async function sendCommitteeEmail({
 	html: string;
 	inReplyTo?: string;
 	references?: string[];
+	replyTo?: string;
+	attachments?: CommitteeMailAttachment[];
 }): Promise<CommitteeMailResult> {
 	if (!isCommitteeMailConfigured()) {
 		return {
@@ -112,8 +122,17 @@ export async function sendCommitteeEmail({
 			to: to.map(formatAddress),
 			cc: cc?.length ? cc.map(formatAddress) : undefined,
 			bcc: bcc?.length ? bcc.map(formatAddress) : undefined,
+			replyTo: replyTo || undefined,
 			subject,
 			html,
+			attachments: attachments?.length
+				? attachments.map((attachment) => ({
+						filename: attachment.filename,
+						content: attachment.content,
+						encoding: "base64",
+						contentType: attachment.contentType,
+				  }))
+				: undefined,
 			...(inReplyTo && { inReplyTo }),
 			...(references?.length && { references: references.join(" ") }),
 		});

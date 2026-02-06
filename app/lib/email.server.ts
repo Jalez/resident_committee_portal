@@ -1,45 +1,48 @@
 /**
- * Email utility for sending purchase reimbursement requests
- * Uses Resend for email delivery with inbound reply support
+ * Email utility for sending purchase reimbursement requests.
+ * Uses app SMTP mail (committee mailbox) and IMAP for inbound replies.
  *
  * Required env vars:
- * - RESEND_API_KEY: API key from Resend
- * - SENDER_EMAIL: Email address to send from (must be verified in Resend)
  * - RECIPIENT_EMAIL: Building owner email to receive reimbursement requests
- * - RESEND_INBOUND_EMAIL: Your Resend receiving address (e.g., xxx@abc123.resend.app)
- * - RESEND_WEBHOOK_SECRET: Secret for verifying webhook signatures
+ * - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, COMMITTEE_FROM_EMAIL
  */
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Resend } from "resend";
 import { getReceiptContentBase64 } from "./receipts";
 import { getFileAsBase64 } from "./google.server";
 import { getSystemLanguageDefaults } from "./settings.server";
+import {
+	isCommitteeMailConfigured,
+	sendCommitteeEmail,
+	type CommitteeMailAttachment,
+} from "./mail-nodemailer.server";
+import { computeThreadId } from "./mail-threading.server";
+import type { DatabaseAdapter } from "~/db/adapters/types";
+import { getDatabase } from "~/db";
+import { SETTINGS_KEYS } from "./openrouter.server";
 
-interface EmailConfig {
-	resendApiKey: string;
-	senderEmail: string;
+interface ReimbursementEmailConfig {
 	recipientEmail: string;
-	inboundEmail: string;
-	webhookSecret: string;
+	replyToEmail: string;
 }
 
-const emailConfig: EmailConfig = {
-	resendApiKey: process.env.RESEND_API_KEY || "",
-	senderEmail: process.env.SENDER_EMAIL || "onboarding@resend.dev",
+const reimbursementConfig: ReimbursementEmailConfig = {
 	recipientEmail: process.env.RECIPIENT_EMAIL || "",
-	inboundEmail: process.env.RESEND_INBOUND_EMAIL || "",
-	webhookSecret: process.env.RESEND_WEBHOOK_SECRET || "",
+	replyToEmail: process.env.COMMITTEE_FROM_EMAIL || "",
 };
 
-console.log("[Email Config]", {
-	resendApiKey: emailConfig.resendApiKey ? "SET" : "MISSING",
-	senderEmail: emailConfig.senderEmail,
-	recipientEmail: emailConfig.recipientEmail || "MISSING",
-	inboundEmail: emailConfig.inboundEmail || "NOT_CONFIGURED",
-	webhookSecret: emailConfig.webhookSecret ? "SET" : "NOT_CONFIGURED",
-});
+const REIMBURSEMENT_SUBJECT_TAG = "Reimbursement";
+const REIMBURSEMENT_SUBJECT_REGEX =
+	/\[Reimbursement\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\]/i;
+
+async function getReimbursementRecipientEmail(): Promise<string> {
+	const db = getDatabase();
+	const setting = await db.getSetting(
+		SETTINGS_KEYS.REIMBURSEMENT_RECIPIENT_EMAIL,
+	);
+	return setting?.trim() || reimbursementConfig.recipientEmail;
+}
 
 // Cache for loaded translations
 const translationCache: Record<string, Record<string, unknown>> = {};
@@ -142,29 +145,44 @@ interface SendEmailResult {
 }
 
 /**
- * Generate the Reply-To address for a specific purchase
- * Format: reimbursement-{purchaseId}@{resend-domain}.resend.app
+ * Build a subject with a reimbursement tag for reply mapping.
  */
-export function getReplyToAddress(purchaseId: string): string | null {
-	if (!emailConfig.inboundEmail) {
-		return null;
-	}
-	// Extract the domain part (e.g., "abc123.resend.app" from "anything@abc123.resend.app")
-	const atIndex = emailConfig.inboundEmail.indexOf("@");
-	if (atIndex === -1) {
-		console.error("[getReplyToAddress] Invalid RESEND_INBOUND_EMAIL format");
-		return null;
-	}
-	const domain = emailConfig.inboundEmail.substring(atIndex + 1);
-	return `reimbursement-${purchaseId}@${domain}`;
+export function buildReimbursementSubject(
+	baseSubject: string,
+	purchaseId: string,
+): string {
+	return `[${REIMBURSEMENT_SUBJECT_TAG} ${purchaseId}] ${baseSubject}`;
 }
 
 /**
- * Extract purchase ID from a reply-to address
- * Returns null if the address doesn't match the expected format
+ * Extract purchase ID from a tagged subject.
+ */
+export function extractPurchaseIdFromSubject(
+	subject: string,
+): string | null {
+	const match = subject.match(REIMBURSEMENT_SUBJECT_REGEX);
+	return match ? match[1] : null;
+}
+
+/**
+ * Extract purchase ID from any reimbursement marker inside text content.
+ */
+export function extractPurchaseIdFromContent(
+	content: string,
+): string | null {
+	const match = content.match(
+		/\bReimbursement\s+ID\s*[:#]?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i,
+	);
+	return match ? match[1] : null;
+}
+
+/**
+ * Extract purchase ID from a reply-to address (optional plus-addressing).
  */
 export function extractPurchaseIdFromEmail(toAddress: string): string | null {
-	const match = toAddress.match(/^reimbursement-([a-f0-9-]+)@/i);
+	const match = toAddress.match(
+		/\breimbursement[-+]?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@/i,
+	);
 	return match ? match[1] : null;
 }
 
@@ -244,15 +262,21 @@ export async function sendReimbursementEmail(
 	purchaseId: string,
 	minutesFile?: EmailAttachment,
 	receiptFiles?: EmailAttachment[],
+	db?: DatabaseAdapter,
 ): Promise<SendEmailResult> {
-	if (!emailConfig.recipientEmail) {
+	const recipientEmail = await getReimbursementRecipientEmail();
+	if (!recipientEmail) {
 		console.error("[sendReimbursementEmail] Missing RECIPIENT_EMAIL");
 		return { success: false, error: "Missing RECIPIENT_EMAIL" };
 	}
 
-	if (!emailConfig.resendApiKey) {
-		console.error("[sendReimbursementEmail] Missing RESEND_API_KEY");
-		return { success: false, error: "Missing RESEND_API_KEY" };
+	if (!isCommitteeMailConfigured()) {
+		console.error("[sendReimbursementEmail] Committee mail not configured");
+		return {
+			success: false,
+			error:
+				"Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
+		};
 	}
 
 	// Get app's default language settings
@@ -264,12 +288,8 @@ export async function sendReimbursementEmail(
 	const t = (key: string) => bilingualText(primaryLang, secondaryLang, key);
 
 	try {
-		const resend = new Resend(emailConfig.resendApiKey);
-
-		const subject = `${t("email.reimbursement.subject")}: ${data.itemName} (${data.itemValue} €)`;
-
-		// Generate reply-to address for this specific purchase
-		const replyTo = getReplyToAddress(purchaseId);
+		const baseSubject = `${t("email.reimbursement.subject")}: ${data.itemName} (${data.itemValue} €)`;
+		const subject = buildReimbursementSubject(baseSubject, purchaseId);
 
 		// Build receipt list HTML (no links, files are attached)
 		const receiptListHtml =
@@ -292,6 +312,8 @@ export async function sendReimbursementEmail(
 			? `${data.minutesReference} <em style="color: #666;">(${t("email.reimbursement.attached")})</em>`
 			: t("email.reimbursement.not_specified");
 
+		const reimbursementIdHtml = `<p style="margin-top: 12px; color: #888; font-size: 12px;">Reimbursement ID: ${purchaseId}</p>`;
+
 		const htmlBody = `
             <h2>${t("email.reimbursement.title")}</h2>
             <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
@@ -303,15 +325,17 @@ export async function sendReimbursementEmail(
                 ${receiptListHtml}
                 ${data.notes ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>${t("email.reimbursement.notes")}:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.notes}</td></tr>` : ""}
             </table>
-            ${replyTo ? `<p style="margin-top: 16px; color: #888; font-size: 12px;">${t("email.reimbursement.reply_instruction")}</p>` : ""}
+			<p style="margin-top: 16px; color: #888; font-size: 12px;">${t("email.reimbursement.reply_instruction")}</p>
+			${reimbursementIdHtml}
         `;
 
-		const attachments: { filename: string; content: string }[] = [];
+		const attachments: CommitteeMailAttachment[] = [];
 
 		if (minutesFile) {
 			attachments.push({
 				filename: minutesFile.name,
 				content: minutesFile.content,
+				contentType: minutesFile.type,
 			});
 		}
 
@@ -320,30 +344,56 @@ export async function sendReimbursementEmail(
 				attachments.push({
 					filename: receipt.name,
 					content: receipt.content,
+					contentType: receipt.type,
 				});
 			}
 		}
 
-		const { data: responseData, error } = await resend.emails.send({
-			from: emailConfig.senderEmail,
-			to: emailConfig.recipientEmail,
-			replyTo: replyTo || undefined,
+		const result = await sendCommitteeEmail({
+			to: [{ email: recipientEmail }],
 			subject,
 			html: htmlBody,
+			replyTo: reimbursementConfig.replyToEmail || undefined,
 			attachments: attachments.length > 0 ? attachments : undefined,
 		});
 
-		if (error) {
-			console.error("[sendReimbursementEmail] Resend Error:", error);
-			return { success: false, error: error.message };
+		if (!result.success) {
+			console.error("[sendReimbursementEmail] SMTP Error:", result.error);
+			return { success: false, error: result.error };
+		}
+
+		if (db) {
+			const fromEmail = process.env.COMMITTEE_FROM_EMAIL || "";
+			const fromName =
+				process.env.COMMITTEE_FROM_NAME ||
+				process.env.SITE_NAME ||
+				"Committee";
+			const toJson = JSON.stringify([{ email: recipientEmail }]);
+			const threadId = computeThreadId(result.messageId || null, null, null);
+			await db.insertCommitteeMailMessage({
+				direction: "sent",
+				fromAddress: fromEmail,
+				fromName: fromName || null,
+				toJson,
+				ccJson: null,
+				bccJson: null,
+				subject,
+				bodyHtml: htmlBody,
+				bodyText: null,
+				date: new Date(),
+				messageId: result.messageId || null,
+				inReplyTo: null,
+				referencesJson: null,
+				threadId,
+			});
 		}
 
 		console.log(
-			`[sendReimbursementEmail] Successfully sent email for: ${data.itemName}, messageId: ${responseData?.id}`,
+			`[sendReimbursementEmail] Successfully sent email for: ${data.itemName}, messageId: ${result.messageId}`,
 		);
 		return {
 			success: true,
-			messageId: responseData?.id,
+			messageId: result.messageId,
 		};
 	} catch (error) {
 		console.error("[sendReimbursementEmail] Error:", error);
@@ -381,9 +431,13 @@ export async function sendReimbursementStatusEmail(
 		return { success: true, messageId: "dev-mode-logged" };
 	}
 
-	if (!emailConfig.resendApiKey) {
-		console.error("[sendReimbursementStatusEmail] Missing RESEND_API_KEY");
-		return { success: false, error: "Missing RESEND_API_KEY" };
+	if (!isCommitteeMailConfigured()) {
+		console.error("[sendReimbursementStatusEmail] Committee mail not configured");
+		return {
+			success: false,
+			error:
+				"Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
+		};
 	}
 
 	// Use test email in dev mode if configured, otherwise use user's email
@@ -393,8 +447,6 @@ export async function sendReimbursementStatusEmail(
 	const t = (key: string) => bilingualText(userPrimaryLanguage, userSecondaryLanguage, key);
 
 	try {
-		const resend = new Resend(emailConfig.resendApiKey);
-
 		const statusKey = status === "approved" ? "approved" : "declined";
 		const subject = t(`email.reimbursement_status.${statusKey}.subject`);
 
@@ -429,24 +481,23 @@ export async function sendReimbursementStatusEmail(
 			</p>
 		`;
 
-		const { data: responseData, error } = await resend.emails.send({
-			from: emailConfig.senderEmail,
-			to: recipientEmail,
+		const result = await sendCommitteeEmail({
+			to: [{ email: recipientEmail }],
 			subject,
 			html: htmlBody,
 		});
 
-		if (error) {
-			console.error("[sendReimbursementStatusEmail] Resend Error:", error);
-			return { success: false, error: error.message };
+		if (!result.success) {
+			console.error("[sendReimbursementStatusEmail] SMTP Error:", result.error);
+			return { success: false, error: result.error };
 		}
 
 		console.log(
-			`[sendReimbursementStatusEmail] Successfully sent status email to ${recipientEmail} for purchase ${purchaseId}, messageId: ${responseData?.id}`,
+			`[sendReimbursementStatusEmail] Successfully sent status email to ${recipientEmail} for purchase ${purchaseId}, messageId: ${result.messageId}`,
 		);
 		return {
 			success: true,
-			messageId: responseData?.id,
+			messageId: result.messageId,
 		};
 	} catch (error) {
 		console.error("[sendReimbursementStatusEmail] Error:", error);
@@ -539,20 +590,21 @@ export async function buildMinutesAttachment(
 /**
  * Check if email is configured
  */
-export function isEmailConfigured(): boolean {
-	return !!(emailConfig.resendApiKey && emailConfig.recipientEmail);
+export async function isEmailConfigured(): Promise<boolean> {
+	const recipientEmail = await getReimbursementRecipientEmail();
+	return !!(recipientEmail && isCommitteeMailConfigured());
 }
 
 /**
  * Check if inbound email is configured
  */
 export function isInboundEmailConfigured(): boolean {
-	return !!(emailConfig.inboundEmail && emailConfig.webhookSecret);
+	return !!(process.env.IMAP_HOST && process.env.IMAP_USER);
 }
 
 /**
  * Get the webhook secret for signature verification
  */
 export function getWebhookSecret(): string {
-	return emailConfig.webhookSecret;
+	return process.env.RESEND_WEBHOOK_SECRET || "";
 }

@@ -6,7 +6,14 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import type { DatabaseAdapter } from "~/db/adapters/types";
+import {
+	extractPurchaseIdFromContent,
+	extractPurchaseIdFromEmail,
+	extractPurchaseIdFromSubject,
+	parseReimbursementReply,
+} from "./email.server";
 import { computeThreadId } from "./mail-threading.server";
+import { createReimbursementStatusNotification } from "./notifications.server";
 
 const config = {
 	host: process.env.IMAP_HOST || "",
@@ -25,6 +32,94 @@ function addressesToJson(arr: { address?: string; name?: string }[] | undefined)
 	return JSON.stringify(
 		arr.map((a) => ({ email: a.address || "", name: a.name || undefined })),
 	);
+}
+
+function stripHtml(html: string): string {
+	return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function findReimbursementPurchaseId({
+	to,
+	subject,
+	bodyText,
+	bodyHtml,
+}: {
+	to: { address?: string; name?: string }[] | undefined;
+	subject: string;
+	bodyText: string | null;
+	bodyHtml: string;
+}): string | null {
+	if (to) {
+		for (const entry of to) {
+			if (!entry.address) continue;
+			const match = extractPurchaseIdFromEmail(entry.address);
+			if (match) return match;
+		}
+	}
+
+	const subjectMatch = extractPurchaseIdFromSubject(subject);
+	if (subjectMatch) return subjectMatch;
+
+	if (bodyText) {
+		const contentMatch = extractPurchaseIdFromContent(bodyText);
+		if (contentMatch) return contentMatch;
+	}
+
+	if (bodyHtml) {
+		const contentMatch = extractPurchaseIdFromContent(stripHtml(bodyHtml));
+		if (contentMatch) return contentMatch;
+	}
+
+	return null;
+}
+
+async function applyReimbursementReply(
+	db: DatabaseAdapter,
+	purchaseId: string,
+	content: string,
+): Promise<void> {
+	const purchase = await db.getPurchaseById(purchaseId);
+	if (!purchase) return;
+
+	const decision = await parseReimbursementReply(content);
+	const updateData: {
+		emailReplyReceived: boolean;
+		emailReplyContent: string;
+		status?: "approved" | "rejected" | "pending";
+	} = {
+		emailReplyReceived: true,
+		emailReplyContent: content.substring(0, 1000),
+	};
+
+	if (decision === "approved") updateData.status = "approved";
+	if (decision === "rejected") updateData.status = "rejected";
+
+	await db.updatePurchase(purchaseId, updateData);
+
+	if (decision === "approved" || decision === "rejected") {
+		const updatedPurchase = await db.getPurchaseById(purchaseId);
+		if (updatedPurchase) {
+			await createReimbursementStatusNotification(
+				updatedPurchase,
+				decision,
+				db,
+			);
+		}
+	}
+
+	if (decision === "approved" || decision === "rejected") {
+		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
+		if (linkedTransaction) {
+			const newReimbursementStatus =
+				decision === "approved" ? "approved" : "declined";
+			const newTransactionStatus =
+				decision === "approved" ? "complete" : "declined";
+			await db.updateTransaction(linkedTransaction.id, {
+				reimbursementStatus: newReimbursementStatus,
+				status: newTransactionStatus,
+			});
+		}
+	}
 }
 
 /**
@@ -103,6 +198,16 @@ export async function fetchInboxMessages(
 					: null;
 				const subject = envelope?.subject?.trim() || "(No subject)";
 				const date = envelope?.date || new Date();
+				const purchaseId = findReimbursementPurchaseId({
+					to: envelope?.to,
+					subject,
+					bodyText,
+					bodyHtml,
+				});
+				if (purchaseId) {
+					const content = bodyText || stripHtml(bodyHtml) || subject;
+					await applyReimbursementReply(db, purchaseId, content);
+				}
 				const threadId = computeThreadId(messageId, inReplyTo, references);
 				await db.insertCommitteeMailMessage({
 					direction: "inbox",
