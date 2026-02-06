@@ -141,63 +141,65 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 				</AlertDialogContent>
 			</AlertDialog>
 
-			{/* Header */}
-			<div className="space-y-2 border-b border-gray-200 pb-4 dark:border-gray-700">
-				<h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-					{message.subject || "(No subject)"}
-				</h1>
-				<div className="grid gap-1 text-sm text-gray-600 dark:text-gray-400">
-					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">
-							{t("mail.from")}:
-						</span>
-						<span>
-							{message.fromName
-								? `${message.fromName} <${message.fromAddress}>`
-								: message.fromAddress}
-						</span>
-					</div>
-					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">
-							{t("mail.to")}:
-						</span>
-						<span>
-							{formatRecipientsJson(message.toJson)}
-						</span>
-					</div>
-					{message.ccJson && (
+			<div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60">
+				{/* Header */}
+				<div className="space-y-2 border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/70">
+					<h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+						{message.subject || "(No subject)"}
+					</h1>
+					<div className="grid gap-1 text-sm text-gray-600 dark:text-gray-400">
 						<div className="flex gap-2">
 							<span className="shrink-0 font-medium">
-								{t("mail.cc")}:
+								{t("mail.from")}:
 							</span>
 							<span>
-								{formatRecipientsJson(message.ccJson)}
+								{message.fromName
+									? `${message.fromName} <${message.fromAddress}>`
+									: message.fromAddress}
 							</span>
 						</div>
-					)}
-					<div className="flex gap-2">
-						<span className="shrink-0 font-medium">
-							{t("mail.date")}:
-						</span>
-						<span>
-							{new Date(message.date).toLocaleString(
-								undefined,
-								{
-									dateStyle: "medium",
-									timeStyle: "short",
-								},
-							)}
-						</span>
+						<div className="flex gap-2">
+							<span className="shrink-0 font-medium">
+								{t("mail.to")}:
+							</span>
+							<span>
+								{formatRecipientsJson(message.toJson)}
+							</span>
+						</div>
+						{message.ccJson && (
+							<div className="flex gap-2">
+								<span className="shrink-0 font-medium">
+									{t("mail.cc")}:
+								</span>
+								<span>
+									{formatRecipientsJson(message.ccJson)}
+								</span>
+							</div>
+						)}
+						<div className="flex gap-2">
+							<span className="shrink-0 font-medium">
+								{t("mail.date")}:
+							</span>
+							<span>
+								{new Date(message.date).toLocaleString(
+									undefined,
+									{
+										dateStyle: "medium",
+										timeStyle: "short",
+									},
+								)}
+							</span>
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{/* Body */}
-			<div
-				className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB (sent by us or fetched via IMAP)
-				dangerouslySetInnerHTML={{ __html: message.bodyHtml }}
-			/>
+				{/* Body */}
+				<div
+					className="prose prose-sm dark:prose-invert max-w-none px-4 py-4 text-gray-900 dark:text-gray-100"
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB (sent by us or fetched via IMAP)
+					dangerouslySetInnerHTML={{ __html: message.bodyHtml }}
+				/>
+			</div>
 		</div>
 	);
 }

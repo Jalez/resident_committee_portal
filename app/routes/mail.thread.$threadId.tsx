@@ -156,13 +156,13 @@ export default function MailThread({ loaderData }: Route.ComponentProps) {
 					return (
 						<div
 							key={msg.id}
-							className="rounded-lg border border-gray-200 dark:border-gray-700"
+							className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60"
 						>
 							{/* Message header (always visible) */}
 							<button
 								type="button"
 								onClick={() => toggleExpand(msg.id)}
-								className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50"
+								className="flex w-full items-center justify-between gap-2 bg-gray-100 px-4 py-3 text-left hover:bg-gray-200/70 dark:bg-gray-800/70 dark:hover:bg-gray-800/90"
 							>
 								<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 									<div className="flex items-center gap-2">
@@ -314,40 +314,6 @@ export default function MailThread({ loaderData }: Route.ComponentProps) {
 					);
 				})}
 			</div>
-
-			{/* Quick reply button at bottom */}
-			{messages.length > 0 && (
-				<div className="flex items-center gap-2">
-					<Button variant="default" size="sm" asChild>
-						<Link
-							to={`/mail/compose?replyTo=${messages[messages.length - 1].id}`}
-						>
-							<Reply className="mr-1 size-4" />
-							{t("mail.reply", { defaultValue: "Reply" })}
-						</Link>
-					</Button>
-					<Button variant="outline" size="sm" asChild>
-						<Link
-							to={`/mail/compose?replyAllTo=${messages[messages.length - 1].id}`}
-						>
-							<ReplyAll className="mr-1 size-4" />
-							{t("mail.reply_all", {
-								defaultValue: "Reply All",
-							})}
-						</Link>
-					</Button>
-					<Button variant="outline" size="sm" asChild>
-						<Link
-							to={`/mail/compose?forward=${messages[messages.length - 1].id}`}
-						>
-							<Forward className="mr-1 size-4" />
-							{t("mail.forward", {
-								defaultValue: "Forward",
-							})}
-						</Link>
-					</Button>
-				</div>
-			)}
 
 			{/* Delete confirmation dialog */}
 			<AlertDialog
