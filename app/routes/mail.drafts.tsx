@@ -50,6 +50,17 @@ function formatDraftDate(updatedAt: Date | string | null): string {
 	});
 }
 
+function formatDraftRecipients(toJson: string | null): string {
+	if (!toJson) return "";
+	try {
+		const arr = JSON.parse(toJson) as { email: string; name?: string }[];
+		if (!Array.isArray(arr) || arr.length === 0) return "";
+		return arr.map((r) => r.name || r.email).join(", ");
+	} catch {
+		return "";
+	}
+}
+
 export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 	const { drafts } = loaderData;
 	const { t } = useTranslation();
@@ -90,13 +101,19 @@ export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 				<div className="divide-y divide-gray-200 dark:divide-gray-700">
 					{drafts.map((draft) => {
 						const subject = draft.subject?.trim() || t("mail.no_subject");
+						const recipients = formatDraftRecipients(draft.toJson);
 						const preview = firstLine(draft.body);
 						return (
 							<MailItem
 								key={draft.id}
 								type="draft"
 								id={draft.id}
-								primaryText={subject}
+								primaryText={
+									recipients ||
+									t("mail.draft_no_recipients", {
+										defaultValue: "No recipients",
+									})
+								}
 								secondaryText={subject}
 								date={formatDraftDate(draft.updatedAt)}
 								preview={preview || undefined}
