@@ -111,7 +111,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 					sourceTransaction = await db.getTransactionById(sourceContext.id);
 					if (sourceTransaction) {
 						prefillData = {
-							amount: String(Math.abs(sourceTransaction.amount)), // Use absolute value for expenses
+							amount: String(Math.abs(parseFloat(sourceTransaction.amount))), // Use absolute value for expenses
 							description: sourceTransaction.description,
 							linkedTransactionId: sourceTransaction.id,
 							sourceType: "transaction",
