@@ -2,6 +2,14 @@
   "common": {
     "date": "Päivämäärä",
     "time": "Aika",
+    "entity_types": {
+      "receipt": "Kuitti",
+      "transaction": "Tapahtuma",
+      "reimbursement": "Kulukorvaus",
+      "budget": "Budjetti",
+      "inventory": "Varastoesine",
+      "minute": "Pöytäkirja"
+    },
     "actions": {
       "delete": "Poista",
       "edit": "Muokkaa",
@@ -178,6 +186,7 @@
       "transaction_deleted": "Tapahtuma poistettu"
     },
     "view_breakdown": "Katso erittely",
+    "auto_linked_from": "Linkitetty automaattisesti kohteesta {{type}}: {{name}}",
     "balance": "Saldo",
     "income": "Tulot",
     "unbudgeted_transactions": "Budjetoimattomat transaktiot",
@@ -250,7 +259,11 @@
       "view_file": "Näytä tiedosto",
       "file_ready": "Tiedosto ladattu ja valmis",
       "optional_replace": "Valinnainen: lataa eri tiedosto",
-      "no_ai_parsing": "Tekoäly-jäsennystä ei ole konfiguroitu. Vain raakatekstin purku on saatavilla. Konfiguroi OpenRouter API-avain asetuksista ottaaksesi käyttöön rakenteisen datan purun."
+      "no_ai_parsing": "Tekoäly-jäsennystä ei ole konfiguroitu. Vain raakatekstin purku on saatavilla. Konfiguroi OpenRouter API-avain asetuksista ottaaksesi käyttöön rakenteisen datan purun.",
+      "link_existing": "Liitä kuitti",
+      "select_placeholder": "Valitse kuitti...",
+      "no_link": "Älä liitä",
+      "upload_new": "Lataa uusi kuitti"
     },
     "actions": {
       "breakdown": "Erittely",
@@ -266,10 +279,6 @@
       "items_selected": "{{count}} tavaraa valittu",
       "total": "Yhteensä",
       "select_items": "Valitse tavarat",
-      "link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
-      "link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä transaktio linkitetään.",
-      "select_reimbursement_placeholder": "Valitse kulukorvaus...",
-      "no_link": "Älä linkitä",
       "or": "tai",
       "submit": "Lisää",
       "link_budget": "Linkitä budjettiin",
@@ -306,7 +315,12 @@
       "all": "Kaikki",
       "type": "Tyyppi",
       "status": "Tila",
-      "locked_by_reimbursement": "Lukittu (kulukorvaus lähetetty)"
+      "locked_by_reimbursement": "Lukittu (kulukorvaus lähetetty)",
+      "link_existing": "Liitä transaktio",
+      "create": "Luo transaktio",
+      "linked": "Linkitetyt transaktiot",
+      "select_placeholder": "Valitse transaktio...",
+      "no_link": "Älä liitä olemassa olevaan transaktioon"
     },
     "reimbursements": {
       "link_to_reimbursement": "Linkitä kulukorvaukseen",
@@ -336,20 +350,19 @@
       "edit": {
         "title": "Muokkaa kulukorvausta",
         "reimbursement_details": "Kulukorvauksen tiedot"
-      }
+      },
+      "link_existing": "Liitä kulukorvaus",
+      "select_placeholder": "Valitse kulukorvaus...",
+      "no_link": "Älä liitä"
     },
     "new_reimbursement": {
       "title": "Uusi kulukorvaus",
       "description": "Kuvaus",
       "description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
       "amount": "Summa €",
-      "receipts": "Kuitit",
-      "select_receipt_error": "Valitse vähintään yksi kuitti",
       "purchaser_name": "Ostajan nimi",
       "purchaser_placeholder": "Etu- ja sukunimi",
       "bank_account": "Tilinumero (IBAN)",
-      "minutes": "Pöytäkirja",
-      "select_minutes": "Valitse pöytäkirja...",
       "minutes_help": "Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.",
       "notes": "Lisätiedot",
       "notes_placeholder": "Vapaamuotoinen viesti...",
@@ -360,9 +373,7 @@
       "select_transaction_placeholder": "Valitse transaktio...",
       "linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
       "reimbursement_details": "Kulukorvauksen tiedot",
-      "transaction_section_title": "Transaktio",
-      "create_transaction": "Luo transaktio",
-      "no_link": "Älä liitä olemassa olevaan transaktioon"
+      "transaction_section_title": "Transaktio"
     },
     "breakdown": {
       "title": "Rahastoerittely",
@@ -627,7 +638,10 @@
       "title": "Pöytäkirjojen nimeäminen",
       "use_format": "Käytä muotoa",
       "example": "Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin."
-    }
+    },
+    "link_existing": "Liitä pöytäkirja",
+    "select_placeholder": "Valitse pöytäkirja...",
+    "no_link": "Älä liitä"
   },
   "profile": {
     "title": "Profiili",

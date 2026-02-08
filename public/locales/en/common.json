@@ -2,6 +2,14 @@
   "common": {
     "date": "Date",
     "time": "Time",
+    "entity_types": {
+      "receipt": "Receipt",
+      "transaction": "Transaction",
+      "reimbursement": "Reimbursement",
+      "budget": "Budget",
+      "inventory": "Inventory Item",
+      "minute": "Minute"
+    },
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
@@ -175,6 +183,7 @@
     "title": "Treasury {{year}}",
     "select_year": "Select year...",
     "view_breakdown": "See Breakdown",
+    "auto_linked_from": "Auto-linked from {{type}}: {{name}}",
     "balance": "Balance",
     "income": "Income",
     "unbudgeted_transactions": "Unbudgeted Transactions",
@@ -245,7 +254,11 @@
       "view_file": "View File",
       "file_ready": "File uploaded and ready",
       "optional_replace": "Optional: upload a different file",
-      "no_ai_parsing": "AI parsing is not configured. Only raw text extraction is available. Configure OpenRouter API key in settings to enable structured data extraction."
+      "no_ai_parsing": "AI parsing is not configured. Only raw text extraction is available. Configure OpenRouter API key in settings to enable structured data extraction.",
+      "link_existing": "Link Receipt",
+      "select_placeholder": "Select receipt...",
+      "no_link": "Don't link",
+      "upload_new": "Upload New Receipt"
     },
     "actions": {
       "breakdown": "Breakdown",
@@ -263,10 +276,6 @@
       "items_selected": "{{count}} items selected",
       "total": "Total",
       "select_items": "Select Items",
-      "link_existing_reimbursement": "Link to Existing Reimbursement",
-      "link_existing_help": "Select an existing reimbursement request to link this transaction to.",
-      "select_reimbursement_placeholder": "Select reimbursement...",
-      "no_link": "Don't link",
       "or": "or",
       "submit": "Add",
       "link_budget": "Link to Budget",
@@ -308,7 +317,12 @@
       "all": "All",
       "type": "Type",
       "status": "Status",
-      "locked_by_reimbursement": "Locked (reimbursement sent)"
+      "locked_by_reimbursement": "Locked (reimbursement sent)",
+      "link_existing": "Link Transaction",
+      "create": "Create transaction",
+      "linked": "Linked Transactions",
+      "select_placeholder": "Select transaction...",
+      "no_link": "Don't link to existing transaction"
     },
     "reimbursements": {
       "link_to_reimbursement": "Link to reimbursement request",
@@ -338,20 +352,19 @@
       "edit": {
         "title": "Edit Reimbursement",
         "reimbursement_details": "Reimbursement Details"
-      }
+      },
+      "link_existing": "Link Reimbursement",
+      "select_placeholder": "Select reimbursement...",
+      "no_link": "Don't link"
     },
     "new_reimbursement": {
       "title": "New Reimbursement",
       "description": "Description",
       "description_placeholder": "E.g. Coffee for meeting",
       "amount": "Amount €",
-      "receipts": "Receipts",
-      "select_receipt_error": "Select at least one receipt",
       "purchaser_name": "Purchaser Name",
       "purchaser_placeholder": "First and last name",
       "bank_account": "Bank Account",
-      "minutes": "Related Minutes",
-      "select_minutes": "Select minutes...",
       "minutes_help": "For purchases over 100€, minutes are required before payment.",
       "notes": "Additional Notes",
       "notes_placeholder": "Free-form message...",
@@ -362,9 +375,7 @@
       "select_transaction_placeholder": "Select transaction...",
       "linked_transaction_info": "This reimbursement will be linked to the selected transaction. The transaction details will be used.",
       "reimbursement_details": "Reimbursement Details",
-      "transaction_section_title": "Transaction",
-      "create_transaction": "Create transaction",
-      "no_link": "Don't link to existing transaction"
+      "transaction_section_title": "Transaction"
     },
     "breakdown": {
       "title": "Treasury Breakdown",
@@ -627,7 +638,10 @@
       "title": "Naming Minutes",
       "use_format": "Use format",
       "example": "Ex: 2026-01-05_Board_Meeting_1.pdf - Files are ordered newest first."
-    }
+    },
+    "link_existing": "Link Minutes",
+    "select_placeholder": "Select minutes...",
+    "no_link": "Don't link"
   },
   "profile": {
     "title": "Profile",

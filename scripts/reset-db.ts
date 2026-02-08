@@ -29,18 +29,18 @@ async function reset() {
 		await sql`CREATE SCHEMA public`;
 		console.log("   ✓ Public schema recreated");
 
-		// 2. Push schema
-		console.log("\n🏗️  Pushing schema to database...");
-		const proc = Bun.spawn(["bun", "run", "db:push"], {
+		// 2. Apply migrations
+		console.log("\n🏗️  Running migrations...");
+		const proc = Bun.spawn(["bun", "run", "db:migrate"], {
 			stdout: "inherit",
 			stderr: "inherit",
 		});
 		await proc.exited;
 
 		if (proc.exitCode !== 0) {
-			throw new Error("Schema push failed");
+			throw new Error("Migration run failed");
 		}
-		console.log("   ✓ Schema applied");
+		console.log("   ✓ Migrations applied");
 
 		// 3. Seed RBAC
 		console.log("\n🌱 Seeding initial roles...");
