@@ -15,7 +15,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { FileUpload } from "~/components/ui/file-upload";
 import { InventoryPicker, type InventoryPickerItem } from "~/components/treasury/pickers/inventory-picker";
 import { TreasuryRelationActions } from "~/components/treasury/treasury-relation-actions";
-import { reimbursementsToLinkableItems } from "~/components/treasury/pickers/reimbursements-picker";
+import { ReimbursementsPicker, reimbursementsToLinkableItems } from "~/components/treasury/pickers/reimbursements-picker";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";
 import { buildMinutePath, getMinutesPrefix } from "~/lib/minutes/utils";
@@ -215,41 +215,31 @@ export default function MinutesNew({ loaderData }: Route.ComponentProps) {
                                 />
                             </div>
                         </div>
+
+                        {/* Reimbursements Picker */}
+                        <ReimbursementsPicker
+                            multi
+                            linkedReimbursements={linkedPurchases}
+                            unlinkedReimbursements={availableReimbursements}
+                            onMultiSelectionChange={setLinkedPurchases}
+                            createUrl="/treasury/reimbursements/new"
+                        />
+
+                        {/* Inventory Picker */}
+                        <InventoryPicker
+                            linkedItems={linkedInventory}
+                            availableItems={inventoryItems}
+                            onSelectionChange={setLinkedInventory}
+                            storageKey="minutes-new-inventory-picker"
+                        />
+
+                        <TreasuryFormActions
+                            saveLabel={t("common.actions.save", "Save")}
+                            disabled={isSubmitting}
+                            onCancel={() => navigate("/minutes")}
+                        />
                     </TreasuryDetailCard>
 
-                    {/* Reimbursements Picker */}
-                    <TreasuryRelationActions
-                        label={t("minutes.linked_reimbursements", "Linked Reimbursements")}
-                        mode="edit" // allow editing links even during creation
-                        items={reimbursementsToLinkableItems(linkedPurchases)}
-                        onRemove={(id) => setLinkedPurchases(prev => prev.filter(p => p.id !== id))}
-                        addUrl="/treasury/reimbursements/new"
-                        addLabel={t("treasury.reimbursements.new")}
-                        linkableItems={reimbursementsToLinkableItems(availableReimbursements)}
-                        onSelectionChange={(id) => {
-                            const p = unlinkedReimbursements.find((r: Purchase) => r.id === id);
-                            if (p) {
-                                setLinkedPurchases(prev => [...prev, p]);
-                            }
-                        }}
-                        linkExistingLabel={t("treasury.new.link_existing_reimbursement")}
-                        linkExistingPlaceholder={t("treasury.new.select_reimbursement_placeholder")}
-                        noLinkText={t("treasury.new.no_link")}
-                    />
-
-                    {/* Inventory Picker */}
-                    <InventoryPicker
-                        linkedItems={linkedInventory}
-                        availableItems={inventoryItems}
-                        onSelectionChange={setLinkedInventory}
-                        storageKey="minutes-new-inventory-picker"
-                    />
-
-                    <TreasuryFormActions
-                        saveLabel={t("common.actions.save", "Save")}
-                        disabled={isSubmitting}
-                        onCancel={() => navigate("/minutes")}
-                    />
                 </Form>
             </div>
         </PageWrapper>

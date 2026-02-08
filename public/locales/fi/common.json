@@ -241,7 +241,6 @@
       "receipt_file": "Kuittitiedosto",
       "replace_file": "Vaihda kuittitiedosto",
       "parsed_content": "Jäsennelty sisältö",
-      "edit": "Muokkaa kuittia",
       "extract_text": "Pura teksti",
       "process_text": "Käsittele raakateksti",
       "extract_content": "Pura kuitin sisältö",

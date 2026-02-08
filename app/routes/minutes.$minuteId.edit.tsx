@@ -17,7 +17,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { Button } from "~/components/ui/button";
 import { InventoryPicker, type InventoryPickerItem } from "~/components/treasury/pickers/inventory-picker";
 import { TreasuryRelationActions } from "~/components/treasury/treasury-relation-actions";
-import { reimbursementsToLinkableItems } from "~/components/treasury/pickers/reimbursements-picker";
+import { ReimbursementsPicker, reimbursementsToLinkableItems } from "~/components/treasury/pickers/reimbursements-picker";
 import type { Purchase } from "~/db/schema";
 import { useNavigate } from "react-router"; // Fixed import location
 
@@ -263,23 +263,13 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
                     </TreasuryDetailCard>
 
                     {/* Reimbursements Picker */}
-                    <TreasuryRelationActions
-                        label={t("minutes.linked_reimbursements", "Linked Reimbursements")}
-                        mode="edit"
-                        items={reimbursementsToLinkableItems(linkedPurchases)}
-                        onRemove={(id) => setLinkedPurchases(prev => prev.filter(p => p.id !== id))}
-                        addUrl="/treasury/reimbursements/new"
-                        addLabel={t("treasury.reimbursements.new")}
-                        linkableItems={reimbursementsToLinkableItems(availableReimbursements)}
-                        onSelectionChange={(id) => {
-                            const p = unlinkedReimbursements.find(r => r.id === id);
-                            if (p) {
-                                setLinkedPurchases(prev => [...prev, p]);
-                            }
-                        }}
-                        linkExistingLabel={t("treasury.new.link_existing_reimbursement")}
-                        linkExistingPlaceholder={t("treasury.new.select_reimbursement_placeholder")}
-                        noLinkText={t("treasury.new.no_link")}
+                    {/* Reimbursements Picker */}
+                    <ReimbursementsPicker
+                        multi
+                        linkedReimbursements={linkedPurchases}
+                        unlinkedReimbursements={availableReimbursements}
+                        onMultiSelectionChange={setLinkedPurchases}
+                        createUrl="/treasury/reimbursements/new"
                     />
 
                     {/* Inventory Picker */}
