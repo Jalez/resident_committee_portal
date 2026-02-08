@@ -617,6 +617,15 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	// ==================== Transaction Methods ====================
+	async getTransactionById(id: string): Promise<Transaction | null> {
+		const result = await this.db
+			.select()
+			.from(transactions)
+			.where(eq(transactions.id, id))
+			.limit(1);
+		return result[0] || null;
+	}
+
 	async getTransactionsByYear(year: number): Promise<Transaction[]> {
 		return this.db
 			.select()
