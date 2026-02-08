@@ -12,20 +12,16 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
-	type MinuteFile,
-	ReimbursementForm,
-} from "~/components/treasury/reimbursement-form";
-import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
-import { TransactionItemList } from "~/components/treasury/transaction-item-list";
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
+import { TreasuryRelationActions } from "~/components/treasury/treasury-relation-actions";
+import { ReceiptsPicker, type ReceiptLink } from "~/components/treasury/pickers/receipts-picker";
+import { MinutesPicker } from "~/components/treasury/pickers/minutes-picker";
 import {
-	LinkExistingSelector,
 	transactionsToLinkableItems,
 } from "~/components/treasury/link-existing-selector";
-import { CheckboxOption } from "~/components/treasury/checkbox-option";
-import { Divider } from "~/components/treasury/divider";
-import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
-import { SectionCard } from "~/components/treasury/section-card";
-import { Button } from "~/components/ui/button";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
 import {
@@ -33,7 +29,6 @@ import {
 	type InventoryItem,
 	type NewInventoryItem,
 	type NewPurchase,
-	type NewTransaction,
 	type Transaction,
 } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
@@ -52,6 +47,7 @@ import {
 	parseReceiptLinks,
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
+
 import type { Route } from "./+types/treasury.reimbursement.new";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -63,13 +59,47 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
+export interface MinuteFile {
+	id: string;
+	name: string;
+	url?: string;
+	year: string;
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "treasury:reimbursements:write", getDatabase);
 	const db = getDatabase();
 
+	const url = new URL(request.url);
+	const sourceReceiptId = url.searchParams.get("sourceReceiptId");
+
 	// Get receipts for picker (only unconnected)
 	const receiptsByYear = await getUnconnectedReceiptsByYear();
 	const currentYear = new Date().getFullYear();
+
+	// Check if we should prefill from a receipt
+	let prefillData = null;
+	let sourceReceipt = null;
+	if (sourceReceiptId) {
+		try {
+			const receipt = await db.getReceiptById(sourceReceiptId);
+			if (receipt) {
+				sourceReceipt = receipt;
+				const receiptContent = await db.getReceiptContentByReceiptId(sourceReceiptId);
+				if (receiptContent) {
+					prefillData = {
+						amount: receiptContent.totalAmount ? String(receiptContent.totalAmount) : "",
+						description: `${receiptContent.storeName || "Purchase"} - ${new Date(receiptContent.purchaseDate || receipt.createdAt).toLocaleDateString()}`,
+						linkedReceiptIds: [receipt.id],
+						sourceReceiptId: receipt.id,
+						receiptName: receipt.name || receipt.pathname.split("/").pop() || "Receipt",
+					};
+				}
+			}
+		} catch (error) {
+			console.error("Error loading source receipt:", error);
+		}
+	}
 
 	// Get inventory items available for picker (active, non-legacy, with available quantity)
 	const pickerItems = await db.getInventoryItemsForPicker();
@@ -91,9 +121,26 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const unlinkedTransactions =
 		await db.getExpenseTransactionsWithoutReimbursement();
 
+	// Fetch minutes from DB
+	let recentMinutes: MinuteFile[] = [];
+	try {
+		const minutes = await db.getMinutes(); // Fetch all or limit? getMinutes might need limit/year
+		// Sort by date desc
+		minutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+		recentMinutes = minutes.slice(0, 50).map(m => ({
+			id: m.id,
+			name: m.title,
+			url: m.fileUrl,
+			year: new Date(m.date).getFullYear().toString()
+		}));
+	} catch (error) {
+		console.error("Failed to fetch minutes:", error);
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
-		recentMinutes: [] as MinuteFile[],
+		recentMinutes,
 		emailConfigured: await isEmailConfigured(),
 		currentYear,
 		receiptsByYear,
@@ -103,6 +150,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 		uniqueCategories,
 		// Unlinked transactions for linking selector
 		unlinkedTransactions,
+		// Prefill data from receipt
+		prefillData,
+		sourceReceipt,
 	};
 }
 
@@ -181,12 +231,15 @@ export async function action({ request }: Route.ActionArgs) {
 	// Main form submission
 	const linkTransactionId = formData.get("linkTransactionId") as string;
 	const isLinkingToExisting = !!linkTransactionId;
-	const createTransaction = formData.get("createTransaction") === "on";
 
 	const purchaserName = formData.get("purchaserName") as string;
 	const bankAccount = formData.get("bankAccount") as string;
-	const minutesId = formData.get("minutesId") as string;
-	const minutesName = formData.get("minutesName") as string;
+
+	const minutesInfo = formData.get("minutesId") as string;
+	const [minutesId, minutesName] = minutesInfo.includes("|")
+		? minutesInfo.split("|")
+		: [minutesInfo, ""];
+
 	const notes = formData.get("notes") as string;
 	const currentYear = new Date().getFullYear();
 
@@ -196,7 +249,6 @@ export async function action({ request }: Route.ActionArgs) {
 		return { success: false, error: receiptError };
 	}
 
-	let transactionId: string | undefined;
 	let description: string;
 	let amount: string;
 	let year = currentYear;
@@ -212,7 +264,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 		description = existingTransaction.description;
 		amount = existingTransaction.amount;
-		transactionId = existingTransaction.id;
 		year = existingTransaction.year;
 
 		// Create purchase (reimbursement request) and link to existing transaction
@@ -233,7 +284,7 @@ export async function action({ request }: Route.ActionArgs) {
 		const purchase = await db.createPurchase(newPurchase);
 
 		// Update existing transaction to link to purchase
-		await db.updateTransaction(transactionId, {
+		await db.updateTransaction(existingTransaction.id, {
 			purchaseId: purchase.id,
 			status: "pending",
 			reimbursementStatus: "requested",
@@ -247,7 +298,7 @@ export async function action({ request }: Route.ActionArgs) {
 				// Check if receipt already exists in database
 				const existingReceipts = await db.getReceipts();
 				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
-				
+
 				if (existingReceipt) {
 					// Update existing receipt to link to purchase
 					await db.updateReceipt(existingReceipt.id, {
@@ -263,148 +314,6 @@ export async function action({ request }: Route.ActionArgs) {
 						purchaseId: purchase.id,
 						createdBy: user.userId,
 					});
-				}
-			}
-		}
-
-		// Send email
-		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			minutesId,
-			minutesName,
-		);
-		const emailTask = Promise.all([
-			minutesAttachmentPromise,
-			receiptAttachmentsPromise,
-		])
-			.then(([minutesAttachment, receiptAttachments]) =>
-				sendReimbursementEmail(
-					{
-						itemName: description,
-						itemValue: amount,
-						purchaserName,
-						bankAccount,
-						minutesReference: minutesName || minutesId,
-						notes,
-						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-					},
-					purchase.id,
-					minutesAttachment || undefined,
-					receiptAttachments,
-					db,
-				),
-			)
-			.then(async (emailResult) => {
-				if (emailResult.success) {
-					await db.updatePurchase(purchase.id, {
-						emailSent: true,
-						emailMessageId: emailResult.messageId,
-					});
-				} else {
-					await db.updatePurchase(purchase.id, {
-						emailError: emailResult.error || "Email sending failed",
-					});
-				}
-			})
-			.catch(async (error) => {
-				console.error("[Reimbursement] Email error:", error);
-				await db.updatePurchase(purchase.id, {
-					emailError: error instanceof Error ? error.message : "Unknown error",
-				});
-			});
-		await emailTask;
-	} else if (createTransaction) {
-		// Create new transaction and purchase
-		description = formData.get("description") as string;
-		amount = formData.get("amount") as string;
-		const category = (formData.get("category") as string) || "other";
-		const dateString = formData.get("date") as string;
-		year = parseInt(formData.get("year") as string, 10);
-
-		// Create purchase (reimbursement request)
-		const newPurchase: NewPurchase = {
-			description,
-			amount,
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName,
-			notes: notes || null,
-			status: "pending",
-			year,
-			emailSent: false,
-			createdBy: user.userId,
-		};
-
-		const purchase = await db.createPurchase(newPurchase);
-
-		// Create linked transaction
-		const newTransaction: NewTransaction = {
-			type: "expense",
-			amount,
-			description,
-			category,
-			date: new Date(dateString),
-			year,
-			status: "pending",
-			reimbursementStatus: "requested",
-			purchaseId: purchase.id,
-			createdBy: user.userId,
-		};
-		const transaction = await db.createTransaction(newTransaction);
-		transactionId = transaction.id;
-
-		// Create receipt records for linked receipts
-		if (receiptLinks.length > 0) {
-			for (const receiptLink of receiptLinks) {
-				// Extract pathname from receipt link (id is the pathname)
-				const pathname = receiptLink.id;
-				// Check if receipt already exists in database
-				const existingReceipts = await db.getReceipts();
-				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
-				
-				if (existingReceipt) {
-					// Update existing receipt to link to purchase
-					await db.updateReceipt(existingReceipt.id, {
-						purchaseId: purchase.id,
-					});
-				} else {
-					// Create new receipt record
-					await db.createReceipt({
-						name: receiptLink.name || null,
-						description: null,
-						url: receiptLink.url,
-						pathname,
-						purchaseId: purchase.id,
-						createdBy: user.userId,
-					});
-				}
-			}
-		}
-
-		// Link inventory items if provided
-		const linkedItemIds = formData.get("linkedItemIds") as string;
-		if (linkedItemIds) {
-			const ids = linkedItemIds.split(",").filter(Boolean);
-			for (const itemId of ids) {
-				const quantityField = formData.get(`itemQuantity_${itemId}`) as string;
-				const quantity = quantityField ? parseInt(quantityField, 10) : null;
-
-				if (quantity && quantity > 0) {
-					await db.linkInventoryItemToTransaction(
-						itemId,
-						transaction.id,
-						quantity,
-					);
-				} else {
-					const item = await db.getInventoryItemById(itemId);
-					if (item) {
-						await db.linkInventoryItemToTransaction(
-							itemId,
-							transaction.id,
-							item.quantity,
-						);
-					}
 				}
 			}
 		}
@@ -457,13 +366,13 @@ export async function action({ request }: Route.ActionArgs) {
 		await emailTask;
 	} else {
 		// Create purchase only (no transaction)
-		description = formData.get("purchaserName") as string; // Use purchaser name as description fallback
-		amount = "0"; // No amount when not creating transaction
+		description = formData.get("description") as string;
+		amount = formData.get("amount") as string;
 
 		// Create purchase (reimbursement request) without linked transaction
 		const newPurchase: NewPurchase = {
-			description: `${purchaserName}`,
-			amount: "0",
+			description,
+			amount,
 			purchaserName,
 			bankAccount,
 			minutesId,
@@ -476,6 +385,14 @@ export async function action({ request }: Route.ActionArgs) {
 		};
 
 		const purchase = await db.createPurchase(newPurchase);
+
+		// Link minute if selected (and is UUID)
+		if (minutesId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(minutesId)) {
+			await db.createMinuteLink({
+				minuteId: minutesId,
+				purchaseId: purchase.id,
+			});
+		}
 
 		// Send email
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
@@ -538,6 +455,8 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		uniqueLocations,
 		uniqueCategories,
 		unlinkedTransactions,
+		prefillData,
+		sourceReceipt,
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
@@ -553,49 +472,58 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 	const [selectedTransactionId, setSelectedTransactionId] = useState("");
 	const isLinkingToExisting = !!selectedTransactionId;
 
-	// Create new transaction state (checkbox like in transactions.new.tsx)
-	const [createTransaction, setCreateTransaction] = useState(false);
-
-	// Handle selection change - uncheck checkbox when selecting existing transaction
-	const handleTransactionSelectionChange = (id: string) => {
-		setSelectedTransactionId(id);
-		if (id) {
-			setCreateTransaction(false);
-		}
-	};
-
-	// Handle checkbox change - clear selection when checking create transaction
-	const handleCreateTransactionChange = (checked: boolean) => {
-		setCreateTransaction(checked);
-		if (checked) {
-			setSelectedTransactionId("");
-		}
-	};
-
 	// Get items from context (set by inventory page)
 	const { items: contextItems, setItems } = useNewTransaction();
 
 	// Transaction details state
 	const [amount, setAmount] = useState("");
-	const [descriptionValue, setDescriptionValue] = useState("");
-	const [category, setCategory] = useState("other");
-	const [dateValue, setDateValue] = useState(
-		new Date().toISOString().split("T")[0],
-	);
+	const [description, setDescription] = useState("");
 	const [year, setYear] = useState(currentYear);
 
 	// Reimbursement template pre-fill state (for purchaser info)
-	const [purchaserNameValue, setPurchaserNameValue] = useState("");
-	const [bankAccountValue, setBankAccountValue] = useState("");
-	const [notesValue, setNotesValue] = useState("");
+	const [purchaserName, setPurchaserName] = useState("");
+	const [bankAccount, setBankAccount] = useState("");
+	const [notes, setNotes] = useState("");
+	const [minutesId, setMinutesId] = useState("");
 
-	// inventory item selection
-	const [selectedItemIds, setSelectedItemIds] = useState<string[]>(
-		contextItems.length > 0 ? contextItems.map((i) => i.itemId) : [],
-	);
+	// Receipt state
+	const [selectedReceipts, setSelectedReceipts] = useState<ReceiptLink[]>([]);
 
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+	// Handler for receipt selection that auto-fills form
+	const handleReceiptSelectionChange = async (receipts: ReceiptLink[]) => {
+		setSelectedReceipts(receipts);
+
+		// If a new receipt was added (not removed), try to auto-fill from it
+		if (receipts.length > selectedReceipts.length) {
+			const newReceipt = receipts[receipts.length - 1];
+			try {
+				// Fetch receipt data including OCR content
+				const response = await fetch(`/api/receipts/${newReceipt.id}`);
+				if (response.ok) {
+					const data = await response.json();
+
+					// Auto-fill from receipt content if available
+					if (data.receiptContent) {
+						const content = data.receiptContent;
+
+						// Set description from receipt description or store name
+						const autoDescription = data.receipt.description ||
+							(content.storeName ? `${content.storeName} - ${new Date(content.purchaseDate || data.receipt.createdAt).toLocaleDateString()}` : "");
+						if (autoDescription && !description) {
+							setDescription(autoDescription);
+						}
+
+						// Set amount from total
+						if (content.totalAmount && !amount) {
+							setAmount(String(content.totalAmount));
+						}
+					}
+				}
+			} catch (error) {
+				console.error("[handleReceiptSelectionChange] Failed to fetch receipt data:", error);
+			}
+		}
+	};
 
 	// Update form values when a transaction is selected for linking
 	useEffect(() => {
@@ -605,9 +533,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 			);
 			if (transaction) {
 				setAmount(transaction.amount);
-				setDescriptionValue(transaction.description);
-				setCategory(transaction.category || "other");
-				setDateValue(new Date(transaction.date).toISOString().split("T")[0]);
+				setDescription(transaction.description);
 				setYear(transaction.year);
 			}
 		}
@@ -631,14 +557,29 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 	// Pre-fill from template after hydration
 	useEffect(() => {
 		if (isHydrated && template) {
-			setDescriptionValue(template.description);
+			setDescription(template.description);
 			setAmount(template.amount);
-			setPurchaserNameValue(template.purchaserName);
-			setBankAccountValue(template.bankAccount);
-			setNotesValue(template.notes || "");
+			setPurchaserName(template.purchaserName);
+			setBankAccount(template.bankAccount);
+			setNotes(template.notes || "");
 			clearTemplate();
 		}
 	}, [isHydrated, template, clearTemplate]);
+
+	// Pre-fill from receipt OCR data
+	useEffect(() => {
+		if (prefillData && sourceReceipt) {
+			setAmount(prefillData.amount);
+			setDescription(prefillData.description);
+			// Add the receipt to selected receipts
+			const receiptLink: ReceiptLink = {
+				id: sourceReceipt.id,
+				name: sourceReceipt.name || sourceReceipt.pathname.split("/").pop() || "Receipt",
+				url: sourceReceipt.url,
+			};
+			setSelectedReceipts([receiptLink]);
+		}
+	}, [prefillData, sourceReceipt]);
 
 	// Sync amount with inventory items total when quantities change
 	useEffect(() => {
@@ -701,12 +642,58 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		? unlinkedTransactions.find((t) => t.id === selectedTransactionId)
 		: null;
 
+	// Receipt upload handler
+	const handleUploadReceipt = async (
+		file: File,
+		year: string,
+		desc: string,
+		ocrEnabled = false,
+	): Promise<ReceiptLink | null> => {
+		try {
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("year", year);
+			formData.append("description", desc || "kuitti");
+			formData.append("ocr_enabled", String(ocrEnabled));
+
+			const response = await fetch("/api/receipts/upload", {
+				method: "POST",
+				body: formData,
+			});
+
+			if (!response.ok) {
+				throw new Error("Upload failed");
+			}
+
+			const data = await response.json();
+			toast.success(t("treasury.new_reimbursement.receipt_uploaded"));
+			return {
+				id: data.pathname,
+				name: data.pathname.split("/").pop() || file.name,
+				url: data.url,
+			};
+		} catch (error) {
+			console.error("[uploadReceipt] Error:", error);
+			toast.error(t("receipts.upload_failed"));
+			return null;
+		}
+	};
+
+	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+		// Validate minutes is selected
+		if (!minutesId) {
+			e.preventDefault();
+			toast.error(t("treasury.new_reimbursement.minutes_required", "Minutes document is required"));
+			return;
+		}
+	};
+
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
+			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<PageHeader title={t("treasury.new_reimbursement.title")} />
 
-				<Form method="post" encType="multipart/form-data" className="space-y-6">
+				<Form method="post" className="space-y-6" onSubmit={handleSubmit}>
 					{/* Hidden fields */}
 					<input
 						type="hidden"
@@ -715,148 +702,120 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 					/>
 					<input
 						type="hidden"
-						name="linkedItemIds"
-						value={selectedItemIds.join(",")}
+						name="receiptLinks"
+						value={JSON.stringify(selectedReceipts)}
 					/>
 
-					{/* Reimbursement Form - handles receipts, purchaser info, minutes, notes - FIRST */}
-					<SectionCard>
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-							{t("treasury.new_reimbursement.reimbursement_details")}
-						</h2>
-						<ReimbursementForm
-							recentMinutes={recentMinutes}
-							emailConfigured={emailConfigured}
-							receiptsByYear={receiptsByYear}
-							currentYear={currentYear}
-							description={descriptionValue}
-							showNotes={true}
-							showEmailWarning={true}
-							required={true}
-							initialPurchaserName={purchaserNameValue}
-							initialBankAccount={bankAccountValue}
-							initialNotes={notesValue}
-						/>
-					</SectionCard>
-
-					{/* Transaction Section - Link or Create */}
-					<SectionCard>
-						{/* Hidden input for createTransaction checkbox */}
-						<input type="hidden" name="createTransaction" value={createTransaction ? "on" : ""} />
-
-						{/* Link to existing transaction option */}
-						{unlinkedTransactions.length > 0 && (
-							<>
-								<LinkExistingSelector
-									items={linkableItems}
-									selectedId={selectedTransactionId}
-									onSelectionChange={handleTransactionSelectionChange}
-									label={t("treasury.new_reimbursement.link_existing_transaction")}
-									helpText={t(
-										"treasury.new_reimbursement.link_existing_transaction_help",
-									)}
-									placeholder={t(
-										"treasury.new_reimbursement.select_transaction_placeholder",
-									)}
-									noLinkText={t("treasury.new_reimbursement.no_link")}
-								/>
-								{selectedTransaction && (
-									<LinkedItemInfo
-										description={descriptionValue}
-										amount={amount}
-										date={dateValue}
-										year={year}
-									/>
-								)}
-							</>
-						)}
-
-						{/* Divider when both options available */}
-						{unlinkedTransactions.length > 0 && (
-							<Divider translationKey="treasury.new.or" />
-						)}
-
-						{/* Create new transaction checkbox - always shown */}
-						<CheckboxOption
-							id="createTransaction"
-							name="createTransactionCheckbox"
-							checked={createTransaction}
-							onCheckedChange={handleCreateTransactionChange}
-							label={t("treasury.new_reimbursement.create_transaction")}
-							helpText={t("treasury.new_reimbursement.create_transaction_help")}
-						>
-								<TransactionDetailsForm
-									transactionType="expense"
-									onTypeChange={() => {}}
-									amount={amount}
-									onAmountChange={setAmount}
-									description={descriptionValue}
-									onDescriptionChange={setDescriptionValue}
-									category={category}
-									onCategoryChange={setCategory}
-									date={dateValue}
-									onDateChange={setDateValue}
-									year={year}
-									onYearChange={setYear}
-									yearOptions={yearOptions}
-									showTypeSelector={false}
-									showCard={false}
-								/>
-
-								{/* Inventory Selection Section - shown when category is "inventory" */}
-								{category === "inventory" && (
-									<div className="space-y-4 mt-4">
-										<TransactionItemList
-											items={contextItems}
-											onItemsChange={(newItems) => {
-												setItems(newItems);
-												setSelectedItemIds(newItems.map((i) => i.itemId));
-											}}
-											availableItems={pickerItems}
-											uniqueLocations={uniqueLocations}
-											uniqueCategories={uniqueCategories}
-											onAddNewItem={handleAddItem}
-											onInlineEdit={handleInlineEdit}
-											description={t("treasury.new.inventory_desc")}
-										/>
-
-										{/* Hidden inputs for form submission */}
-										{contextItems.map((ctxItem) => (
-											<input
-												key={`qty-${ctxItem.itemId}`}
-												type="hidden"
-												name={`itemQuantity_${ctxItem.itemId}`}
-												value={ctxItem.quantity}
-											/>
-										))}
-									</div>
-								)}
-							</CheckboxOption>
-
-					</SectionCard>
-
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate(-1)}
-							className="flex-1"
-						>
-							{t("treasury.new_reimbursement.cancel")}
-						</Button>
-						<Button type="submit" className="flex-1" disabled={isSubmitting}>
-							{isSubmitting ? (
-								<span className="flex items-center gap-2">
-									<span className="animate-spin material-symbols-outlined text-sm">
-										progress_activity
-									</span>
-									<span>{t("treasury.new_reimbursement.submitting")}</span>
-								</span>
-							) : (
-								t("treasury.new_reimbursement.submit")
+					{/* Reimbursement Details */}
+					<TreasuryDetailCard title={t("treasury.new_reimbursement.reimbursement_details")}>
+						<div className="grid gap-4">
+							{prefillData?.sourceReceiptId && (
+								<div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md dark:bg-blue-900/30 dark:text-blue-300">
+									<span className="material-symbols-outlined text-base">info</span>
+									{t("treasury.receipts.auto_filled_from_receipt", {
+										name: prefillData.receiptName,
+									})}
+								</div>
 							)}
-						</Button>
-					</div>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.description")} *`}
+								name="description"
+								type="text"
+								value={description}
+								onChange={setDescription}
+								required
+								placeholder={t("treasury.new_reimbursement.description_placeholder")}
+								disabled={!!prefillData?.sourceReceiptId}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.amount")} *`}
+								name="amount"
+								type="currency"
+								value={amount}
+								onChange={setAmount}
+								required
+								disabled={!!prefillData?.sourceReceiptId}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.purchaser_name")} *`}
+								name="purchaserName"
+								type="text"
+								value={purchaserName}
+								onChange={setPurchaserName}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.bank_account")} *`}
+								name="bankAccount"
+								type="text"
+								value={bankAccount}
+								onChange={setBankAccount}
+								required
+								placeholder="FI12 3456 7890 1234 56"
+							/>
+							{/* Hidden field for form submission */}
+							<input type="hidden" name="minutesId" value={minutesId} />
+							<TreasuryField
+								mode="edit"
+								label={t("treasury.new_reimbursement.notes")}
+								name="notes"
+								type="textarea"
+								value={notes}
+								onChange={setNotes}
+							/>
+						</div>
+
+						{/* Minutes */}
+						<MinutesPicker
+							recentMinutes={recentMinutes}
+							selectedMinutesId={minutesId}
+							onSelectionChange={setMinutesId}
+							currentPath="/treasury/reimbursements/new"
+							storageKey="reimbursement-new-minutes"
+						/>
+
+						{/* Transaction Link */}
+						<TreasuryRelationActions
+							label={t("treasury.linked_transactions")}
+							mode="edit"
+							items={[]} // No saved relations yet
+							withSeparator
+							linkableItems={linkableItems}
+							onSelectionChange={setSelectedTransactionId}
+							linkExistingLabel={t("treasury.new_reimbursement.link_existing_transaction")}
+							linkExistingPlaceholder={t("treasury.new_reimbursement.select_transaction_placeholder")}
+							noLinkText={t("treasury.new_reimbursement.no_link")}
+							addUrl="/treasury/transactions/new"
+							addLabel={t("treasury.new_reimbursement.create_transaction")}
+							maxItems={1}
+						/>
+
+						{/* Receipts */}
+						<ReceiptsPicker
+							receiptsByYear={receiptsByYear}
+							selectedReceipts={selectedReceipts}
+							onSelectionChange={handleReceiptSelectionChange}
+							onUpload={async (file) => {
+								return handleUploadReceipt(
+									file,
+									currentYear.toString(),
+									description || "kuitti",
+									true,
+								);
+							}}
+							currentPath="/treasury/reimbursements/new"
+							storageKey="reimbursement-new-receipts"
+						/>
+					</TreasuryDetailCard>
+
+					<TreasuryFormActions
+						isSubmitting={isSubmitting}
+						saveLabel={t("treasury.new_reimbursement.submit_request")}
+					/>
 				</Form>
 			</div>
 		</PageWrapper>
