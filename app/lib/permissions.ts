@@ -272,6 +272,18 @@ export const PERMISSIONS = {
 		translationKey: "permissions.minutes.guide",
 		category: "Minutes",
 	},
+	"minutes:create": {
+		translationKey: "permissions.minutes.create",
+		category: "Minutes",
+	},
+	"minutes:update": {
+		translationKey: "permissions.minutes.update",
+		category: "Minutes",
+	},
+	"minutes:delete": {
+		translationKey: "permissions.minutes.delete",
+		category: "Minutes",
+	},
 
 	// Events
 	"events:read": {

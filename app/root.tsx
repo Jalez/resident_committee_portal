@@ -148,6 +148,7 @@ import { Toaster } from "~/components/ui/sonner";
 import { Navigation } from "./components/navigation";
 import { InfoReelProvider, useInfoReel } from "./contexts/info-reel-context";
 import { LanguageProvider, useLanguage } from "./contexts/language-context";
+import { NavigationStackProvider } from "./contexts/navigation-stack-context";
 import { NewTransactionProvider } from "./contexts/new-transaction-context";
 import { ReimbursementTemplateProvider } from "./contexts/reimbursement-template-context";
 import { UserProvider } from "./contexts/user-context";
@@ -189,15 +190,17 @@ export default function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<UserProvider user={user}>
-				<NewTransactionProvider>
-					<ReimbursementTemplateProvider>
-						<InfoReelProvider>
-							<LanguageProvider>
-								<AppContent siteConfig={siteConfig} />
-							</LanguageProvider>
-						</InfoReelProvider>
-					</ReimbursementTemplateProvider>
-				</NewTransactionProvider>
+				<NavigationStackProvider>
+					<NewTransactionProvider>
+						<ReimbursementTemplateProvider>
+							<InfoReelProvider>
+								<LanguageProvider>
+									<AppContent siteConfig={siteConfig} />
+								</LanguageProvider>
+							</InfoReelProvider>
+						</ReimbursementTemplateProvider>
+					</NewTransactionProvider>
+				</NavigationStackProvider>
 			</UserProvider>
 			<Toaster richColors position="top-center" />
 		</QueryClientProvider>

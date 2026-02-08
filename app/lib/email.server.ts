@@ -21,6 +21,7 @@ import { computeThreadId } from "./mail-threading.server";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import { getDatabase } from "~/db";
 import { SETTINGS_KEYS } from "./openrouter.server";
+import { getMinuteStorage } from "./minutes/storage.server";
 
 interface ReimbursementEmailConfig {
 	recipientEmail: string;
@@ -103,15 +104,15 @@ export function bilingualText(
 ): string {
 	const primaryTranslations = loadTranslations(primaryLang);
 	const secondaryTranslations = loadTranslations(secondaryLang);
-	
+
 	const primary = getTranslation(primaryTranslations, key);
 	const secondary = getTranslation(secondaryTranslations, key);
-	
+
 	// If same language or same translation, return just one
 	if (primaryLang === secondaryLang || primary === secondary) {
 		return primary;
 	}
-	
+
 	return `${primary} / ${secondary}`;
 }
 
@@ -298,11 +299,11 @@ export async function sendReimbursementEmail(
                 <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;"><strong>${t("email.reimbursement.receipts")}:</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">
                     ${data.receiptLinks
-											.map(
-												(r) =>
-													`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
-											)
-											.join("")}
+					.map(
+						(r) =>
+							`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
+					)
+					.join("")}
                 </td>
                </tr>`
 				: "";
@@ -557,7 +558,35 @@ export async function buildMinutesAttachment(
 		return null;
 	}
 
+	// Try to find in DB first (UUID)
+	// UUID regex check? Or just try fetch
+	const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(minutesId);
+
+	if (isUuid) {
+		try {
+			const db = getDatabase();
+			const minute = await db.getMinuteById(minutesId);
+			if (minute) {
+				const storage = getMinuteStorage();
+				const content = await storage.getMinuteContentBase64(minute.fileUrl);
+				if (content) {
+					// Determine mime type from extension or minute data?
+					const filename = minute.fileKey.split("/").pop() || "minute.pdf";
+					const type = filename.endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+					return {
+						name: filename,
+						type,
+						content,
+					};
+				}
+			}
+		} catch (e) {
+			console.error("[buildMinutesAttachment] DB fetch failed, falling back to Google", e);
+		}
+	}
+
 	try {
+		// Fallback to Google Drive
 		const content = await getFileAsBase64(minutesId);
 		if (!content) {
 			console.warn(

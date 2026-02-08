@@ -50,14 +50,18 @@ export function Navigation({ variant }: NavigationProps) {
 			setOpenSubmenus((prev) => ({ ...prev, [parent.path]: true }));
 		}
 	}, [pathname]);
-	const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
-		if (typeof window === "undefined") return false;
+	const [sidebarCollapsed, setSidebarCollapsedState] = useState(false);
+
+	useEffect(() => {
 		try {
-			return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+			const isCollapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+			if (isCollapsed) {
+				setSidebarCollapsedState(true);
+			}
 		} catch {
-			return false;
+			// ignore
 		}
-	});
+	}, []);
 	const setSidebarCollapsed = useCallback((value: boolean) => {
 		setSidebarCollapsedState(value);
 		try {
