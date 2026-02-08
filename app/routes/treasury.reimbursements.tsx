@@ -12,6 +12,7 @@ import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
 	TreasuryTable,
@@ -37,6 +38,7 @@ import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements";
+import { ColoredStatusLinkBadge, TREASURY_PURCHASE_STATUS_VARIANTS, TREASURY_TRANSACTION_STATUS_VARIANTS } from "~/components/treasury/colored-status-link-badge";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -54,6 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		[
 			"treasury:reimbursements:read",
 			"treasury:reimbursements:read-self",
+			"treasury:reimbursements:write",
 		],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
@@ -61,6 +64,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Check if user can read all reimbursements or only their own
 	const canReadAll = hasAnyPermission(user, [
 		"treasury:reimbursements:read",
+	]);
+
+	const canCreate = hasAnyPermission(user, [
+		"treasury:reimbursements:create",
+		"treasury:reimbursements:create-self",
+		"treasury:reimbursements:write",
 	]);
 
 	const db = getDatabase();
@@ -172,6 +181,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
 		canReadAll,
+		canCreate,
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
 	};
@@ -263,24 +273,6 @@ export async function action({ request }: Route.ActionArgs) {
 	return { success: true };
 }
 
-// Helper for status colors - kept outside as it doesn't need translation
-const statusColors = {
-	pending:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-	approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-	reimbursed:
-		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-	rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-};
-const TRANSACTION_STATUS_VARIANT_MAP: Record<string, string> = {
-	complete:
-		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-	pending:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-	paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-	declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
 export default function BudgetReimbursements({
 	loaderData,
 }: Route.ComponentProps) {
@@ -292,6 +284,7 @@ export default function BudgetReimbursements({
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
+		canCreate,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
@@ -301,9 +294,6 @@ export default function BudgetReimbursements({
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
-	const isStaff =
-		rootData?.user?.roleName === "Admin" ||
-		rootData?.user?.roleName === "Board Member";
 	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const { setTemplate } = useReimbursementTemplate();
@@ -342,17 +332,6 @@ export default function BudgetReimbursements({
 		navigate("/treasury/reimbursement/new");
 	};
 
-	if (!isStaff) {
-		return (
-			<PageWrapper>
-				<div className="p-8 text-center">
-					<p className="text-gray-500">
-						{t("treasury.reimbursements.access_denied")}
-					</p>
-				</div>
-			</PageWrapper>
-		);
-	}
 
 	// Configure search fields
 	const statusOptions = ["all", "pending", "approved", "reimbursed", "rejected"];
@@ -376,7 +355,7 @@ export default function BudgetReimbursements({
 	const footerContent = (
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
-			{isStaff && (
+			{canCreate && (
 				<AddItemButton
 					to="/treasury/reimbursement/new"
 					title={t("treasury.reimbursements.new")}
@@ -420,9 +399,11 @@ export default function BudgetReimbursements({
 				const canApprove =
 					rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
 					rootData?.user?.permissions?.includes("*");
-				const statusKey = row.status as keyof typeof statusColors;
+				const statusKey =
+					row.status as keyof typeof TREASURY_PURCHASE_STATUS_VARIANTS;
 				const statusColor =
-					statusColors[statusKey] || statusColors.pending;
+					TREASURY_PURCHASE_STATUS_VARIANTS[statusKey] ||
+					TREASURY_PURCHASE_STATUS_VARIANTS.pending;
 				if (canApprove) {
 					return (
 						<Form method="post" className="inline-block">
@@ -453,7 +434,7 @@ export default function BudgetReimbursements({
 				return (
 					<TreasuryStatusPill
 						value={row.status}
-						variantMap={statusColors}
+						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
 						label={t(`treasury.reimbursements.statuses.${row.status}`)}
 					/>
 				);
@@ -477,20 +458,15 @@ export default function BudgetReimbursements({
 					return <span className="text-gray-400">—</span>;
 				}
 				const transactionStatus = transactionStatusMap.get(transactionId) || "pending";
-				const statusVariant =
-					TRANSACTION_STATUS_VARIANT_MAP[transactionStatus] ||
-					TRANSACTION_STATUS_VARIANT_MAP.pending;
 				return (
-					<Link
+					<ColoredStatusLinkBadge
 						to={`/treasury/transactions/${transactionId}`}
-						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
 						title={t("treasury.reimbursements.view_transaction")}
-					>
-						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-							link
-						</span>
-						{transactionId.substring(0, 8)}
-					</Link>
+						status={transactionStatus}
+						id={transactionId}
+						icon="link"
+						variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
+					/>
 				);
 			},
 		},
@@ -504,24 +480,17 @@ export default function BudgetReimbursements({
 					return <span className="text-gray-400">—</span>;
 				}
 				// Use purchase status for receipt link coloring
-				const purchaseStatus = row.status;
-				const statusVariant =
-					statusColors[purchaseStatus as keyof typeof statusColors] ||
-					statusColors.pending;
 				return (
 					<div className="inline-flex flex-wrap gap-1 justify-center">
 						{row.receiptIds.map((receiptId) => (
-							<Link
+							<ColoredStatusLinkBadge
 								key={receiptId}
 								to={`/treasury/receipts/${receiptId}`}
-								className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
 								title={t("treasury.reimbursements.view_receipt")}
-							>
-								<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-									receipt_long
-								</span>
-								{receiptId.substring(0, 8)}
-							</Link>
+								status={row.status}
+								id={receiptId}
+								icon="receipt_long"
+							/>
 						))}
 					</div>
 				);
@@ -651,15 +620,15 @@ export default function BudgetReimbursements({
 									deleteProps={
 										canDelete
 											? {
-													hiddenFields: {
-														_action: "delete",
-														purchaseId: purchase.id,
-													},
-													confirmMessage: t(
-														"treasury.reimbursements.delete_confirm",
-													),
-													title: t("common.actions.delete"),
-												}
+												hiddenFields: {
+													_action: "delete",
+													purchaseId: purchase.id,
+												},
+												confirmMessage: t(
+													"treasury.reimbursements.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
 											: undefined
 									}
 								/>

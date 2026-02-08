@@ -19,9 +19,7 @@ import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions
 import { TreasuryRelationActions } from "~/components/treasury/treasury-relation-actions";
 import { ReceiptsPicker, type ReceiptLink } from "~/components/treasury/pickers/receipts-picker";
 import { MinutesPicker } from "~/components/treasury/pickers/minutes-picker";
-import {
-	transactionsToLinkableItems,
-} from "~/components/treasury/link-existing-selector";
+import { TransactionsPicker } from "~/components/treasury/pickers/transactions-picker";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
 import {
@@ -31,7 +29,7 @@ import {
 	type NewPurchase,
 	type Transaction,
 } from "~/db";
-import { requirePermission } from "~/lib/auth.server";
+import { requireAnyPermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import {
@@ -47,6 +45,7 @@ import {
 	parseReceiptLinks,
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
+import { getSourceContextFromUrl } from "~/lib/linking/source-context";
 
 import type { Route } from "./+types/treasury.reimbursement.new";
 
@@ -67,37 +66,62 @@ export interface MinuteFile {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "treasury:reimbursements:write", getDatabase);
+	await requireAnyPermission(request, ["treasury:reimbursements:create", "treasury:reimbursements:create-self", "treasury:reimbursements:write"], getDatabase);
 	const db = getDatabase();
 
 	const url = new URL(request.url);
-	const sourceReceiptId = url.searchParams.get("sourceReceiptId");
+
+	// Parse universal source context (supports both new and legacy formats)
+	const sourceContext = getSourceContextFromUrl(url);
 
 	// Get receipts for picker (only unconnected)
 	const receiptsByYear = await getUnconnectedReceiptsByYear();
 	const currentYear = new Date().getFullYear();
 
-	// Check if we should prefill from a receipt
+	// Check if we should prefill from source context
 	let prefillData = null;
 	let sourceReceipt = null;
-	if (sourceReceiptId) {
+	let sourceTransaction = null;
+
+	if (sourceContext) {
 		try {
-			const receipt = await db.getReceiptById(sourceReceiptId);
-			if (receipt) {
-				sourceReceipt = receipt;
-				const receiptContent = await db.getReceiptContentByReceiptId(sourceReceiptId);
-				if (receiptContent) {
-					prefillData = {
-						amount: receiptContent.totalAmount ? String(receiptContent.totalAmount) : "",
-						description: `${receiptContent.storeName || "Purchase"} - ${new Date(receiptContent.purchaseDate || receipt.createdAt).toLocaleDateString()}`,
-						linkedReceiptIds: [receipt.id],
-						sourceReceiptId: receipt.id,
-						receiptName: receipt.name || receipt.pathname.split("/").pop() || "Receipt",
-					};
-				}
+			switch (sourceContext.type) {
+				case "receipt":
+					// Existing receipt logic - fetch receipt and OCR content
+					const receipt = await db.getReceiptById(sourceContext.id);
+					if (receipt) {
+						sourceReceipt = receipt;
+						const receiptContent = await db.getReceiptContentByReceiptId(sourceContext.id);
+						if (receiptContent) {
+							prefillData = {
+								amount: receiptContent.totalAmount ? String(receiptContent.totalAmount) : "",
+								description: receiptContent.storeName
+									? `${receiptContent.storeName} - ${new Date(receiptContent.purchaseDate || receipt.createdAt).toLocaleDateString()}`
+									: receipt.description || "",
+								linkedReceiptIds: [receipt.id],
+								sourceType: "receipt",
+								sourceName: sourceContext.name || receipt.name || receipt.pathname.split("/").pop() || "Receipt",
+							};
+						}
+					}
+					break;
+
+				case "transaction":
+					// New transaction logic - pre-fill from transaction
+					sourceTransaction = await db.getTransactionById(sourceContext.id);
+					if (sourceTransaction) {
+						prefillData = {
+							amount: String(Math.abs(sourceTransaction.amount)), // Use absolute value for expenses
+							description: sourceTransaction.description,
+							linkedTransactionId: sourceTransaction.id,
+							sourceType: "transaction",
+							sourceName: sourceContext.name || sourceTransaction.description,
+						};
+					}
+					break;
 			}
 		} catch (error) {
-			console.error("Error loading source receipt:", error);
+			console.error("Error loading source context:", error);
 		}
 	}
 
@@ -150,14 +174,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 		uniqueCategories,
 		// Unlinked transactions for linking selector
 		unlinkedTransactions,
-		// Prefill data from receipt
+		// Prefill data from source context
 		prefillData,
 		sourceReceipt,
+		sourceTransaction,
+		sourceContext,
 	};
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	const user = await requirePermission(request, "treasury:reimbursements:write", getDatabase);
+	const user = await requireAnyPermission(request, ["treasury:reimbursements:create", "treasury:reimbursements:create-self", "treasury:reimbursements:write"], getDatabase);
 	const db = getDatabase();
 	const formData = await request.formData();
 
@@ -457,6 +483,8 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		unlinkedTransactions,
 		prefillData,
 		sourceReceipt,
+		sourceTransaction,
+		sourceContext,
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
@@ -566,11 +594,14 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		}
 	}, [isHydrated, template, clearTemplate]);
 
-	// Pre-fill from receipt OCR data
+	// Pre-fill from source context (receipt or transaction)
 	useEffect(() => {
-		if (prefillData && sourceReceipt) {
-			setAmount(prefillData.amount);
-			setDescription(prefillData.description);
+		if (!prefillData) return;
+
+		setAmount(prefillData.amount);
+		setDescription(prefillData.description);
+
+		if (prefillData.sourceType === "receipt" && sourceReceipt) {
 			// Add the receipt to selected receipts
 			const receiptLink: ReceiptLink = {
 				id: sourceReceipt.id,
@@ -578,8 +609,11 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 				url: sourceReceipt.url,
 			};
 			setSelectedReceipts([receiptLink]);
+		} else if (prefillData.sourceType === "transaction" && sourceTransaction) {
+			// Pre-select the transaction
+			setSelectedTransactionId(sourceTransaction.id);
 		}
-	}, [prefillData, sourceReceipt]);
+	}, [prefillData, sourceReceipt, sourceTransaction]);
 
 	// Sync amount with inventory items total when quantities change
 	useEffect(() => {
@@ -633,9 +667,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 		fetcher.submit(formData, { method: "POST" });
 	};
 
-	const linkableItems = transactionsToLinkableItems(
-		unlinkedTransactions as (Transaction & { purchaseId: string | null })[],
-	);
+
 
 	// Find selected transaction for display
 	const selectedTransaction = selectedTransactionId
@@ -709,11 +741,12 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 					{/* Reimbursement Details */}
 					<TreasuryDetailCard title={t("treasury.new_reimbursement.reimbursement_details")}>
 						<div className="grid gap-4">
-							{prefillData?.sourceReceiptId && (
+							{prefillData && (
 								<div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md dark:bg-blue-900/30 dark:text-blue-300">
-									<span className="material-symbols-outlined text-base">info</span>
-									{t("treasury.receipts.auto_filled_from_receipt", {
-										name: prefillData.receiptName,
+									<span className="material-symbols-outlined text-base">link</span>
+									{t("treasury.auto_linked_from", {
+										type: t(`common.entity_types.${prefillData.sourceType}`),
+										name: prefillData.sourceName,
 									})}
 								</div>
 							)}
@@ -726,7 +759,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 								onChange={setDescription}
 								required
 								placeholder={t("treasury.new_reimbursement.description_placeholder")}
-								disabled={!!prefillData?.sourceReceiptId}
+								disabled={!!prefillData}
 							/>
 							<TreasuryField
 								mode="edit"
@@ -736,7 +769,7 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 								value={amount}
 								onChange={setAmount}
 								required
-								disabled={!!prefillData?.sourceReceiptId}
+								disabled={!!prefillData}
 							/>
 							<TreasuryField
 								mode="edit"
@@ -779,18 +812,12 @@ export default function NewReimbursement({ loaderData }: Route.ComponentProps) {
 						/>
 
 						{/* Transaction Link */}
-						<TreasuryRelationActions
-							label={t("treasury.linked_transactions")}
-							mode="edit"
-							items={[]} // No saved relations yet
-							withSeparator
-							linkableItems={linkableItems}
-							onSelectionChange={setSelectedTransactionId}
-							linkExistingLabel={t("treasury.new_reimbursement.link_existing_transaction")}
-							linkExistingPlaceholder={t("treasury.new_reimbursement.select_transaction_placeholder")}
-							noLinkText={t("treasury.new_reimbursement.no_link")}
-							addUrl="/treasury/transactions/new"
-							addLabel={t("treasury.new_reimbursement.create_transaction")}
+						<TransactionsPicker
+							unlinkedTransactions={unlinkedTransactions as Transaction[]}
+							selectedTransactionIds={selectedTransactionId}
+							onSelectionChange={(ids) => setSelectedTransactionId(Array.isArray(ids) ? ids[0] : ids)}
+							createUrl="/treasury/transactions/new"
+							currentPath="/treasury/reimbursements/new"
 							maxItems={1}
 						/>
 

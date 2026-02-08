@@ -1,94 +1,25 @@
-import { Label } from "~/components/ui/label";
+import type { Purchase, Transaction } from "~/db/schema";
+
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
-import type { Purchase, Transaction } from "~/db";
+	TREASURY_PURCHASE_STATUS_VARIANTS,
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
 
 export type LinkableItem = {
 	id: string;
+	title?: string;
 	description: string | null;
-	amount: string;
-	createdAt: Date;
+	amount?: string;
+	createdAt?: Date;
 	// Purchase-specific
 	purchaserName?: string;
+	/** URL to view the item details */
+	viewLink?: string;
+	/** Route to view the item */
+	to: string;
+	status: string;
+	variantMap: Record<string, string>;
 };
-
-export interface LinkExistingSelectorProps {
-	/** Items available for linking (purchases or transactions) */
-	items: LinkableItem[];
-	/** Currently selected item ID */
-	selectedId: string;
-	/** Callback when selection changes */
-	onSelectionChange: (id: string) => void;
-	/** Label for the selector */
-	label?: string;
-	/** Help text shown below the selector */
-	helpText?: string;
-	/** Placeholder for empty selection */
-	placeholder?: string;
-	/** Text for the "no link" option */
-	noLinkText?: string;
-	/** Whether the selector is disabled */
-	disabled?: boolean;
-}
-
-/**
- * Universal component for selecting existing items (transactions or purchases) to link.
- * Used by:
- * - treasury/reimbursement/new: to link to existing transactions
- * - treasury/transactions/new: to link to existing reimbursement requests (purchases)
- * - treasury/transactions/$transactionId/edit: to link to existing reimbursement requests (purchases)
- */
-export function LinkExistingSelector({
-	items,
-	selectedId,
-	onSelectionChange,
-	label,
-	helpText,
-	placeholder,
-	noLinkText,
-	disabled = false,
-}: LinkExistingSelectorProps) {
-	if (items.length === 0) {
-		return null;
-	}
-
-	return (
-		<div className="space-y-3">
-			{label && <Label className="text-base font-bold">{label}</Label>}
-			{helpText && (
-				<p className="text-sm text-gray-500 dark:text-gray-400">{helpText}</p>
-			)}
-			<Select
-				value={selectedId || "none"}
-				onValueChange={(val) => onSelectionChange(val === "none" ? "" : val)}
-				disabled={disabled}
-			>
-				<SelectTrigger>
-					<SelectValue placeholder={placeholder} />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="none">{noLinkText || "No link"}</SelectItem>
-					{items.map((item) => (
-						<SelectItem key={item.id} value={item.id}>
-							<span className="flex items-center gap-2">
-								<span className="font-medium">
-									{item.description || item.purchaserName || item.id}
-								</span>
-								<span className="text-gray-500">—</span>
-								<span className="text-sm text-gray-500">{item.amount} €</span>
-							</span>
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-		</div>
-	);
-}
 
 /**
  * Helper to convert Purchase array to LinkableItem array
@@ -100,6 +31,38 @@ export function purchasesToLinkableItems(purchases: Purchase[]): LinkableItem[] 
 		amount: p.amount,
 		createdAt: p.createdAt,
 		purchaserName: p.purchaserName,
+		viewLink: `/treasury/reimbursements/${p.id}`,
+		to: `/treasury/reimbursements/${p.id}`,
+		status: p.status,
+		variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
+	}));
+}
+
+/**
+ * Helper to convert minutes to LinkableItems
+ */
+// Helper to convert receipts to LinkableItems
+export function receiptsToLinkableItems(receiptsByYear: { year: string; files: { id: string; name: string; url: string; createdTime: string }[] }[]): LinkableItem[] {
+	return receiptsByYear.flatMap((yearGroup) =>
+		yearGroup.files.map((file) => ({
+			id: file.id, // file.id is the pathname/storage path usually
+			description: `${file.name}`,
+			to: file.url,
+			status: "linked",
+			// Use year as additional info in description or similar? 
+			// LinkableItem doesn't have a specific "year" field but description works.
+			variantMap: { linked: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80" },
+		}))
+	);
+}
+
+export function minutesToLinkableItems(minutes: { id: string; name: string; year: string; url?: string }[]): LinkableItem[] {
+	return minutes.map((m) => ({
+		id: m.id,
+		description: m.name,
+		to: m.url || "#",
+		status: "linked", // Minutes don't really have status, use generic
+		variantMap: { linked: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80" },
 	}));
 }
 
@@ -114,5 +77,9 @@ export function transactionsToLinkableItems(
 		description: t.description,
 		amount: t.amount,
 		createdAt: t.createdAt,
+		viewLink: `/treasury/transactions/${t.id}`,
+		to: `/treasury/transactions/${t.id}`,
+		status: t.status,
+		variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
 	}));
 }

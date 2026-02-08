@@ -6,6 +6,12 @@ import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import {
+	ColoredStatusLinkBadge,
+	TREASURY_PURCHASE_STATUS_VARIANTS,
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+	TREASURY_TRANSACTION_TYPE_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
 	TreasuryTable,
@@ -136,7 +142,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 	}
 
-	// Fetch purchase statuses for transactions with purchaseId
+	// Track edit lock for transactions linked to sent reimbursements
+	const transactionLockMap = new Map<string, boolean>();
 	const purchaseStatusMap = new Map<string, string>();
 	const purchaseIds = [
 		...new Set(
@@ -149,6 +156,29 @@ export async function loader({ request }: Route.LoaderArgs) {
 		const purchase = await db.getPurchaseById(purchaseId);
 		if (purchase) {
 			purchaseStatusMap.set(purchaseId, purchase.status);
+			const isLocked = purchase.emailSent && purchase.status !== "rejected";
+			const linkedTransactions = sortedTransactions.filter(
+				(t) => t.purchaseId === purchaseId,
+			);
+			for (const tx of linkedTransactions) {
+				transactionLockMap.set(tx.id, isLocked || false);
+			}
+		}
+	}
+
+	// Fetch inventory items for each transaction
+	const inventoryItemsMap = new Map<string, Array<{ id: string; name: string; quantity: number }>>();
+	for (const transaction of sortedTransactions) {
+		const items = await db.getInventoryItemsForTransaction(transaction.id);
+		if (items.length > 0) {
+			inventoryItemsMap.set(
+				transaction.id,
+				items.map((item) => ({
+					id: item.id,
+					name: item.name,
+					quantity: item.quantity,
+				})),
+			);
 		}
 	}
 
@@ -167,6 +197,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		canReadAll,
 		budgetMap: Object.fromEntries(budgetMap),
 		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
+		transactionLockMap: Object.fromEntries(transactionLockMap),
+		inventoryItemsMap: Object.fromEntries(inventoryItemsMap),
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
 	};
@@ -185,6 +217,8 @@ export default function TreasuryTransactions({
 		canReadAll,
 		budgetMap: budgetMapRaw,
 		purchaseStatusMap: purchaseStatusMapRaw,
+		transactionLockMap: transactionLockMapRaw,
+		inventoryItemsMap: inventoryItemsMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
@@ -195,12 +229,21 @@ export default function TreasuryTransactions({
 	const purchaseStatusMap = new Map(
 		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
 	);
+	const transactionLockMap = new Map(
+		Object.entries(transactionLockMapRaw ?? {}) as [string, boolean][],
+	);
+	const inventoryItemsMap = new Map(
+		Object.entries(inventoryItemsMapRaw ?? {}) as [
+			string,
+			Array<{ id: string; name: string; quantity: number }>,
+		][],
+	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
 	const canEditGeneral = hasPermission("treasury:transactions:update");
 	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canWrite = hasPermission("treasury:transactions:write");
-	
+
 	// Helper to check if user can edit a specific transaction
 	const canEditTransaction = (transaction: Transaction) => {
 		if (canEditGeneral) return true;
@@ -285,28 +328,6 @@ export default function TreasuryTransactions({
 		</div>
 	);
 
-	const TYPE_VARIANT_MAP: Record<string, string> = {
-		income:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-		expense: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-	};
-	const STATUS_VARIANT_MAP: Record<string, string> = {
-		complete:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-		pending:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-		paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-	};
-	const PURCHASE_STATUS_VARIANT_MAP: Record<string, string> = {
-		pending:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-		approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-		reimbursed:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-		rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-	};
-
 	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
 	const columns = [
 		{
@@ -333,7 +354,7 @@ export default function TreasuryTransactions({
 			cell: (row: Transaction) => (
 				<TreasuryStatusPill
 					value={row.type}
-					variantMap={TYPE_VARIANT_MAP}
+					variantMap={TREASURY_TRANSACTION_TYPE_VARIANTS}
 					label={t(`treasury.types.${row.type}`, {
 						defaultValue: row.type,
 					})}
@@ -346,7 +367,7 @@ export default function TreasuryTransactions({
 			cell: (row: Transaction) => (
 				<TreasuryStatusPill
 					value={row.status}
-					variantMap={STATUS_VARIANT_MAP}
+					variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
 					label={t(
 						`treasury.breakdown.edit.statuses.${row.status}`,
 						{ defaultValue: row.status },
@@ -362,6 +383,34 @@ export default function TreasuryTransactions({
 			cellClassName: "text-gray-500",
 		},
 		{
+			key: "inventory",
+			header: t("inventory.title"),
+			cell: (row: Transaction) => {
+				const items = inventoryItemsMap.get(row.id);
+				if (!items || items.length === 0) {
+					return <span className="text-gray-400">—</span>;
+				}
+				return (
+					<div className="flex flex-wrap gap-1">
+						{items.map((item) => (
+							<ColoredStatusLinkBadge
+								key={item.id}
+								to={`/inventory/${item.id}`}
+								title={`${item.name} (${item.quantity} kpl)`}
+								status="linked"
+								id={item.id}
+								icon="inventory_2"
+								variantMap={{
+									linked:
+										"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+								}}
+							/>
+						))}
+					</div>
+				);
+			},
+		},
+		{
 			key: "budget",
 			header: t("treasury.actions.budgets"),
 			cell: (row: Transaction) => {
@@ -369,20 +418,15 @@ export default function TreasuryTransactions({
 				if (!budgetId) {
 					return <span className="text-gray-400">—</span>;
 				}
-				const statusVariant =
-					STATUS_VARIANT_MAP[row.status] ||
-					"bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 				return (
-					<Link
+					<ColoredStatusLinkBadge
 						to={`/treasury/budgets/${budgetId}`}
-						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
 						title={t("treasury.budgets.view")}
-					>
-						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-							bookmark
-						</span>
-						{budgetId.substring(0, 8)}
-					</Link>
+						status={row.status}
+						id={budgetId}
+						icon="bookmark"
+						variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
+					/>
 				);
 			},
 		},
@@ -394,19 +438,15 @@ export default function TreasuryTransactions({
 					return <span className="text-gray-400">—</span>;
 				}
 				const purchaseStatus = purchaseStatusMap.get(row.purchaseId) || "pending";
-				const statusVariant =
-					PURCHASE_STATUS_VARIANT_MAP[purchaseStatus] ||
-					PURCHASE_STATUS_VARIANT_MAP.pending;
 				return (
-					<Link
+					<ColoredStatusLinkBadge
 						to={`/treasury/reimbursements/${row.purchaseId}`}
-						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
-					>
-						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-							link
-						</span>
-						{row.purchaseId.substring(0, 8)}
-					</Link>
+						title={t("treasury.receipts.reimbursement_request")}
+						status={purchaseStatus}
+						id={row.purchaseId}
+						icon="link"
+						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
+					/>
 				);
 			},
 		},
@@ -422,10 +462,9 @@ export default function TreasuryTransactions({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -453,17 +492,20 @@ export default function TreasuryTransactions({
 								viewTitle={t("common.actions.view")}
 								editTo={`/treasury/transactions/${transaction.id}/edit`}
 								editTitle={t("common.actions.edit")}
-								canEdit={canEditTransaction(transaction)}
+								canEdit={
+									canEditTransaction(transaction) &&
+									!transactionLockMap.get(transaction.id)
+								}
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-												action: `/treasury/transactions/${transaction.id}/edit`,
-												hiddenFields: { _action: "delete" },
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/transactions/${transaction.id}/edit`,
+											hiddenFields: { _action: "delete" },
+											confirmMessage: t(
+												"treasury.breakdown.edit.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>
@@ -472,7 +514,7 @@ export default function TreasuryTransactions({
 							title: t("treasury.breakdown.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 9,
+							labelColSpan: 10,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {

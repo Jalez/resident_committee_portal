@@ -2,25 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { Form, Link, redirect, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Badge } from "~/components/ui/badge";
+import { PageWrapper } from "~/components/layout/page-layout";
+import { PageHeader } from "~/components/layout/page-header";
+import {
+    TREASURY_BUDGET_STATUS_VARIANTS,
+    TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
+import {
+    TreasuryDetailCard,
+    TreasuryField,
+    TreasuryRelationList,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "~/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "~/components/ui/table";
+import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
 import {
@@ -53,31 +49,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     }
 
     // Get linked transactions
-    const linkedTransactions = await db.getBudgetTransactions(
-        budget.id,
-    );
-    const usedAmount = await db.getBudgetUsedAmount(budget.id);
-
-    // Look up creator name when createdBy is set
-    let createdByName: string | null = null;
-    if (budget.createdBy) {
-        const creator = await db.findUserById(budget.createdBy);
-        createdByName = creator?.name ?? null;
-    }
+    const linkedTransactions = await db.getBudgetTransactions(budget.id);
 
     return {
         siteConfig: SITE_CONFIG,
-        budget: {
-            ...budget,
-            usedAmount,
-            remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
-        },
+        budget,
         linkedTransactions,
-        createdByName,
-        languages: {
-            primary: authUser?.primaryLanguage || "fi",
-            secondary: authUser?.secondaryLanguage || "en",
-        },
         currentUserId: authUser?.userId || null,
     };
 }
@@ -122,11 +99,9 @@ export default function TreasuryBudgetsView({
     const {
         budget,
         linkedTransactions,
-        createdByName,
-        languages,
         currentUserId,
     } = loaderData;
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { hasPermission } = useUser();
     const [searchParams, setSearchParams] = useSearchParams();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -161,202 +136,106 @@ export default function TreasuryBudgetsView({
         return `${value.toFixed(2).replace(".", ",")} €`;
     };
 
-    const formatDate = (date: Date | string) =>
-        new Date(date).toLocaleDateString(
-            i18n.language === "fi" ? "fi-FI" : "en-US",
-        );
+    const transactionRelations = linkedTransactions.map(({ transaction }) => ({
+        to: `/treasury/transactions/${transaction.id}`,
+        title: transaction.description || transaction.id.substring(0, 8),
+        status: transaction.status,
+        id: transaction.id,
+        variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
+    }));
 
     return (
         <PageWrapper>
-            <SplitLayout
-                header={{
-                    primary: t("treasury.budgets.view.title", {
-                        lng: languages.primary,
-                    }),
-                    secondary: t("treasury.budgets.view.title", {
-                        lng: languages.secondary,
-                    }),
-                }}
-            >
-                <div className="space-y-6">
-                    {/* Main info card */}
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl">{budget.name}</CardTitle>
-                                    {budget.description && (
-                                        <CardDescription className="mt-2">
-                                            {budget.description}
-                                        </CardDescription>
-                                    )}
-                                </div>
-                                <Badge
-                                    variant={
-                                        budget.status === "open" ? "default" : "secondary"
-                                    }
-                                >
-                                    {t(`treasury.budgets.statuses.${budget.status}`)}
-                                </Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Amounts */}
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.budgets.amount")}
-                                    </p>
-                                    <p className="text-2xl font-bold">
-                                        {formatCurrency(Number.parseFloat(budget.amount))}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.budgets.used")}
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                                        {formatCurrency(budget.usedAmount)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                        {t("treasury.budgets.remaining")}
-                                    </p>
-                                    <p
-                                        className={`text-2xl font-bold ${budget.remainingAmount > 0 ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}
-                                    >
-                                        {formatCurrency(budget.remainingAmount)}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Metadata */}
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">
-                                        {t("treasury.budgets.year")}
-                                    </p>
-                                    <p className="font-medium">{budget.year}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">
-                                        {t("treasury.budgets.created_by")}
-                                    </p>
-                                    <p className="font-medium">{createdByName || "—"}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">
-                                        {t("treasury.budgets.created_at")}
-                                    </p>
-                                    <p className="font-medium">
-                                        {formatDate(budget.createdAt)}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-2 pt-4 border-t">
-                                {canUpdate && (
-                                    <Button variant="outline" asChild>
-                                        <Link
-                                            to={`/treasury/budgets/${budget.id}/edit`}
-                                        >
-                                            <span className="material-symbols-outlined mr-2 text-sm">
-                                                edit
-                                            </span>
-                                            {t("treasury.budgets.actions.edit")}
-                                        </Link>
-                                    </Button>
-                                )}
-
-                                {canDelete && linkedTransactions.length === 0 && (
-                                    <>
-                                        <Form method="post" className="hidden" ref={deleteFormRef}>
-                                            <input type="hidden" name="_action" value="delete" />
-                                        </Form>
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            onClick={() => setShowDeleteConfirm(true)}
-                                        >
-                                            <span className="material-symbols-outlined mr-2 text-sm">
-                                                delete
-                                            </span>
-                                            {t("treasury.budgets.actions.delete")}
-                                        </Button>
-                                        <ConfirmDialog
-                                            open={showDeleteConfirm}
-                                            onOpenChange={setShowDeleteConfirm}
-                                            title={t("treasury.budgets.actions.delete")}
-                                            description={t("treasury.budgets.delete_confirm")}
-                                            confirmLabel={t("common.actions.delete")}
-                                            cancelLabel={t("common.actions.cancel")}
-                                            variant="destructive"
-                                            onConfirm={() => {
-                                                deleteFormRef.current?.requestSubmit();
-                                                setShowDeleteConfirm(false);
-                                            }}
-                                        />
-                                    </>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Linked Transactions */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>
-                                {t("treasury.budgets.linked_transactions")}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {linkedTransactions.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>
-                                                {t("treasury.breakdown.date")}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t("treasury.breakdown.description")}
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                {t("treasury.breakdown.amount")}
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {linkedTransactions.map(({ transaction, amount }) => (
-                                            <TableRow key={transaction.id}>
-                                                <TableCell className="font-mono text-sm">
-                                                    {formatDate(transaction.date)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Link
-                                                        to={`/treasury/transactions/${transaction.id}`}
-                                                        className="hover:underline text-primary"
-                                                    >
-                                                        {transaction.description}
-                                                    </Link>
-                                                </TableCell>
-                                                <TableCell className="text-right font-medium">
-                                                    {formatCurrency(Number.parseFloat(amount))}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <p className="text-center py-6 text-muted-foreground">
-                                    {t("treasury.budgets.no_transactions")}
-                                </p>
-                            )}
-                        </CardContent>
-                    </Card>
+            <div className="w-full max-w-2xl mx-auto px-4 pb-12">
+                <div className="flex items-center justify-between mb-4">
+                    <PageHeader title={t("treasury.budgets.view.title")} />
+                    {canUpdate && (
+                        <Button variant="default" asChild>
+                            <Link to={`/treasury/budgets/${budget.id}/edit`}>
+                                <span className="material-symbols-outlined mr-2 text-sm">
+                                    edit
+                                </span>
+                                {t("treasury.budgets.actions.edit")}
+                            </Link>
+                        </Button>
+                    )}
                 </div>
-            </SplitLayout>
+                <div className="space-y-6">
+                    <TreasuryDetailCard title={t("treasury.budgets.view.title")}>
+                        <div className="grid gap-4">
+                            <TreasuryField
+                                label={t("treasury.budgets.name", "Name")}
+                                valueClassName="text-foreground font-semibold"
+                            >
+                                {budget.name}
+                            </TreasuryField>
+                            {budget.description ? (
+                                <TreasuryField label={t("common.fields.description")}>
+                                    {budget.description}
+                                </TreasuryField>
+                            ) : null}
+                            <TreasuryField
+                                label={t("treasury.budgets.amount")}
+                                valueClassName="text-foreground font-bold"
+                            >
+                                {formatCurrency(Number.parseFloat(budget.amount))}
+                            </TreasuryField>
+                            <TreasuryField label={t("treasury.budgets.status")}
+                                valueClassName="text-foreground"
+                            >
+                                <TreasuryStatusPill
+                                    value={budget.status}
+                                    variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
+                                    label={t(`treasury.budgets.statuses.${budget.status}`)}
+                                />
+                            </TreasuryField>
+                            <TreasuryField label={t("treasury.budgets.year")}>
+                                {budget.year}
+                            </TreasuryField>
+                        </div>
+
+                        <TreasuryRelationList
+                            label={t("treasury.budgets.linked_transactions")}
+                            items={transactionRelations}
+                            withSeparator
+                        />
+
+                        <Separator />
+                        <div className="flex gap-2">
+                            {canDelete && linkedTransactions.length === 0 && (
+                                <>
+                                    <Form method="post" className="hidden" ref={deleteFormRef}>
+                                        <input type="hidden" name="_action" value="delete" />
+                                    </Form>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                    >
+                                        <span className="material-symbols-outlined mr-2 text-sm">
+                                            delete
+                                        </span>
+                                        {t("treasury.budgets.actions.delete")}
+                                    </Button>
+                                    <ConfirmDialog
+                                        open={showDeleteConfirm}
+                                        onOpenChange={setShowDeleteConfirm}
+                                        title={t("treasury.budgets.actions.delete")}
+                                        description={t("treasury.budgets.delete_confirm")}
+                                        confirmLabel={t("common.actions.delete")}
+                                        cancelLabel={t("common.actions.cancel")}
+                                        variant="destructive"
+                                        onConfirm={() => {
+                                            deleteFormRef.current?.requestSubmit();
+                                            setShowDeleteConfirm(false);
+                                        }}
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </TreasuryDetailCard>
+                </div>
+            </div>
         </PageWrapper>
     );
 }

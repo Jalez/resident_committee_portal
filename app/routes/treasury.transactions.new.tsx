@@ -12,49 +12,28 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
-	type MinuteFile,
-	ReimbursementForm,
-} from "~/components/treasury/reimbursement-form";
-import {
-	TransactionDetailsForm,
+	EXPENSE_CATEGORIES,
+	INCOME_CATEGORIES,
+	type TransactionType,
 } from "~/components/treasury/transaction-details-form";
 import { TransactionItemList } from "~/components/treasury/transaction-item-list";
+import { BudgetPicker } from "~/components/treasury/pickers/budget-picker";
+import { ReimbursementsPicker } from "~/components/treasury/pickers/reimbursements-picker";
 import {
-	LinkExistingSelector,
-	purchasesToLinkableItems,
-} from "~/components/treasury/link-existing-selector";
-import { BudgetLinkSection } from "~/components/treasury/budget-link-section";
-import { CheckboxOption } from "~/components/treasury/checkbox-option";
-import { Divider } from "~/components/treasury/divider";
-import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
-import { SectionCard } from "~/components/treasury/section-card";
-
-import { Button } from "~/components/ui/button";
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import {
 	type NewTransaction as DbNewTransaction,
 	getDatabase,
 	type InventoryItem,
 	type NewInventoryItem,
-	type NewPurchase,
 	type Purchase,
 } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
-import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import {
-	buildMinutesAttachment,
-	buildReceiptAttachments,
-	isEmailConfigured,
-	sendReimbursementEmail,
-} from "~/lib/email.server";
-import { getUnconnectedReceiptsByYear } from "~/lib/receipts";
-import {
-	getMissingReceiptsError,
-	MISSING_RECEIPTS_ERROR,
-	parseReceiptLinks,
-	RECEIPTS_SECTION_ID,
-} from "~/lib/treasury/receipt-validation";
 import type { Route } from "./+types/treasury.transactions.new";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -67,34 +46,106 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "treasury:transactions:write", getDatabase);
+	await requirePermission(
+		request,
+		"treasury:transactions:write",
+		getDatabase,
+	);
 	const db = getDatabase();
 
 	// Parse URL params for pre-fill
 	const url = new URL(request.url);
 
-	// Items can be passed as JSON array [{itemId, quantity}] or comma-separated IDs (legacy)
+	const sourceReimbursementId = url.searchParams.get("sourceReimbursementId");
 	const itemsParam = url.searchParams.get("items");
 	let itemSelections: { itemId: string; quantity: number }[] = [];
 
-	if (itemsParam) {
+	// Handle prefill from reimbursement
+	let prefillData: {
+		amount: string;
+		description: string;
+		type: "income" | "expense";
+		category: string;
+		linkPurchaseId: string;
+		linkedInventoryItems: Array<{
+			itemId: string;
+			name: string;
+			quantity: number;
+			unitValue: number;
+		}>;
+	} | null = null;
+
+	if (sourceReimbursementId) {
 		try {
-			// Try parsing as JSON first (new format from QuantitySelectionModal)
-			itemSelections = JSON.parse(itemsParam);
-		} catch {
-			// Fallback to comma-separated IDs (legacy format)
-			const itemIds = itemsParam.split(",").filter(Boolean);
-			itemSelections = itemIds.map((id) => ({ itemId: id, quantity: 1 }));
+			const purchase = await db.getPurchaseById(sourceReimbursementId);
+			if (purchase) {
+				// Get linked receipts
+				const receipts = await db.getReceiptsByPurchaseId(sourceReimbursementId);
+
+				// Get inventory items from receipt processing
+				const inventoryItemIds: string[] = [];
+				for (const receipt of receipts) {
+					const receiptContent = await db.getReceiptContentByReceiptId(receipt.id);
+					if (receiptContent?.inventoryItemIds) {
+						try {
+							const ids = JSON.parse(receiptContent.inventoryItemIds);
+							inventoryItemIds.push(...ids);
+						} catch (error) {
+							console.error("Error parsing inventory item IDs:", error);
+						}
+					}
+				}
+
+				const inventoryItemsResult = await Promise.all(
+					inventoryItemIds.map(id => db.getInventoryItemById(id))
+				);
+				const validItems = inventoryItemsResult.filter((item): item is NonNullable<typeof item> => item !== null);
+
+				prefillData = {
+					amount: purchase.amount,
+					description: purchase.description || "",
+					type: "expense",
+					category: validItems.length > 0 ? "inventory" : "other",
+					linkPurchaseId: purchase.id,
+					linkedInventoryItems: validItems.map(item => ({
+						itemId: item.id,
+						name: item.name,
+						quantity: item.quantity,
+						unitValue: parseFloat(item.value || "0"),
+					})),
+				};
+
+				// Set item selections for later use
+				itemSelections = validItems.map(item => ({
+					itemId: item.id,
+					quantity: item.quantity,
+				}));
+			}
+		} catch (error) {
+			console.error("Error loading source reimbursement:", error);
 		}
 	}
 
-	const prefillAmount = url.searchParams.get("amount") || "";
-	const prefillDescription = url.searchParams.get("description") || "";
-	const prefillType = url.searchParams.get("type") as
+	if (itemsParam) {
+		try {
+			itemSelections = JSON.parse(itemsParam);
+		} catch {
+			const itemIds = itemsParam.split(",").filter(Boolean);
+			itemSelections = itemIds.map((id) => ({
+				itemId: id,
+				quantity: 1,
+			}));
+		}
+	}
+
+	const prefillAmount = prefillData?.amount || url.searchParams.get("amount") || "";
+	const prefillDescription = prefillData?.description || url.searchParams.get("description") || "";
+	const prefillType = prefillData?.type || url.searchParams.get("type") as
 		| "income"
 		| "expense"
 		| null;
 	const prefillCategory =
+		prefillData?.category ||
 		url.searchParams.get("category") ||
 		(itemSelections.length > 0 ? "inventory" : "");
 
@@ -114,20 +165,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 					id: item.id,
 					name: item.name,
 					quantity: item.quantity,
-					requestedQuantity: sel.quantity, // The quantity user wants to link
+					requestedQuantity: sel.quantity,
 					value: item.value,
 				});
 			}
 		}
 	}
 
-	// Get inventory items available for picker (active, non-legacy, with available quantity)
 	const pickerItems = await db.getInventoryItemsForPicker();
 
-	// Get unique locations and categories for picker filters
 	const allInventoryItems = await db.getInventoryItems();
 	const uniqueLocations = [
-		...new Set(allInventoryItems.map((item) => item.location).filter(Boolean)),
+		...new Set(
+			allInventoryItems.map((item) => item.location ?? "missing location"),
+		),
 	].sort();
 	const uniqueCategories = [
 		...new Set(
@@ -137,21 +188,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 		),
 	].sort();
 
-	// Get receipts for picker (only unconnected)
-	const receiptsByYear = await getUnconnectedReceiptsByYear();
-
 	// Get purchases without linked transactions (for linking selector)
-	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
+	const unlinkedPurchases =
+		await db.getPurchasesWithoutTransactions();
 
-	// Get open budgets for current year (for linking expenses to reserved funds)
+	// Get open budgets for current year
 	const currentYear = new Date().getFullYear();
-	const openBudgets = await db.getOpenFundBudgetsByYear(currentYear);
+	const openBudgets =
+		await db.getOpenFundBudgetsByYear(currentYear);
 
-	// Enrich budgets with used/remaining amounts
 	const enrichedBudgets = [];
 	for (const budget of openBudgets) {
 		const usedAmount = await db.getBudgetUsedAmount(budget.id);
-		const remainingAmount = Number.parseFloat(budget.amount) - usedAmount;
+		const remainingAmount =
+			Number.parseFloat(budget.amount) - usedAmount;
 		enrichedBudgets.push({
 			...budget,
 			usedAmount,
@@ -162,34 +212,31 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		currentYear,
-		recentMinutes: [] as MinuteFile[],
-		emailConfigured: await isEmailConfigured(),
-		// Pre-fill data
 		prefill: {
 			amount: prefillAmount,
 			description: prefillDescription,
 			type: prefillType || "expense",
 			category: prefillCategory,
 			itemIds: itemSelections.map((s) => s.itemId).join(","),
-			linkPurchaseId: "",
+			linkPurchaseId: prefillData?.linkPurchaseId || "",
 			date: "",
 		},
 		linkedItems,
-		// Inventory picker data - now includes availableQuantity
 		pickerItems,
 		uniqueLocations,
 		uniqueCategories,
-		// Receipt picker data
-		receiptsByYear,
-		// Unlinked purchases for linking selector
 		unlinkedPurchases,
-		// Open budgets for linking expenses
 		openBudgets: enrichedBudgets,
+		prefillData,
 	};
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	const user = await requirePermission(request, "treasury:transactions:write", getDatabase);
+	const user = await requirePermission(
+		request,
+		"treasury:transactions:write",
+		getDatabase,
+	);
 	const db = getDatabase();
 
 	const formData = await request.formData();
@@ -198,10 +245,12 @@ export async function action({ request }: Route.ActionArgs) {
 	// Handle createItem action for InventoryPicker
 	if (actionType === "createItem") {
 		const name = formData.get("name") as string;
-		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
+		const quantity =
+			parseInt(formData.get("quantity") as string, 10) || 1;
 		const location = formData.get("location") as string;
 		const category = (formData.get("category") as string) || null;
-		const description = (formData.get("description") as string) || null;
+		const description =
+			(formData.get("description") as string) || null;
 		const value = (formData.get("value") as string) || "0";
 
 		const newItem: NewInventoryItem = {
@@ -227,163 +276,64 @@ export async function action({ request }: Route.ActionArgs) {
 		const itemId = formData.get("itemId") as string;
 		const field = formData.get("field") as string;
 		const valueEntry = formData.get("value");
-		if (!itemId || !field || !valueEntry || typeof valueEntry !== "string") {
-			return { success: false, error: "Missing itemId, field, or value" };
+		if (
+			!itemId ||
+			!field ||
+			!valueEntry ||
+			typeof valueEntry !== "string"
+		) {
+			return {
+				success: false,
+				error: "Missing itemId, field, or value",
+			};
 		}
 
-		// Validate field name
-		const allowedFields = ["name", "quantity", "location", "category", "description", "value"];
+		const allowedFields = [
+			"name",
+			"quantity",
+			"location",
+			"category",
+			"description",
+			"value",
+		];
 		if (!allowedFields.includes(field)) {
 			return { success: false, error: "Invalid field" };
 		}
 
-		// Parse value based on field type
 		let parsedValue: string | number = valueEntry;
 		if (field === "quantity") {
 			parsedValue = parseInt(valueEntry, 10) || 1;
 		}
 
-		await db.updateInventoryItem(itemId, { [field]: parsedValue });
+		await db.updateInventoryItem(itemId, {
+			[field]: parsedValue,
+		});
 		return { success: true };
 	}
 
-	// Handle refreshReceipts action to clear cache
-	if (actionType === "refreshReceipts") {
-		clearCache("RECEIPTS_BY_YEAR");
-		return { success: true };
-	}
-
-	// Guard: if actionType was set but not handled above, return early to prevent fall-through
+	// Guard: if actionType was set but not handled above
 	if (actionType) {
 		console.warn(`[Action] Unhandled action type: ${actionType}`);
-		return { success: false, error: `Unhandled action type: ${actionType}` };
+		return {
+			success: false,
+			error: `Unhandled action type: ${actionType}`,
+		};
 	}
 
+	// Default: create transaction
 	const type = formData.get("type") as "income" | "expense";
 	const amount = formData.get("amount") as string;
 	const description = formData.get("description") as string;
 	const category = (formData.get("category") as string) || null;
 	const dateString = formData.get("date") as string;
 	const year = parseInt(formData.get("year") as string, 10);
-	const requestReimbursement = formData.get("requestReimbursement") === "on";
 	const linkPurchaseId = formData.get("linkPurchaseId") as string;
 
-	// Check if linking to an existing purchase (reimbursement request)
-	const isLinkingToExisting = !!linkPurchaseId;
-	const shouldRequestReimbursement = requestReimbursement && !isLinkingToExisting;
-
-	// Determine status based on reimbursement request or linking to existing
-	const status = shouldRequestReimbursement || isLinkingToExisting ? "pending" : "complete";
-	const reimbursementStatus =
-		shouldRequestReimbursement || isLinkingToExisting ? "requested" : "not_requested";
-
-	// Create purchase record if reimbursement requested, or use existing purchase
-	let purchaseId: string | null = isLinkingToExisting ? linkPurchaseId : null;
-
-	if (shouldRequestReimbursement) {
-		const purchaserName = formData.get("purchaserName") as string;
-		const bankAccount = formData.get("bankAccount") as string;
-		const minutesId = formData.get("minutesId") as string;
-		const minutesName = formData.get("minutesName") as string;
-		// minutesUrl removed - files are attached instead of linked
-
-		const notes = formData.get("notes") as string;
-
-		const receiptLinks = parseReceiptLinks(formData);
-		const receiptError = getMissingReceiptsError(
-			receiptLinks,
-			shouldRequestReimbursement,
-		);
-		if (receiptError) {
-			return { success: false, error: receiptError };
-		}
-
-		const newPurchase: NewPurchase = {
-			description,
-			amount,
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName: minutesName || null,
-			notes: notes || null,
-			status: "pending",
-			year,
-			emailSent: false,
-			createdBy: user.userId,
-		};
-
-		const purchase = await db.createPurchase(newPurchase);
-		purchaseId = purchase.id;
-
-		// Create receipt records for linked receipts
-		if (receiptLinks.length > 0) {
-			const existingReceipts = await db.getReceipts();
-			for (const receiptLink of receiptLinks) {
-				const pathname = receiptLink.id;
-				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
-				if (existingReceipt) {
-					await db.updateReceipt(existingReceipt.id, {
-						purchaseId: purchase.id,
-					});
-				} else {
-					await db.createReceipt({
-						name: receiptLink.name || null,
-						description: null,
-						url: receiptLink.url,
-						pathname,
-						purchaseId: purchase.id,
-						createdBy: user.userId,
-					});
-				}
-			}
-		}
-
-		// Send email with minutes + receipt attachments in background
-		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			minutesId,
-			minutesName,
-		);
-		const emailTask = Promise.all([
-			minutesAttachmentPromise,
-			receiptAttachmentsPromise,
-		])
-			.then(([minutesAttachment, receiptAttachments]) =>
-				sendReimbursementEmail(
-					{
-						itemName: description,
-						itemValue: amount,
-						purchaserName,
-						bankAccount,
-						minutesReference:
-							minutesName || minutesId || "Ei määritetty / Not specified",
-						notes,
-						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-					},
-					purchase.id,
-					minutesAttachment || undefined,
-					receiptAttachments,
-				),
-			)
-			.then(async (emailResult) => {
-				if (emailResult.success) {
-					await db.updatePurchase(purchase.id, {
-						emailSent: true,
-						emailMessageId: emailResult.messageId,
-					});
-				} else {
-					await db.updatePurchase(purchase.id, {
-						emailError: emailResult.error || "Unknown email error",
-					});
-				}
-			})
-			.catch(async (error) => {
-				await db.updatePurchase(purchase.id, {
-					emailError: error instanceof Error ? error.message : "Unknown error",
-				});
-			});
-		await emailTask;
-	}
+	const purchaseId = linkPurchaseId || null;
+	const status = purchaseId ? "pending" : "complete";
+	const reimbursementStatus = purchaseId
+		? "requested"
+		: "not_requested";
 
 	const newTransaction: DbNewTransaction = {
 		type,
@@ -405,19 +355,20 @@ export async function action({ request }: Route.ActionArgs) {
 	if (linkedItemIds) {
 		const ids = linkedItemIds.split(",").filter(Boolean);
 		for (const itemId of ids) {
-			// Get quantity from the hidden form field (set by context items)
-			const quantityField = formData.get(`itemQuantity_${itemId}`) as string;
-			const quantity = quantityField ? parseInt(quantityField, 10) : null;
+			const quantityField = formData.get(
+				`itemQuantity_${itemId}`,
+			) as string;
+			const quantity = quantityField
+				? parseInt(quantityField, 10)
+				: null;
 
 			if (quantity && quantity > 0) {
-				// Use the specified quantity
 				await db.linkInventoryItemToTransaction(
 					itemId,
 					transaction.id,
 					quantity,
 				);
 			} else {
-				// Fallback: get from item (legacy behavior for picker-selected items)
 				const item = await db.getInventoryItemById(itemId);
 				if (item) {
 					await db.linkInventoryItemToTransaction(
@@ -433,48 +384,40 @@ export async function action({ request }: Route.ActionArgs) {
 	// Link to budget if provided (for expenses from reserved funds)
 	const budgetId = formData.get("budgetId") as string;
 	const budgetAmount = formData.get("budgetAmount") as string;
-	console.log("[DEBUG] Budget linking:", { budgetId, budgetAmount, type });
 	if (budgetId && type === "expense") {
-		// Verify budget exists before linking
 		const budget = await db.getFundBudgetById(budgetId);
-		console.log("[DEBUG] Found budget:", budget);
 		if (budget) {
-			// Parse the amount - default to transaction amount if not specified
 			const linkAmount = budgetAmount
 				? budgetAmount.replace(",", ".")
 				: amount.replace(",", ".");
-			console.log("[DEBUG] Linking with amount:", linkAmount);
-			await db.linkTransactionToBudget(transaction.id, budgetId, linkAmount);
-		} else {
-			console.warn(`[DEBUG] Budget ${budgetId} not found in database, skipping link`);
+			await db.linkTransactionToBudget(
+				transaction.id,
+				budgetId,
+				linkAmount,
+			);
 		}
 	}
 
-	return redirect(`/treasury?year=${year}&success=transaction_created`);
+	return redirect(
+		`/treasury?year=${year}&success=transaction_created`,
+	);
 }
 
-export default function NewTransaction({ loaderData }: Route.ComponentProps) {
+export default function NewTransaction({
+	loaderData,
+}: Route.ComponentProps) {
 	const {
 		currentYear,
-		recentMinutes,
-		emailConfigured,
 		prefill,
 		linkedItems,
 		pickerItems,
 		uniqueLocations,
 		uniqueCategories,
-		receiptsByYear,
 		unlinkedPurchases,
 		openBudgets,
+		prefillData,
 	} = loaderData ?? {
 		currentYear: new Date().getFullYear(),
-		recentMinutes: [] as Array<{
-			id: string;
-			name: string;
-			url?: string;
-			year: number;
-		}>,
-		emailConfigured: false,
 		prefill: {
 			amount: "",
 			description: "",
@@ -490,20 +433,11 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 			quantity: number;
 			value: string | null;
 		}>,
-		pickerItems: [] as (InventoryItem & { availableQuantity: number })[],
+		pickerItems: [] as (InventoryItem & {
+			availableQuantity: number;
+		})[],
 		uniqueLocations: [] as string[],
 		uniqueCategories: [] as string[],
-		receiptsByYear: [] as Array<{
-			year: string;
-			files: Array<{
-				id: string;
-				name: string;
-				url: string;
-				createdTime: string;
-			}>;
-			folderUrl: string;
-			folderId: string;
-		}>,
 		unlinkedPurchases: [] as Purchase[],
 		openBudgets: [] as Array<{
 			id: string;
@@ -519,33 +453,18 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
 	const isSubmitting =
-		navigation.state === "submitting" || fetcher.state === "submitting";
+		navigation.state === "submitting" ||
+		fetcher.state === "submitting";
+	const normalizedLocations = uniqueLocations.map(
+		(location) => location ?? "missing location",
+	);
 
-	// Get items from context (set by inventory page)
 	const { items: contextItems, setItems } = useNewTransaction();
 	const { t } = useTranslation();
 
-	const [requestReimbursement, setRequestReimbursement] = useState(false);
 	const [selectedPurchaseId, setSelectedPurchaseId] = useState("");
 	const [selectedBudgetId, setSelectedBudgetId] = useState("");
-
-
-	// Handle selection change - uncheck checkbox when selecting existing purchase
-	const handlePurchaseSelectionChange = (id: string) => {
-		setSelectedPurchaseId(id);
-		if (id) {
-			setRequestReimbursement(false);
-		}
-	};
-
-	// Handle checkbox change - clear selection when checking request reimbursement
-	const handleRequestReimbursementChange = (checked: boolean) => {
-		setRequestReimbursement(checked);
-		if (checked) {
-			setSelectedPurchaseId("");
-		}
-	};
-	const [transactionType, setTransactionType] = useState<"income" | "expense">(
+	const [transactionType, setTransactionType] = useState<TransactionType>(
 		prefill.type,
 	);
 	const [amount, setAmount] = useState(prefill.amount || "");
@@ -555,15 +474,33 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 	const [dateValue, setDateValue] = useState(
 		prefill.date || new Date().toISOString().split("T")[0],
 	);
+	const [selectedCategory, setSelectedCategory] = useState(
+		prefill.category ||
+		(contextItems.length > 0 ? "inventory" : ""),
+	);
+	const [year, setYear] = useState(currentYear);
+	const [selectedItemIds, setSelectedItemIds] = useState<string[]>(
+		contextItems.length > 0
+			? contextItems.map((i) => i.itemId)
+			: prefill.itemIds
+				? prefill.itemIds.split(",").filter(Boolean)
+				: [],
+	);
 
 	// Update form values when a purchase is selected for linking
 	useEffect(() => {
 		if (selectedPurchaseId) {
-			const purchase = unlinkedPurchases.find((p) => p.id === selectedPurchaseId);
+			const purchase = unlinkedPurchases.find(
+				(p) => p.id === selectedPurchaseId,
+			);
 			if (purchase) {
 				setAmount(purchase.amount);
 				setDescriptionValue(purchase.description || "");
-				setDateValue(new Date(purchase.createdAt).toISOString().split("T")[0]);
+				setDateValue(
+					new Date(purchase.createdAt)
+						.toISOString()
+						.split("T")[0],
+				);
 			}
 		}
 	}, [selectedPurchaseId, unlinkedPurchases]);
@@ -575,64 +512,84 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 					? actionData.error
 					: "Failed to create transaction",
 			);
-			if (actionData.error === MISSING_RECEIPTS_ERROR) {
-				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
-				receiptsSection?.focus();
-				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
-			}
 		}
-
-		// Handle fetcher success (inventory item creation)
-		if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
+		if (
+			fetcher.data &&
+			"success" in fetcher.data &&
+			fetcher.data.success
+		) {
 			toast.success("Inventory item created");
 		}
 	}, [actionData, fetcher.data]);
 
-	// State for category and selected inventory items
-	const [selectedCategory, setSelectedCategory] = useState(
-		prefill.category || (contextItems.length > 0 ? "inventory" : ""),
-	);
-
-	// Use context items for the transaction
-	// selectedItemIds track which items are selected (for form submission)
-	const [selectedItemIds, setSelectedItemIds] = useState<string[]>(
-		contextItems.length > 0
-			? contextItems.map((i) => i.itemId)
-			: prefill.itemIds
-				? prefill.itemIds.split(",").filter(Boolean)
-				: [],
-	);
-
-	// Year state for controlled component
-	const [year, setYear] = useState(currentYear);
-
-	// Sync amount with inventory items total when quantities change
+	// Strict amount from inventory items — always override when items exist
 	useEffect(() => {
-		if (contextItems.length > 0 && !prefill.amount) {
+		if (selectedCategory === "inventory" && contextItems.length > 0) {
 			const total = contextItems.reduce(
-				(sum, item) => sum + item.quantity * item.unitValue,
+				(sum, item) =>
+					sum + item.quantity * item.unitValue,
 				0,
 			);
-			if (total > 0) {
-				setAmount(total.toFixed(2));
+			setAmount(total.toFixed(2));
+		}
+	}, [contextItems, selectedCategory]);
+
+	// Pre-fill from reimbursement
+	useEffect(() => {
+		if (prefillData) {
+			setAmount(prefillData.amount);
+			setDescriptionValue(prefillData.description);
+			setTransactionType(prefillData.type);
+			setSelectedCategory(prefillData.category);
+			setSelectedPurchaseId(prefillData.linkPurchaseId);
+
+			// Pre-fill inventory items
+			if (prefillData.linkedInventoryItems && prefillData.linkedInventoryItems.length > 0) {
+				setItems(prefillData.linkedInventoryItems);
+				setSelectedItemIds(prefillData.linkedInventoryItems.map(i => i.itemId));
 			}
 		}
-	}, [contextItems, prefill.amount]);
+	}, [prefillData, setItems]);
 
-	// Combined items: picker items + any pre-selected linked items (for editing)
-	// pickerItems now has availableQuantity which shows how many can still be linked
+	// Build options
+	const categoryOptions = (
+		transactionType === "income"
+			? INCOME_CATEGORIES
+			: EXPENSE_CATEGORIES
+	).map((c) => ({
+		value: c.value,
+		label: t(`treasury.categories.${c.labelKey}`),
+	}));
+
+	const typeOptions = [
+		{
+			value: "expense",
+			label: t("treasury.types.expense"),
+		},
+		{
+			value: "income",
+			label: t("treasury.types.income"),
+		},
+	];
+
+	const yearOptions = Array.from(
+		{ length: 5 },
+		(_, i) => currentYear - i,
+	).map((y) => ({
+		value: y.toString(),
+		label: y.toString(),
+	}));
+
+	// Combined items map for picker
 	const availableItemsMap = new Map<
 		string,
 		InventoryItem & { availableQuantity?: number }
 	>();
 
-	// Add picker items first (these have full data including availableQuantity)
 	for (const item of pickerItems) {
 		availableItemsMap.set(item.id, item);
 	}
 
-	// Only add linked items if they're NOT already in the map
-	// (linked items have sparse data, so we prefer picker ones)
 	for (const li of linkedItems) {
 		if (!availableItemsMap.has(li.id)) {
 			availableItemsMap.set(li.id, {
@@ -648,6 +605,8 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 				removedAt: null,
 				removalReason: null,
 				removalNotes: null,
+				needsCompletion: false,
+				completionNotes: null,
 				manualCount: 0,
 				availableQuantity: li.quantity,
 			} as InventoryItem & { availableQuantity: number });
@@ -655,24 +614,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 	}
 
 	const availableItems = Array.from(availableItemsMap.values());
-
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-
-	// Calculate total from selected items using context quantities
-	const _selectedItemsTotal =
-		contextItems.length > 0
-			? contextItems.reduce(
-				(sum, ctxItem) => sum + ctxItem.quantity * ctxItem.unitValue,
-				0,
-			)
-			: selectedItemIds.reduce((sum, id) => {
-				const item = availableItems.find((i) => i.id === id);
-				if (item?.value) {
-					return sum + parseFloat(item.value) * (item.quantity || 1);
-				}
-				return sum;
-			}, 0);
 
 	// Handler for adding new inventory item from picker
 	const handleAddItem = async (itemData: {
@@ -683,7 +624,6 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		description?: string;
 		value?: string;
 	}): Promise<InventoryItem | null> => {
-		// Use fetcher to create the item
 		const formData = new FormData();
 		formData.set("_action", "createItem");
 		formData.set("name", itemData.name);
@@ -692,15 +632,15 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		formData.set("category", itemData.category || "");
 		formData.set("description", itemData.description || "");
 		formData.set("value", itemData.value || "0");
-
-		// For now, return null and let the component refresh
-		// The fetcher will trigger a reload
 		fetcher.submit(formData, { method: "POST" });
 		return null;
 	};
 
-	// Handler for inline editing inventory items
-	const handleInlineEdit = (itemId: string, field: string, value: string) => {
+	const handleInlineEdit = (
+		itemId: string,
+		field: string,
+		value: string,
+	) => {
 		const formData = new FormData();
 		formData.set("_action", "updateField");
 		formData.set("itemId", itemId);
@@ -709,65 +649,129 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 		fetcher.submit(formData, { method: "POST" });
 	};
 
-	// Convert purchases to linkable items
-	const linkablePurchases = purchasesToLinkableItems(unlinkedPurchases);
-
-	// Find selected purchase for display
-	const selectedPurchase = selectedPurchaseId
-		? unlinkedPurchases.find((p) => p.id === selectedPurchaseId)
-		: null;
+	const currentPath = "/treasury/transactions/new";
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-8">
 				<PageHeader title={t("treasury.new.header")} />
 
-				<Form method="post" encType="multipart/form-data" className="space-y-6">
-					{/* Hidden field for selected item IDs */}
+				<Form method="post" className="space-y-6">
+					{/* Hidden fields for form submission */}
 					<input
 						type="hidden"
 						name="linkedItemIds"
 						value={selectedItemIds.join(",")}
 					/>
-
-					{/* Transaction Details */}
-					<TransactionDetailsForm
-						transactionType={transactionType}
-						onTypeChange={setTransactionType}
-						amount={amount}
-						onAmountChange={setAmount}
-						description={descriptionValue}
-						onDescriptionChange={setDescriptionValue}
-						category={selectedCategory}
-						onCategoryChange={setSelectedCategory}
-						date={dateValue}
-						onDateChange={setDateValue}
-						year={year}
-						onYearChange={setYear}
-						yearOptions={yearOptions}
-						showTypeSelector={true}
+					<input
+						type="hidden"
+						name="linkPurchaseId"
+						value={selectedPurchaseId}
 					/>
 
-					{/* Inventory Selection Section - shown when category is "inventory" */}
+					<TreasuryDetailCard
+						title={t("treasury.new.details_header")}
+					>
+						<div className="grid gap-4">
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.type")} *`}
+								name="type"
+								type="select"
+								value={transactionType}
+								onChange={(v) =>
+									setTransactionType(
+										v as TransactionType,
+									)
+								}
+								options={typeOptions}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.amount")} *`}
+								name="amount"
+								type="number"
+								value={amount}
+								onChange={setAmount}
+								required
+								step="0.01"
+								min="0.01"
+								disabled={selectedCategory === "inventory" && contextItems.length > 0}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.description")} *`}
+								name="description"
+								type="text"
+								value={descriptionValue}
+								onChange={setDescriptionValue}
+								required
+								placeholder={t(
+									"treasury.form.description_placeholder",
+								)}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.breakdown.category", "Category")} *`}
+								name="category"
+								type="select"
+								value={selectedCategory}
+								onChange={setSelectedCategory}
+								options={categoryOptions}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.date")} *`}
+								name="date"
+								type="date"
+								value={dateValue}
+								onChange={setDateValue}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.year")} *`}
+								name="year"
+								type="select"
+								value={year.toString()}
+								onChange={(v) =>
+									setYear(parseInt(v, 10))
+								}
+								options={yearOptions}
+								required
+							/>
+						</div>
+
+					{/* Inventory Selection Section */}
 					{selectedCategory === "inventory" && (
 						<div className="space-y-4">
 							<TransactionItemList
 								items={contextItems}
 								onItemsChange={(newItems) => {
 									setItems(newItems);
-									// Sync selected IDs just in case other logic depends on it
-									setSelectedItemIds(newItems.map((i) => i.itemId));
+									setSelectedItemIds(
+										newItems.map(
+											(i) => i.itemId,
+										),
+									);
 								}}
 								availableItems={availableItems}
-								uniqueLocations={uniqueLocations}
+								uniqueLocations={normalizedLocations}
 								uniqueCategories={uniqueCategories}
 								onAddNewItem={handleAddItem}
 								onInlineEdit={handleInlineEdit}
-								title={t("treasury.new.inventory_title")}
-								description={t("treasury.new.inventory_desc")}
-								emptyMessage={t("treasury.new.inventory_empty")}
+								title={t(
+									"treasury.new.inventory_title",
+								)}
+								description={t(
+									"treasury.new.inventory_desc",
+								)}
+								emptyMessage={t(
+									"treasury.new.inventory_empty",
+								)}
 								hideSelectedList={true}
-
 							/>
 
 							{/* Hidden inputs for form submission */}
@@ -782,94 +786,46 @@ export default function NewTransaction({ loaderData }: Route.ComponentProps) {
 						</div>
 					)}
 
-					{/* Fund Budget Section - Only for expenses when budgets exist */}
+					{/* Fund Budget Section - Only for expenses */}
+					{transactionType === "expense" && (openBudgets.length > 0 || selectedBudgetId) && (
+						<>
+							<input type="hidden" name="budgetId" value={selectedBudgetId} />
+							<input type="hidden" name="budgetAmount" value={amount} />
+							<BudgetPicker
+								availableBudgets={openBudgets}
+								selectedBudgetId={selectedBudgetId}
+								onSelectionChange={setSelectedBudgetId}
+								currentPath={currentPath}
+								storageKey="transaction-new-budget"
+							/>
+						</>
+					)}
+
+					{/* Reimbursement Linking Section - Only for expenses */}
 					{transactionType === "expense" && (
-						<BudgetLinkSection
-							openBudgets={openBudgets}
-							selectedBudgetId={selectedBudgetId}
-							onSelectionChange={setSelectedBudgetId}
-							amount={amount}
+						<ReimbursementsPicker
+							linkedReimbursement={
+								selectedPurchaseId
+									? unlinkedPurchases.find(
+											(p) => p.id === selectedPurchaseId,
+										)
+									: null
+							}
+							unlinkedReimbursements={unlinkedPurchases}
+							selectedReimbursementId={selectedPurchaseId}
+							onSelectionChange={setSelectedPurchaseId}
+							createUrl="/treasury/reimbursements/new"
+							currentPath={currentPath}
+							storageKey="transaction-new-reimbursements"
 						/>
 					)}
 
-					{/* Reimbursement Section - Only for expenses */}
-					{transactionType === "expense" && (
-						<SectionCard>
-							{/* Hidden input for linking to existing purchase */}
-							<input type="hidden" name="linkPurchaseId" value={selectedPurchaseId} />
+</TreasuryDetailCard>
+					<TreasuryFormActions
+						isSubmitting={isSubmitting}
+						saveLabel={t("treasury.new.submit")}
+					/>
 
-							{/* Link to existing reimbursement section */}
-							{unlinkedPurchases.length > 0 && (
-								<>
-									<LinkExistingSelector
-										items={linkablePurchases}
-										selectedId={selectedPurchaseId}
-										onSelectionChange={handlePurchaseSelectionChange}
-										label={t("treasury.new.link_existing_reimbursement")}
-										helpText={t("treasury.new.link_existing_help")}
-										placeholder={t("treasury.new.select_reimbursement_placeholder")}
-										noLinkText={t("treasury.new.no_link")}
-									/>
-									{selectedPurchase && (
-										<LinkedItemInfo purchase={selectedPurchase} canViewFullBankAccount={true} />
-									)}
-								</>
-							)}
-
-							{/* Divider when both options available */}
-							{unlinkedPurchases.length > 0 && (
-								<Divider translationKey="treasury.new.or" />
-							)}
-
-							{/* Request new reimbursement - always shown */}
-							<CheckboxOption
-								id="requestReimbursement"
-								name="requestReimbursement"
-								checked={requestReimbursement}
-								onCheckedChange={handleRequestReimbursementChange}
-								label={t("treasury.new.request_reimbursement")}
-								helpText={t("treasury.new.reimbursement_help")}
-							>
-								<ReimbursementForm
-									recentMinutes={recentMinutes.map((m) => ({
-										...m,
-										year: m.year.toString(),
-									}))}
-									emailConfigured={emailConfigured}
-									receiptsByYear={receiptsByYear}
-									currentYear={currentYear}
-									description={descriptionValue}
-									showNotes={true}
-									required={requestReimbursement}
-								/>
-							</CheckboxOption>
-						</SectionCard>
-					)}
-
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate(-1)}
-							className="flex-1"
-						>
-							{t("common.actions.cancel")}
-						</Button>
-						<Button type="submit" className="flex-1" disabled={isSubmitting}>
-							{isSubmitting ? (
-								<span className="flex items-center gap-2">
-									<span className="animate-spin material-symbols-outlined text-sm">
-										progress_activity
-									</span>
-									<span>{t("common.status.saving")}</span>
-								</span>
-							) : requestReimbursement ? (
-								t("treasury.new.submit_and_request")
-							) : (
-								t("treasury.new.submit")
-							)}
-						</Button>
-					</div>
 				</Form>
 			</div>
 		</PageWrapper>

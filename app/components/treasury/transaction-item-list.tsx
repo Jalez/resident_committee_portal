@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { InventoryPicker } from "~/components/inventory-picker";
+import { InventoryTableSelector } from "~/components/inventory/inventory-table-selector";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import type { InventoryItem } from "~/db";
+import type { InventoryItem } from "~/db/schema";
 
 export interface TransactionItem {
 	itemId: string;
@@ -181,7 +181,7 @@ export function TransactionItemList({
 
 			{/* Inline Inventory Picker */}
 			<div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-				<InventoryPicker
+				<InventoryTableSelector
 					items={availableItems}
 					uniqueLocations={uniqueLocations}
 					uniqueCategories={uniqueCategories}

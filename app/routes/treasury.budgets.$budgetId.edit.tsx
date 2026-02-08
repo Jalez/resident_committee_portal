@@ -2,378 +2,412 @@ import { useRef, useState } from "react";
 import { Form, redirect, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import { PageWrapper } from "~/components/layout/page-layout";
+import { PageHeader } from "~/components/layout/page-header";
 import {
-    ContentArea,
-    PageWrapper,
-    SplitLayout,
-} from "~/components/layout/page-layout";
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
+import { TransactionsPicker } from "~/components/treasury/pickers/transactions-picker";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
 import { getDatabase } from "~/db";
 import {
-    getAuthenticatedUser,
-    requirePermissionOrSelf,
+	requirePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
-    const name = data?.budget?.name || "Budget";
-    return [
-        {
-            title: `${data?.siteConfig?.name || "Portal"} - ${name} Edit`,
-        },
-        { name: "robots", content: "noindex" },
-    ];
+	const name = data?.budget?.name || "Budget";
+	return [
+		{
+			title: `${data?.siteConfig?.name || "Portal"} - ${name} Edit`,
+		},
+		{ name: "robots", content: "noindex" },
+	];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-    const db = getDatabase();
-    const budget = await db.getFundBudgetById(params.budgetId);
+	const db = getDatabase();
+	const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!budget) {
-        throw new Response("Not Found", { status: 404 });
-    }
+	if (!budget) {
+		throw new Response("Not Found", { status: 404 });
+	}
 
-    // Check permission
-    await requirePermissionOrSelf(
-        request,
-        "treasury:budgets:update",
-        "treasury:budgets:update-self",
-        budget.createdBy,
-        getDatabase,
-    );
+	await requirePermissionOrSelf(
+		request,
+		"treasury:budgets:update",
+		"treasury:budgets:update-self",
+		budget.createdBy,
+		getDatabase,
+	);
 
-    const authUser = await getAuthenticatedUser(request, getDatabase);
+	const usedAmount = await db.getBudgetUsedAmount(budget.id);
+	const availableFunds = await db.getAvailableFundsForYear(budget.year);
 
-    // Get used amount to prevent reducing below it
-    const usedAmount = await db.getBudgetUsedAmount(budget.id);
+	// Get currently linked transactions
+	const linkedBudgetTransactions = await db.getBudgetTransactions(budget.id);
+	const linkedTransactions = linkedBudgetTransactions.map(l => l.transaction);
 
-    // Get available funds
-    const availableFunds = await db.getAvailableFundsForYear(budget.year);
+	// Get unlinked transactions for this year
+	const allTransactions = await db.getTransactionsByYear(budget.year);
+	const allBudgetTransactions = await Promise.all(
+		allTransactions.map(async (t) => {
+			const link = await db.getBudgetForTransaction(t.id);
+			return link ? t.id : null;
+		}),
+	);
+	const linkedTransactionIds = new Set(allBudgetTransactions.filter(Boolean));
 
-    return {
-        siteConfig: SITE_CONFIG,
-        budget: {
-            ...budget,
-            usedAmount,
-            remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
-        },
-        availableFunds,
-        languages: {
-            primary: authUser?.primaryLanguage || "fi",
-            secondary: authUser?.secondaryLanguage || "en",
-        },
-    };
+	const unlinkedTransactions = allTransactions.filter(
+		(t) => t.type === "expense" && !linkedTransactionIds.has(t.id),
+	);
+
+	return {
+		siteConfig: SITE_CONFIG,
+		budget: {
+			...budget,
+			usedAmount,
+			remainingAmount: Number.parseFloat(budget.amount) - usedAmount,
+		},
+		availableFunds,
+		linkedTransactions,
+		unlinkedTransactions,
+	};
 }
 
 const updateBudgetSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-    description: z.string().optional(),
-    amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
+	name: z.string().min(1, "Name is required"),
+	description: z.string().optional(),
+	amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
 });
 
 export async function action({ request, params }: Route.ActionArgs) {
-    const db = getDatabase();
-    const budget = await db.getFundBudgetById(params.budgetId);
+	const db = getDatabase();
+	const budget = await db.getFundBudgetById(params.budgetId);
 
-    if (!budget) {
-        throw new Response("Not Found", { status: 404 });
-    }
+	if (!budget) {
+		throw new Response("Not Found", { status: 404 });
+	}
 
-    // Check permission
-    await requirePermissionOrSelf(
-        request,
-        "treasury:budgets:update",
-        "treasury:budgets:update-self",
-        budget.createdBy,
-        getDatabase,
-    );
+	await requirePermissionOrSelf(
+		request,
+		"treasury:budgets:update",
+		"treasury:budgets:update-self",
+		budget.createdBy,
+		getDatabase,
+	);
 
-    const formData = await request.formData();
-    const actionType = formData.get("_action") as string | null;
+	const formData = await request.formData();
+	const actionType = formData.get("_action") as string | null;
+	const transactionIdsJson = formData.get("transactionIds") as string;
+	const selectedTransactionIds = transactionIdsJson ? JSON.parse(transactionIdsJson) as string[] : [];
 
-    if (actionType === "close") {
-        await db.updateFundBudget(params.budgetId, { status: "closed" });
-        return redirect(
-            `/treasury/budgets/${params.budgetId}?success=closed`,
-        );
-    }
+	if (actionType === "close") {
+		await db.updateFundBudget(params.budgetId, { status: "closed" });
+		return redirect(
+			`/treasury/budgets/${params.budgetId}?success=closed`,
+		);
+	}
 
-    if (actionType === "reopen") {
-        await db.updateFundBudget(params.budgetId, { status: "open" });
-        return redirect(
-            `/treasury/budgets/${params.budgetId}?success=reopened`,
-        );
-    }
+	if (actionType === "reopen") {
+		await db.updateFundBudget(params.budgetId, { status: "open" });
+		return redirect(
+			`/treasury/budgets/${params.budgetId}?success=reopened`,
+		);
+	}
 
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const amountStr = formData.get("amount") as string;
+	const name = formData.get("name") as string;
+	const description = formData.get("description") as string;
+	const amountStr = formData.get("amount") as string;
 
-    // Validate
-    const result = updateBudgetSchema.safeParse({
-        name,
-        description,
-        amount: amountStr,
-    });
+	const result = updateBudgetSchema.safeParse({
+		name,
+		description,
+		amount: amountStr,
+	});
 
-    if (!result.success) {
-        return {
-            error: "Validation failed",
-            fieldErrors: result.error.flatten().fieldErrors,
-        };
-    }
+	if (!result.success) {
+		return {
+			error: "Validation failed",
+			fieldErrors: result.error.flatten().fieldErrors,
+		};
+	}
 
-    // Parse amount
-    const newAmount = Number.parseFloat(amountStr.replace(",", "."));
+	const newAmount = Number.parseFloat(amountStr.replace(",", "."));
+	const usedAmount = await db.getBudgetUsedAmount(params.budgetId);
 
-    // Get used amount
-    const usedAmount = await db.getBudgetUsedAmount(params.budgetId);
+	if (newAmount < usedAmount) {
+		return { error: "cannot_reduce", usedAmount };
+	}
 
-    // Cannot reduce below used amount
-    if (newAmount < usedAmount) {
-        return {
-            error: "cannot_reduce",
-            usedAmount,
-        };
-    }
+	const currentAmount = Number.parseFloat(budget.amount);
+	if (newAmount > currentAmount) {
+		const increase = newAmount - currentAmount;
+		const availableFunds = await db.getAvailableFundsForYear(budget.year);
 
-    // Check available funds if increasing
-    const currentAmount = Number.parseFloat(budget.amount);
-    if (newAmount > currentAmount) {
-        const increase = newAmount - currentAmount;
-        const availableFunds = await db.getAvailableFundsForYear(budget.year);
+		if (increase > availableFunds) {
+			return { error: "insufficient_funds", availableFunds };
+		}
+	}
 
-        if (increase > availableFunds) {
-            return {
-                error: "insufficient_funds",
-                availableFunds,
-            };
-        }
-    }
+	await db.updateFundBudget(params.budgetId, {
+		name,
+		description: description || null,
+		amount: newAmount.toFixed(2),
+	});
 
-    // Update budget
-    await db.updateFundBudget(params.budgetId, {
-        name,
-        description: description || null,
-        amount: newAmount.toFixed(2),
-    });
+	// Sync transaction links
+	const currentLinks = await db.getBudgetTransactions(params.budgetId);
+	const currentIds = new Set(currentLinks.map(l => l.transaction.id));
+	const selectedIds = new Set(selectedTransactionIds);
 
-    return redirect(
-        `/treasury/budgets/${params.budgetId}?success=updated`,
-    );
+	// Add new links
+	for (const id of selectedTransactionIds) {
+		if (!currentIds.has(id)) {
+			const tx = (await db.getAllTransactions()).find(t => t.id === id);
+			if (tx) {
+				await db.linkTransactionToBudget(tx.id, params.budgetId, tx.amount);
+			}
+		}
+	}
+
+	// Remove old links
+	for (const link of currentLinks) {
+		if (!selectedIds.has(link.transaction.id)) {
+			await db.unlinkTransactionFromBudget(link.transaction.id, params.budgetId);
+		}
+	}
+
+	return redirect(
+		`/treasury/budgets/${params.budgetId}?success=updated`,
+	);
 }
 
 export default function TreasuryBudgetsEdit({
-    loaderData,
-    actionData,
+	loaderData,
+	actionData,
 }: Route.ComponentProps) {
-    const { budget, availableFunds, languages } = loaderData;
-    const { t } = useTranslation();
-    const navigate = useNavigate();
-    const [confirmAction, setConfirmAction] = useState<"close" | "reopen" | null>(null);
-    const closeFormRef = useRef<HTMLFormElement>(null);
-    const reopenFormRef = useRef<HTMLFormElement>(null);
+	const { budget, availableFunds, linkedTransactions, unlinkedTransactions } = loaderData;
+	const { t } = useTranslation();
+	const navigate = useNavigate();
+	const [confirmAction, setConfirmAction] = useState<
+		"close" | "reopen" | null
+	>(null);
+	const closeFormRef = useRef<HTMLFormElement>(null);
+	const reopenFormRef = useRef<HTMLFormElement>(null);
 
-    const formatCurrency = (value: number) => {
-        return `${value.toFixed(2).replace(".", ",")} €`;
-    };
+	const [name, setName] = useState(budget.name);
+	const [description, setDescription] = useState(budget.description || "");
+	const [amount, setAmount] = useState(
+		Number.parseFloat(budget.amount).toFixed(2).replace(".", ","),
+	);
+	const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>(
+		linkedTransactions.map(t => t.id)
+	);
 
-    return (
-        <PageWrapper>
-            <SplitLayout
-                header={{
-                    primary: t("treasury.budgets.edit.title", {
-                        lng: languages.primary,
-                    }),
-                    secondary: t("treasury.budgets.edit.title", {
-                        lng: languages.secondary,
-                    }),
-                }}
-            >
-                <ContentArea>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t("treasury.budgets.edit.title")}</CardTitle>
-                            <CardDescription>
-                                {t("treasury.budgets.available_funds")}:{" "}
-                                <span
-                                    className={
-                                        availableFunds >= 0
-                                            ? "text-green-600 dark:text-green-400"
-                                            : "text-red-600 dark:text-red-400"
-                                    }
-                                >
-                                    {formatCurrency(availableFunds)}
-                                </span>
-                                {" | "}
-                                {t("treasury.budgets.used")}:{" "}
-                                <span className="text-gray-600 dark:text-gray-400">
-                                    {formatCurrency(budget.usedAmount)}
-                                </span>
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form method="post" className="space-y-4">
-                                {actionData?.error === "insufficient_funds" && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-                                        {t("treasury.budgets.insufficient_funds", {
-                                            available: formatCurrency(
-                                                actionData.availableFunds as number,
-                                            ),
-                                        })}
-                                    </div>
-                                )}
+	const formatCurrency = (value: number) => {
+		return `${value.toFixed(2).replace(".", ",")} €`;
+	};
 
-                                {actionData?.error === "cannot_reduce" && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-                                        {t("treasury.budgets.cannot_reduce", {
-                                            used: formatCurrency(actionData.usedAmount as number),
-                                        })}
-                                    </div>
-                                )}
+	return (
+		<PageWrapper>
+			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
+				<PageHeader title={t("treasury.budgets.edit.title")} />
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">{t("treasury.budgets.name")}</Label>
-                                    <Input
-                                        id="name"
-                                        name="name"
-                                        defaultValue={budget.name}
-                                        placeholder={t("treasury.budgets.name_placeholder")}
-                                        required
-                                    />
-                                </div>
+				{/* Error displays */}
+				{actionData?.error === "insufficient_funds" && (
+					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
+						{t("treasury.budgets.insufficient_funds", {
+							available: formatCurrency(
+								actionData.availableFunds as number,
+							),
+						})}
+					</div>
+				)}
+				{actionData?.error === "cannot_reduce" && (
+					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
+						{t("treasury.budgets.cannot_reduce", {
+							used: formatCurrency(
+								actionData.usedAmount as number,
+							),
+						})}
+					</div>
+				)}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">
-                                        {t("treasury.budgets.description")}
-                                    </Label>
-                                    <Textarea
-                                        id="description"
-                                        name="description"
-                                        defaultValue={budget.description || ""}
-                                        placeholder={t(
-                                            "treasury.budgets.description_placeholder",
-                                        )}
-                                        rows={3}
-                                    />
-                                </div>
+				<Form method="post" className="space-y-6">
+					<input type="hidden" name="transactionIds" value={JSON.stringify(selectedTransactionIds)} />
+					<TreasuryDetailCard title={t("treasury.budgets.view.title")}>
+						<div className="grid gap-4">
+							<TreasuryField
+								mode="edit"
+								label={t("treasury.budgets.name")}
+								name="name"
+								type="text"
+								value={name}
+								onChange={setName}
+								required
+								placeholder={t(
+									"treasury.budgets.name_placeholder",
+								)}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={t("treasury.budgets.description")}
+								name="description"
+								type="textarea"
+								value={description}
+								onChange={setDescription}
+								placeholder={t(
+									"treasury.budgets.description_placeholder",
+								)}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.budgets.amount")} (€)`}
+								name="amount"
+								type="currency"
+								value={amount}
+								onChange={setAmount}
+								required
+							/>
+							<TreasuryField label={t("treasury.budgets.year")}>
+								{budget.year}
+							</TreasuryField>
+							<TreasuryField
+								label={t("treasury.budgets.available_funds")}
+								valueClassName={
+									availableFunds >= 0
+										? "text-green-600 dark:text-green-400 font-medium"
+										: "text-red-600 dark:text-red-400 font-medium"
+								}
+							>
+								{formatCurrency(availableFunds)}
+							</TreasuryField>
+							<TreasuryField
+								label={t("treasury.budgets.used")}
+								valueClassName="font-medium"
+							>
+								{formatCurrency(budget.usedAmount)}
+							</TreasuryField>
+						</div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="amount">
-                                        {t("treasury.budgets.amount")} (€)
-                                    </Label>
-                                    <Input
-                                        id="amount"
-                                        name="amount"
-                                        type="text"
-                                        inputMode="decimal"
-                                        defaultValue={Number.parseFloat(budget.amount)
-                                            .toFixed(2)
-                                            .replace(".", ",")}
-                                        placeholder="0,00"
-                                        required
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        {t("treasury.budgets.cannot_reduce", {
-                                            used: formatCurrency(budget.usedAmount),
-                                        }).replace("Cannot reduce amount below used amount", "Minimum")}
-                                    </p>
-                                </div>
+						<TransactionsPicker
+							linkedTransactions={linkedTransactions}
+							unlinkedTransactions={unlinkedTransactions}
+							selectedTransactionIds={selectedTransactionIds}
+							onSelectionChange={(ids) => setSelectedTransactionIds(Array.isArray(ids) ? ids : [ids].filter(Boolean) as string[])}
+							createUrl={`/treasury/transactions/new?year=${budget.year}&type=expense`}
+							currentPath={`/treasury/budgets/${budget.id}/edit`}
+							storageKey={`budget-${budget.id}-transactions`}
+							label={t("treasury.budgets.linked_transactions")}
+							maxItems={100}
+							sourceEntityType="budget"
+							sourceEntityId={budget.id}
+							sourceEntityName={budget.name || ""}
+						/>
+					</TreasuryDetailCard>
 
-                                <div className="flex flex-wrap gap-3 pt-4">
-                                    <Button type="submit">
-                                        {t("treasury.budgets.form.save")}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                            navigate(`/treasury/budgets/${budget.id}`)
-                                        }
-                                    >
-                                        {t("treasury.budgets.form.cancel")}
-                                    </Button>
+					<TreasuryFormActions
+						extraActions={
+							<>
+								{budget.status === "open" ? (
+									<>
+										<Form
+											method="post"
+											className="hidden"
+											ref={closeFormRef}
+										>
+											<input
+												type="hidden"
+												name="_action"
+												value="close"
+											/>
+										</Form>
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() =>
+												setConfirmAction("close")
+											}
+										>
+											<span className="material-symbols-outlined mr-2 text-sm">
+												lock
+											</span>
+											{t(
+												"treasury.budgets.actions.close",
+											)}
+										</Button>
+									</>
+								) : (
+									<>
+										<Form
+											method="post"
+											className="hidden"
+											ref={reopenFormRef}
+										>
+											<input
+												type="hidden"
+												name="_action"
+												value="reopen"
+											/>
+										</Form>
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() =>
+												setConfirmAction("reopen")
+											}
+										>
+											<span className="material-symbols-outlined mr-2 text-sm">
+												lock_open
+											</span>
+											{t(
+												"treasury.budgets.actions.reopen",
+											)}
+										</Button>
+									</>
+								)}
+							</>
+						}
+					/>
+				</Form>
 
-                                    {budget.status === "open" ? (
-                                        <>
-                                            <Form method="post" className="hidden" ref={closeFormRef}>
-                                                <input type="hidden" name="_action" value="close" />
-                                            </Form>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setConfirmAction("close")}
-                                            >
-                                                <span className="material-symbols-outlined mr-2 text-sm">
-                                                    lock
-                                                </span>
-                                                {t("treasury.budgets.actions.close")}
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Form method="post" className="hidden" ref={reopenFormRef}>
-                                                <input type="hidden" name="_action" value="reopen" />
-                                            </Form>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setConfirmAction("reopen")}
-                                            >
-                                                <span className="material-symbols-outlined mr-2 text-sm">
-                                                    lock_open
-                                                </span>
-                                                {t("treasury.budgets.actions.reopen")}
-                                            </Button>
-                                        </>
-                                    )}
-                                    <ConfirmDialog
-                                        open={confirmAction !== null}
-                                        onOpenChange={(open) => !open && setConfirmAction(null)}
-                                        title={
-                                            confirmAction === "close"
-                                                ? t("treasury.budgets.actions.close")
-                                                : t("treasury.budgets.actions.reopen")
-                                        }
-                                        description={
-                                            confirmAction === "close"
-                                                ? t("treasury.budgets.close_confirm", {
-                                                      amount: formatCurrency(
-                                                          Number.parseFloat(budget.amount) -
-                                                              budget.usedAmount,
-                                                      ),
-                                                  })
-                                                : confirmAction === "reopen"
-                                                  ? t("treasury.budgets.reopen_confirm")
-                                                  : ""
-                                        }
-                                        confirmLabel={t("common.actions.confirm")}
-                                        cancelLabel={t("common.actions.cancel")}
-                                        variant="default"
-                                        onConfirm={() => {
-                                            if (confirmAction === "close") closeFormRef.current?.requestSubmit();
-                                            else if (confirmAction === "reopen") reopenFormRef.current?.requestSubmit();
-                                            setConfirmAction(null);
-                                        }}
-                                    />
-                                </div>
-                            </Form>
-                        </CardContent>
-                    </Card>
-                </ContentArea>
-            </SplitLayout>
-        </PageWrapper>
-    );
+				<ConfirmDialog
+					open={confirmAction !== null}
+					onOpenChange={(open) => !open && setConfirmAction(null)}
+					title={
+						confirmAction === "close"
+							? t("treasury.budgets.actions.close")
+							: t("treasury.budgets.actions.reopen")
+					}
+					description={
+						confirmAction === "close"
+							? t("treasury.budgets.close_confirm", {
+								amount: formatCurrency(
+									Number.parseFloat(budget.amount) -
+									budget.usedAmount,
+								),
+							})
+							: confirmAction === "reopen"
+								? t("treasury.budgets.reopen_confirm")
+								: ""
+					}
+					confirmLabel={t("common.actions.confirm")}
+					cancelLabel={t("common.actions.cancel")}
+					variant="default"
+					onConfirm={() => {
+						if (confirmAction === "close")
+							closeFormRef.current?.requestSubmit();
+						else if (confirmAction === "reopen")
+							reopenFormRef.current?.requestSubmit();
+						setConfirmAction(null);
+					}}
+				/>
+			</div>
+		</PageWrapper>
+	);
 }

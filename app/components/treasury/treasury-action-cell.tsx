@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useFetcher, useRevalidator } from "react-router";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { useEffect } from "react";
@@ -41,12 +42,18 @@ export function TreasuryActionCell({
 	const { t } = useTranslation();
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-	// Revalidate when delete succeeds
+	// Revalidate when delete succeeds and show toast notifications
 	useEffect(() => {
-		if (deleteFetcher.state === "idle" && deleteFetcher.data?.success) {
-			revalidator.revalidate();
+		if (deleteFetcher.state === "idle" && deleteFetcher.data) {
+			if (deleteFetcher.data.success) {
+				toast.success(t("common.actions.deleted", "Deleted successfully"));
+				setShowDeleteConfirm(false);
+				revalidator.revalidate();
+			} else if (deleteFetcher.data.error) {
+				toast.error(deleteFetcher.data.error);
+			}
 		}
-	}, [deleteFetcher.state, deleteFetcher.data, revalidator]);
+	}, [deleteFetcher.state, deleteFetcher.data, revalidator, t]);
 
 	const doDelete = () => {
 		if (!deleteProps) return;

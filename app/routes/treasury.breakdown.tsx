@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import {
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
 	TreasuryTable,
@@ -310,15 +313,6 @@ export default function TreasuryBreakdown({
 		</div>
 	);
 
-	const STATUS_VARIANT_MAP: Record<string, string> = {
-		complete:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-		pending:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-		paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-		declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-	};
-
 	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
 	const columns = [
 		{
@@ -346,7 +340,7 @@ export default function TreasuryBreakdown({
 			cell: (row: Transaction) => (
 				<TreasuryStatusPill
 					value={row.status}
-					variantMap={STATUS_VARIANT_MAP}
+					variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
 					label={t(
 						`treasury.breakdown.actions.edit.statuses.${row.status}`,
 						{ defaultValue: row.status },

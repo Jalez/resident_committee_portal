@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Form,
@@ -12,29 +12,27 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
-	type MinuteFile,
-	ReimbursementForm,
-} from "~/components/treasury/reimbursement-form";
-import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
-import { TransactionItemList } from "~/components/treasury/transaction-item-list";
-import {
-	LinkExistingSelector,
-	transactionsToLinkableItems,
-} from "~/components/treasury/link-existing-selector";
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
+import { ReceiptsPicker, type ReceiptLink } from "~/components/treasury/pickers/receipts-picker";
+import { MinutesPicker } from "~/components/treasury/pickers/minutes-picker";
+import { TransactionsPicker } from "~/components/treasury/pickers/transactions-picker";
+
 import { SectionCard } from "~/components/treasury/section-card";
-import { CheckboxOption } from "~/components/treasury/checkbox-option";
-import { Divider } from "~/components/treasury/divider";
 import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
 import { Button } from "~/components/ui/button";
-import { useNewTransaction } from "~/contexts/new-transaction-context";
 import {
 	getDatabase,
-	type InventoryItem,
-	type NewInventoryItem,
-	type NewTransaction,
-	type Purchase,
-	type Transaction,
 } from "~/db";
+import type {
+	InventoryItem,
+	NewInventoryItem,
+	NewTransaction,
+	Purchase,
+	Transaction,
+} from "~/db/schema";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -51,6 +49,7 @@ import {
 	parseReceiptLinks,
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
+import { getMinutesByYear } from "~/lib/google.server";
 import type { Route } from "./+types/treasury.reimbursements.$purchaseId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -64,6 +63,13 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
+export interface MinuteFile {
+	id: string;
+	name: string;
+	url?: string;
+	year: string;
+}
+
 export async function loader({ request, params }: Route.LoaderArgs) {
 	const db = getDatabase();
 
@@ -71,6 +77,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 	if (!purchase) {
 		throw new Response("Not Found", { status: 404 });
+	}
+
+	// Redirect if reimbursement has been sent (locked)
+	if (purchase.emailSent) {
+		throw redirect(`/treasury/reimbursements/${params.purchaseId}`);
 	}
 
 	// Check permission with self-edit support
@@ -117,14 +128,41 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		unlinkedTransactions.unshift(linkedTransaction);
 	}
 
+	// Fetch minutes from Google Drive
+	let recentMinutes: MinuteFile[] = [];
+	try {
+		const minutesByYear = await getMinutesByYear();
+		recentMinutes = minutesByYear
+			.flatMap((year) =>
+				year.files.map((file) => ({
+					id: file.id,
+					name: file.name,
+					url: file.url,
+					year: year.year,
+				})),
+			)
+			.slice(0, 50); // Limit to recent 50 minutes
+	} catch (error) {
+		console.error("Failed to fetch minutes:", error);
+	}
+
+	// Get linked receipts for initial selection state
+	const linkedReceipts = await db.getReceiptsByPurchaseId(params.purchaseId);
+
+	// Get OCR content for receipts
+	const receiptIds = linkedReceipts.map(r => r.id);
+	const receiptContents = receiptIds.length > 0 ? await db.getReceiptContentsByReceiptIds(receiptIds) : [];
+
 	return {
 		siteConfig: SITE_CONFIG,
 		purchase,
 		linkedTransaction,
 		currentYear,
-		recentMinutes: [] as MinuteFile[],
+		recentMinutes,
 		emailConfigured: await isEmailConfigured(),
 		receiptsByYear,
+		linkedReceipts,
+		receiptContents,
 		// Inventory picker data
 		pickerItems,
 		uniqueLocations,
@@ -144,6 +182,11 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const purchase = await db.getPurchaseById(params.purchaseId);
 	if (!purchase) {
 		throw new Response("Not Found", { status: 404 });
+	}
+
+	// Block edits to sent reimbursements
+	if (purchase.emailSent) {
+		return { success: false, error: "Cannot edit a sent reimbursement" };
 	}
 
 	const year = purchase.year;
@@ -216,7 +259,68 @@ export async function action({ request, params }: Route.ActionArgs) {
 		return { success: true };
 	}
 
-	// Guard: if actionType was set but not handled above, return early to prevent fall-through
+	// Handle sendRequest action
+	if (actionType === "sendRequest") {
+		const receiptLinks = parseReceiptLinks(formData);
+
+		// Validate receipts
+		const receiptError = getMissingReceiptsError(receiptLinks, true);
+		if (receiptError) {
+			return { success: false, error: receiptError, action: "sendRequest" };
+		}
+
+		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
+		const minutesAttachmentPromise = buildMinutesAttachment(
+			purchase.minutesId,
+			purchase.minutesName || undefined,
+		);
+
+		try {
+			const [minutesAttachment, receiptAttachments] = await Promise.all([
+				minutesAttachmentPromise,
+				receiptAttachmentsPromise,
+			]);
+
+			const emailResult = await sendReimbursementEmail(
+				{
+					itemName: purchase.description || "Reimbursement request",
+					itemValue: purchase.amount,
+					purchaserName: purchase.purchaserName,
+					bankAccount: purchase.bankAccount,
+					minutesReference: purchase.minutesName || purchase.minutesId || "Ei määritetty / Not specified",
+					notes: purchase.notes || undefined,
+					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+				},
+				purchase.id,
+				minutesAttachment || undefined,
+				receiptAttachments,
+				db,
+			);
+
+			if (emailResult.success) {
+				await db.updatePurchase(purchase.id, {
+					emailSent: true,
+					emailMessageId: emailResult.messageId,
+					emailError: null,
+				});
+				return { success: true, message: "treasury.reimbursements.email_sent_success" };
+			} else {
+				await db.updatePurchase(purchase.id, {
+					emailError: emailResult.error || "Email sending failed",
+				});
+				return { success: false, error: emailResult.error || "Email sending failed" };
+			}
+		} catch (error) {
+			console.error("[Reimbursement Edit] Email error:", error);
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			await db.updatePurchase(purchase.id, {
+				emailError: errorMessage,
+			});
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Guard: if actionType was set but not handled above
 	if (actionType) {
 		console.warn(`[Action] Unhandled action type: ${actionType}`);
 		return { success: false, error: `Unhandled action type: ${actionType}` };
@@ -230,21 +334,19 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	const purchaserName = formData.get("purchaserName") as string;
 	const bankAccount = formData.get("bankAccount") as string;
-	const minutesId = formData.get("minutesId") as string;
-	const minutesName = formData.get("minutesName") as string;
+	const minutesInfo = formData.get("minutesId") as string; // value is "id|name" or just "id"
+	const [minutesId, minutesName] = minutesInfo.includes("|")
+		? minutesInfo.split("|")
+		: [minutesInfo, ""];
+
 	const notes = formData.get("notes") as string;
-	const resendReimbursementRequest = formData.get("resendReimbursementRequest") === "on";
+
+	// Get amount/description which might be edited if no transaction linked
+	const amount = formData.get("amount") as string;
+	const description = formData.get("description") as string;
 
 	// Parse receipt links
 	const receiptLinks = parseReceiptLinks(formData);
-
-	// Only validate receipts if resending email
-	if (resendReimbursementRequest) {
-		const receiptError = getMissingReceiptsError(receiptLinks, true);
-		if (receiptError) {
-			return { success: false, error: receiptError };
-		}
-	}
 
 	// Handle transaction linking/creation
 	if (isLinkingToExisting && linkTransactionId !== currentLinkedTransaction?.id) {
@@ -281,82 +383,50 @@ export async function action({ request, params }: Route.ActionArgs) {
 			amount: existingTransaction.amount,
 			description: existingTransaction.description,
 		});
-	} else if (createTransaction) {
-		// Create new transaction and link to purchase
-		const description = formData.get("description") as string;
-		const amount = formData.get("amount") as string;
-		const category = (formData.get("category") as string) || "other";
-		const dateString = formData.get("date") as string;
-		const transactionYear = parseInt(formData.get("year") as string, 10);
+	} else if (!isLinkingToExisting && currentLinkedTransaction) {
+		// Unlink logic: if we had a linked transaction but now we don't (user cleared it)
+		// NOTE: The UI I'm building uses TreasuryRelationActions which handles unlinking via separate nav stack logic usually,
+		// but here we might just want to support form submission updating the link.
+		// However, for consistency with other forms, maybe we should just handle updates to the purchase fields.
+		// If user wants to UNLINK, they should probably go to the transaction edit page?
+		// Actually, let's keep it simple: we only update the Purchase fields here. 
+		// Linking/Unlinking transactions is best done via the separate flow, 
+		// BUT standard form behavior expects "if I change the dropdown, it updates".
+		// The new pattern says "Link Existing" dropdown in edit mode.
 
-		// Unlink current transaction if exists
-		if (currentLinkedTransaction) {
+		// If I select a transaction in the dropdown, updates the link. 
+		// If I select "None" (empty string), it unlinks.
+
+		if (!linkTransactionId) {
 			await db.updateTransaction(currentLinkedTransaction.id, {
 				purchaseId: null,
 				reimbursementStatus: "not_requested",
 			});
+			// Update purchase with submitted values
+			await db.updatePurchase(params.purchaseId, {
+				purchaserName,
+				bankAccount,
+				minutesId,
+				minutesName: minutesName || null,
+				notes: notes || null,
+				amount,
+				description,
+			});
 		}
-
-		// Create new transaction
-		const newTransaction: NewTransaction = {
-			type: "expense",
-			amount,
-			description,
-			category,
-			date: new Date(dateString),
-			year: transactionYear,
-			status: "pending",
-			reimbursementStatus: "requested",
-			purchaseId: params.purchaseId,
-			createdBy: user.userId,
-		};
-		const transaction = await db.createTransaction(newTransaction);
-
-		// Link inventory items if provided
-		const linkedItemIds = formData.get("linkedItemIds") as string;
-		if (linkedItemIds) {
-			const ids = linkedItemIds.split(",").filter(Boolean);
-			for (const itemId of ids) {
-				const quantityField = formData.get(`itemQuantity_${itemId}`) as string;
-				const quantity = quantityField ? parseInt(quantityField, 10) : null;
-
-				if (quantity && quantity > 0) {
-					await db.linkInventoryItemToTransaction(
-						itemId,
-						transaction.id,
-						quantity,
-					);
-				} else {
-					const item = await db.getInventoryItemById(itemId);
-					if (item) {
-						await db.linkInventoryItemToTransaction(
-							itemId,
-							transaction.id,
-							item.quantity,
-						);
-					}
-				}
-			}
-		}
-
-		// Update purchase amount and description from transaction
-		await db.updatePurchase(params.purchaseId, {
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName: minutesName || null,
-			notes: notes || null,
-			amount,
-			description,
-		});
 	} else {
 		// Update purchase only (no transaction changes)
+		// When a linked transaction exists, derive amount/description from it
+		const derivedAmount = currentLinkedTransaction ? currentLinkedTransaction.amount.toString() : amount;
+		const derivedDescription = currentLinkedTransaction ? currentLinkedTransaction.description : description;
+
 		await db.updatePurchase(params.purchaseId, {
 			purchaserName,
 			bankAccount,
 			minutesId,
 			minutesName: minutesName || null,
 			notes: notes || null,
+			amount: derivedAmount,
+			description: derivedDescription,
 		});
 	}
 
@@ -382,7 +452,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			const pathname = receiptLink.id;
 			// Check if receipt already exists in database
 			const existingReceipt = allReceipts.find((r) => r.pathname === pathname);
-			
+
 			if (existingReceipt) {
 				// Update existing receipt to link to purchase
 				await db.updateReceipt(existingReceipt.id, {
@@ -402,56 +472,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 		}
 	}
 
-	// If resend reimbursement request is checked, send email
-	if (resendReimbursementRequest) {
-		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			minutesId,
-			minutesName,
-		);
-		const emailTask = Promise.all([
-			minutesAttachmentPromise,
-			receiptAttachmentsPromise,
-		])
-			.then(([minutesAttachment, receiptAttachments]) =>
-				sendReimbursementEmail(
-					{
-						itemName: purchase.description || "Reimbursement request",
-						itemValue: purchase.amount,
-						purchaserName,
-						bankAccount,
-						minutesReference: minutesName || minutesId || "Ei määritetty / Not specified",
-						notes,
-						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-					},
-					purchase.id,
-					minutesAttachment || undefined,
-					receiptAttachments,
-					db,
-				),
-			)
-			.then(async (emailResult) => {
-				if (emailResult.success) {
-					await db.updatePurchase(purchase.id, {
-						emailSent: true,
-						emailMessageId: emailResult.messageId,
-						emailError: null, // Clear any previous errors
-					});
-				} else {
-					await db.updatePurchase(purchase.id, {
-						emailError: emailResult.error || "Email sending failed",
-					});
-				}
-			})
-			.catch(async (error) => {
-				console.error("[Reimbursement Edit] Email error:", error);
-				await db.updatePurchase(purchase.id, {
-					emailError: error instanceof Error ? error.message : "Unknown error",
-				});
-			});
-		await emailTask;
-	}
-
 	return redirect(`/treasury/reimbursements?year=${year}&success=Reimbursement updated`);
 }
 
@@ -467,345 +487,306 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		uniqueLocations,
 		uniqueCategories,
 		unlinkedTransactions,
-	} = loaderData as {
-		purchase: Purchase;
-		linkedTransaction: Transaction | null;
-		currentYear: number;
-		recentMinutes: MinuteFile[];
-		emailConfigured: boolean;
-		receiptsByYear: Array<{
-			year: string;
-			files: Array<{
-				id: string;
-				name: string;
-				url: string;
-				createdTime: string;
-			}>;
-			folderUrl: string;
-			folderId: string;
-		}>;
-		pickerItems: (InventoryItem & { availableQuantity: number })[];
-		uniqueLocations: string[];
-		uniqueCategories: string[];
-		unlinkedTransactions: Transaction[];
-	};
+		linkedReceipts,
+		receiptContents: receiptContentsData,
+	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
 	const actionData = useActionData<typeof action>();
 	const { t } = useTranslation();
-	const { items: contextItems, setItems } = useNewTransaction();
 
 	const navigation = useNavigation();
 	const isSubmitting =
 		navigation.state === "submitting" || fetcher.state === "submitting";
 
-	// Resend reimbursement request checkbox state
-	const [resendReimbursementRequest, setResendReimbursementRequest] = useState(false);
+	// Form state
+	const [description, setDescription] = useState(purchase.description || "");
+	const [amount, setAmount] = useState(purchase.amount);
+	const [purchaserName, setPurchaserName] = useState(purchase.purchaserName || "");
+	const [bankAccount, setBankAccount] = useState(purchase.bankAccount || "");
+	const [minutesId, setMinutesId] = useState(purchase.minutesId || "");
+	const [notes, setNotes] = useState(purchase.notes || "");
 
-	// Link to existing transaction state
+	// Transaction linking state
 	const [selectedTransactionId, setSelectedTransactionId] = useState(
 		linkedTransaction?.id || "",
 	);
 
-	// Create new transaction state (checkbox like in transactions.new.tsx)
-	const [createTransaction, setCreateTransaction] = useState(false);
+	// Receipt state
+	const [selectedReceipts, setSelectedReceipts] = useState<ReceiptLink[]>(
+		linkedReceipts.map((r) => ({
+			id: r.pathname,
+			name: r.name || r.pathname.split("/").pop() || "Receipt",
+			url: r.url,
+		})),
+	);
+	const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
-	// Handle selection change - uncheck checkbox when selecting existing transaction
-	const handleTransactionSelectionChange = (id: string) => {
-		setSelectedTransactionId(id);
-		if (id) {
-			setCreateTransaction(false);
+	// Receipt upload handler
+	const handleUploadReceipt = async (
+		file: File,
+		year: string,
+		desc: string,
+		ocrEnabled = false,
+	): Promise<ReceiptLink | null> => {
+		setIsUploadingReceipt(true);
+		try {
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("year", year);
+			formData.append("description", desc || "kuitti");
+			formData.append("ocr_enabled", String(ocrEnabled));
+
+			const response = await fetch("/api/receipts/upload", {
+				method: "POST",
+				body: formData,
+			});
+
+			if (!response.ok) {
+				throw new Error("Upload failed");
+			}
+
+			const data = await response.json();
+			toast.success(t("treasury.new_reimbursement.receipt_uploaded"));
+			return {
+				id: data.pathname,
+				name: data.pathname.split("/").pop() || file.name,
+				url: data.url,
+			};
+		} catch (error) {
+			console.error("[uploadReceipt] Error:", error);
+			toast.error(t("receipts.upload_failed"));
+			return null;
+		} finally {
+			setIsUploadingReceipt(false);
 		}
 	};
 
-	// Handle checkbox change - clear selection when checking create transaction
-	const handleCreateTransactionChange = (checked: boolean) => {
-		setCreateTransaction(checked);
-		if (checked) {
-			setSelectedTransactionId("");
-		}
-	};
+	// Initialize selected receipts from receiptsByYear
+	// Note: fetchReceipts logic in loader of `lib/receipts` returns receipts that are EITHER unlinked OR linked to this purchase.
+	// So all files in `receiptsByYear` are valid candidates.
+	// But we don't know WHICH ones are linked to this purchase just from that structure usually.
+	// Checking `lib/receipts.ts`... `getReceiptsForPurchaseEdit` returns exactly that.
+	// BUT, we need to correct the loader to return `linkedReceipts` explicitly for state init.
+	// I will re-do the replacement to include `linkedReceipts` in loader.
 
-	// Transaction details state (initialized from linked transaction or purchase)
-	const [amount, setAmount] = useState(
-		linkedTransaction?.amount || purchase.amount,
-	);
-	const [descriptionValue, setDescriptionValue] = useState(
-		linkedTransaction?.description || purchase.description || "",
-	);
-	const [category, setCategory] = useState(linkedTransaction?.category || "other");
-	const [dateValue, setDateValue] = useState(
-		linkedTransaction
-			? new Date(linkedTransaction.date).toISOString().split("T")[0]
-			: new Date().toISOString().split("T")[0],
-	);
-	const [year, setYear] = useState(linkedTransaction?.year || purchase.year);
-
-	// Inventory item selection
-	const [selectedItemIds, setSelectedItemIds] = useState<string[]>(
-		contextItems.length > 0 ? contextItems.map((i) => i.itemId) : [],
-	);
-
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-
-	// Update form values when a transaction is selected for linking
+	// Sync amount/description from linked transaction
 	useEffect(() => {
 		if (selectedTransactionId) {
-			const transaction = unlinkedTransactions.find(
-				(t) => t.id === selectedTransactionId,
-			);
-			if (transaction) {
-				setAmount(transaction.amount);
-				setDescriptionValue(transaction.description);
-				setCategory(transaction.category || "other");
-				setDateValue(new Date(transaction.date).toISOString().split("T")[0]);
-				setYear(transaction.year);
+			const activeTransaction =
+				selectedTransactionId === linkedTransaction?.id
+					? linkedTransaction
+					: unlinkedTransactions.find((t) => t.id === selectedTransactionId);
+			if (activeTransaction) {
+				setAmount(activeTransaction.amount);
+				setDescription(activeTransaction.description || "");
 			}
 		}
-	}, [selectedTransactionId, unlinkedTransactions]);
+	}, [selectedTransactionId, linkedTransaction, unlinkedTransactions]);
 
-	// Sync amount with inventory items total when quantities change
+	// Toast for email sending
 	useEffect(() => {
-		if (contextItems.length > 0 && !selectedTransactionId) {
-			const total = contextItems.reduce(
-				(sum, item) => sum + item.quantity * item.unitValue,
-				0,
-			);
-			if (total > 0) {
-				setAmount(total.toFixed(2));
+		if (actionData?.success) {
+			if (actionData.message) {
+				toast.success(t(actionData.message));
 			}
-		}
-	}, [contextItems, selectedTransactionId]);
-
-	useEffect(() => {
-		if (actionData && "error" in actionData && actionData.error) {
-			toast.error(
-				typeof actionData.error === "string"
-					? actionData.error
-					: t("treasury.reimbursements.edit.error"),
-			);
-			if (actionData.error === MISSING_RECEIPTS_ERROR) {
-				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
-				receiptsSection?.focus();
-				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
-			}
+		} else if (actionData?.error) {
+			toast.error(typeof actionData.error === "string" ? actionData.error : "Error");
 		}
 	}, [actionData, t]);
 
-	// Handle fetcher success (inventory item creation)
-	useEffect(() => {
-		if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
-			toast.success("Inventory item created");
+	// Check if form is dirty
+	const isDirty = useMemo(() => {
+		const initialDescription = purchase.description || "";
+		const initialAmount = purchase.amount;
+		const initialPurchaserName = purchase.purchaserName || "";
+		const initialBankAccount = purchase.bankAccount || "";
+		const initialMinutesId = purchase.minutesId || "";
+		const initialNotes = purchase.notes || "";
+		const initialTransactionId = linkedTransaction?.id || "";
+
+		const initialReceiptIds = new Set(linkedReceipts.map((r) => r.pathname));
+		const currentReceiptIds = new Set(selectedReceipts.map((r) => r.id));
+
+		const areReceiptsDifferent =
+			initialReceiptIds.size !== currentReceiptIds.size ||
+			[...currentReceiptIds].some((id) => !initialReceiptIds.has(id));
+
+		return (
+			description !== initialDescription ||
+			amount !== initialAmount ||
+			purchaserName !== initialPurchaserName ||
+			bankAccount !== initialBankAccount ||
+			minutesId !== initialMinutesId ||
+			notes !== initialNotes ||
+			selectedTransactionId !== initialTransactionId ||
+			areReceiptsDifferent
+		);
+	}, [
+		purchase,
+		linkedTransaction,
+		linkedReceipts,
+		description,
+		amount,
+		purchaserName,
+		bankAccount,
+		minutesId,
+		notes,
+		selectedTransactionId,
+		selectedReceipts,
+	]);
+
+	const canSendRequest =
+		purchase.purchaserName &&
+		purchase.bankAccount &&
+		purchase.minutesId &&
+		selectedReceipts.length > 0;
+
+	// Build receipt subtitles from OCR data (keyed by pathname since ReceiptsPicker uses pathname as ID)
+	const receiptSubtitles: Record<string, string> = {};
+	if (receiptContentsData) {
+		for (const rc of receiptContentsData) {
+			const receipt = linkedReceipts.find(r => r.id === rc.receiptId);
+			if (receipt) {
+				const parts = [rc.storeName, rc.totalAmount ? `${rc.totalAmount} ${rc.currency || 'EUR'}` : null].filter(Boolean);
+				if (parts.length > 0) receiptSubtitles[receipt.pathname] = parts.join(' \u2022 ');
+			}
 		}
-	}, [fetcher.data]);
+	}
 
-	// Handler for adding new inventory item from picker
-	const handleAddItem = async (itemData: {
-		name: string;
-		quantity: number;
-		location: string;
-		category?: string;
-		description?: string;
-		value?: string;
-	}): Promise<InventoryItem | null> => {
-		const formData = new FormData();
-		formData.set("_action", "createItem");
-		formData.set("name", itemData.name);
-		formData.set("quantity", itemData.quantity.toString());
-		formData.set("location", itemData.location);
-		formData.set("category", itemData.category || "");
-		formData.set("description", itemData.description || "");
-		formData.set("value", itemData.value || "0");
-
-		fetcher.submit(formData, { method: "POST" });
-		return null;
-	};
-
-	// Handler for inline editing inventory items
-	const handleInlineEdit = (itemId: string, field: string, value: string) => {
-		const formData = new FormData();
-		formData.set("_action", "updateField");
-		formData.set("itemId", itemId);
-		formData.set("field", field);
-		formData.set("value", value);
-		fetcher.submit(formData, { method: "POST" });
-	};
-
-	const linkableItems = transactionsToLinkableItems(
-		unlinkedTransactions as (Transaction & { purchaseId: string | null })[],
-	);
-
-	// Find selected transaction for display
-	const selectedTransaction = selectedTransactionId
-		? unlinkedTransactions.find((t) => t.id === selectedTransactionId)
-		: null;
+	// Current path for navigation stack
+	const currentPath = `/treasury/reimbursements/${purchase.id}/edit`;
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
+			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<PageHeader title={t("treasury.reimbursements.edit.title")} />
 
-				<Form method="post" encType="multipart/form-data" className="space-y-6">
-					{/* Reimbursement Form */}
-					<SectionCard>
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-							{t("treasury.reimbursements.edit.reimbursement_details")}
-						</h2>
-						<ReimbursementForm
-							recentMinutes={recentMinutes}
-							emailConfigured={emailConfigured}
-							receiptsByYear={receiptsByYear}
-							currentYear={currentYear}
-							description={descriptionValue || purchase.description || ""}
-							showNotes={true}
-							showEmailWarning={true}
-							required={resendReimbursementRequest}
-							initialPurchaserName={purchase.purchaserName}
-							initialBankAccount={purchase.bankAccount}
-							initialNotes={purchase.notes || ""}
-						/>
-					</SectionCard>
+				<Form method="post" className="space-y-6">
+					<input type="hidden" name="linkTransactionId" value={selectedTransactionId} />
+					<input type="hidden" name="receiptLinks" value={JSON.stringify(selectedReceipts)} />
 
-					{/* Transaction Section - Link or Create */}
-					<SectionCard>
-						{/* Hidden input for createTransaction checkbox */}
-						<input type="hidden" name="createTransaction" value={createTransaction ? "on" : ""} />
-						<input
-							type="hidden"
-							name="linkTransactionId"
-							value={selectedTransactionId}
-						/>
-						<input
-							type="hidden"
-							name="linkedItemIds"
-							value={selectedItemIds.join(",")}
-						/>
-
-						{/* Link to existing transaction option */}
-						{unlinkedTransactions.length > 0 && (
-							<>
-								<LinkExistingSelector
-									items={linkableItems}
-									selectedId={selectedTransactionId}
-									onSelectionChange={handleTransactionSelectionChange}
-									label={t("treasury.new_reimbursement.link_existing_transaction")}
-									helpText={t(
-										"treasury.new_reimbursement.link_existing_transaction_help",
-									)}
-									placeholder={t(
-										"treasury.new_reimbursement.select_transaction_placeholder",
-									)}
-									noLinkText={t("treasury.new_reimbursement.no_link")}
-								/>
-								{selectedTransaction && (
-									<LinkedItemInfo
-										description={descriptionValue}
-										amount={amount}
-										date={dateValue}
-										year={year}
-									/>
-								)}
-							</>
-						)}
-
-						{/* Divider when both options available */}
-						{unlinkedTransactions.length > 0 && (
-							<Divider translationKey="treasury.new.or" />
-						)}
-
-						{/* Create new transaction checkbox - always shown */}
-						<CheckboxOption
-							id="createTransaction"
-							name="createTransactionCheckbox"
-							checked={createTransaction}
-							onCheckedChange={handleCreateTransactionChange}
-							label={t("treasury.new_reimbursement.create_transaction")}
-							helpText={t("treasury.new_reimbursement.create_transaction_help")}
-						>
-							<TransactionDetailsForm
-								transactionType="expense"
-								onTypeChange={() => { }}
-								amount={amount}
-								onAmountChange={setAmount}
-								description={descriptionValue}
-								onDescriptionChange={setDescriptionValue}
-								category={category}
-								onCategoryChange={setCategory}
-								date={dateValue}
-								onDateChange={setDateValue}
-								year={year}
-								onYearChange={setYear}
-								yearOptions={yearOptions}
-								showTypeSelector={false}
-								showCard={false}
+					{/* Reimbursement Details */}
+					<TreasuryDetailCard title={t("treasury.reimbursements.edit.reimbursement_details")}>
+						<div className="grid gap-4">
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.description")} *`}
+								name="description"
+								type="text"
+								value={description}
+								onChange={setDescription}
+								required
+								placeholder={t("treasury.new_reimbursement.description_placeholder")}
+								disabled={!!selectedTransactionId}
 							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.amount")} *`}
+								name="amount"
+								type="currency"
+								value={amount}
+								onChange={setAmount}
+								required
+								disabled={!!selectedTransactionId}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.purchaser_name")} *`}
+								name="purchaserName"
+								type="text"
+								value={purchaserName}
+								onChange={setPurchaserName}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.new_reimbursement.bank_account")} *`}
+								name="bankAccount"
+								type="text"
+								value={bankAccount}
+								onChange={setBankAccount}
+								required
+								placeholder="FI12 3456 7890 1234 56"
+							/>
+							<input type="hidden" name="minutesId" value={minutesId} />
+							<TreasuryField
+								mode="edit"
+								label={t("treasury.new_reimbursement.notes")}
+								name="notes"
+								type="textarea"
+								value={notes}
+								onChange={setNotes}
+							/>
+						</div>
 
-							{/* Inventory Selection Section - shown when category is "inventory" */}
-							{category === "inventory" && (
-								<div className="space-y-4 mt-4">
-									<TransactionItemList
-										items={contextItems}
-										onItemsChange={(newItems) => {
-											setItems(newItems);
-											setSelectedItemIds(newItems.map((i) => i.itemId));
-										}}
-										availableItems={pickerItems}
-										uniqueLocations={uniqueLocations}
-										uniqueCategories={uniqueCategories}
-										onAddNewItem={handleAddItem}
-										onInlineEdit={handleInlineEdit}
-										description={t("treasury.new.inventory_desc")}
-									/>
 
-									{/* Hidden inputs for form submission */}
-									{contextItems.map((ctxItem) => (
-										<input
-											key={`qty-${ctxItem.itemId}`}
-											type="hidden"
-											name={`itemQuantity_${ctxItem.itemId}`}
-											value={ctxItem.quantity}
-										/>
-									))}
-								</div>
-							)}
-						</CheckboxOption>
-					</SectionCard>
-
-					{/* Resend Reimbursement Request Checkbox */}
-					<SectionCard>
-						<CheckboxOption
-							id="resendReimbursementRequest"
-							name="resendReimbursementRequest"
-							checked={resendReimbursementRequest}
-							onCheckedChange={setResendReimbursementRequest}
-							label={t("treasury.reimbursements.edit.resend_reimbursement_request")}
-							helpText={t("treasury.reimbursements.edit.resend_reimbursement_request_help")}
+						{/* Transaction Link */}
+						<TransactionsPicker
+							linkedTransactions={linkedTransaction ? [linkedTransaction] : []}
+							unlinkedTransactions={unlinkedTransactions || []}
+							selectedTransactionIds={selectedTransactionId}
+							onSelectionChange={(ids) => setSelectedTransactionId(Array.isArray(ids) ? ids[0] : ids)}
+							createUrl={`/treasury/transactions/new?linkedTo=reimbursement&linkedId=${purchase.id}`}
+							currentPath={currentPath}
+							storageKey={`reimbursement-${purchase.id}-transactions`}
+							sourceEntityType="reimbursement"
+							sourceEntityId={purchase.id}
+							sourceEntityName={purchase.description || ""}
 						/>
-					</SectionCard>
 
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate(-1)}
-							className="flex-1"
-						>
-							{t("treasury.reimbursements.edit.cancel")}
-						</Button>
-						<Button type="submit" className="flex-1" disabled={isSubmitting}>
-							{isSubmitting ? (
-								<span className="flex items-center gap-2">
-									<span className="animate-spin material-symbols-outlined text-sm">
-										progress_activity
+						<MinutesPicker
+							recentMinutes={recentMinutes}
+							selectedMinutesId={minutesId}
+							selectedMinutesName={purchase.minutesName} // Or generic fallback
+							onSelectionChange={setMinutesId}
+							currentPath={currentPath}
+							storageKey={`reimbursement-${purchase.id}-minutes`}
+							sourceEntityType="reimbursement"
+							sourceEntityId={purchase.id}
+							sourceEntityName={purchase.description || ""}
+						/>
+
+						<ReceiptsPicker
+							receiptsByYear={receiptsByYear}
+							selectedReceipts={selectedReceipts}
+							onSelectionChange={setSelectedReceipts}
+							onUpload={async (file) => {
+								return handleUploadReceipt(file, currentYear.toString(), description || "kuitti", true);
+							}}
+							currentPath={currentPath}
+							storageKey={`reimbursement-${purchase.id}-receipts`}
+							receiptSubtitles={receiptSubtitles}
+							sourceEntityType="reimbursement"
+							sourceEntityId={purchase.id}
+							sourceEntityName={purchase.description || ""}
+						/>
+					</TreasuryDetailCard>
+
+
+					<TreasuryFormActions
+						isSubmitting={isSubmitting}
+						disabled={!isDirty}
+						extraActions={
+							canSendRequest ? (
+								<Button
+									type="submit"
+									name="_action"
+									value="sendRequest"
+									variant="secondary"
+									disabled={isSubmitting || !!purchase.emailSent}
+									className="flex-1"
+								>
+									<span className="material-symbols-outlined mr-2 text-sm">
+										send
 									</span>
-									<span>{t("common.status.saving")}</span>
-								</span>
-							) : (
-								t("treasury.reimbursements.edit.save")
-							)}
-						</Button>
-					</div>
+									{purchase.emailSent
+										? t("treasury.reimbursements.email_sent")
+										: t("treasury.reimbursements.send_request")}
+								</Button>
+							) : null
+						}
+					/>
 				</Form>
 			</div>
 		</PageWrapper>

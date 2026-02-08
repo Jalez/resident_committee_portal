@@ -7,6 +7,10 @@ import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
+	ColoredStatusLinkBadge,
+	TREASURY_PURCHASE_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
+import {
 	TreasuryTable,
 	TREASURY_TABLE_STYLES,
 } from "~/components/treasury/treasury-table";
@@ -209,16 +213,6 @@ export default function TreasuryReceipts({
 			i18n.language === "fi" ? "fi-FI" : "en-US",
 		);
 
-	// Purchase status color map (matching reimbursements route)
-	const PURCHASE_STATUS_VARIANT_MAP: Record<string, string> = {
-		pending:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-		approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-		reimbursed:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-		rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-	};
-
 	// Configure search fields
 	const searchFields: SearchField[] = [
 		{
@@ -271,20 +265,14 @@ export default function TreasuryReceipts({
 					return <span className="text-gray-400">—</span>;
 				}
 				const purchaseStatus = purchaseStatusMap.get(row.purchaseId) || "pending";
-				const statusVariant =
-					PURCHASE_STATUS_VARIANT_MAP[purchaseStatus] ||
-					PURCHASE_STATUS_VARIANT_MAP.pending;
 				return (
-					<Link
+					<ColoredStatusLinkBadge
 						to={`/treasury/reimbursements/${row.purchaseId}`}
-						className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
 						title={t("treasury.receipts.reimbursement_request")}
-					>
-						<span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-							link
-						</span>
-						{row.purchaseId.substring(0, 8)}
-					</Link>
+						status={purchaseStatus}
+						id={row.purchaseId}
+						icon="link"
+					/>
 				);
 			},
 		},

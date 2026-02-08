@@ -112,10 +112,10 @@ export function ReceiptContentsDisplay({
                             />
                         </div>
                     )}
-                    <Button onClick={handleAnalyze} disabled={isAnalyzing}>
+                    <Button type="button" onClick={handleAnalyze} disabled={isAnalyzing}>
                         {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t("treasury.receipts.analyze_now", {
-                            defaultValue: "Analyze with AI",
+                        {t("treasury.receipts.process_text", {
+                            defaultValue: "Process Raw Text",
                         })}
                     </Button>
                 </CardContent>
@@ -239,6 +239,7 @@ export function ReceiptContentsDisplay({
 
                     <div className="pt-2 flex justify-end">
                         <Button
+                            type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleAnalyze}
@@ -248,11 +249,11 @@ export function ReceiptContentsDisplay({
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
                                 <span className="material-symbols-outlined mr-2 text-base">
-                                    refresh
+                                    data_object
                                 </span>
                             )}
-                            {t("treasury.receipts.re_analyze", {
-                                defaultValue: "Re-analyze",
+                            {t("treasury.receipts.process_text", {
+                                defaultValue: "Process Raw Text",
                             })}
                         </Button>
                     </div>

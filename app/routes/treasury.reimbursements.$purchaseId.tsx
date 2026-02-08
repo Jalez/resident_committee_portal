@@ -1,23 +1,36 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useRouteLoaderData } from "react-router";
+import { Link, useActionData, useFetcher, useRouteLoaderData } from "react-router";
+import { toast } from "sonner";
 import { maskBankAccount } from "~/lib/mask-bank-account";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
-import { TransactionDetailsForm } from "~/components/treasury/transaction-details-form";
-import { type MinuteFile } from "~/components/treasury/reimbursement-form";
-import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
-import { SectionCard } from "~/components/treasury/section-card";
+import {
+	TREASURY_PURCHASE_STATUS_VARIANTS,
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
+import {
+	TreasuryDetailCard,
+	TreasuryField,
+	TreasuryRelationList,
+} from "~/components/treasury/treasury-detail-components";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	getDatabase,
-	type InventoryItem,
 	type Purchase,
+	type Receipt,
 	type Transaction,
 } from "~/db";
+import type { ReceiptContent } from "~/db/schema";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getReceiptsByYear } from "~/lib/receipts";
-import { isEmailConfigured } from "~/lib/email.server";
+import {
+	buildMinutesAttachment,
+	buildReceiptAttachments,
+	isEmailConfigured,
+	sendReimbursementEmail,
+} from "~/lib/email.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements.$purchaseId";
 
@@ -56,61 +69,135 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
 	}
 
-	// Get receipts for picker
-	const receiptsByYear = await getReceiptsByYear();
-	const currentYear = new Date().getFullYear();
+	// Get receipts linked to this purchase
+	const linkedReceipts = await db.getReceiptsByPurchaseId(purchase.id);
 
-	// Get inventory items available for picker (for display)
-	const pickerItems = await db.getInventoryItemsForPicker();
-
-	// Get unique locations and categories for picker filters
-	const allInventoryItems = await db.getInventoryItems();
-	const uniqueLocations = [
-		...new Set(allInventoryItems.map((item) => item.location).filter(Boolean)),
-	].sort();
-	const uniqueCategories = [
-		...new Set(
-			allInventoryItems
-				.map((item) => item.category)
-				.filter(Boolean) as string[],
-		),
-	].sort();
-
-	// Get linked inventory items if transaction exists
-	let linkedItems: (InventoryItem & { quantity: number })[] = [];
-	if (linkedTransaction) {
-		linkedItems = await db.getInventoryItemsForTransaction(linkedTransaction.id);
-	}
+	// Get OCR content for receipts
+	const receiptIds = linkedReceipts.map(r => r.id);
+	const receiptContents = receiptIds.length > 0 ? await db.getReceiptContentsByReceiptIds(receiptIds) : [];
 
 	return {
 		siteConfig: SITE_CONFIG,
 		purchase,
 		linkedTransaction,
-		linkedItems,
-		currentYear,
-		recentMinutes: [] as MinuteFile[],
+		linkedReceipts,
+		receiptContents,
 		emailConfigured: await isEmailConfigured(),
-		receiptsByYear,
-		pickerItems,
-		uniqueLocations,
-		uniqueCategories,
 	};
+}
+
+export async function action({ request, params }: Route.ActionArgs) {
+	const db = getDatabase();
+	const formData = await request.formData();
+	const actionType = formData.get("_action") as string;
+
+	const purchase = await db.getPurchaseById(params.purchaseId);
+	if (!purchase) {
+		throw new Response("Not Found", { status: 404 });
+	}
+
+	await requirePermissionOrSelf(
+		request,
+		"treasury:reimbursements:update",
+		"treasury:reimbursements:update-self",
+		purchase.createdBy,
+		getDatabase,
+	);
+
+	if (actionType === "sendRequest") {
+		const linkedReceipts = await db.getReceiptsByPurchaseId(purchase.id);
+
+		if (linkedReceipts.length === 0) {
+			return { success: false, error: "treasury.new_reimbursement.missing_receipts" };
+		}
+
+		const receiptLinks = linkedReceipts.map(r => ({
+			id: r.pathname,
+			name: r.name || r.pathname.split("/").pop() || "Receipt",
+			url: r.url
+		}));
+
+		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
+		const minutesAttachmentPromise = buildMinutesAttachment(
+			purchase.minutesId,
+			purchase.minutesName || undefined,
+		);
+
+		try {
+			const [minutesAttachment, receiptAttachments] = await Promise.all([
+				minutesAttachmentPromise,
+				receiptAttachmentsPromise,
+			]);
+
+			const emailResult = await sendReimbursementEmail(
+				{
+					itemName: purchase.description || "Reimbursement request",
+					itemValue: purchase.amount,
+					purchaserName: purchase.purchaserName,
+					bankAccount: purchase.bankAccount,
+					minutesReference: purchase.minutesName || purchase.minutesId || "Ei määritetty / Not specified",
+					notes: purchase.notes || undefined,
+					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
+				},
+				purchase.id,
+				minutesAttachment || undefined,
+				receiptAttachments,
+				db,
+			);
+
+			if (emailResult.success) {
+				await db.updatePurchase(purchase.id, {
+					emailSent: true,
+					emailMessageId: emailResult.messageId,
+					emailError: null,
+				});
+				return { success: true, message: "treasury.reimbursements.email_sent_success" };
+			} else {
+				await db.updatePurchase(purchase.id, {
+					emailError: emailResult.error || "Email sending failed",
+				});
+				return { success: false, error: emailResult.error || "Email sending failed" };
+			}
+		} catch (error) {
+			console.error("[Reimbursement View] Email error:", error);
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			await db.updatePurchase(purchase.id, {
+				emailError: errorMessage,
+			});
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	return { success: false, error: "Invalid action" };
 }
 
 export default function ViewReimbursement({ loaderData }: Route.ComponentProps) {
 	const {
 		purchase,
 		linkedTransaction,
-		linkedItems,
-		currentYear,
+		linkedReceipts,
+		receiptContents: receiptContentsData,
 	} = loaderData as {
 		purchase: Purchase;
 		linkedTransaction: Transaction | null;
-		linkedItems: (InventoryItem & { quantity: number })[];
-		currentYear: number;
+		linkedReceipts: Receipt[];
+		receiptContents: ReceiptContent[];
 	};
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
+	const fetcher = useFetcher();
+	const actionData = useActionData<typeof action>();
+
+	// Toast for email sending
+	useEffect(() => {
+		if (fetcher.data?.success) {
+			if (fetcher.data.message) {
+				toast.success(t(fetcher.data.message));
+			}
+		} else if (fetcher.data?.error) {
+			toast.error(typeof fetcher.data.error === "string" ? fetcher.data.error : "Error");
+		}
+	}, [fetcher.data, t]);
 
 	// Check if user can edit
 	const canUpdateGeneral =
@@ -131,156 +218,135 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 		return `${num.toFixed(2).replace(".", ",")} €`;
 	};
 
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+	const transactionRelations = linkedTransaction
+		? [
+			{
+				to: `/treasury/transactions/${linkedTransaction.id}`,
+				title: t("treasury.reimbursements.view_transaction"),
+				status: linkedTransaction.status,
+				id: linkedTransaction.id,
+				variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
+			},
+		]
+		: [];
+
+	const receiptRelations = linkedReceipts.map((receipt) => {
+		const ocr = receiptContentsData?.find(rc => rc.receiptId === receipt.id);
+		const subtitle = ocr ? [ocr.storeName, ocr.totalAmount ? `${ocr.totalAmount} ${ocr.currency || 'EUR'}` : null].filter(Boolean).join(' \u2022 ') : null;
+		return {
+			to: `/treasury/receipts/${receipt.id}`,
+			title: receipt.name || receipt.pathname.split("/").pop() || "Receipt",
+			status: purchase.status,
+			id: receipt.id,
+			variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
+			subtitle,
+		};
+	});
+
+	const canSendRequest =
+		canUpdate &&
+		purchase.purchaserName &&
+		purchase.bankAccount &&
+		purchase.minutesId &&
+		linkedReceipts.length > 0;
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<div className="flex items-center justify-between mb-4">
 					<PageHeader title={t("treasury.reimbursements.view.title")} />
-					{canUpdate && (
-						<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
-							<Button variant="default">
-								<span className="material-symbols-outlined mr-2">edit</span>
-								{t("common.actions.edit")}
-							</Button>
-						</Link>
-					)}
+					<div className="flex gap-2">
+						{canSendRequest && !purchase.emailSent && (
+							<fetcher.Form method="post">
+								<Button
+									type="submit"
+									name="_action"
+									value="sendRequest"
+									variant="secondary"
+									disabled={fetcher.state === "submitting"}
+								>
+									<span className="material-symbols-outlined mr-2">send</span>
+									{t("treasury.reimbursements.send_request")}
+								</Button>
+							</fetcher.Form>
+						)}
+						{canUpdate && !purchase.emailSent && (
+							<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
+								<Button variant="default">
+									<span className="material-symbols-outlined mr-2">edit</span>
+									{t("common.actions.edit")}
+								</Button>
+							</Link>
+						)}
+						{purchase.emailSent && (
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-md">
+								<span className="material-symbols-outlined text-base">lock</span>
+								{t("treasury.reimbursements.locked_sent")}
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div className="space-y-6">
-					{/* Reimbursement Form - all disabled */}
-					<SectionCard>
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-							{t("treasury.reimbursements.edit.reimbursement_details")}
-						</h2>
-						<div className="space-y-4">
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.new_reimbursement.description")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white">
-									{purchase.description || "—"}
-								</p>
-							</div>
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.new_reimbursement.amount")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white font-bold">
-									{formatCurrency(purchase.amount)}
-								</p>
-							</div>
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.new_reimbursement.purchaser_name")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white">
-									{purchase.purchaserName || "—"}
-								</p>
-							</div>
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.new_reimbursement.bank_account")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white font-mono">
+					<TreasuryDetailCard
+						title={t("treasury.reimbursements.edit.reimbursement_details")}
+					>
+						<div className="grid gap-4">
+							<TreasuryField label={t("treasury.new_reimbursement.description")}>
+								{purchase.description || "—"}
+							</TreasuryField>
+							<TreasuryField
+								label={t("treasury.new_reimbursement.amount")}
+								valueClassName="text-foreground font-bold"
+							>
+								{formatCurrency(purchase.amount)}
+							</TreasuryField>
+							<TreasuryField label={t("treasury.new_reimbursement.purchaser_name")}>
+								{purchase.purchaserName || "—"}
+							</TreasuryField>
+							<TreasuryField label={t("treasury.new_reimbursement.bank_account")}>
+								<span className="font-mono">
 									{canViewFullBankAccount
 										? (purchase.bankAccount || "—")
 										: maskBankAccount(purchase.bankAccount)}
-								</p>
-							</div>
-							{purchase.notes && (
-								<div>
-									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-										{t("treasury.new_reimbursement.notes")}
-									</div>
-									<p className="mt-1 text-gray-900 dark:text-white">
-										{purchase.notes}
-									</p>
-								</div>
-							)}
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.reimbursements.status")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white">
+								</span>
+							</TreasuryField>
+							{purchase.notes ? (
+								<TreasuryField label={t("treasury.new_reimbursement.notes")}>
+									{purchase.notes}
+								</TreasuryField>
+							) : null}
+							<TreasuryField
+								label={t("treasury.reimbursements.status")}
+								valueClassName="text-foreground"
+							>
+								<Badge variant="secondary">
 									{t(`treasury.reimbursements.statuses.${purchase.status}`)}
-								</p>
-							</div>
+								</Badge>
+							</TreasuryField>
+							{purchase.emailSent && (
+								<TreasuryField
+									label={t("treasury.reimbursements.email_status")}
+									valueClassName="text-green-600 dark:text-green-400 font-medium flex items-center gap-2"
+								>
+									<span className="material-symbols-outlined text-sm">check_circle</span>
+									{t("treasury.reimbursements.email_sent")}
+								</TreasuryField>
+							)}
 						</div>
-					</SectionCard>
 
-					{/* Transaction Section - if linked */}
-					{linkedTransaction && (
-						<SectionCard>
-							<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-								{t("treasury.new_reimbursement.transaction_section_title")}
-							</h2>
-							<LinkedItemInfo
-								description={linkedTransaction.description}
-								amount={linkedTransaction.amount}
-								date={new Date(linkedTransaction.date).toISOString().split("T")[0]}
-								year={linkedTransaction.year}
-							/>
-							<TransactionDetailsForm
-								transactionType="expense"
-								onTypeChange={() => { }}
-								amount={linkedTransaction.amount}
-								onAmountChange={() => { }}
-								description={linkedTransaction.description}
-								onDescriptionChange={() => { }}
-								category={linkedTransaction.category || "other"}
-								onCategoryChange={() => { }}
-								date={new Date(linkedTransaction.date).toISOString().split("T")[0]}
-								onDateChange={() => { }}
-								year={linkedTransaction.year}
-								onYearChange={() => { }}
-								yearOptions={yearOptions}
-								showTypeSelector={false}
-								showCard={false}
-								disabled={true}
-							/>
+						<TreasuryRelationList
+							label={t("treasury.new_reimbursement.transaction_section_title")}
+							items={transactionRelations}
+							withSeparator
+						/>
 
-							{/* Inventory Selection Section - shown when category is "inventory" */}
-							{linkedTransaction.category === "inventory" &&
-								linkedItems.length > 0 && (
-									<div className="space-y-4 mt-4">
-										<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-											{t("treasury.breakdown.edit.linked_items")}
-										</h3>
-										<div className="space-y-2">
-											{linkedItems.map((item) => (
-												<div
-													key={item.id}
-													className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
-												>
-													<div className="flex items-center gap-3">
-														<span className="material-symbols-outlined text-gray-400">
-															package_2
-														</span>
-														<div>
-															<p className="font-medium">{item.name}</p>
-															<p className="text-xs text-gray-500">
-																{item.quantity} {t("inventory.unit")} •{" "}
-																{item.location}
-																{item.value && parseFloat(item.value) > 0 && (
-																	<span className="ml-2">
-																		{formatCurrency(
-																			parseFloat(item.value) * item.quantity,
-																		)}
-																	</span>
-																)}
-															</p>
-														</div>
-													</div>
-												</div>
-											))}
-										</div>
-									</div>
-								)}
-						</SectionCard>
-					)}
+						<TreasuryRelationList
+							label={t("treasury.receipts.title")}
+							items={receiptRelations}
+							withSeparator
+						/>
+					</TreasuryDetailCard>
 				</div>
 			</div>
 		</PageWrapper>

@@ -1,26 +1,26 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useRouteLoaderData } from "react-router";
-import { maskBankAccount } from "~/lib/mask-bank-account";
+import { Link, useRouteLoaderData, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
-	TransactionDetailsForm,
-	type TransactionType,
-} from "~/components/treasury/transaction-details-form";
-import { type MinuteFile } from "~/components/treasury/reimbursement-form";
-import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
-import { SectionCard } from "~/components/treasury/section-card";
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
+import {
+	TreasuryDetailCard,
+	TreasuryField,
+	TreasuryRelationList,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Button } from "~/components/ui/button";
 import {
 	getDatabase,
-	type InventoryItem,
 	type Purchase,
 	type Transaction,
 } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getReceiptsByYear } from "~/lib/receipts";
-import { isEmailConfigured } from "~/lib/email.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.transactions.$transactionId";
 
@@ -60,24 +60,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		purchase = await db.getPurchaseById(transaction.purchaseId);
 	}
 
-	// Get currently linked inventory items
-	const linkedItems = await db.getInventoryItemsForTransaction(
-		params.transactionId,
-	);
-
-	// Get receipts for picker (for display)
-	const receiptsByYear = await getReceiptsByYear();
-	const currentYear = new Date().getFullYear();
+	const budgetLink = await db.getBudgetForTransaction(transaction.id);
 
 	return {
 		siteConfig: SITE_CONFIG,
 		transaction,
 		purchase,
-		linkedItems,
-		currentYear,
-		recentMinutes: [] as MinuteFile[],
-		emailConfigured: await isEmailConfigured(),
-		receiptsByYear,
+		budgetLink,
 	};
 }
 
@@ -85,16 +74,15 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 	const {
 		transaction,
 		purchase,
-		linkedItems,
-		currentYear,
+		budgetLink,
 	} = loaderData as {
 		transaction: Transaction;
 		purchase: Purchase | null;
-		linkedItems: (InventoryItem & { quantity: number })[];
-		currentYear: number;
+		budgetLink: { budget: { id: string; status: string; name: string }; amount: string } | null;
 	};
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const [searchParams, setSearchParams] = useSearchParams();
 
 	// Check if user can edit
 	const canUpdateGeneral =
@@ -105,28 +93,77 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		transaction.createdBy &&
 		rootData?.user?.userId === transaction.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
+	const isEditLocked = Boolean(
+		purchase?.emailSent && purchase.status !== "rejected",
+	);
 
-	// Can view full bank account if user can update reimbursements OR is the purchase creator
-	const canUpdateReimbursements =
-		rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
-		rootData?.user?.permissions?.includes("*");
-	const isPurchaseCreator = !!(purchase?.createdBy && rootData?.user?.userId === purchase.createdBy);
-	const canViewFullBankAccount = !!(canUpdateReimbursements || isPurchaseCreator);
+	useEffect(() => {
+		const editBlocked = searchParams.get("editBlocked");
+		if (!editBlocked) return;
+		toast.error(
+			t("treasury.transactions.edit_blocked", {
+				defaultValue:
+					"Editing is locked while the linked reimbursement request is pending.",
+			}),
+		);
+		setSearchParams((prev) => {
+			prev.delete("editBlocked");
+			return prev;
+		});
+	}, [searchParams, setSearchParams, t]);
 
 	const formatCurrency = (value: string | number) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
 	};
 
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+	const formatDate = (date: Date | string) =>
+		new Date(date).toLocaleDateString(
+			i18n.language === "fi" ? "fi-FI" : "en-US",
+		);
+
+	const purchaseRelations = purchase
+		? [
+				{
+					to: `/treasury/reimbursements/${purchase.id}`,
+					title:
+						purchase.description ||
+						purchase.id.substring(0, 8),
+					status: "linked",
+					id: purchase.id,
+					variantMap: {
+						linked:
+							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+					},
+				},
+			]
+		: [];
+
+	const budgetRelations = budgetLink
+		? [
+				{
+					to: `/treasury/budgets/${budgetLink.budget.id}`,
+					title: budgetLink.budget.name,
+					status: budgetLink.budget.status,
+					id: budgetLink.budget.id,
+					variantMap: {
+						linked:
+							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+						open:
+							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+						closed:
+							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+					},
+				},
+			]
+		: [];
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<div className="flex items-center justify-between mb-4">
 					<PageHeader title={t("treasury.breakdown.view.title")} />
-					{canUpdate && (
+					{canUpdate && !isEditLocked && (
 						<Link to={`/treasury/transactions/${transaction.id}/edit`}>
 							<Button variant="default">
 								<span className="material-symbols-outlined mr-2">edit</span>
@@ -137,128 +174,53 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				<div className="space-y-6">
-					{/* Transaction Details Form - all disabled */}
-					<TransactionDetailsForm
-						transactionType={transaction.type as TransactionType}
-						onTypeChange={() => { }}
-						amount={transaction.amount}
-						onAmountChange={() => { }}
-						description={transaction.description}
-						onDescriptionChange={() => { }}
-						category={transaction.category || ""}
-						onCategoryChange={() => { }}
-						date={new Date(transaction.date).toISOString().split("T")[0]}
-						onDateChange={() => { }}
-						year={transaction.year}
-						onYearChange={() => { }}
-						yearOptions={yearOptions}
-						showTypeSelector={true}
-						showYearSelector={true}
-						disabled={true}
-					/>
-
-					{/* Status Display */}
-					<SectionCard>
-						<div className="grid grid-cols-2 gap-4">
-							<div>
-								<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("treasury.breakdown.status")}
-								</div>
-								<p className="mt-1 text-gray-900 dark:text-white">
-									{t(`treasury.breakdown.statuses.${transaction.status}`)}
-								</p>
-							</div>
-							{transaction.type === "expense" && (
-								<div>
-									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-										{t("treasury.breakdown.reimbursement_status")}
-									</div>
-									<p className="mt-1 text-gray-900 dark:text-white">
-										{t(
-											`treasury.breakdown.edit.reimbursement_statuses.${transaction.reimbursementStatus || "not_requested"}`,
-										)}
-									</p>
-								</div>
-							)}
+					<TreasuryDetailCard title={t("treasury.breakdown.view.title")}>
+						<div className="grid gap-4">
+							<TreasuryField label={t("treasury.breakdown.type", "Type")}>
+								{transaction.type}
+							</TreasuryField>
+							<TreasuryField
+								label={t("common.fields.amount")}
+								valueClassName="text-foreground font-bold"
+							>
+								{formatCurrency(transaction.amount)}
+							</TreasuryField>
+							<TreasuryField label={t("common.fields.description")}
+							>
+								{transaction.description || "—"}
+							</TreasuryField>
+							<TreasuryField label={t("treasury.breakdown.category", "Category")}>
+								{transaction.category || "—"}
+							</TreasuryField>
+							<TreasuryField label={t("common.fields.date")}>
+								{formatDate(transaction.date)}
+							</TreasuryField>
+							<TreasuryField label={t("common.fields.year")}>
+								{transaction.year}
+							</TreasuryField>
+							<TreasuryField label={t("treasury.breakdown.status")}
+								valueClassName="text-foreground"
+							>
+								<TreasuryStatusPill
+									value={transaction.status}
+									variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
+									label={t(`treasury.breakdown.statuses.${transaction.status}`)}
+								/>
+							</TreasuryField>
 						</div>
-					</SectionCard>
 
-					{/* Inventory Items Section - shown when category is "inventory" */}
-					{transaction.category === "inventory" && linkedItems.length > 0 && (
-						<SectionCard>
-							<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-								{t("treasury.breakdown.edit.linked_items")}
-							</h3>
-							<div className="space-y-2">
-								{linkedItems.map((item) => (
-									<div
-										key={item.id}
-										className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
-									>
-										<div className="flex items-center gap-3">
-											<span className="material-symbols-outlined text-gray-400">
-												package_2
-											</span>
-											<div>
-												<p className="font-medium">{item.name}</p>
-												<p className="text-xs text-gray-500">
-													{item.quantity} {t("inventory.unit")} •{" "}
-													{item.location}
-													{item.value && parseFloat(item.value) > 0 && (
-														<span className="ml-2">
-															{formatCurrency(
-																parseFloat(item.value) * item.quantity,
-															)}
-														</span>
-													)}
-												</p>
-											</div>
-										</div>
-									</div>
-								))}
-							</div>
-						</SectionCard>
-					)}
+						<TreasuryRelationList
+							label={t("treasury.reimbursements.reimbursement_request", "Reimbursement")}
+							items={purchaseRelations}
+							withSeparator
+						/>
 
-					{/* Reimbursement Section - Only for expenses */}
-					{transaction.type === "expense" && purchase && (
-						<SectionCard>
-							<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-								{t("treasury.reimbursements.edit.reimbursement_details")}
-							</h2>
-							<LinkedItemInfo purchase={purchase} canViewFullBankAccount={canViewFullBankAccount} />
-							<div className="space-y-4">
-								<div>
-									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-										{t("treasury.new_reimbursement.purchaser_name")}
-									</div>
-									<p className="mt-1 text-gray-900 dark:text-white">
-										{purchase.purchaserName || "—"}
-									</p>
-								</div>
-								<div>
-									<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-										{t("treasury.new_reimbursement.bank_account")}
-									</div>
-									<p className="mt-1 text-gray-900 dark:text-white font-mono">
-										{canViewFullBankAccount
-											? (purchase.bankAccount || "—")
-											: maskBankAccount(purchase.bankAccount)}
-									</p>
-								</div>
-								{purchase.notes && (
-									<div>
-										<div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-											{t("treasury.new_reimbursement.notes")}
-										</div>
-										<p className="mt-1 text-gray-900 dark:text-white">
-											{purchase.notes}
-										</p>
-									</div>
-								)}
-							</div>
-						</SectionCard>
-					)}
+						<TreasuryRelationList
+							label={t("treasury.budgets.title", "Budget")}
+							items={budgetRelations}
+							withSeparator
+						/>
+					</TreasuryDetailCard>
 				</div>
 			</div>
 		</PageWrapper>

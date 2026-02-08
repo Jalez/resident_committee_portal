@@ -13,66 +13,37 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
-	type MinuteFile,
-	ReimbursementForm,
-} from "~/components/treasury/reimbursement-form";
-import {
-	TransactionDetailsForm,
+	EXPENSE_CATEGORIES,
+	INCOME_CATEGORIES,
 	type TransactionType,
 } from "~/components/treasury/transaction-details-form";
-import { TransactionItemList } from "~/components/treasury/transaction-item-list";
+
+import { InventoryPicker } from "~/components/treasury/pickers/inventory-picker";
+import { BudgetPicker } from "~/components/treasury/pickers/budget-picker";
 import {
-	LinkExistingSelector,
-	purchasesToLinkableItems,
-} from "~/components/treasury/link-existing-selector";
-import { BudgetLinkSection } from "~/components/treasury/budget-link-section";
-import { CheckboxOption } from "~/components/treasury/checkbox-option";
-import { Divider } from "~/components/treasury/divider";
-import { LinkedItemInfo } from "~/components/treasury/linked-item-info";
-import { SectionCard } from "~/components/treasury/section-card";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "~/components/ui/alert-dialog";
-import { Button } from "~/components/ui/button";
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
+import { ReimbursementsPicker } from "~/components/treasury/pickers/reimbursements-picker";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import {
 	getDatabase,
-	type InventoryItem,
-	type NewInventoryItem,
-	type NewPurchase,
-	type Purchase,
-	type ReimbursementStatus,
-	type Transaction,
-	type TransactionStatus,
 } from "~/db";
+import type {
+	InventoryItem,
+	NewInventoryItem,
+	Purchase,
+	ReimbursementStatus,
+	Transaction,
+	TransactionStatus,
+} from "~/db/schema";
 import {
 	requirePermissionOrSelf,
 	requireDeletePermissionOrSelf,
 	type AuthenticatedUser,
 } from "~/lib/auth.server";
-import { clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import {
-	buildMinutesAttachment,
-	buildReceiptAttachments,
-	isEmailConfigured,
-	sendReimbursementEmail,
-} from "~/lib/email.server";
-import { getUnconnectedReceiptsByYear } from "~/lib/receipts";
-import {
-	getMissingReceiptsError,
-	MISSING_RECEIPTS_ERROR,
-	parseReceiptLinks,
-	RECEIPTS_SECTION_ID,
-} from "~/lib/treasury/receipt-validation";
 import type { Route } from "./+types/treasury.transactions.$transactionId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -96,7 +67,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	// Check permission with self-edit support
 	await requirePermissionOrSelf(
 		request,
 		"treasury:transactions:update",
@@ -105,37 +75,35 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked purchase if exists
 	let purchase = null;
 	if (transaction.purchaseId) {
 		purchase = await db.getPurchaseById(transaction.purchaseId);
 	}
 
-	// Get currently linked inventory items
+	// Redirect if linked reimbursement has been sent (locked)
+	if (purchase?.emailSent && purchase.status !== "rejected") {
+		throw redirect(`/treasury/transactions/${params.transactionId}?editBlocked=1`);
+	}
+
 	const linkedItems = await db.getInventoryItemsForTransaction(
 		params.transactionId,
 	);
 
-	// Get available items for picker (active, non-legacy, with available quantity)
 	const basePickerItems = await db.getInventoryItemsForPicker();
-
-	// Merge linked items into picker items so they appear in the table
-	// Linked items might not be in pickerItems if they're fully allocated
 	const linkedItemIds = new Set(linkedItems.map((item) => item.id));
 	const pickerItems = [
-		// Add linked items first (they should appear in the table even if fully allocated)
 		...linkedItems.map((item) => ({
 			...item,
-			availableQuantity: item.quantity, // For linked items, show the linked quantity as available
+			availableQuantity: item.quantity,
 		})),
-		// Then add other picker items that aren't already linked
 		...basePickerItems.filter((item) => !linkedItemIds.has(item.id)),
 	];
 
-	// Get unique locations and categories for picker filters
 	const allInventoryItems = await db.getInventoryItems();
 	const uniqueLocations = [
-		...new Set(allInventoryItems.map((item) => item.location).filter(Boolean)),
+		...new Set(
+			allInventoryItems.map((item) => item.location).filter(Boolean),
+		),
 	].sort();
 	const uniqueCategories = [
 		...new Set(
@@ -145,21 +113,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		),
 	].sort();
 
-	// Get receipts for picker (only unconnected)
-	const receiptsByYear = await getUnconnectedReceiptsByYear();
-
-	// Get purchases without linked transactions + include current purchase if linked
 	const unlinkedPurchases = await db.getPurchasesWithoutTransactions();
-	// Add current purchase to the list so it appears as selected option
 	if (purchase && !unlinkedPurchases.find((p) => p.id === purchase.id)) {
 		unlinkedPurchases.unshift(purchase);
 	}
 
-	// Get open budgets for the transaction year and current link (if any)
 	const budgetYear = transaction.year;
-	const openBudgets = await db.getOpenFundBudgetsByYear(
-		budgetYear,
-	);
+	const openBudgets = await db.getOpenFundBudgetsByYear(budgetYear);
 	const budgetLink = await db.getBudgetForTransaction(
 		params.transactionId,
 	);
@@ -178,18 +138,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	}>;
 	for (const budget of openBudgets) {
 		const usedAmount = await db.getBudgetUsedAmount(budget.id);
-		const remainingAmount = Number.parseFloat(budget.amount) - usedAmount;
-		enrichedBudgets.push({
-			...budget,
-			usedAmount,
-			remainingAmount,
-		});
+		const remainingAmount =
+			Number.parseFloat(budget.amount) - usedAmount;
+		enrichedBudgets.push({ ...budget, usedAmount, remainingAmount });
 	}
 	if (
 		budgetLink &&
-		!enrichedBudgets.find(
-			(budget) => budget.id === budgetLink.budget.id,
-		)
+		!enrichedBudgets.find((b) => b.id === budgetLink.budget.id)
 	) {
 		const usedAmount = await db.getBudgetUsedAmount(
 			budgetLink.budget.id,
@@ -203,7 +158,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		});
 	}
 
-	// Get current year for year options
 	const currentYear = new Date().getFullYear();
 
 	return {
@@ -214,11 +168,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		pickerItems,
 		uniqueLocations,
 		uniqueCategories,
-		// New fields for shared components
 		currentYear,
-		recentMinutes: [] as MinuteFile[],
-		emailConfigured: await isEmailConfigured(),
-		receiptsByYear,
 		unlinkedPurchases,
 		openBudgets: enrichedBudgets,
 		budgetLink,
@@ -231,15 +181,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;
 
-	// Get transaction to preserve year for redirect and check permissions
 	const transactions = await db.getAllTransactions();
-	const transaction = transactions.find((t) => t.id === params.transactionId);
+	const transaction = transactions.find(
+		(t) => t.id === params.transactionId,
+	);
 	const year = transaction?.year || new Date().getFullYear();
 
-	// Get user and check permission with self-edit support (will be re-checked for delete action)
 	let user: AuthenticatedUser;
 	if (actionType === "delete") {
-		// Delete permission check happens in delete handler
 		user = await requireDeletePermissionOrSelf(
 			request,
 			"treasury:transactions:delete",
@@ -260,7 +209,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Handle createItem action for InventoryPicker
 	if (actionType === "createItem") {
 		const name = formData.get("name") as string;
-		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
+		const quantity =
+			parseInt(formData.get("quantity") as string, 10) || 1;
 		const location = formData.get("location") as string;
 		const category = (formData.get("category") as string) || null;
 		const description = (formData.get("description") as string) || null;
@@ -294,13 +244,18 @@ export async function action({ request, params }: Route.ActionArgs) {
 			return { success: false, error: "Missing itemId or field" };
 		}
 
-		// Validate field name
-		const allowedFields = ["name", "quantity", "location", "category", "description", "value"];
+		const allowedFields = [
+			"name",
+			"quantity",
+			"location",
+			"category",
+			"description",
+			"value",
+		];
 		if (!allowedFields.includes(field)) {
 			return { success: false, error: "Invalid field" };
 		}
 
-		// Parse value based on field type
 		let parsedValue: string | number = value;
 		if (field === "quantity") {
 			parsedValue = parseInt(value, 10) || 1;
@@ -310,24 +265,17 @@ export async function action({ request, params }: Route.ActionArgs) {
 		return { success: true };
 	}
 
-	// Handle refreshReceipts action to clear cache
-	if (actionType === "refreshReceipts") {
-		clearCache("RECEIPTS_BY_YEAR");
-		return { success: true };
-	}
-
 	// Handle delete action
 	if (actionType === "delete") {
 		if (!transaction) {
 			return { error: "Transaction not found" };
 		}
 
-		// Permission already checked at start of action, user is available
-
 		try {
-			const linkedItems = await db.getInventoryItemsForTransaction(
-				params.transactionId,
-			);
+			const linkedItems =
+				await db.getInventoryItemsForTransaction(
+					params.transactionId,
+				);
 			for (const item of linkedItems) {
 				await db.unlinkInventoryItemFromTransaction(
 					item.id,
@@ -345,54 +293,15 @@ export async function action({ request, params }: Route.ActionArgs) {
 		}
 	}
 
-	// Handle linking items
-	if (actionType === "linkItems") {
-		const itemIdsJson = formData.get("itemIds") as string;
-		const quantitiesJson = formData.get("quantities") as string;
 
-		console.log("[LinkItems] itemIdsJson:", itemIdsJson);
-		console.log("[LinkItems] quantitiesJson:", quantitiesJson);
 
-		if (itemIdsJson) {
-			const itemIds = JSON.parse(itemIdsJson) as string[];
-			const quantities = quantitiesJson
-				? (JSON.parse(quantitiesJson) as Record<string, number>)
-				: {};
-
-			console.log("[LinkItems] Parsed quantities:", quantities);
-
-			for (const itemId of itemIds) {
-				const item = await db.getInventoryItemById(itemId);
-				if (item) {
-					// Use provided quantity, or default to item's full quantity
-					const quantity = quantities[itemId] || item.quantity;
-					console.log(
-						`[LinkItems] Linking ${itemId} with quantity ${quantity} (provided: ${quantities[itemId]}, item.quantity: ${item.quantity})`,
-					);
-					await db.linkInventoryItemToTransaction(
-						itemId,
-						params.transactionId,
-						quantity,
-					);
-				}
-			}
-		}
-		return { success: true, message: "Items linked successfully" };
-	}
-
-	// Handle unlinking a single item
-	if (actionType === "unlinkItem") {
-		const itemId = formData.get("itemId") as string;
-		if (itemId) {
-			await db.unlinkInventoryItemFromTransaction(itemId, params.transactionId);
-		}
-		return { success: true, message: "Item unlinked successfully" };
-	}
-
-	// Guard: if actionType was set but not handled above, return early to prevent fall-through
+	// Guard: if actionType was set but not handled above
 	if (actionType) {
 		console.warn(`[Action] Unhandled action type: ${actionType}`);
-		return { success: false, error: `Unhandled action type: ${actionType}` };
+		return {
+			success: false,
+			error: `Unhandled action type: ${actionType}`,
+		};
 	}
 
 	// Handle update action (default)
@@ -400,8 +309,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 		return { success: false, error: "Transaction not found" };
 	}
 
-	const statusInput = formData.get("status");
-	const reimbursementStatusInput = formData.get("reimbursementStatus");
+	// Block edits if linked reimbursement has been sent
+	if (transaction.purchaseId) {
+		const linkedPurchase = await db.getPurchaseById(transaction.purchaseId);
+		if (linkedPurchase?.emailSent && linkedPurchase.status !== "rejected") {
+			return { success: false, error: "Cannot edit a transaction linked to a sent reimbursement" };
+		}
+	}
+
 	const allowedStatuses: TransactionStatus[] = [
 		"pending",
 		"complete",
@@ -414,171 +329,73 @@ export async function action({ request, params }: Route.ActionArgs) {
 		"approved",
 		"declined",
 	];
-	const status =
-		typeof statusInput === "string"
-			? (statusInput as TransactionStatus)
-			: undefined;
-	const reimbursementStatus =
-		typeof reimbursementStatusInput === "string"
-			? (reimbursementStatusInput as ReimbursementStatus)
-			: undefined;
 
-	if (status && !allowedStatuses.includes(status)) {
+	const status = (formData.get("status") as TransactionStatus) || transaction.status;
+	const reimbursementStatus =
+		(formData.get("reimbursementStatus") as ReimbursementStatus) ||
+		transaction.reimbursementStatus ||
+		"not_requested";
+
+	if (!allowedStatuses.includes(status)) {
 		return { success: false, error: "Invalid status" };
 	}
-	if (
-		reimbursementStatus &&
-		!allowedReimbursementStatuses.includes(reimbursementStatus)
-	) {
+	if (!allowedReimbursementStatuses.includes(reimbursementStatus)) {
 		return { success: false, error: "Invalid reimbursement status" };
 	}
+
 	const description = formData.get("description") as string;
 	const category = (formData.get("category") as string) || null;
 	const amountStr = formData.get("amount") as string;
 	const amount = amountStr
 		? amountStr.replace(",", ".")
-		: transaction?.amount.toString();
+		: transaction.amount.toString();
 	const budgetId = formData.get("budgetId") as string;
 	const budgetAmount = formData.get("budgetAmount") as string;
 
-	// Handle purchase linking/creation
+	// Handle purchase linking
 	const linkPurchaseId = formData.get("linkPurchaseId") as string;
-	const requestReimbursement = formData.get("requestReimbursement") === "on";
-	const currentPurchaseId = transaction?.purchaseId || null;
+	const newPurchaseId = linkPurchaseId || null;
 
-	// Determine if linking to an existing purchase
-	const isLinkingToExisting = !!linkPurchaseId;
-	const shouldRequestReimbursement = requestReimbursement && !isLinkingToExisting;
+	// Handle inventory items sync
+	let computedAmount = amount;
+	const inventoryItemsJson = formData.get("inventoryItems") as string;
+	if (inventoryItemsJson) {
+		const inventoryItems = JSON.parse(inventoryItemsJson) as { itemId: string; quantity: number }[];
+		const linkedItems = await db.getInventoryItemsForTransaction(params.transactionId);
+		const currentMap = new Map(linkedItems.map(i => [i.id, i]));
+		const newMap = new Map(inventoryItems.map(i => [i.itemId, i]));
 
-	// Determine new purchaseId
-	let newPurchaseId: string | null = currentPurchaseId;
-
-	// If linking to different existing purchase
-	if (isLinkingToExisting && linkPurchaseId !== currentPurchaseId) {
-		newPurchaseId = linkPurchaseId;
-	}
-	// If creating new reimbursement
-	else if (shouldRequestReimbursement) {
-		const purchaserName = formData.get("purchaserName") as string;
-		const bankAccount = formData.get("bankAccount") as string;
-		const minutesId = formData.get("minutesId") as string;
-		const minutesName = formData.get("minutesName") as string;
-		const notes = formData.get("notes") as string;
-
-		const receiptLinks = parseReceiptLinks(formData);
-		const receiptError = getMissingReceiptsError(
-			receiptLinks,
-			shouldRequestReimbursement,
-		);
-		if (receiptError) {
-			return { success: false, error: receiptError };
-		}
-
-		const newPurchase: NewPurchase = {
-			description,
-			amount: amount || "0",
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName: minutesName || null,
-			notes: notes || null,
-			status: "pending",
-			year,
-			emailSent: false,
-			createdBy: user.userId,
-		};
-
-		const purchase = await db.createPurchase(newPurchase);
-		newPurchaseId = purchase.id;
-
-		// Create receipt records for linked receipts
-		if (receiptLinks.length > 0) {
-			const existingReceipts = await db.getReceipts();
-			for (const receiptLink of receiptLinks) {
-				const pathname = receiptLink.id;
-				const existingReceipt = existingReceipts.find((r) => r.pathname === pathname);
-				if (existingReceipt) {
-					await db.updateReceipt(existingReceipt.id, {
-						purchaseId: purchase.id,
-					});
-				} else {
-					await db.createReceipt({
-						name: receiptLink.name || null,
-						description: null,
-						url: receiptLink.url,
-						pathname,
-						purchaseId: purchase.id,
-						createdBy: user.userId,
-					});
-				}
+		// Links to remove
+		for (const [id] of currentMap) {
+			if (!newMap.has(id)) {
+				await db.unlinkInventoryItemFromTransaction(id, params.transactionId);
 			}
 		}
 
-		// Send email with minutes + receipt attachments in background
-		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			minutesId,
-			minutesName,
-		);
-		const emailTask = Promise.all([
-			minutesAttachmentPromise,
-			receiptAttachmentsPromise,
-		])
-			.then(([minutesAttachment, receiptAttachments]) =>
-				sendReimbursementEmail(
-					{
-						itemName: description,
-						itemValue: amount || "0",
-						purchaserName,
-						bankAccount,
-						minutesReference:
-							minutesName || minutesId || "Ei määritetty / Not specified",
-						notes,
-						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-					},
-					purchase.id,
-					minutesAttachment || undefined,
-					receiptAttachments,
-				),
-			)
-			.then(async (emailResult) => {
-				if (emailResult.success) {
-					await db.updatePurchase(purchase.id, {
-						emailSent: true,
-						emailMessageId: emailResult.messageId,
-					});
-				} else {
-					await db.updatePurchase(purchase.id, {
-						emailError: emailResult.error || "Unknown email error",
-					});
+		// Links to add or update
+		for (const [id, item] of newMap) {
+			await db.linkInventoryItemToTransaction(id, params.transactionId, item.quantity);
+		}
+
+		// Server-side: compute amount from inventory items when category is "inventory"
+		if (category === "inventory" && inventoryItems.length > 0) {
+			let total = 0;
+			for (const item of inventoryItems) {
+				const dbItem = await db.getInventoryItemById(item.itemId);
+				if (dbItem) {
+					total += parseFloat(dbItem.value || "0") * item.quantity;
 				}
-			})
-			.catch(async (error) => {
-				await db.updatePurchase(purchase.id, {
-					emailError: error instanceof Error ? error.message : "Unknown error",
-				});
-			});
-		await emailTask;
+			}
+			computedAmount = total.toFixed(2);
+		}
 	}
 
-	// Determine statuses based on purchase
-	const baseStatus = status ?? transaction.status;
-	const baseReimbursementStatus =
-		reimbursementStatus ?? transaction.reimbursementStatus ?? "not_requested";
-	const finalStatus =
-		newPurchaseId && baseStatus === "complete" ? "pending" : baseStatus;
-	const finalReimbursementStatus = newPurchaseId
-		? (baseReimbursementStatus === "not_requested"
-			? "requested"
-			: baseReimbursementStatus)
-		: baseReimbursementStatus;
-
 	await db.updateTransaction(params.transactionId, {
-		status: finalStatus,
-		reimbursementStatus: finalReimbursementStatus,
+		status,
+		reimbursementStatus,
 		description,
 		category,
-		amount: amount || "0",
+		amount: computedAmount || "0",
 		purchaseId: newPurchaseId,
 	});
 
@@ -623,9 +440,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// If transaction has a linked purchase, update its status too
 	if (newPurchaseId) {
 		const purchaseStatus =
-			finalReimbursementStatus === "approved"
+			reimbursementStatus === "approved"
 				? "approved"
-				: finalReimbursementStatus === "declined"
+				: reimbursementStatus === "declined"
 					? "rejected"
 					: "pending";
 		await db.updatePurchase(newPurchaseId, { status: purchaseStatus });
@@ -634,7 +451,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 	return redirect(`/treasury/breakdown?year=${year}`);
 }
 
-export default function EditTransaction({ loaderData }: Route.ComponentProps) {
+export default function EditTransaction({
+	loaderData,
+}: Route.ComponentProps) {
 	const {
 		transaction,
 		purchase,
@@ -643,9 +462,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		uniqueLocations,
 		uniqueCategories,
 		currentYear,
-		recentMinutes,
-		emailConfigured,
-		receiptsByYear,
 		unlinkedPurchases,
 		openBudgets,
 		budgetLink,
@@ -657,19 +473,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		uniqueLocations: string[];
 		uniqueCategories: string[];
 		currentYear: number;
-		recentMinutes: MinuteFile[];
-		emailConfigured: boolean;
-		receiptsByYear: Array<{
-			year: string;
-			files: Array<{
-				id: string;
-				name: string;
-				url: string;
-				createdTime: string;
-			}>;
-			folderUrl: string;
-			folderId: string;
-		}>;
 		unlinkedPurchases: Purchase[];
 		openBudgets: Array<{
 			id: string;
@@ -684,13 +487,18 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 			usedAmount: number;
 			remainingAmount: number;
 		}>;
-		budgetLink: { budget: { id: string }; amount: string } | null;
+		budgetLink: {
+			budget: { id: string };
+			amount: string;
+		} | null;
 	};
 	const navigate = useNavigate();
 	const navigation = useNavigation();
 	const fetcher = useFetcher();
 	const isSubmitting =
-		navigation.state === "submitting" || fetcher.state === "submitting";
+		navigation.state === "submitting" ||
+		fetcher.state === "submitting";
+
 	interface ActionData {
 		success?: boolean;
 		message?: string;
@@ -700,16 +508,17 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 
 	const actionData = useActionData<ActionData>();
 	const [searchParams, setSearchParams] = useSearchParams();
-	const { items: contextItems, isHydrated, clearItems, setItems } = useNewTransaction();
-	const { t, i18n } = useTranslation();
+	const {
+		items: contextItems,
+		isHydrated,
+		clearItems,
+		setItems,
+	} = useNewTransaction();
+	const { t } = useTranslation();
 
-	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-	// Transaction form state (initialized from loaded transaction)
-	const [transactionType, setTransactionType] = useState<TransactionType>(
-		transaction.type as TransactionType,
-	);
-	const [amount, setAmount] = useState(transaction.amount);
+	// Transaction form state
+	const transactionType = transaction.type as TransactionType;
+	const [amount, setAmount] = useState(String(transaction.amount));
 	const [descriptionValue, setDescriptionValue] = useState(
 		transaction.description,
 	);
@@ -717,88 +526,97 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	const [dateValue, setDateValue] = useState(
 		new Date(transaction.date).toISOString().split("T")[0],
 	);
-	const [year, setYear] = useState(transaction.year);
-	const [status, setStatus] = useState<TransactionStatus>(transaction.status);
+	const [status, setStatus] = useState<TransactionStatus>(
+		transaction.status,
+	);
 	const [reimbursementStatus, setReimbursementStatus] =
 		useState<ReimbursementStatus>(
 			transaction.reimbursementStatus || "not_requested",
 		);
 
-	// Purchase linking state
+	// Purchase & budget linking state
 	const [selectedPurchaseId, setSelectedPurchaseId] = useState(
 		transaction.purchaseId || "",
 	);
-	const [requestReimbursement, setRequestReimbursement] = useState(false);
-	const isLinkingToExisting = !!selectedPurchaseId;
 	const [selectedBudgetId, setSelectedBudgetId] = useState(
 		budgetLink?.budget.id || "",
 	);
 
-	// Handle selection change - uncheck checkbox when selecting existing purchase
-	const handlePurchaseSelectionChange = (id: string) => {
-		setSelectedPurchaseId(id);
-		if (id) {
-			setRequestReimbursement(false);
-		}
-	};
-
-	// Handle checkbox change - clear selection when checking request reimbursement
-	const handleRequestReimbursementChange = (checked: boolean) => {
-		setRequestReimbursement(checked);
-		if (checked) {
-			setSelectedPurchaseId("");
-		}
-	};
-
-	// Initialize pending items from already-linked items (for unified table view)
+	// Inventory state
 	const [pendingItems, setPendingItems] = useState<
-		{ itemId: string; name: string; quantity: number; unitValue: number }[]
+		{
+			itemId: string;
+			name: string;
+			quantity: number;
+			unitValue: number;
+		}[]
 	>(() =>
 		linkedItems.map((item) => ({
 			itemId: item.id,
 			name: item.name,
 			quantity: item.quantity,
 			unitValue: parseFloat(item.value || "0"),
-		}))
+		})),
 	);
-
-	// Track which items were initially linked (for detecting unlinks on deselection)
-	const initialLinkedIds = useRef<Set<string>>(new Set(linkedItems.map((i) => i.id)));
-
-	// Sync initialLinkedIds when loader revalidates (e.g. after linkItems)
-	useEffect(() => {
-		const ids = new Set(linkedItems.map((i) => i.id));
-		initialLinkedIds.current = ids;
-	}, [linkedItems]);
-
-	// Track if we've already processed the addItems param
+	const initialLinkedIds = useRef<Set<string>>(
+		new Set(linkedItems.map((i) => i.id)),
+	);
 	const hasProcessedAddItems = useRef(false);
 
-	// Generate year options (last 5 years)
-	const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+	useEffect(() => {
+		initialLinkedIds.current = new Set(
+			linkedItems.map((i) => i.id),
+		);
+	}, [linkedItems]);
 
-	// Load pending items from context when ?addItems=true: merge into list and auto-link
+	// Build select options
+	const categoryOptions = (
+		transactionType === "income"
+			? INCOME_CATEGORIES
+			: EXPENSE_CATEGORIES
+	).map((c) => ({
+		value: c.value,
+		label: t(`treasury.categories.${c.labelKey}`),
+	}));
+
+	const statusOptions = (
+		["pending", "complete", "paused", "declined"] as const
+	).map((s) => ({
+		value: s,
+		label: t(`treasury.breakdown.statuses.${s}`),
+	}));
+
+	const reimbursementStatusOptions = (
+		[
+			"not_requested",
+			"requested",
+			"approved",
+			"declined",
+		] as const
+	).map((s) => ({
+		value: s,
+		label: t(`treasury.breakdown.edit.reimbursement_statuses.${s}`),
+	}));
+
+	// Load pending items from context when ?addItems=true
 	useEffect(() => {
 		const addItems = searchParams.get("addItems");
-
-		// Wait for context to hydrate from sessionStorage
 		if (!isHydrated) return;
-
 		if (
 			addItems === "true" &&
 			contextItems.length > 0 &&
 			!hasProcessedAddItems.current
 		) {
 			hasProcessedAddItems.current = true;
-
-			// Merge context items into pending (keep already-linked, add/update from context)
 			setPendingItems((prev) => {
 				const next = [...prev];
 				const byId = new Map(next.map((p) => [p.itemId, p]));
 				for (const c of contextItems) {
 					const existing = byId.get(c.itemId);
 					if (existing) {
-						const idx = next.findIndex((p) => p.itemId === c.itemId);
+						const idx = next.findIndex(
+							(p) => p.itemId === c.itemId,
+						);
 						next[idx] = { ...existing, quantity: c.quantity };
 					} else {
 						next.push(c);
@@ -808,7 +626,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 				return next;
 			});
 
-			// Auto-link context items so they persist without requiring "Link items" click
 			const contextIds = contextItems.map((c) => c.itemId);
 			const quantities = Object.fromEntries(
 				contextItems.map((c) => [c.itemId, c.quantity]),
@@ -825,7 +642,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 				initialLinkedIds.current.add(id);
 			}
 
-			// Clear context and remove query param
 			clearItems();
 			setSearchParams((prev) => {
 				prev.delete("addItems");
@@ -841,31 +657,27 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		fetcher,
 	]);
 
-	// Enforce minimum amount based on selected items (pendingItems now includes linked items)
+	// Strict amount from inventory items — always override when items exist
 	useEffect(() => {
-		const totalValue = pendingItems.reduce(
-			(sum, item) => sum + item.unitValue * item.quantity,
-			0,
-		);
+		if (category === "inventory" && pendingItems.length > 0) {
+			const totalValue = pendingItems.reduce(
+				(sum, item) => sum + item.unitValue * item.quantity,
+				0,
+			);
+			setAmount(totalValue.toFixed(2));
+		}
+	}, [pendingItems, category]);
 
-		setAmount((prev) => {
-			const current = parseFloat(prev) || 0;
-			if (totalValue > current) {
-				return totalValue.toFixed(2);
-			}
-			return prev;
-		});
-	}, [pendingItems]);
-
-	// Handle linking pending items (only link NEW items, not already-linked ones)
+	// Handle linking pending items (only link NEW items)
 	const handleLinkPendingItems = () => {
-		// Filter to only include items that are not already linked
 		const newItemsToLink = pendingItems.filter(
-			(item) => !initialLinkedIds.current.has(item.itemId)
+			(item) => !initialLinkedIds.current.has(item.itemId),
 		);
 
 		if (newItemsToLink.length === 0) {
-			toast.info(t("treasury.breakdown.edit.no_new_items_to_link"));
+			toast.info(
+				t("treasury.breakdown.edit.no_new_items_to_link"),
+			);
 			return;
 		}
 
@@ -874,32 +686,26 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 				{
 					_action: "linkItems",
 					itemIds: JSON.stringify([item.itemId]),
-					quantities: JSON.stringify({ [item.itemId]: item.quantity }),
+					quantities: JSON.stringify({
+						[item.itemId]: item.quantity,
+					}),
 				},
 				{ method: "POST" },
 			);
-			// Track that this item is now linked
 			initialLinkedIds.current.add(item.itemId);
 		}
-		toast.success(t("treasury.breakdown.edit.items_linked_success"));
-	};
-
-	const formatCurrency = (value: string | number) => {
-		const num = typeof value === "string" ? parseFloat(value) : value;
-		return `${num.toFixed(2).replace(".", ",")} €`;
+		toast.success(
+			t("treasury.breakdown.edit.items_linked_success"),
+		);
 	};
 
 	const handleUnlinkItem = (itemId: string) => {
 		fetcher.submit(
-			{
-				_action: "unlinkItem",
-				itemId,
-			},
+			{ _action: "unlinkItem", itemId },
 			{ method: "POST" },
 		);
 	};
 
-	// Handler for adding new inventory item from picker
 	const handleAddItem = async (itemData: {
 		name: string;
 		quantity: number;
@@ -916,22 +722,13 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		formData.set("category", itemData.category || "");
 		formData.set("description", itemData.description || "");
 		formData.set("value", itemData.value || "0");
-
 		fetcher.submit(formData, { method: "POST" });
 		return null;
 	};
 
-	// Handler for inline editing inventory items
-	const handleInlineEdit = (itemId: string, field: string, value: string) => {
-		const formData = new FormData();
-		formData.set("_action", "updateField");
-		formData.set("itemId", itemId);
-		formData.set("field", field);
-		formData.set("value", value);
-		fetcher.submit(formData, { method: "POST" });
-	};
 
-	// Show toast on fetcher success/error
+
+	// Toast on fetcher success/error
 	useEffect(() => {
 		if (fetcher.state !== "idle") return;
 		if (!fetcher.data || typeof fetcher.data !== "object") return;
@@ -960,37 +757,41 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		if (actionData && "error" in actionData && actionData.error) {
 			toast.error(
 				typeof actionData.error === "string"
-					? t(actionData.error, { names: actionData.linkedItemNames })
+					? t(actionData.error, {
+						names: actionData.linkedItemNames,
+					})
 					: "An error occurred",
 			);
-			if (actionData.error === MISSING_RECEIPTS_ERROR) {
-				const receiptsSection = document.getElementById(RECEIPTS_SECTION_ID);
-				receiptsSection?.focus();
-				receiptsSection?.scrollIntoView({ behavior: "smooth", block: "center" });
-			}
 		}
 	}, [actionData, t]);
 
-	// Check for delete error from action
 	const deleteError =
-		actionData?.error === "treasury.breakdown.edit.delete_error_linked"
+		actionData?.error ===
+			"treasury.breakdown.edit.delete_error_linked"
 			? t(actionData.error, { names: actionData.linkedItemNames })
 			: null;
 
-	// Convert purchases to linkable items
-	const linkablePurchases = purchasesToLinkableItems(unlinkedPurchases);
+	const formatCurrency = (value: string | number) => {
+		const num =
+			typeof value === "string" ? parseFloat(value) : value;
+		return `${num.toFixed(2).replace(".", ",")} €`;
+	};
 
-	// Find selected purchase for display
-	const selectedPurchase = selectedPurchaseId
-		? unlinkedPurchases.find((p) => p.id === selectedPurchaseId)
-		: null;
+	// If we have a linked budget, ensure we pass the enriched version (with remainingAmount)
+	// which is guaranteed to be in openBudgets if the loader logic worked (it unshifts it).
+	const linkedBudgetOption = budgetLink
+		? openBudgets.find((b) => b.id === budgetLink.budget.id)
+		: undefined;
+
+	const currentPath = `/treasury/transactions/${transaction.id}/edit`;
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<PageHeader title={t("treasury.breakdown.edit.title")} />
+				<PageHeader
+					title={t("treasury.breakdown.edit.title")}
+				/>
 
-				{/* Error display */}
 				{deleteError && (
 					<div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
 						<div className="flex items-start gap-3">
@@ -999,7 +800,9 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 							</span>
 							<div>
 								<p className="font-medium text-red-800 dark:text-red-300">
-									{t("treasury.breakdown.edit.delete_blocked")}
+									{t(
+										"treasury.breakdown.edit.delete_blocked",
+									)}
 								</p>
 								<p className="text-sm text-red-700 dark:text-red-400 mt-1">
 									{deleteError}
@@ -1009,217 +812,174 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 					</div>
 				)}
 
-				<Form method="post" encType="multipart/form-data" className="space-y-6">
-					{/* Hidden fields for form submission */}
-					<input type="hidden" name="linkPurchaseId" value={selectedPurchaseId} />
-
-					{/* Transaction Details Form - type and year disabled in edit mode */}
-					<TransactionDetailsForm
-						transactionType={transactionType}
-						onTypeChange={setTransactionType}
-						amount={amount}
-						onAmountChange={setAmount}
-						description={descriptionValue}
-						onDescriptionChange={setDescriptionValue}
-						category={category}
-						onCategoryChange={setCategory}
-						date={dateValue}
-						onDateChange={setDateValue}
-						year={year}
-						onYearChange={setYear}
-						yearOptions={yearOptions}
-						showTypeSelector={true}
-						showYearSelector={true}
-						disabled={true}
+				<Form method="post" className="space-y-6">
+					<input
+						type="hidden"
+						name="type"
+						value={transactionType}
+					/>
+					<input
+						type="hidden"
+						name="year"
+						value={transaction.year}
+					/>
+					<input
+						type="hidden"
+						name="linkPurchaseId"
+						value={selectedPurchaseId}
 					/>
 
-					{/* Inventory Items Section - shown when category is "inventory" */}
-					{category === "inventory" && (
-						<div className="space-y-4">
-							<TransactionItemList
-								items={pendingItems}
-								onItemsChange={(newItems) => {
-									// Detect unlinked items (items that were initially linked but now removed)
-									const currentIds = new Set(newItems.map((i) => i.itemId));
-									for (const linkedId of initialLinkedIds.current) {
-										if (!currentIds.has(linkedId)) {
-											// This item was unlinked - call unlink action
-											handleUnlinkItem(linkedId);
-											initialLinkedIds.current.delete(linkedId);
-										}
-									}
-									setPendingItems(newItems);
-									setItems(newItems);
-								}}
-								availableItems={pickerItems}
-								uniqueLocations={uniqueLocations}
-								uniqueCategories={uniqueCategories}
-								onAddNewItem={handleAddItem}
-								onInlineEdit={handleInlineEdit}
-								title={t("treasury.breakdown.edit.linked_items")}
-								description={t("treasury.breakdown.edit.linked_items_desc")}
-								emptyMessage={t("treasury.breakdown.edit.no_linked_items")}
-								showTotal={true}
-								hideSelectedList={true}
+					<TreasuryDetailCard
+						title={t("treasury.breakdown.edit.title")}
+					>
+						<div className="grid gap-4">
+							<TreasuryField
+								label={t("common.fields.type")}
+							>
+								{t(
+									`treasury.types.${transactionType}`,
+								)}
+							</TreasuryField>
+							<TreasuryField
+								label={t("common.fields.year")}
+							>
+								{transaction.year}
+							</TreasuryField>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.amount")} *`}
+								name="amount"
+								type="number"
+								value={amount}
+								onChange={setAmount}
+								required
+								step="0.01"
+								min="0.01"
+								disabled={category === "inventory" && pendingItems.length > 0}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.description")} *`}
+								name="description"
+								type="text"
+								value={descriptionValue}
+								onChange={setDescriptionValue}
+								required
+								placeholder={t(
+									"treasury.form.description_placeholder",
+								)}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("treasury.breakdown.category", "Category")} *`}
+								name="category"
+								type="select"
+								value={category}
+								onChange={setCategory}
+								options={categoryOptions}
+								required
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.date")} *`}
+								name="date"
+								type="date"
+								value={dateValue}
+								onChange={setDateValue}
+								required
 							/>
 
-							{/* Show link button only when there are NEW items to link */}
-							{pendingItems.filter((item) => !initialLinkedIds.current.has(item.itemId)).length > 0 && (
-								<div className="flex justify-end">
-									<Button
-										type="button"
-										onClick={handleLinkPendingItems}
-										variant="default"
-										className="gap-2"
-									>
-										<span className="material-symbols-outlined">link</span>
-										{t("treasury.breakdown.edit.link_items", {
-											count: pendingItems.filter((item) => !initialLinkedIds.current.has(item.itemId)).length,
-										})}
-									</Button>
-								</div>
-							)}
+							<TreasuryField
+								mode="edit"
+								label={t(
+									"treasury.breakdown.status",
+								)}
+								name="status"
+								type="select"
+								value={status}
+								onChange={(v) =>
+									setStatus(
+										v as TransactionStatus,
+									)
+								}
+								options={statusOptions}
+							/>
 						</div>
-					)}
 
-					{/* Fund Budget Section - Only for expenses when budgets exist */}
-					{transactionType === "expense" && (
-						<BudgetLinkSection
-							openBudgets={openBudgets}
-							selectedBudgetId={selectedBudgetId}
-							onSelectionChange={setSelectedBudgetId}
-							amount={amount}
-						/>
-					)}
-
-					{/* Reimbursement Section - Only for expenses */}
-					{transactionType === "expense" && (
-						<SectionCard>
-							{/* Link to existing reimbursement section */}
-							{unlinkedPurchases.length > 0 && (
-								<>
-									<LinkExistingSelector
-										items={linkablePurchases}
-										selectedId={selectedPurchaseId}
-										onSelectionChange={handlePurchaseSelectionChange}
-										label={t("treasury.new.link_existing_reimbursement")}
-										helpText={t("treasury.new.link_existing_help")}
-										placeholder={t("treasury.new.select_reimbursement_placeholder")}
-										noLinkText={t("treasury.new.no_link")}
-									/>
-									{selectedPurchase && (
-										<LinkedItemInfo purchase={selectedPurchase} canViewFullBankAccount={true} />
+						{/* Inventory Items Section */}
+						{category === "inventory" && (
+							<div className="space-y-4">
+								<input
+									type="hidden"
+									name="inventoryItems"
+									value={JSON.stringify(
+										pendingItems.map((i) => ({
+											itemId: i.itemId,
+											quantity: i.quantity,
+										})),
 									)}
-								</>
-							)}
-
-							{/* Divider when both options available */}
-							{unlinkedPurchases.length > 0 && (
-								<Divider translationKey="treasury.new.or" />
-							)}
-
-							{/* Request new reimbursement - always shown */}
-							<CheckboxOption
-								id="requestReimbursement"
-								name="requestReimbursement"
-								checked={requestReimbursement}
-								onCheckedChange={handleRequestReimbursementChange}
-								label={t("treasury.new.request_reimbursement")}
-								helpText={t("treasury.new.reimbursement_help")}
-							>
-								<ReimbursementForm
-									recentMinutes={recentMinutes.map((m) => ({
-										...m,
-										year: m.year.toString(),
-									}))}
-									emailConfigured={emailConfigured}
-									receiptsByYear={receiptsByYear}
-									currentYear={currentYear}
-									description={descriptionValue}
-									showNotes={true}
-									required={requestReimbursement}
 								/>
-							</CheckboxOption>
+								<InventoryPicker
+									linkedItems={pendingItems}
+									availableItems={pickerItems}
+									onSelectionChange={(newItems) => {
+										setPendingItems(newItems);
+										setItems(newItems);
+									}}
+									storageKey={`transaction-${transaction.id}-inventory`}
+									sourceEntityType="transaction"
+									sourceEntityId={transaction.id}
+									sourceEntityName={transaction.description || ""}
+								/>
+							</div>
+						)}
 
-							{/* Show linked purchase info if already linked but not selecting a new one */}
-							{purchase && isLinkingToExisting && !selectedPurchaseId && (
-								<LinkedItemInfo purchase={purchase} canViewFullBankAccount={true} />
-							)}
-						</SectionCard>
-					)}
+						{/* Fund Budget Section - Only for expenses */}
+						{transactionType === "expense" && (openBudgets.length > 0 || selectedBudgetId) && (
+							<>
+								<input type="hidden" name="budgetId" value={selectedBudgetId} />
+								<input type="hidden" name="budgetAmount" value={amount} />
+								<BudgetPicker
+									linkedBudget={linkedBudgetOption}
+									availableBudgets={openBudgets}
+									selectedBudgetId={selectedBudgetId}
+									onSelectionChange={setSelectedBudgetId}
+									currentPath={currentPath}
+									storageKey={`transaction-${transaction.id}-budget`}
+									sourceEntityType="transaction"
+									sourceEntityId={transaction.id}
+									sourceEntityName={transaction.description || ""}
+								/>
+							</>
+						)}
 
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate(-1)}
-							className="flex-1"
-						>
-							{t("treasury.breakdown.edit.cancel")}
-						</Button>
-						<Button type="submit" className="flex-1" disabled={isSubmitting}>
-							{isSubmitting ? (
-								<span className="flex items-center gap-2">
-									<span className="animate-spin material-symbols-outlined text-sm">
-										progress_activity
-									</span>
-									<span>{t("common.status.saving")}</span>
-								</span>
-							) : requestReimbursement ? (
-								t("treasury.new.submit_and_request")
-							) : (
-								t("treasury.breakdown.edit.save")
-							)}
-						</Button>
-					</div>
+						{/* Reimbursement Linking Section - Only for expenses */}
+						{/* Reimbursement Linking Section - Only for expenses */}
+						{transactionType === "expense" && (
+							<ReimbursementsPicker
+								linkedReimbursement={purchase}
+								unlinkedReimbursements={unlinkedPurchases}
+								selectedReimbursementId={selectedPurchaseId}
+								onSelectionChange={setSelectedPurchaseId}
+								createUrl={`/treasury/reimbursements/new?linkTransactionId=${transaction.id}`}
+								currentPath={undefined} // Not strictly needed if not used for back links in picker, but good practice if I had it. EditTransaction doesn't seem to have currentPath in loader/props? `useLocation`? uniqueLocations is something else.
+								storageKey={`transaction-${transaction.id}-reimbursements`}
+								sourceEntityType="transaction"
+								sourceEntityId={transaction.id}
+								sourceEntityName={transaction.description || ""}
+							/>
+						)}
+
+					</TreasuryDetailCard>
+					<TreasuryFormActions
+						isSubmitting={isSubmitting}
+						showDelete
+						deleteTitle={t(
+							"treasury.breakdown.edit.delete_title",
+						)}
+						deleteDescription={`${t("treasury.breakdown.edit.delete_confirm")}\n\n${transaction.description} (${formatCurrency(transaction.amount)})`}
+					/>
 				</Form>
-
-				{/* Delete section - separate from main form */}
-				<div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<AlertDialog
-						open={showDeleteDialog}
-						onOpenChange={setShowDeleteDialog}
-					>
-						<AlertDialogTrigger asChild>
-							<Button type="button" variant="destructive" className="w-full">
-								<span className="material-symbols-outlined mr-2">delete</span>
-								{t("treasury.breakdown.edit.delete")}
-							</Button>
-						</AlertDialogTrigger>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>
-									{t("treasury.breakdown.edit.delete_title")}
-								</AlertDialogTitle>
-								<AlertDialogDescription>
-									<span className="block mb-2">
-										{t("treasury.breakdown.edit.delete_confirm")}
-									</span>
-									<span className="block mt-3 font-medium text-foreground">
-										{transaction.description} (
-										{formatCurrency(transaction.amount)})
-									</span>
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<AlertDialogCancel>
-									{t("treasury.breakdown.edit.cancel")}
-								</AlertDialogCancel>
-								<Form method="post">
-									<input type="hidden" name="_action" value="delete" />
-									<AlertDialogAction asChild>
-										<Button
-											type="submit"
-											className="bg-red-600 hover:bg-red-700"
-										>
-											{t("treasury.breakdown.edit.delete")}
-										</Button>
-									</AlertDialogAction>
-								</Form>
-							</AlertDialogFooter>
-						</AlertDialogContent>
-					</AlertDialog>
-				</div>
 			</div>
 		</PageWrapper>
 	);

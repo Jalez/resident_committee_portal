@@ -10,6 +10,11 @@ import {
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Link } from "react-router";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import {
+    ColoredStatusLinkBadge,
+    TREASURY_BUDGET_STATUS_VARIANTS,
+    TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/treasury/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
     TreasuryTable,
@@ -19,10 +24,10 @@ import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
 import {
-	getAuthenticatedUser,
-	getGuestContext,
-	hasAnyPermission,
-	type AuthenticatedUser,
+    getAuthenticatedUser,
+    getGuestContext,
+    hasAnyPermission,
+    type AuthenticatedUser,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury.budgets";
@@ -270,18 +275,6 @@ export default function TreasuryBudgets({
     );
 
     type BudgetRow = (typeof budgets)[0];
-    const STATUS_VARIANT_MAP: Record<string, string> = {
-        open: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
-        closed: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-    };
-    const TRANSACTION_STATUS_VARIANT_MAP: Record<string, string> = {
-        complete:
-            "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        pending:
-            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-        paused: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-        declined: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    };
 
     // Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
     const columns = [
@@ -317,7 +310,7 @@ export default function TreasuryBudgets({
             cell: (row: BudgetRow) => (
                 <TreasuryStatusPill
                     value={row.status}
-                    variantMap={STATUS_VARIANT_MAP}
+                    variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
                     label={t(`treasury.budgets.statuses.${row.status}`)}
                 />
             ),
@@ -339,24 +332,17 @@ export default function TreasuryBudgets({
                     <div className="flex flex-col gap-0.5">
                         {row.linkedTransactions
                             .filter(({ transaction }) => transaction.status !== "declined")
-                            .map(({ transaction }) => {
-                                const statusVariant =
-                                    TRANSACTION_STATUS_VARIANT_MAP[transaction.status] ||
-                                    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-                                return (
-                                    <Link
-                                        key={transaction.id}
-                                        to={`/treasury/transactions/${transaction.id}`}
-                                        className={`inline-flex items-center hover:underline text-sm px-1.5 py-0.5 rounded font-medium ${statusVariant}`}
-                                        title={t("treasury.reimbursements.view_transaction")}
-                                    >
-                                        <span className="material-symbols-outlined text-xs mr-0.5 shrink-0">
-                                            link
-                                        </span>
-                                        {transaction.id.substring(0, 8)}
-                                    </Link>
-                                );
-                            })}
+                            .map(({ transaction }) => (
+                                <ColoredStatusLinkBadge
+                                    key={transaction.id}
+                                    to={`/treasury/transactions/${transaction.id}`}
+                                    title={t("treasury.reimbursements.view_transaction")}
+                                    status={transaction.status}
+                                    id={transaction.id}
+                                    icon="link"
+                                    variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
+                                />
+                            ))}
                     </div>
                 ) : (
                     <span className="text-gray-400">—</span>
@@ -379,10 +365,9 @@ export default function TreasuryBudgets({
             header: t("treasury.budgets.remaining"),
             cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
             cellClassName: (row: BudgetRow) =>
-                `font-semibold ${
-                    row.remainingAmount > 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-gray-500"
+                `font-semibold ${row.remainingAmount > 0
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-gray-500"
                 }`,
         },
         {
@@ -423,13 +408,13 @@ export default function TreasuryBudgets({
                                 deleteProps={
                                     canDeleteBudget(budget)
                                         ? {
-                                              action: `/treasury/budgets/${budget.id}`,
-                                              hiddenFields: { _action: "delete" },
-                                              confirmMessage: t(
-                                                  "treasury.budgets.delete_confirm",
-                                              ),
-                                              title: t("common.actions.delete"),
-                                          }
+                                            action: `/treasury/budgets/${budget.id}`,
+                                            hiddenFields: { _action: "delete" },
+                                            confirmMessage: t(
+                                                "treasury.budgets.delete_confirm",
+                                            ),
+                                            title: t("common.actions.delete"),
+                                        }
                                         : undefined
                                 }
                             />

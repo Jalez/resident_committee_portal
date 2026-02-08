@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { TreasuryRelationActions } from "~/components/treasury/treasury-relation-actions";
 import { type LinkableItem } from "~/components/treasury/link-existing-selector";
 import type { Purchase } from "~/db/schema";
+import type { EntityType } from "~/lib/linking/source-context";
 
 // Helper to convert Reimbursements to LinkableItems
 export function reimbursementsToLinkableItems(reimbursements: Purchase[]): (LinkableItem & { title: string })[] {
@@ -30,6 +31,10 @@ type BaseReimbursementsPickerProps = {
     createUrl?: string;
     currentPath?: string;
     storageKey?: string;
+    /** Source entity context (e.g., from receipt or transaction page) */
+    sourceEntityType?: EntityType;
+    sourceEntityId?: string;
+    sourceEntityName?: string;
 };
 
 type SingleReimbursementsPickerProps = BaseReimbursementsPickerProps & {
@@ -62,6 +67,9 @@ export function ReimbursementsPicker(props: ReimbursementsPickerProps) {
         currentPath,
         storageKey,
         multi = false,
+        sourceEntityType,
+        sourceEntityId,
+        sourceEntityName,
     } = props;
 
     // Normalize input to array for display
@@ -128,11 +136,15 @@ export function ReimbursementsPicker(props: ReimbursementsPickerProps) {
             withSeparator={!multi} // Only show separator in single mode (maybe?) or always? Original had it.
             linkableItems={reimbursementsToLinkableItems(unlinkedReimbursements)}
             onSelectionChange={handleSelection}
-            linkExistingLabel={t("treasury.new.link_existing_reimbursement")}
-            linkExistingPlaceholder={t("treasury.new.select_reimbursement_placeholder")}
-            noLinkText={t("treasury.new.no_link")}
+            linkExistingLabel={t("treasury.reimbursements.link_existing")}
+            linkExistingPlaceholder={t("treasury.reimbursements.select_placeholder")}
+            noLinkText={t("treasury.reimbursements.no_link")}
             storageKey={storageKey}
             maxItems={multi ? undefined : 1}
+
+            sourceEntityType={sourceEntityType}
+            sourceEntityId={sourceEntityId}
+            sourceEntityName={sourceEntityName}
         />
     );
 }
