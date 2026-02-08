@@ -51,11 +51,12 @@ export async function processReceiptOCR(
         }
 
         // 2. Extract Text (OCR)
-        rawText = await extractTextFromImage(imageBase64);
-        if (!rawText) {
+        const extractedText = await extractTextFromImage(imageBase64);
+        if (!extractedText) {
             console.error("[OCR] Failed to extract text from image");
             return { success: false, error: "Cloud Vision API returned no text" };
         }
+        rawText = extractedText;
     } else {
         console.log("[OCR] Using provided raw text for parsing");
     }

@@ -15,6 +15,8 @@ export async function extractTextFromImage(
     const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
 
     try {
+        console.log("[Google Vision] Sending request, image size:", imageBase64.length, "bytes");
+
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -28,7 +30,7 @@ export async function extractTextFromImage(
                         },
                         features: [
                             {
-                                type: "TEXT_DETECTION",
+                                type: "DOCUMENT_TEXT_DETECTION",
                             },
                         ],
                     },
@@ -43,13 +45,31 @@ export async function extractTextFromImage(
         }
 
         const data = await response.json();
-        const annotations = data.responses?.[0]?.textAnnotations;
+        console.log("[Google Vision] Response:", JSON.stringify(data).substring(0, 500));
 
-        if (annotations && annotations.length > 0) {
-            // fullTextAnnotation is usually the first element in textAnnotations or accessible via fullTextAnnotation field
-            return data.responses[0].fullTextAnnotation?.text || annotations[0].description || null;
+        // Check for errors in the response
+        if (data.responses?.[0]?.error) {
+            console.error("[Google Vision] API returned error:", data.responses[0].error);
+            return null;
         }
 
+        // DOCUMENT_TEXT_DETECTION returns fullTextAnnotation
+        const fullText = data.responses?.[0]?.fullTextAnnotation?.text;
+
+        if (fullText) {
+            console.log("[Google Vision] Extracted text length:", fullText.length);
+            return fullText;
+        }
+
+        // Fallback to textAnnotations for backwards compatibility
+        const annotations = data.responses?.[0]?.textAnnotations;
+        if (annotations && annotations.length > 0) {
+            const text = annotations[0].description || null;
+            console.log("[Google Vision] Extracted text length (fallback):", text?.length || 0);
+            return text;
+        }
+
+        console.warn("[Google Vision] No text annotations found in response");
         return null;
     } catch (error) {
         console.error("[Google Vision] Request failed:", error);
