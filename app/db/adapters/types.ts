@@ -139,6 +139,7 @@ export interface DatabaseAdapter {
 	deletePurchase(id: string): Promise<boolean>;
 
 	// ==================== Transaction Methods ====================
+	getTransactionById(id: string): Promise<Transaction | null>;
 	getTransactionsByYear(year: number): Promise<Transaction[]>;
 	getAllTransactions(): Promise<Transaction[]>;
 	getTransactionByPurchaseId(purchaseId: string): Promise<Transaction | null>;
