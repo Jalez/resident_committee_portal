@@ -7,6 +7,7 @@ import {
 	timestamp,
 	unique,
 	uuid,
+	index,
 } from "drizzle-orm/pg-core";
 
 // ============================================
@@ -119,7 +120,7 @@ export const inventoryItems = pgTable("inventory_items", {
 	quantity: integer("quantity").notNull().default(1),
 	// Quantity explicitly confirmed to have no transaction (legacy/gift/etc)
 	manualCount: integer("manual_count").notNull().default(0),
-	location: text("location").notNull(),
+	location: text("location"), // Nullable for incomplete items from receipt processing
 	category: text("category"),
 	description: text("description"),
 	value: decimal("value", { precision: 10, scale: 2 }).default("0"),
@@ -132,6 +133,9 @@ export const inventoryItems = pgTable("inventory_items", {
 	removedAt: timestamp("removed_at"),
 	removalReason: text("removal_reason").$type<RemovalReason>(),
 	removalNotes: text("removal_notes"),
+	// Completion tracking for auto-created items from receipt processing
+	needsCompletion: boolean("needs_completion").default(false),
+	completionNotes: text("completion_notes"),
 	// Timestamps
 	purchasedAt: timestamp("purchased_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -622,12 +626,83 @@ export const receiptContents = pgTable("receipt_contents", {
 	currency: text("currency").default("EUR"),
 	purchaseDate: timestamp("purchase_date"),
 	aiModel: text("ai_model"), // Model used for parsing (e.g., "google/gemini-flash-1.5")
+	// Receipt processing tracking
+	processed: boolean("processed").default(false),
+	processedAt: timestamp("processed_at"),
+	reimbursementId: uuid("reimbursement_id").references(() => purchases.id),
+	transactionIds: text("transaction_ids"), // JSON array of created transaction IDs
+	inventoryItemIds: text("inventory_item_ids"), // JSON array of created inventory item IDs
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export type ReceiptContent = typeof receiptContents.$inferSelect;
 export type NewReceiptContent = typeof receiptContents.$inferInsert;
+
+// ============================================
+// MINUTES
+// ============================================
+
+/**
+ * Minutes table schema
+ * Stores meeting minutes metadata and file references (blob storage)
+ */
+export const minutes = pgTable("minutes", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	date: timestamp("date").notNull(),
+	title: text("title").notNull(),
+	description: text("description"),
+	// File storage info
+	fileUrl: text("file_url").notNull(),
+	fileKey: text("file_key").notNull(), // Path in blob storage
+	year: integer("year").notNull(),
+	// Creator tracking
+	createdBy: uuid("created_by").references(() => users.id),
+	// Timestamps
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Minute = typeof minutes.$inferSelect;
+export type NewMinute = typeof minutes.$inferInsert;
+
+/**
+ * Minute Links table schema (Junction Table)
+ * Connects minutes to various other entities (Purchases, News, etc.)
+ * Allows for generic "Mentioned in Minute X" relationships
+ */
+export const minuteLinks = pgTable(
+	"minute_links",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		minuteId: uuid("minute_id")
+			.references(() => minutes.id, { onDelete: "cascade" })
+			.notNull(),
+		// Polymorphic-style foreign keys (only one should be set per row generally, but multiple is technically possible)
+		purchaseId: uuid("purchase_id").references(() => purchases.id, {
+			onDelete: "set null",
+		}),
+		newsId: uuid("news_id").references(() => news.id, { onDelete: "set null" }),
+		faqId: uuid("faq_id").references(() => faq.id, { onDelete: "set null" }),
+		inventoryItemId: uuid("inventory_item_id").references(
+			() => inventoryItems.id,
+			{ onDelete: "set null" },
+		),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	// Indexes for fast lookups
+	(t) => ({
+		minuteIdIdx: index("minute_links_minute_id_idx").on(t.minuteId),
+		purchaseIdIdx: index("minute_links_purchase_id_idx").on(t.purchaseId),
+		newsIdIdx: index("minute_links_news_id_idx").on(t.newsId),
+		inventoryItemIdIdx: index("minute_links_inventory_item_id_idx").on(
+			t.inventoryItemId,
+		),
+	}),
+);
+
+export type MinuteLink = typeof minuteLinks.$inferSelect;
+export type NewMinuteLink = typeof minuteLinks.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS

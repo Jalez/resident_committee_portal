@@ -35,6 +35,10 @@ import type {
 	SubmissionStatus,
 	Transaction,
 	User,
+	Minute,
+	NewMinute,
+	MinuteLink,
+	NewMinuteLink,
 } from "../schema";
 
 /**
@@ -208,6 +212,23 @@ export interface DatabaseAdapter {
 	): Promise<Faq | null>;
 	deleteFaq(id: string): Promise<boolean>;
 
+	// ==================== Minute Methods ====================
+	getMinutes(year?: number): Promise<Minute[]>;
+	getMinuteById(id: string): Promise<Minute | null>;
+	createMinute(minute: NewMinute): Promise<Minute>;
+	updateMinute(id: string, data: Partial<Omit<NewMinute, "id">>): Promise<Minute | null>;
+	deleteMinute(id: string): Promise<boolean>;
+
+	// ==================== Minute Link Methods ====================
+	createMinuteLink(link: NewMinuteLink): Promise<MinuteLink>;
+	deleteMinuteLink(id: string): Promise<boolean>;
+	getMinuteLinks(minuteId: string): Promise<MinuteLink[]>;
+	// Get specialized links
+	getMinuteLinkByPurchaseId(purchaseId: string): Promise<MinuteLink | null>;
+	getMinuteLinkByNewsId(newsId: string): Promise<MinuteLink | null>;
+	getMinuteLinkByFaqId(faqId: string): Promise<MinuteLink | null>;
+	getMinuteLinkByInventoryItemId(inventoryItemId: string): Promise<MinuteLink | null>;
+
 	// ==================== App Settings Methods ====================
 	getSetting(key: string): Promise<string | null>;
 	setSetting(
@@ -361,8 +382,21 @@ export interface DatabaseAdapter {
 	// ==================== Receipt Content Methods (OCR) ====================
 	/** Get OCR/AI content for a receipt */
 	getReceiptContentByReceiptId(receiptId: string): Promise<ReceiptContent | null>;
+	/** Get OCR/AI content for multiple receipts */
+	getReceiptContentsByReceiptIds(receiptIds: string[]): Promise<ReceiptContent[]>;
 	/** Save OCR/AI content */
 	createReceiptContent(content: NewReceiptContent): Promise<ReceiptContent>;
+	/** Update receipt content (for processing status) */
+	updateReceiptContent(
+		id: string,
+		updates: Partial<Omit<NewReceiptContent, "id" | "receiptId">>,
+	): Promise<ReceiptContent | null>;
 	/** Delete receipt content */
 	deleteReceiptContent(id: string): Promise<boolean>;
+	/** Get receipts for a purchase (reimbursement) */
+	getReceiptsForPurchase(purchaseId: string): Promise<Receipt[]>;
+	/** Get incomplete inventory items (needs_completion = true) */
+	getIncompleteInventoryItems(): Promise<InventoryItem[]>;
+	/** Get app setting by key */
+	getAppSetting(key: string): Promise<AppSetting | null>;
 }

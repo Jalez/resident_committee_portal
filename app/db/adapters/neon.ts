@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { and, asc, desc, eq, isNull, notInArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
@@ -43,6 +43,9 @@ import {
 	budgetTransactions,
 	type Receipt,
 	receipts,
+	type ReceiptContent,
+	receiptContents,
+	type NewReceiptContent,
 	type Role,
 	roles,
 	type SocialLink,
@@ -55,6 +58,12 @@ import {
 	type User,
 	userRoles,
 	users,
+	type Minute,
+	minutes,
+	type NewMinute,
+	type MinuteLink,
+	minuteLinks,
+	type NewMinuteLink,
 } from "../schema";
 
 import type { DatabaseAdapter } from "./types";
@@ -142,7 +151,7 @@ export class NeonAdapter implements DatabaseAdapter {
 		}
 		// Create new user without roleId
 		const newUser = await this.createUser(user);
-		
+
 		// For new users, automatically assign the Resident role via junction table
 		const residentRole = await this.getRoleByName("Resident");
 		if (!residentRole) {
@@ -151,7 +160,7 @@ export class NeonAdapter implements DatabaseAdapter {
 			);
 		}
 		await this.setUserRoles(newUser.id, [residentRole.id]);
-		
+
 		return newUser;
 	}
 
@@ -279,7 +288,7 @@ export class NeonAdapter implements DatabaseAdapter {
 		await this.db
 			.delete(userRoles)
 			.where(eq(userRoles.userId, userId));
-		
+
 		// If no roles provided, assign default "Resident" role to prevent users from having no roles
 		let finalRoleIds = roleIds;
 		if (finalRoleIds.length === 0) {
@@ -291,7 +300,7 @@ export class NeonAdapter implements DatabaseAdapter {
 			}
 			finalRoleIds = [residentRole.id];
 		}
-		
+
 		await this.db.insert(userRoles).values(
 			finalRoleIds.map((roleId) => ({ userId, roleId })),
 		);
@@ -801,6 +810,8 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result[0];
 	}
 
+
+
 	async updateSubmissionStatus(
 		id: string,
 		status: SubmissionStatus,
@@ -820,6 +831,116 @@ export class NeonAdapter implements DatabaseAdapter {
 			.returning();
 		return result.length > 0;
 	}
+
+	// ==================== Minute Methods ====================
+	async getMinutes(year?: number): Promise<Minute[]> {
+		if (year) {
+			return this.db
+				.select()
+				.from(minutes)
+				.where(eq(minutes.year, year))
+				.orderBy(desc(minutes.date));
+		}
+		return this.db.select().from(minutes).orderBy(desc(minutes.date));
+	}
+
+	async getMinuteById(id: string): Promise<Minute | null> {
+		const result = await this.db
+			.select()
+			.from(minutes)
+			.where(eq(minutes.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async createMinute(minute: NewMinute): Promise<Minute> {
+		const result = await this.db.insert(minutes).values(minute).returning();
+		return result[0];
+	}
+
+	async updateMinute(
+		id: string,
+		data: Partial<Omit<NewMinute, "id">>,
+	): Promise<Minute | null> {
+		const result = await this.db
+			.update(minutes)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(minutes.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async deleteMinute(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(minutes)
+			.where(eq(minutes.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	// ==================== Minute Link Methods ====================
+	async createMinuteLink(link: NewMinuteLink): Promise<MinuteLink> {
+		const result = await this.db
+			.insert(minuteLinks)
+			.values(link)
+			.returning();
+		return result[0];
+	}
+
+	async deleteMinuteLink(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(minuteLinks)
+			.where(eq(minuteLinks.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	async getMinuteLinks(minuteId: string): Promise<MinuteLink[]> {
+		return this.db
+			.select()
+			.from(minuteLinks)
+			.where(eq(minuteLinks.minuteId, minuteId));
+	}
+
+	async getMinuteLinkByPurchaseId(purchaseId: string): Promise<MinuteLink | null> {
+		const result = await this.db
+			.select()
+			.from(minuteLinks)
+			.where(eq(minuteLinks.purchaseId, purchaseId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getMinuteLinkByNewsId(newsId: string): Promise<MinuteLink | null> {
+		const result = await this.db
+			.select()
+			.from(minuteLinks)
+			.where(eq(minuteLinks.newsId, newsId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getMinuteLinkByFaqId(faqId: string): Promise<MinuteLink | null> {
+		const result = await this.db
+			.select()
+			.from(minuteLinks)
+			.where(eq(minuteLinks.faqId, faqId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getMinuteLinkByInventoryItemId(
+		inventoryItemId: string,
+	): Promise<MinuteLink | null> {
+		const result = await this.db
+			.select()
+			.from(minuteLinks)
+			.where(eq(minuteLinks.inventoryItemId, inventoryItemId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+
 
 	// ==================== Social Link Methods ====================
 	async getSocialLinks(): Promise<SocialLink[]> {
@@ -1602,5 +1723,81 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(receipts.id, id))
 			.returning();
 		return result.length > 0;
+	}
+
+	// ==================== Receipt Content Methods (OCR) ====================
+	async getReceiptContentByReceiptId(
+		receiptId: string,
+	): Promise<ReceiptContent | null> {
+		const result = await this.db
+			.select()
+			.from(receiptContents)
+			.where(eq(receiptContents.receiptId, receiptId))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async getReceiptContentsByReceiptIds(
+		receiptIds: string[],
+	): Promise<ReceiptContent[]> {
+		if (receiptIds.length === 0) return [];
+		return this.db
+			.select()
+			.from(receiptContents)
+			.where(inArray(receiptContents.receiptId, receiptIds));
+	}
+
+	async createReceiptContent(
+		content: NewReceiptContent,
+	): Promise<ReceiptContent> {
+		const result = await this.db
+			.insert(receiptContents)
+			.values(content)
+			.returning();
+		return result[0];
+	}
+
+	async deleteReceiptContent(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(receiptContents)
+			.where(eq(receiptContents.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	async updateReceiptContent(
+		id: string,
+		updates: Partial<Omit<NewReceiptContent, "id" | "receiptId">>,
+	): Promise<ReceiptContent | null> {
+		const result = await this.db
+			.update(receiptContents)
+			.set({ ...updates, updatedAt: new Date() })
+			.where(eq(receiptContents.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
+	async getReceiptsForPurchase(purchaseId: string): Promise<Receipt[]> {
+		return this.db
+			.select()
+			.from(receipts)
+			.where(eq(receipts.purchaseId, purchaseId));
+	}
+
+	async getIncompleteInventoryItems(): Promise<InventoryItem[]> {
+		return this.db
+			.select()
+			.from(inventoryItems)
+			.where(eq(inventoryItems.needsCompletion, true))
+			.orderBy(desc(inventoryItems.createdAt));
+	}
+
+	async getAppSetting(key: string): Promise<AppSetting | null> {
+		const result = await this.db
+			.select()
+			.from(appSettings)
+			.where(eq(appSettings.key, key))
+			.limit(1);
+		return result[0] ?? null;
 	}
 }
