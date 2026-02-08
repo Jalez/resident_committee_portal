@@ -1,1555 +1,1269 @@
 {
-	"common": {
-		"date": "Päivämäärä",
-		"time": "Aika",
-		"actions": {
-			"delete": "Poista",
-			"edit": "Muokkaa",
-			"add": "Lisää",
-			"create": "Luo",
-			"remove": "Poista",
-			"search": "Hae",
-			"filter": "Suodata",
-			"clear": "Tyhjennä",
-			"select": "Valitse",
-			"view": "Näytä",
-			"submit": "Lähetä",
-			"open": "Avaa",
-			"export": "Vie",
-			"import": "Tuo",
-			"continue": "Jatka",
-			"confirm": "Vahvista",
-			"sort": "Järjestä",
-			"back": "Takaisin",
-			"all": "Kaikki",
-			"details": "Tiedot",
-			"loading": "Ladataan...",
-			"update": "Päivitä"
-		},
-		"filters": {
-			"all": "Kaikki kategoriat"
-		},
-		"no_results": "Ei tuloksia",
-		"total": "Yhteensä",
-		"fields": {
-			"name": "Nimi",
-			"email": "Sähköposti",
-			"description": "Kuvaus",
-			"amount": "Summa",
-			"price": "Hinta",
-			"free": "Ilmainen",
-			"date": "Päivämäärä",
-			"status": "Tila",
-			"type": "Tyyppi",
-			"title": "Otsikko",
-			"search": "Haku",
-			"year": "Vuosi",
-			"category": "Kategoria",
-			"created_by": "Luoja",
-			"location": "Sijainti",
-			"message": "Viesti",
-			"content": "Sisältö",
-			"quantity": "Määrä",
-			"unit": "Yksikkö",
-			"value": "Arvo",
-			"url": "Osoite",
-			"icon": "Kuvake",
-			"color": "Väri",
-			"order": "Järjestys",
-			"active": "Aktiivinen",
-			"all_day": "Koko päivä",
-			"start_date": "Alkamispäivä",
-			"end_date": "Päättymispäivä",
-			"start_time": "Alkamisaika",
-			"end_time": "Päättymisaika",
-			"primary": "Ensisijainen",
-			"hidden": "Piilotettu",
-			"none": "Ei mitään"
-		},
-		"file_upload": {
-			"drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
-			"drop_file": "Pudota tiedosto tähän"
-		},
-		"placeholders": {
-			"search": "Hae...",
-			"select": "Valitse...",
-			"title": "Anna otsikko...",
-			"description": "Anna kuvaus..."
-		},
-		"sections": {
-			"basic_info": "Perustiedot",
-			"date_time": "Ajankohta",
-			"attendees": "Osallistujat"
-		},
-		"status": {
-			"loading": "Ladataan...",
-			"success": "Onnistui",
-			"error": "Virhe",
-			"pending": "Odottaa",
-			"approved": "Hyväksytty",
-			"rejected": "Hylätty",
-			"done": "Valmis",
-			"saved": "Tallennettu",
-			"saving": "Tallennetaan..."
-		}
-	},
-	"app": {
-		"title": "Asukastoimikunta",
-		"setup_required": "Asetukset tarvitaan",
-		"setup_message": "Sovellusta ei ole vielä määritetty. Tarkista ympäristömuuttujat.",
-		"error_details": "Virheen tiedot",
-		"open_setup": "Avaa asennusopas",
-		"copy_env": "Tai kopioi .env.template tiedostoon .env ja määritä asetukset."
-	},
-	"nav": {
-		"menu": "Valikko",
-		"navigation": "Navigointi",
-		"settings": "Asetukset",
-		"profile": "Profiili",
-		"edit_profile": "Muokkaa profiilia",
-		"messages": "Viestit",
-		"log_out": "Kirjaudu ulos",
-		"users": "Käyttäjät",
-		"roles": "Roolit",
-		"avatars": "Avatarit",
-		"reimbursements": "Korvaukset",
-		"get_involved": "Osallistu",
-		"events": "Tapahtumat",
-		"treasury": "Rahasto",
-		"receipts": "Kuitit",
-		"minutes": "Pöytäkirjat",
-		"news": "Uutiset",
-		"faq": "UKK",
-		"inventory": "Tavaraluettelo",
-		"social": "Sosiaalinen media",
-		"analytics": "Analytiikka",
-		"polls": "Kyselyt",
-		"committee": "Toimikunta",
-		"login": "Kirjaudu",
-		"submissions": "Yhteydenotot",
-		"committee_mail": "Sähköposti",
-		"sidebar_collapse": "Kutista valikko",
-		"sidebar_expand": "Laajenna valikko",
-		"admin": "Ylläpito"
-	},
-	"receipts": {
-		"select_receipts": "Valitse kuitit",
-		"selected": "Valitut kuitit",
-		"add_more": "Lisää kuitteja",
-		"open_drive": "Avaa kuittikansio",
-		"open_folder": "Avaa kuittikansio",
-		"search_placeholder": "Hae kuitteja...",
-		"refresh": "Päivitä kuittilista",
-		"upload_new": "Lataa uusi kuitti",
-		"upload_unavailable": "Lataus ei ole käytettävissä",
-		"upload_failed": "Lataus epäonnistui. Yritä uudelleen.",
-		"file_too_large": "Tiedosto on liian suuri (max {{size}}MB).",
-		"invalid_type": "Virheellinen tiedostotyyppi. Sallitut: {{types}}",
-		"uploading": "Ladataan...",
-		"upload_notice": "Suuret tiedostot voivat latautua hetken.",
-		"no_receipts": "Ei kuitteja vuodelta {{year}}",
-		"done": "Valmis",
-		"open": "Avaa",
-		"delete": "Poista",
-		"select_existing_or_upload": "Valitse olemassa olevat kuitit tai lataa uusi kuitti.",
-		"allowed": "Sallitut",
-		"selected_count": "valittu",
-		"analyze_with_ai": "Analysoi tekoälyllä (OCR)"
-	},
-	"lang": {
-		"name": "Suomi",
-		"label": "Kieli"
-	},
-	"search_menu": {
-		"title": "Haku",
-		"filter": "Suodata",
-		"search": "Hae",
-		"clear": "Tyhjennä",
-		"select_placeholder": "Valitse..."
-	},
-	"home": {
-		"header": "Osallistu",
-		"contact": {
-			"title": "Ota yhteyttä"
-		},
-		"options": {
-			"committee": {
-				"title": "Hae toimikuntaan"
-			},
-			"events": {
-				"title": "Ehdota tapahtumia"
-			},
-			"purchases": {
-				"title": "Pyydä hankintoja"
-			},
-			"questions": {
-				"title": "Esitä kysymyksiä"
-			}
-		}
-	},
-	"treasury": {
-		"overview": "Yleiskuva",
-		"title": "Rahasto {{year}}",
-		"year": "Vuosi",
-		"select_year": "Valitse vuosi...",
-		"success": {
-			"transaction_created": "Tapahtuma lisätty",
-			"reimbursement_requested": "Kulukorvaushakemus lähetetty",
-			"transaction_deleted": "Tapahtuma poistettu"
-		},
-		"view_breakdown": "Katso erittely",
-		"balance": "Saldo",
-		"income": "Tulot",
-		"unbudgeted_transactions": "Budjetoimattomat transaktiot",
-		"budgeted_transactions": "Budjetoidut transaktiot",
-		"budget_costs": "Budjetoidut menot",
-		"available": "Käytettävissä",
-		"transactions_count": "{{count}} tapahtumaa",
-		"no_transactions": "Ei tapahtumia",
-		"no_transactions_desc": "Vuodelle {{year}} ei ole vielä kirjattu tapahtumia.",
-		"add_transaction": "Lisää tapahtuma",
-		"receipts": {
-			"title": "Kuitit",
-			"new": "Uusi kuitti",
-			"edit": "Muokkaa kuittia",
-			"edit_description": "Muokkaa kuittin tietoja. Tiedostoa ei voi vaihtaa tässä näkymässä.",
-			"add": "Lisää kuitti",
-			"link": "Linkki",
-			"open": "Avaa",
-			"view": "Näytä",
-			"reimbursement_request": "Kulukorvaushakemus",
-			"rename": "Nimeä uudelleen",
-			"rename_placeholder": "Kuvaus (valinnainen)",
-			"no_receipts": "Ei kuitteja tälle vuodelle",
-			"upload_success": "Kuitti ladattu",
-			"rename_success": "Nimi päivitetty",
-			"rename_error": "Nimen muutos epäonnistui",
-			"upload_error": "Lataus epäonnistui",
-			"uploading": "Ladataan...",
-			"open_pdf": "Avaa PDF",
-			"delete": "Poista kuitti",
-			"delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
-			"delete_success": "Kuitti poistettu",
-			"delete_error": "Poisto epäonnistui",
-			"new_description": "Lataa uusi kuitti ja linkitä se tarvittaessa kulukorvaushakemukseen.",
-			"file": "Tiedosto",
-			"allowed_types": "Sallitut tiedostotyypit",
-			"name_placeholder": "Kuittin nimi (valinnainen)",
-			"name_hint": "Jos jätät tyhjäksi, käytetään tiedoston nimeä.",
-			"description_placeholder": "Kuvaile kuittia tarvittaessa",
-			"link_to_reimbursement": "Linkitä kulukorvaushakemukseen",
-			"select_reimbursement": "Valitse kulukorvaushakemus...",
-			"link_hint": "Valinnainen: Linkitä kuitti olemassa olevaan kulukorvaushakemukseen, jota ei ole vielä lähetetty.",
-			"drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
-			"drop_file": "Pudota tiedosto tähän",
-			"invalid_file_type": "Virheellinen tiedostotyyppi. Sallitut tyypit: {{types}}",
-			"form": {
-				"create": "Luo kuitti",
-				"cancel": "Peruuta"
-			},
-			"success": {
-				"receipt_created": "Kuitti luotu",
-				"receipt_updated": "Kuitti päivitetty"
-			},
-			"gallery": {
-				"title": "Kuittigalleria",
-				"description": "Kaikki kuittitiedostot. Linkitetyt kuitit on liitetty kulukorvaushakemukseen eikä niitä voi poistaa.",
-				"empty": "Ei kuitteja",
-				"linked": "Linkitetty",
-				"unlinked": "Ei linkitetty",
-				"link": "Galleria"
-			},
-			"ai_analysis": "Tekoälyanalyysi",
-			"no_analysis_yet": "Kuittia ei ole vielä analysoitu tekoälyllä.",
-			"analyze_now": "Analysoi tekoälyllä",
-			"ai_results": "Tekoälyn tulokset",
-			"store": "Liike",
-			"date": "Päivämäärä",
-			"total": "Loppusumma",
-			"extracted_items": "Tunnistetut tuotteet",
-			"quantity": "Määrä",
-			"price": "Hinta",
-			"raw_text": "Raakateksti",
-			"re_analyze": "Analysoi uudelleen"
-		},
-		"actions": {
-			"breakdown": "Erittely",
-			"transactions": "Transaktiovirta",
-			"receipts": "Kuitit",
-			"reimbursements": "Kulukorvaushakemukset",
-			"budgets": "Budjetit",
-			"add": "Lisää"
-		},
-		"new": {
-			"title": "Uusi transaktio",
-			"header": "Uusi transaktio",
-			"details_header": "Transaktion tiedot",
-			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
-			"items_selected": "{{count}} tavaraa valittu",
-			"total": "Yhteensä",
-			"select_items": "Valitse tavarat",
-			"edit_selection": "Muokkaa valintaa",
-			"request_reimbursement": "Tee kulukorvaushakemus",
-			"reimbursement_help": "Valitse jos haluat hakea kulukorvausta tästä menosta määrärahasta.",
-			"link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
-			"link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä transaktio linkitetään.",
-			"select_reimbursement_placeholder": "Valitse kulukorvaus...",
-			"no_link": "Älä linkitä",
-			"or": "tai",
-			"submit": "Lisää",
-			"submit_and_request": "Lisää ja hae korvausta",
-			"link_budget": "Linkitä budjettiin",
-			"link_budget_help": "Valinnainen: Käytä varoja olemassa olevasta budjetista.",
-			"no_budget": "Älä käytä budjettia",
-			"budget_note": "Menon summa vähennetään valitusta budjetista."
-		},
-		"form": {
-			"type": "Tyyppi",
-			"amount": "Summa €",
-			"description": "Kuvaus",
-			"description_placeholder": "Esim. Kahvitarjoilut, Kokoukseen hankitut eväät",
-			"category": "Kategoria",
-			"date": "Päivämäärä",
-			"year": "Vuosi"
-		},
-		"placeholders": {
-			"select_type": "Valitse tyyppi...",
-			"select_category": "Valitse kategoria...",
-			"select_year": "Valitse vuosi..."
-		},
-		"types": {
-			"income": "Tulo",
-			"expense": "Meno"
-		},
-		"categories": {
-			"inventory": "Tavarat",
-			"snacks": "Eväät",
-			"event": "Tapahtuma",
-			"other": "Muu",
-			"grant": "Avustus",
-			"sales": "Myynti",
-			"event_income": "Tapahtumatulo",
-			"membership": "Jäsenmaksut"
-		},
-		"transactions": {
-			"title": "Transaktiot",
-			"back": "Takaisin",
-			"new": "Uusi transaktio",
-			"all": "Kaikki",
-			"type": "Tyyppi",
-			"status": "Tila",
-			"reimbursement_status": "Kulukorvaus",
-			"total_income": "Tulot yhteensä",
-			"total_expenses": "Menot yhteensä"
-		},
-		"reimbursements": {
-			"title": "Kulukorvaushakemukset",
-			"back": "Takaisin",
-			"new": "Uusi",
-			"status": "Tila",
-			"date": "Päivä",
-			"description": "Kuvaus",
-			"purchaser": "Ostaja",
-			"receipts": "Kuitit",
-			"view_receipt": "Näytä kuitti",
-			"amount": "Summa",
-			"transaction": "Tapahtuma",
-			"view_transaction": "Näytä tapahtuma",
-			"email_sent": "Sähköposti lähetetty",
-			"reply_received": "Vastaus vastaanotettu",
-			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
-			"use_as_template": "Käytä pohjana",
-			"link_transaction": "Linkitä tapahtuma",
-			"access_denied": "Ei käyttöoikeutta",
-			"all": "Kaikki",
-			"statuses": {
-				"pending": "Odottaa",
-				"approved": "Hyväksytty",
-				"reimbursed": "Maksettu",
-				"rejected": "Hylätty"
-			},
-			"view": {
-				"title": "Näytä kulukorvaus"
-			},
-			"edit": {
-				"title": "Muokkaa kulukorvausta",
-				"reimbursement_details": "Kulukorvauksen tiedot",
-				"resend_reimbursement_request": "Lähetä kulukorvauspyyntö uudelleen",
-				"resend_reimbursement_request_help": "Valitse tämä lähettääksesi kulukorvauspyynnön sähköpostin uudelleen päivitettyjen tietojen kanssa.",
-				"cancel": "Peruuta",
-				"save": "Tallenna",
-				"error": "Tapahtui virhe"
-			}
-		},
-		"new_reimbursement": {
-			"title": "Uusi kulukorvaus",
-			"subtitle": "New Reimbursement",
-			"purchase_details": "Ostoksen tiedot",
-			"description": "Kuvaus",
-			"description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
-			"amount": "Summa €",
-			"receipts": "Kuitit",
-			"select_receipt_error": "Valitse vähintään yksi kuitti",
-			"purchaser_name": "Ostajan nimi",
-			"purchaser_placeholder": "Etu- ja sukunimi",
-			"bank_account": "Tilinumero (IBAN)",
-			"minutes": "Pöytäkirja",
-			"select_minutes": "Valitse pöytäkirja...",
-			"minutes_help": "Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.",
-			"notes": "Lisätiedot",
-			"notes_placeholder": "Vapaamuotoinen viesti...",
-			"add_to_inventory": "Lisää myös inventaarioon",
-			"location": "Sijainti",
-			"category": "Kategoria",
-			"cancel": "Peruuta",
-			"submit": "Lähetä",
-			"submitting": "Lähetetään...",
-			"receipt_uploaded": "Kuitti ladattu",
-			"error": "Virhe",
-			"email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
-			"location_placeholder": "Esim. Kerhohuone",
-			"category_placeholder": "Esim. Keittiö",
-			"link_existing_transaction": "Liitä olemassa olevaan transaktioon",
-			"link_existing_transaction_help": "Valitse olemassa oleva transaktio, johon tämä kulukorvaus liitetään.",
-			"select_transaction_placeholder": "Valitse transaktio...",
-			"create_new": "Luo uusi transaktio",
-			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
-			"reimbursement_details": "Kulukorvauksen tiedot",
-			"transaction_section_title": "Transaktio",
-			"create_transaction": "Luo myös transaktiokirjaus",
-			"create_transaction_help": "Valitse tämä luodaksesi transaktiokirjauksen tälle kulukorvaukselle.",
-			"no_link": "Älä liitä olemassa olevaan transaktioon"
-		},
-		"breakdown": {
-			"title": "Rahastoerittely",
-			"back": "Takaisin",
-			"income": "Tulot",
-			"expenses": "Menot",
-			"balance": "Saldo",
-			"transactions": "Transaktiot",
-			"no_transactions": "Ei tapahtumia tälle vuodelle",
-			"date": "Päivä",
-			"description": "Kuvaus",
-			"category": "Kategoria",
-			"status": "Tila",
-			"reimbursement_status": "Kulukorvauksen tila",
-			"amount": "Summa",
-			"export": "Lataa CSV",
-			"import": "Tuo CSV",
-			"import_success": "Tuotu {{count}} tapahtumaa",
-			"import_error": "Tuonti epäonnistui",
-			"statuses": {
-				"complete": "Valmis",
-				"pending": "Odottaa",
-				"paused": "Keskeytetty",
-				"declined": "Hylätty"
-			},
-			"view": {
-				"title": "Näytä tapahtuma"
-			},
-			"edit": {
-				"title": "Muokkaa tapahtumaa",
-				"subtitle": "Edit Transaction",
-				"editable_fields": "Muokattavat tiedot",
-				"save": "Tallenna",
-				"save_links": "Tallenna linkitykset",
-				"cancel": "Peruuta",
-				"delete": "Poista tapahtuma",
-				"delete_title": "Poista tapahtuma?",
-				"delete_confirm": "Haluatko varmasti poistaa tämän tapahtuman? Tätä toimintoa ei voi peruuttaa.",
-				"delete_blocked": "Poistaminen estetty",
-				"linked_reimbursement": "Linkitetty kulukorvaus",
-				"purchaser": "Ostaja",
-				"iban": "Tilinumero",
-				"minutes": "Pöytäkirja",
-				"email": "Sähköposti",
-				"email_sent": "Lähetetty",
-				"email_not_sent": "Ei lähetetty",
-				"items_to_add": "Lisättävät tavarat",
-				"items_to_add_desc": "Valitse tavarat jotka linkitetään tähän tapahtumaan.",
-				"no_items_to_add": "Ei lisättäviä tavaroita",
-				"link_items": "Linkitä {{count}} tavaraa nyt",
-				"linked_items": "Linkitetyt tavarat",
-				"no_linked_items": "Ei linkitettyjä tavaroita",
-				"items_linked_success": "Tavarat linkitetty",
-				"title_with_desc": "Muokkaa: {{desc}}",
-				"delete_error_linked": "Tapahtumaa ei voi poistaa koska siihen on linkitetty aktiivisia tavaroita: {{names}}. Poista tai merkitse tavarat Legacy-tilaan ensin.",
-				"reimbursement_statuses": {
-					"not_requested": "Ei haettu",
-					"requested": "Haettu",
-					"approved": "Hyväksytty",
-					"declined": "Hylätty"
-				},
-				"statuses": {
-					"complete": "Valmis",
-					"pending": "Odottaa",
-					"paused": "Tauolla",
-					"declined": "Hylätty"
-				}
-			}
-		},
-		"budgets": {
-			"title": "Budjetit",
-			"back": "Takaisin",
-			"new": "Uusi budjetti",
-			"name": "Budjetin nimi",
-			"name_placeholder": "Esim. Kitaran hankinta",
-			"description": "Kuvaus",
-			"description_placeholder": "Lisätietoja budjetista",
-			"amount": "Varattu summa",
-			"used": "Käytetty",
-			"reserved": "Varattu",
-			"available": "Käytettävissä",
-			"remaining": "Jäljellä",
-			"status": "Tila",
-			"created_by": "Luoja",
-			"created_at": "Luotu",
-			"year": "Vuosi",
-			"statuses": {
-				"open": "Avoinna",
-				"closed": "Suljettu"
-			},
-			"actions": {
-				"view": "Näytä",
-				"edit": "Muokkaa",
-				"delete": "Poista",
-				"close": "Sulje budjetti",
-				"reopen": "Avaa uudelleen"
-			},
-			"close_confirm": "Budjetin sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
-			"reopen_confirm": "Avaa tämä budjetti uudelleen?",
-			"delete_confirm": "Poista tämä budjetti? Tätä ei voi peruuttaa.",
-			"cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
-			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
-			"linked_transactions": "Linkitetyt transaktiot",
-			"no_transactions": "Ei linkitettyjä transaktioita",
-			"deduct_from": "Vähennä budjetista",
-			"select_budget": "Valitse budjetti...",
-			"no_budget": "Älä linkitä budjettiin",
-			"deduction_amount": "Vähennyssumma",
-			"available_in_budget": "Käytettävissä: {{available}}",
-			"exceeds_available": "Summa ylittää budjetin käytettävissä olevat varat",
-			"no_budgets": "Ei budjetteja",
-			"no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
-			"available_funds": "Käytettävissä olevat varat",
-			"reserved_funds": "Varatut varat",
-			"success": {
-				"created": "Budjetti luotu",
-				"updated": "Budjetti päivitetty",
-				"deleted": "Budjetti poistettu",
-				"closed": "Budjetti suljettu",
-				"reopened": "Budjetti avattu uudelleen"
-			},
-			"error": {
-				"create_failed": "Budjetin luonti epäonnistui",
-				"update_failed": "Budjetin päivitys epäonnistui",
-				"delete_failed": "Budjetin poisto epäonnistui",
-				"has_transactions": "Budjettia ei voi poistaa, koska siihen on linkitetty transaktioita"
-			},
-			"form": {
-				"cancel": "Peruuta",
-				"save": "Tallenna",
-				"create": "Luo budjetti"
-			},
-			"view": {
-				"title": "Näytä budjetti"
-			},
-			"edit": {
-				"title": "Muokkaa budjettia"
-			}
-		}
-	},
-	"inventory": {
-		"title": "Tavaraluettelo",
-		"meta_title": "Tavaraluettelo",
-		"meta_description": "Toimikunnan tavaraluettelo",
-		"unit": "kpl",
-		"search": {
-			"name_label": "Nimi",
-			"name_placeholder": "Hae nimellä...",
-			"location_label": "Sijainti",
-			"location_all": "Kaikki sijainnit",
-			"category_label": "Kategoria",
-			"category_all": "Kaikki kategoriat",
-			"columns": "Sarakkeet",
-			"filters": "Suodattimet"
-		},
-		"columns": {
-			"status": "Tila",
-			"name": "Nimi",
-			"location": "Sijainti",
-			"category": "Kategoria",
-			"description": "Kuvaus",
-			"updated": "Päivitetty",
-			"unit_value": "Kpl-arvo",
-			"quantity": "Määrä",
-			"total_value": "Yht. arvo",
-			"transactions": "Tapahtumat",
-			"info_reel": "Info Reel"
-		},
-		"actions": {
-			"menu": "Toiminnot",
-			"add": "Lisää",
-			"close": "Sulje",
-			"export": "Vie CSV",
-			"export_short": "Vie",
-			"import": "Tuo CSV",
-			"import_short": "Tuo",
-			"selected": "Valitut",
-			"report": "Ilmoita",
-			"treasury": "Rahastotapahtumat",
-			"add_to_new": "Lisää uuteen",
-			"add_to_existing": "Lisää olemassaolevaan",
-			"no_transaction": "Ei tapahtumaa",
-			"remove": "Poista",
-			"unlink": "Poista linkki",
-			"remove_marker": "Poista merkintä"
-		},
-		"badge_unknown_title": "Selittämätön määrä – klikkaa valintoja varten",
-		"badge_connect_existing": "Yhdistä olemassa olevaan tapahtumaan",
-		"badge_create_new_transaction": "Luo uusi tapahtuma",
-		"badge_linked_to_transaction": "Yhdistetty tapahtumaan",
-		"inline_edit_saved": "Tallennettu",
-		"messages": {
-			"importing": "Tuodaan tiedostoa...",
-			"import_success": "Tuotu {{count}} riviä",
-			"import_error": "Virhe: {{error}}"
-		},
-		"add_row": {
-			"name_placeholder": "Nimi...",
-			"location_placeholder": "Sijainti...",
-			"category_placeholder": "Kategoria...",
-			"description_placeholder": "Kuvaus...",
-			"search_placeholder": "Etsi...",
-			"new_text": "Uusi",
-			"required_field": "Pakollinen kenttä"
-		},
-		"form": {
-			"title_new": "Uusi tavara",
-			"title_edit": "Muokkaa tavaraa",
-			"details_header": "Tavaran tiedot",
-			"name_label": "Nimi",
-			"name_placeholder": "Valitse tai kirjoita nimi...",
-			"name_search_placeholder": "Etsi tavaraa...",
-			"name_empty": "Ei löydy.",
-			"quantity_label": "Määrä",
-			"location_label": "Sijainti",
-			"location_placeholder": "Valitse tai kirjoita...",
-			"location_search_placeholder": "Etsi sijaintia...",
-			"location_empty": "Ei listalla.",
-			"category_label": "Kategoria",
-			"category_placeholder": "Valitse tai kirjoita...",
-			"category_search_placeholder": "Etsi kategoriaa...",
-			"description_label": "Kuvaus",
-			"description_placeholder": "Lisätietoja tavarasta",
-			"value_label": "Arvo €",
-			"value_placeholder": "0.00",
-			"purchased_at_label": "Hankintapäivä",
-			"show_in_info_reel": "Näytä Info Reelissä",
-			"save": "Tallenna",
-			"cancel": "Peruuta",
-			"add": "Lisää",
-			"add_and_request": "Lisää ja hae korvausta",
-			"add_to_treasury_btn": "Lisää tavaraan ja rahastoon",
-			"example": "Esim. {{example}}"
-		},
-		"new": {
-			"add_treasury_label": "Lisää rahastotapahtuma",
-			"add_treasury_desc": "Valitse jos haluat luoda menon rahaston erittelyyn tämän hankinnan perusteella.",
-			"duplicate_warning": "Mahdollinen duplikaatti: {{examples}}. Varmista, ettei samanlaista tapahtumaa ole jo lisätty.",
-			"request_reimbursement_label": "Tee kulukorvaushakemus",
-			"request_reimbursement_desc": "Valitse jos haluat hakea kulukorvausta määrärahasta."
-		},
-		"modals": {
-			"report_title": "Ilmoita ongelmasta",
-			"selected_items": "Valitut tavarat:",
-			"describe_issue": "Kuvaile ongelma tai mitä pitäisi muuttaa...",
-			"cancel": "Peruuta",
-			"send": "Lähetä",
-			"confirm_unlink_title": "Poista yhdistäminen?",
-			"confirm_unlink_desc": "Tämä poistaa tavaran yhdistämisen valittuun tapahtumaan.",
-			"confirm_unlink_details": "Tavara: {{name}} ({{count}} kpl)\nTapahtuma: {{description}} ({{date}})",
-			"unlink": "Poista yhdistäminen",
-			"confirm_delete_many_title": "Poistetaanko tavarat?",
-			"confirm_delete_many_desc": "Haluatko varmasti poistaa {{count}} tavaraa pysyvästi?",
-			"quantity_selection": {
-				"title_no_txn": "Merkitse ei tapahtumaa",
-				"title_existing": "Lisää olemassaolevaan",
-				"title_txn": "Lisää rahastotapahtumaan",
-				"desc_no_txn": "Valitse kuinka monta kappaletta kustakin tavarasta merkitään ilman tapahtumaa.",
-				"desc_existing": "Valitse kuinka monta kappaletta kustakin tavarasta lisätään olemassaolevaan tapahtumaan.",
-				"desc_txn": "Valitse kuinka monta kappaletta kustakin tavarasta lisätään tapahtumaan.",
-				"available": "Saatavilla",
-				"continue": "Jatka",
-				"confirm": "Vahvista"
-			},
-			"remove": {
-				"title": "Poista tavaraa",
-				"current_quantity": "Nykyinen määrä",
-				"linked_transactions": "Yhdistetyt tapahtumat",
-				"linked_desc": "Valitse mistä tapahtumasta poistat ja kuinka monta.",
-				"expense": "Meno",
-				"income": "Tulo",
-				"linked": "Linkitetty",
-				"no_linked_txns": "Tähän tavaraan ei ole yhdistetty tapahtumia.",
-				"no_linked_desc": "Voit poistaa sen suoraan tai merkitä sen 'legacy'-tavaraksi.",
-				"reason": "Syy",
-				"notes_optional": "Lisätiedot (valinnainen)",
-				"notes_placeholder": "Lisää tarvittaessa lisätietoja...",
-				"removing": "Poistat",
-				"item_will_be_removed": "Tavara merkitään poistetuksi",
-				"remove_count": "Poista {{count}} kpl",
-				"remove_item": "Poista tavara",
-				"reasons": {
-					"broken": "Rikki",
-					"used_up": "Käytetty loppuun",
-					"lost": "Kadonnut",
-					"sold": "Myyty",
-					"other": "Muu"
-				}
-			},
-			"transaction_selector": {
-				"title": "Valitse tapahtuma",
-				"desc": "Valitse tapahtuma, johon haluat lisätä valitut tavarat.",
-				"no_suitable": "Ei sopivia tapahtumia",
-				"select": "Valitse"
-			}
-		},
-		"info_reel": {
-			"no_items": "Ei näytettäviä tavaroita"
-		},
-		"status": {
-			"removed": "Poistettu"
-		}
-	},
-	"minutes": {
-		"title": "Pöytäkirjat",
-		"meta_description": "Toimikunnan kokouspöytäkirjat",
-		"all_minutes": "Kaikki pöytäkirjat",
-		"archive": "Arkisto",
-		"no_results": "Ei tuloksia",
-		"no_minutes": "Ei pöytäkirjoja",
-		"no_minutes_yet": "Ei vielä pöytäkirjoja",
-		"this_year": "Tämä vuosi",
-		"search": {
-			"name_label": "Nimi",
-			"name_placeholder": "Hae nimellä...",
-			"year_label": "Vuosi",
-			"year_placeholder": "Valitse vuosi..."
-		},
-		"naming_guide": {
-			"title": "Pöytäkirjojen nimeäminen",
-			"use_format": "Käytä muotoa",
-			"example": "Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin."
-		}
-	},
-	"profile": {
-		"title": "Profiili",
-		"update_success": "Profiili päivitetty!",
-		"email_label": "Sähköposti",
-		"email_help": "Sähköpostia ei voi muuttaa",
-		"name_label": "Nimi",
-		"apartment_label": "Asuntonumero",
-		"optional": "vapaaehtoinen",
-		"apartment_placeholder": "esim. A 101",
-		"apartment_help": "Asuntonumeroa käytetään äänestysten validointiin",
-		"role_label": "Rooli",
-		"member_since_label": "Jäsen alkaen",
-		"description_label": "Kuvaus",
-		"description_placeholder": "Kerro itsestäsi...",
-		"picture_label": "Profiilikuva",
-		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä. Voit ladata oman kuvasi alla.",
-		"upload_picture": "Lataa uusi kuva",
-		"use_google_picture": "Käytä Google-kuvaa",
-		"use_google_picture_success": "Profiilikuva tyhjennetty. Se päivittyy Google-tilistä seuraavalla kirjautumisella.",
-		"picture_invalid_type": "Virheellinen tiedostotyyppi. Käytä JPG-, PNG- tai WebP-muotoa.",
-		"picture_too_large": "Tiedosto on liian suuri. Maksimikoko on {{maxSize}}MB.",
-		"picture_too_large_dimensions": "Kuvan mitat ovat liian suuret. Maksimikoko on {{maxDimension}}x{{maxDimension}}px.",
-		"picture_updated": "Profiilikuva päivitetty.",
-		"picture_upload_error": "Profiilikuvan päivitys epäonnistui.",
-		"local_ai": {
-			"title": "Paikalliset tekoälymallit",
-			"description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
-			"enabled": "Ota paikalliset tekoälymallit käyttöön",
-			"enable_label": "Ota paikalliset tekoälymallit käyttöön",
-			"enable_help": "Salli sivujen käyttää paikallista Ollama-instanssia käännöksiin.",
-			"url_label": "Ollama URL",
-			"url_placeholder": "http://localhost:11434",
-			"url_help": "URL johon Ollama on käynnistetty. Oletus: http://localhost:11434",
-			"test_connection": "Testaa yhteyttä",
-			"testing": "Testataan...",
-			"connection_success": "Yhteys onnistui! Löydettiin {{count}} mallia.",
-			"connection_failed": "Yhteys epäonnistui. Varmista, että Ollama on käynnissä ja CORS on käytössä.",
-			"connection_error": "Yhteysvirhe",
-			"cors_title": "Selainkäyttö (CORS)",
-			"cors_help": "Selainyhteyksiä varten käynnistä Ollama: OLLAMA_ORIGINS=* ollama serve"
-		}
-	},
-	"avatars": {
-		"title": "Avatarit",
-		"description": "Tallennetut profiilikuvat. Poista tarpeen mukaan.",
-		"empty": "Avatar-kuvia ei ole vielä ladattu.",
-		"delete": "Poista",
-		"delete_confirm": "Haluatko varmasti poistaa tämän avatar-kuvan?",
-		"delete_success": "Avatar poistettu",
-		"delete_error": "Poisto epäonnistui"
-	},
-	"admin": {
-		"storage": {
-			"receipts": "Kuitit",
-			"avatars": "Avatarit",
-			"receipts.title": "Kuittivalikoima",
-			"receipts.description": "Kaikki kuittitiedostot. Linkitetyt kuitit on liitetty korvauspyyntöön, eikä niitä voi poistaa.",
-			"receipts.empty": "Ei kuitteja",
-			"receipts.delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
-			"receipts.delete_success": "Kuitti poistettu",
-			"receipts.delete_error": "Poisto epäonnistui",
-			"receipts.open_pdf": "Avaa PDF",
-			"receipts.linked": "Linkitetty",
-			"receipts.unlinked": "Ei linkitetty",
-			"receipts.reimbursement_request": "Korvauspyyntö",
-			"avatars.title": "Avatarit",
-			"avatars.description": "Kaikki järjestelmään tallennetut käyttäjien avatar-kuvat.",
-			"avatars.empty": "Ei avatar-kuvia",
-			"avatars.delete": "Poista",
-			"avatars.delete_confirm": "Haluatko varmasti poistaa tämän avatarin?",
-			"avatars.delete_success": "Avatar poistettu",
-			"avatars.delete_error": "Poistaminen epäonnistui"
-		}
-	},
-	"local_ai": {
-		"model_selector": {
-			"label": "Paikallinen malli",
-			"placeholder": "Valitse malli...",
-			"loading": "Ladataan...",
-			"not_connected": "Ei yhteyttä Ollamaan",
-			"no_models": "Malleja ei löytynyt",
-			"connection_failed": "Yhteys epäonnistui",
-			"connection_error": "Yhteysvirhe",
-			"select_model": "Valitse malli",
-			"disabled": "Pois käytöstä",
-			"model_count": "{{count}} mallia"
-		},
-		"translate": {
-			"button_tooltip": "{{source}} → {{target}} (Käännä)",
-			"tooltip": "Käännä paikallisella tekoälyllä",
-			"translating": "Käännetään...",
-			"input_not_found": "Lähde- tai kohdekenttää ei löytynyt",
-			"empty_source": "Lähdekenttä on tyhjä",
-			"success": "Käännös valmis",
-			"failed": "Käännös epäonnistui: {{error}}"
-		}
-	},
-	"settings": {
-		"receipt_ocr_title": "Kuittien OCR",
-		"receipt_ocr_description": "Määritä tekoälyasetukset kuittien automaattiseen tulkintaan.",
-		"receipt_ocr_requires_api_key": "Kuittien OCR-tulkinta vaatii OpenRouter API-avaimen yleisasetuksissa.",
-		"ai_model": "AI-malli",
-		"select_model": "Valitse malli...",
-		"receipt_ai_model_help": "Valitse tehokas malli (esim. Gemini Flash 1.5, GPT-4o-mini) parhaan tuloksen saamiseksi.",
-		"general": {
-			"title": "Yleiset",
-			"languages_title": "Oletuskielet",
-			"languages_desc": "Määritä oletuskielet uusille käyttäjille ja vierailijoille. Käyttäjät voivat muuttaa näitä omassa profiilissaan.",
-			"primary_language": "Ensisijainen kieli",
-			"secondary_language": "Toissijainen kieli",
-			"saved": "Asetukset tallennettu",
-			"error": "Asetusten tallennus epäonnistui"
-		},
-		"reimbursements": {
-			"title": "Korvausasetukset",
-			"recipient_email_title": "Vastaanottajan sähköposti",
-			"recipient_email_desc": "Määritä sähköpostiosoite, johon kulukorvauspyynnöt lähetetään.",
-			"recipient_email_label": "Vastaanottajan sähköposti",
-			"recipient_email_placeholder": "rahastonhoito@example.com",
-			"recipient_email_fallback": "Käytössä ympäristömuuttuja: {{email}}",
-			"api_key_title": "OpenRouter API-avain",
-			"api_key_desc": "Hae API-avain osoitteesta openrouter.ai/keys",
-			"ai_parsing_title": "AI-tulkinta",
-			"ai_parsing_desc": "Ota käyttöön tekoälyavusteinen tulkinta tarkempia vastausten käsittelyä varten",
-			"enable_ai": "Ota AI-tulkinta käyttöön",
-			"enable_ai_desc": "Käytä tekoälyä sähköpostivastausten tulkitsemiseen ennen avainsanoja",
-			"sort_by": "Järjestä:",
-			"price": "Hinta",
-			"name": "Nimi",
-			"ai_model_label": "AI-malli",
-			"select_model": "Valitse malli...",
-			"showing_models": "Näytetään {{count}} / {{total}} mallia",
-			"no_api_key_msg": "Lisää API-avain yllä ottaaksesi AI-tulkinnan käyttöön ja valitaksesi mallin.",
-			"keywords_title": "Avainsanat",
-			"keywords_desc": "Mukautetut avainsanat hyväksymisen tai hylkäämisen tunnistamiseksi sähköposteista",
-			"default_approval": "Oletusarvoiset hyväksyntäsanat",
-			"additional_approval": "Lisää hyväksyntäsanoja",
-			"approval_placeholder": "maksettu, valmis, hyväksytty (pilkulla erotettuna)",
-			"default_rejection": "Oletusarvoiset hylkäyssanat",
-			"additional_rejection": "Lisää hylkäyssanoja",
-			"rejection_placeholder": "hylätty, peruttu (pilkulla erotettuna)"
-		},
-		"analytics": {
-			"title": "Analytiikka-asetukset"
-		},
-		"news": {
-			"title": "Uutisasetukset",
-			"ai_disabled_title": "Tekoälyominaisuudet pois käytöstä",
-			"ai_disabled_desc": "Määritä OpenRouter API -avain yleisasetuksissa ensin.",
-			"go_to_general": "Siirry yleisasetuksiin",
-			"ai_model_title": "Tekoäly-uutismalli",
-			"ai_model_desc": "Valitse tekoälymalli, jota käytetään uutisten kääntämiseen ensi- ja toisen kielen välillä.",
-			"sort_by": "Järjestä",
-			"price": "Hinta",
-			"name": "Nimi",
-			"select_model": "Valitse malli",
-			"select_model_placeholder": "Valitse malli...",
-			"showing_models": "Näytetään {{count}} / {{total}} mallia"
-		},
-		"faqs": {
-			"title": "UKK-asetukset",
-			"ai_disabled_title": "Tekoälyominaisuudet pois käytöstä",
-			"ai_disabled_desc": "Määritä OpenRouter API -avain yleisasetuksissa ensin.",
-			"go_to_general": "Siirry yleisasetuksiin",
-			"ai_model_title": "Tekoäly-UKK-malli",
-			"ai_model_desc": "Valitse tekoälymalli, jota käytetään UKK-rivien kääntämiseen ensi- ja toisen kielen välillä.",
-			"sort_by": "Järjestä",
-			"price": "Hinta",
-			"name": "Nimi",
-			"select_model": "Valitse malli",
-			"select_model_placeholder": "Valitse malli...",
-			"showing_models": "Näytetään {{count}} / {{total}} mallia"
-		},
-		"roles": {
-			"title": "Roolihallinta",
-			"create_new_title": "Luo uusi rooli",
-			"name_label": "Nimi",
-			"color_label": "Väri",
-			"desc_label": "Kuvaus",
-			"list_title": "Roolit ({{count}})",
-			"system": "Järjestelmärooli",
-			"permissions_count": "{{count}} oikeutta",
-			"delete_title": "Poista rooli",
-			"delete_confirm": "Haluatko varmasti poistaa roolin \"{{name}}\"? Tätä toimintoa ei voi peruuttaa.",
-			"permissions_header": "Oikeudet",
-			"select_role_msg": "Valitse rooli vasemmalta muokataksesi oikeuksia",
-			"select_role": "Valitse rooli",
-			"select_role_placeholder": "Valitse rooli...",
-			"search_placeholder": "Hae oikeuksia...",
-			"category": "Kategoria",
-			"permission_name": "Oikeuden nimi",
-			"description": "Kuvaus",
-			"select_role_to_manage": "Valitse rooli yllä hallitaksesi oikeuksia",
-			"show_only_assigned": "Näytä vain määritetyt oikeudet"
-		},
-		"users": {
-			"title": "Käyttäjähallinta",
-			"headers": {
-				"name": "Nimi",
-				"email": "Sähköposti",
-				"apartment": "Asunto",
-				"role": "Päärooli",
-				"roles": "Roolit",
-				"joined": "Liittynyt"
-			},
-			"no_users": "Ei käyttäjiä vielä",
-			"roles_placeholder": "Kirjoita roolin nimi ja paina Tab",
-			"no_roles_match": "Ei vastaavia rooleja",
-			"super_admin": "Pääkäyttäjä",
-			"role_updated": "Rooli päivitetty",
-			"cannot_change_super_admin": "Pääkäyttäjän roolia ei voi muuttaa",
-			"update_failed": "Roolin päivitys epäonnistui"
-		}
-	},
-	"committee": {
-		"title": "Toimikunta",
-		"members": "Jäsenet",
-		"no_members": "Toimikunnalla ei ole jäseniä",
-		"primary_role": "Päärooli",
-		"roles": "Roolit",
-		"no_description": "Ei kuvausta",
-		"mail": {
-			"title": "Sähköposti",
-			"description": "Lähetä sähköpostia tietylle roolille (vastaanottajina kaikki, joilla rooli pää- tai sivuroolina).",
-			"not_configured": "Sähköpostilähetys ei ole konfiguroitu. Aseta SMTP- ja COMMITTEE_FROM_EMAIL -ympäristömuuttujat.",
-			"to": "Vastaanottajat (To)",
-			"cc": "Kopio (CC)",
-			"bcc": "Piilokopio (BCC)",
-			"select_role": "Valitse rooli",
-			"add_role": "Lisää roolin jäsenet",
-			"add_email": "Lisää sähköposti",
-			"add_email_placeholder": "sähköposti@esimerkki.fi",
-			"type_to_add": "Kirjoita nimi tai rooli ja paina Tab lisätäksesi",
-			"remove": "Poista vastaanottaja",
-			"loading": "Ladataan...",
-			"recipients": "Vastaanottajat",
-			"no_recipients": "Tällä roolilla ei ole käyttäjiä.",
-			"suggestions": "Ehdotukset",
-			"no_suggestions": "Ei ehdotuksia",
-			"role": "Rooli",
-			"subject": "Aihe",
-			"subject_placeholder": "Sähköpostin aihe",
-			"body": "Viesti",
-			"body_placeholder": "Kirjoita viesti...",
-			"send": "Lähetä",
-			"sending": "Lähetetään...",
-			"sent_success": "{{count}} viesti lähetetty",
-			"sent_partial": "{{success}} lähetetty, {{fail}} epäonnistui"
-		}
-	},
-	"mail": {
-		"inbox": "Saapuneet",
-		"sent": "Lähetetyt",
-		"compose": "Uusi viesti",
-		"drafts": "Luonnokset",
-		"draft_saved_at": "Luonnos tallennettu kello {{time}}",
-		"send_tooltip": "Lähetä",
-		"no_drafts": "Ei luonnoksia",
-		"no_subject": "(Ei aihetta)",
-		"refresh": "Päivitä",
-		"refreshed": "{{count}} uutta viestiä haettu",
-		"no_messages": "Ei viestejä",
-		"from": "Lähettäjä",
-		"to": "Vastaanottaja",
-		"cc": "Kopio",
-		"date": "Päivä",
-		"back": "Takaisin",
-		"delete": "Poista",
-		"delete_draft": "Poista luonnos",
-		"delete_confirm": "Haluatko varmasti poistaa tämän viestin?",
-		"delete_draft_confirm": "Haluatko varmasti poistaa tämän luonnoksen?",
-		"delete_success": "Poistettu onnistuneesti",
-		"delete_error": "Poisto epäonnistui",
-		"select": "Valitse",
-		"delete_selected": "Poista valitut",
-		"reply": "Vastaa",
-		"reply_all": "Vastaa kaikille",
-		"forward": "Välitä",
-		"forwarded_message": "Välitetty viesti",
-		"messages_in_thread": "{{count}} viestiä",
-		"compose_new": "Uusi viesti",
-		"compose_reply": "Vastaus",
-		"compose_reply_all": "Vastaus kaikille",
-		"compose_forward": "Välitys",
-		"quoted_reply_header": "{{date}}, {{name}} <{{email}}> kirjoitti:",
-		"back_to_inbox": "Takaisin saapuneisiin"
-	},
-	"contact": {
-		"title": "Ota yhteyttä",
-		"description": "Ota yhteyttä asukastoimikuntaan",
-		"header": "Ota yhteyttä",
-		"select_topic": "Valitse aihe",
-		"select_topic_prompt": "Valitse aihe aloittaaksesi",
-		"types": {
-			"committee": {
-				"title": "Hae toimikuntaan",
-				"placeholder": "Kerro itsestäsi ja miksi haluaisit liittyä toimikuntaan..."
-			},
-			"events": {
-				"title": "Ehdota tapahtumaa",
-				"placeholder": "Kuvaile tapahtumaidea: mitä, milloin, missä..."
-			},
-			"purchases": {
-				"title": "Pyydä hankintaa",
-				"placeholder": "Mitä haluaisit hankkia ja miksi se hyödyttäisi asukkaita?"
-			},
-			"questions": {
-				"title": "Esitä kysymys",
-				"placeholder": "Kirjoita kysymyksesi tähän..."
-			}
-		},
-		"form": {
-			"name": "Nimi",
-			"email": "Sähköposti",
-			"apartment": "Asunto",
-			"apartment_placeholder": "esim. A 123",
-			"update_apartment_profile": "Päivitä asuntonumero profiiliini",
-			"message": "Viesti",
-			"send": "Lähetä"
-		},
-		"success": {
-			"title": "Viesti lähetetty!",
-			"message": "Kiitos yhteydenotostasi! Vastaamme sinulle mahdollisimman pian.",
-			"back_home": "Takaisin etusivulle"
-		}
-	},
-	"social": {
-		"title": "Some",
-		"description": "Seuraa meitä somessa",
-		"header": "Sosiaalinen Media",
-		"delete_confirm": "Poista?",
-		"no_channels": "Ei sosiaalisia kanavia",
-		"add_first": "Lisää ensimmäinen",
-		"primary_badge": "Ensisijainen",
-		"set_primary": "Aseta ensisijaiseksi",
-		"clear_primary": "Poista ensisijaisuus",
-		"new": {
-			"title": "Uusi some-kanava",
-			"header": "Uusi some-kanava",
-			"hidden_desc": "Piilotetut kanavat näkyvät vain henkilökunnalle",
-			"sort_desc": "Pienemmät numerot näkyvät ensin",
-			"primary_desc": "Ensisijainen kanava korostetaan"
-		},
-		"colors": {
-			"blue": "Sininen",
-			"dark_blue": "Tummansininen",
-			"pink": "Pinkki",
-			"purple": "Violetti",
-			"red": "Punainen",
-			"green": "Vihreä",
-			"orange": "Oranssi",
-			"gray": "Harmaa"
-		},
-		"icons": {
-			"telegram": "Telegram",
-			"instagram": "Instagram",
-			"facebook": "Facebook",
-			"website": "Verkkosivu",
-			"email": "Sähköposti",
-			"discord": "Discord",
-			"youtube": "YouTube",
-			"link": "Linkki"
-		}
-	},
-	"submissions": {
-		"title": "Yhteydenotot",
-		"header": "Yhteydenotot",
-		"no_submissions": "Ei vielä yhteydenottoja",
-		"delete_confirm": "Haluatko varmasti poistaa tämän yhteydenoton?",
-		"apartment": "Asunto",
-		"table": {
-			"time": "Aika",
-			"type": "Tyyppi",
-			"sender": "Lähettäjä",
-			"message": "Viesti",
-			"status": "Tila"
-		}
-	},
-	"events": {
-		"title": "Tapahtumat",
-		"header": "Tapahtumat",
-		"upcoming": "Tulevat",
-		"no_upcoming": "Ei tulevia tapahtumia",
-		"no_results": "Ei tuloksia",
-		"open_calendar": "Avaa kalenteri",
-		"all_day": "Koko päivä",
-		"add_event": "Lisää tapahtuma",
-		"new": {
-			"title": "Uusi tapahtuma",
-			"header": "Uusi tapahtuma",
-			"recurrence": "Toistuvuus",
-			"reminders": "Muistutukset",
-			"success": "Tapahtuma luotu onnistuneesti!",
-			"error": "Tapahtuman luominen epäonnistui"
-		},
-		"form": {
-			"location_placeholder": "Tapahtuman sijainti (valinnainen)",
-			"frequency": "Toistuvuus",
-			"interval": "Väli",
-			"recurrence_end": "Toistuminen päättyy",
-			"end_never": "Ei koskaan",
-			"end_after": "Jälkeen",
-			"occurrences": "kertaa",
-			"end_on": "Päivänä",
-			"add_reminder": "Lisää muistutus",
-			"no_reminders": "Ei muistutuksia",
-			"attendees_placeholder": "Sähköpostiosoitteet (pilkulla erotettu)",
-			"attendees_help": "Syötä osallistujien sähköpostiosoitteet pilkulla erotettuina"
-		},
-		"frequency": {
-			"daily": "Päivittäin",
-			"weekly": "Viikottain",
-			"monthly": "Kuukausittain",
-			"yearly": "Vuosittain"
-		},
-		"reminder": {
-			"popup": "Ponnahdusikkuna",
-			"email": "Sähköposti",
-			"10min": "10 minuuttia ennen",
-			"30min": "30 minuuttia ennen",
-			"1hour": "1 tunti ennen",
-			"1day": "1 päivä ennen",
-			"1week": "1 viikko ennen"
-		},
-		"edit": {
-			"title": "Muokkaa tapahtumaa",
-			"header": "Muokkaa tapahtumaa",
-			"success": "Tapahtuma päivitetty!",
-			"error": "Tapahtuman päivitys epäonnistui"
-		},
-		"delete": {
-			"confirm": "Haluatko varmasti poistaa tämän tapahtuman?",
-			"success": "Tapahtuma poistettu!",
-			"error": "Tapahtuman poisto epäonnistui"
-		}
-	},
-	"news": {
-		"title": "Uutiset",
-		"add": "Lisää uutinen",
-		"edit": "Muokkaa",
-		"delete": "Poista",
-		"empty": "Ei uutisia vielä.",
-		"no_results": "Ei tuloksia haulla.",
-		"search_placeholder": "Etsi uutisia...",
-		"confirm_delete": "Haluatko varmasti poistaa tämän uutisen?",
-		"new_title": "Uusi uutinen",
-		"edit_title": "Muokkaa uutista",
-		"save": "Tallenna",
-		"cancel": "Peruuta",
-		"form": {
-			"title": "Otsikko",
-			"title_placeholder": "Uutisen otsikko",
-			"summary": "Yhteenveto",
-			"summary_placeholder": "Lyhyt yhteenveto (valinnainen)",
-			"content": "Sisältö",
-			"content_placeholder": "Uutisen teksti",
-			"default_language": "Oletuskieli ({{language}})",
-			"secondary_language": "Toinen kieli ({{language}})"
-		},
-		"translate_with_ai": "Käännä tekoälyllä:",
-		"translating": "Käännetään...",
-		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-	},
-	"faq": {
-		"title": "Usein kysytyt kysymykset",
-		"add": "Lisää kysymys",
-		"edit": "Muokkaa",
-		"delete": "Poista",
-		"empty": "Ei kysymyksiä vielä.",
-		"no_results": "Ei tuloksia haulla.",
-		"search_placeholder": "Etsi UKK...",
-		"confirm_delete": "Haluatko varmasti poistaa tämän kysymyksen?",
-		"new_title": "Uusi kysymys",
-		"edit_title": "Muokkaa kysymystä",
-		"save": "Tallenna",
-		"cancel": "Peruuta",
-		"form": {
-			"question": "Kysymys",
-			"question_placeholder": "Kirjoita kysymys",
-			"answer": "Vastaus",
-			"answer_placeholder": "Kirjoita vastaus",
-			"sort_order": "Järjestysnumero",
-			"default_language": "Oletuskieli ({{language}})",
-			"secondary_language": "Toinen kieli ({{language}})"
-		},
-		"translate_with_ai": "Käännä tekoälyllä:",
-		"translating": "Käännetään...",
-		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-	},
-	"polls": {
-		"title": "Kaikki Kyselyt",
-		"description": "Näytä ja hallinnoi kyselyitä",
-		"active": "Aktiiviset",
-		"closed": "Suljetut",
-		"no_active_polls": "Ei aktiivisia kyselyitä tällä hetkellä",
-		"no_closed_polls": "Ei suljettuja kyselyitä",
-		"no_sheets": "Ei linkittämättömiä Google Sheettejä",
-		"time_remaining": "{{time}} jäljellä",
-		"ends_today": "Päättyy tänään",
-		"ends_tomorrow": "Päättyy huomenna",
-		"status_closed": "Suljettu",
-		"fill_poll": "Täytä kysely",
-		"view_results": "Näytä tulokset",
-		"add_poll": "Lisää kysely",
-		"analytics": "Analytiikka",
-		"analytics_description": "Näytä ja analysoi kyselyn vastauksia",
-		"google_form": "Google Form",
-		"google_sheets": "Google Sheets",
-		"no_sheets_found": "Analytiikka-taulukoita ei löytynyt",
-		"no_sheets_found_description": "Luo 'analytics'-kansio vuosikansioosi ja lisää Google Sheetejä. Jaa palvelutilille.",
-		"select_sheet": "Valitse taulukko",
-		"select_sheet_description": "Valitse taulukko yläpuolelta nähdäksesi sen tiedot.",
-		"new": {
-			"title": "Lisää kysely",
-			"form_title": "Kyselyn tiedot",
-			"form_description": "Lisää uusi kysely antamalla linkki ja valinnainen deadline",
-			"choose_type": "Valitse kyselyn tyyppi",
-			"type_managed": "Luo uusi Google Form",
-			"type_managed_desc": "Luo lomake Google Forms API:n kautta. Palvelutili omistaa sen, sinusta tulee muokkaaja.",
-			"type_linked": "Linkitä olemassa oleva Google Form",
-			"type_linked_desc": "Yhdistä jo luomasi Google Form. Jaa se palvelutilille.",
-			"type_external": "Ulkoinen kyselylinkki",
-			"type_external_desc": "Linkitä mihin tahansa ulkoiseen kyselyyn, kuten SurveyMonkey, Typeform jne.",
-			"managed_info": "Uusi Google Form luodaan. Sinut lisätään muokkaajaksi automaattisesti.",
-			"linked_info": "Linkitä omistamaasi Google Formiin. Muista jakaa se palvelutilille.",
-			"external_info": "Linkitä mihin tahansa kyselyyn tai lomakkeeseen.",
-			"name": "Kyselyn nimi",
-			"name_placeholder": "Esim. Tapahtumapalaute",
-			"description": "Kuvaus",
-			"description_placeholder": "Mitä tämä kysely koskee?",
-			"url": "Kyselyn URL",
-			"url_placeholder": "https://forms.google.com/...",
-			"url_help": "Linkki josta käyttäjät voivat täyttää kyselyn",
-			"google_form_url": "Google Form URL",
-			"share_instruction_title": "Tärkeää: Jaa palvelutilille",
-			"share_instruction": "Jotta sovellus voi lukea vastauksia, jaa lomake osoitteeseen: {{email}}",
-			"deadline": "Deadline",
-			"deadline_help": "Milloin kyselyn tulisi sulkeutua? (valinnainen)",
-			"analytics_sheet": "Linkitä analytiikka-taulukkoon",
-			"analytics_sheet_help": "Valinnainen: Valitse taulukko nähdäksesi vastaukset analytiikassa",
-			"no_sheet": "Älä linkitä taulukkoon",
-			"submit": "Lisää kysely",
-			"create_form": "Luo lomake",
-			"creating": "Luodaan lomaketta..."
-		},
-		"instructions": {
-			"title": "Uuden Google Formin luominen",
-			"step1": "Mene osoitteeseen forms.google.com ja luo uusi lomake",
-			"step2": "Määritä kysymykset ja lomakkeen asetukset",
-			"step3": "Ota tarvittaessa käyttöön 'Kerää sähköpostiosoitteet' -asetus",
-			"step4": "Klikkaa 'Lähetä' ja kopioi lomakkeen linkki",
-			"step5": "Liitä linkki yllä lisätäksesi kyselyn",
-			"auto_discovery": "Automaattiseen vastausanalytiikkaan:",
-			"share_with_sa": "Jaa linkitetty Google Sheet palvelutilille"
-		},
-		"success": {
-			"created": "Kysely lisätty",
-			"updated": "Kysely päivitetty",
-			"deleted": "Kysely poistettu"
-		}
-	},
-	"email": {
-		"reimbursement": {
-			"subject": "Kulukorvaus pyyntö",
-			"title": "Kulukorvaus pyyntö",
-			"item": "Tavara",
-			"amount": "Summa",
-			"purchaser": "Ostaja",
-			"bank_account": "Tilinumero",
-			"minutes": "Pöytäkirja",
-			"receipts": "Kuitit",
-			"notes": "Lisätiedot",
-			"attached": "liitteenä",
-			"not_specified": "Ei määritetty",
-			"reply_instruction": "Vastaa tähän viestiin hyväksyäksesi tai hylätäksesi pyynnön."
-		},
-		"reimbursement_status": {
-			"approved": {
-				"subject": "Korvausvaatimus hyväksytty",
-				"title": "Korvausvaatimus hyväksytty",
-				"message": "Korvausvaatimuksesi on hyväksytty."
-			},
-			"declined": {
-				"subject": "Korvausvaatimus hylätty",
-				"title": "Korvausvaatimus hylätty",
-				"message": "Korvausvaatimuksesi on hylätty."
-			},
-			"status": "Tila",
-			"view_details": "Näytä tiedot"
-		}
-	},
-	"messages": {
-		"title": "Viestit",
-		"empty": "Ei uusia viestejä",
-		"date": "Päivämäärä",
-		"content": "Sisältö",
-		"mark_as_read": "Merkitse luetuksi",
-		"mark_all_read": "Merkitse kaikki luetuksi",
-		"marked_as_read": "Viesti merkitty luetuksi",
-		"view": "Näytä",
-		"view_purchase": "Näytä korvausvaatimus",
-		"unread_count": "{{count}} lukematonta",
-		"reimbursement_approved": {
-			"title": "Korvausvaatimus hyväksytty",
-			"content": "Korvausvaatimuksesi kohteesta {description} ({amount} €) on hyväksytty."
-		},
-		"reimbursement_declined": {
-			"title": "Korvausvaatimus hylätty",
-			"content": "Korvausvaatimuksesi kohteesta {description} ({amount} €) on hylätty."
-		},
-		"news_published": {
-			"title": "Uusi uutinen",
-			"content": "Uusi uutinen: {title}"
-		},
-		"ai_news_translation_failed": {
-			"title": "Uutisten käännös epäonnistui",
-			"content": "Tekoälykäännös uutiselle epäonnistui. Tarkista asetukset ja yritä uudelleen."
-		},
-		"ai_faq_translation_failed": {
-			"title": "UKK-käännös epäonnistui",
-			"content": "Tekoälykäännös UKK:lle epäonnistui. Tarkista asetukset ja yritä uudelleen."
-		},
-		"view_news": "Näytä uutinen",
-		"unknown_item": "Tuntematon tavara",
-		"see_all": "Näytä kaikki viestit",
-		"select_all": "Valitse kaikki",
-		"selected_count": "{{count}} valittu",
-		"mark_selected_read": "Merkitse valitut luetuksi",
-		"mark_selected_unread": "Merkitse valitut lukemattomiksi",
-		"clear_selection": "Tyhjennä valinta"
-	},
-	"permissions": {
-		"users": {
-			"read": "Näytä käyttäjälista",
-			"write": "Luo ja muokkaa käyttäjiä",
-			"delete": "Poista käyttäjiä",
-			"manage_roles": "Määritä rooleja käyttäjille"
-		},
-		"inventory": {
-			"read": "Näytä inventaariotavarat",
-			"write": "Luo ja muokkaa inventaariotavaroita",
-			"delete": "Poista inventaariotavaroita",
-			"export": "Vie inventaario CSV-tiedostoon",
-			"import": "Tuo inventaario tiedostosta"
-		},
-		"treasury": {
-			"read": "Näytä kassan yleiskuva",
-			"export": "Vie kassatiedot CSV-tiedostoon",
-			"import": "Tuo kassatiedot tiedostosta",
-			"breakdown": {
-				"read": "Näytä kassan erittely",
-				"read-self": "Näytä oma kassan erittely"
-			},
-			"transactions": {
-				"read": "Näytä tapahtumalista",
-				"write": "Luo tapahtumia",
-				"write-self": "Luo omia tapahtumia",
-				"update": "Muokkaa tapahtumia",
-				"delete": "Poista tapahtumia",
-				"update-self": "Muokkaa omia tapahtumia",
-				"delete-self": "Poista omia tapahtumia",
-				"read-self": "Näytä omia tapahtumia"
-			},
-			"reimbursements": {
-				"read": "Näytä korvausvaatimukset",
-				"write": "Luo korvausvaatimuksia",
-				"write-self": "Luo omia korvausvaatimuksia",
-				"update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
-				"delete": "Poista korvausvaatimuksia",
-				"update-self": "Muokkaa omia korvausvaatimuksia",
-				"delete-self": "Poista omia korvausvaatimuksia",
-				"read-self": "Näytä omia korvausvaatimuksia"
-			},
-			"budgets": {
-				"read": "Näytä budjetit",
-				"read-self": "Näytä omat budjetit",
-				"write": "Luo budjetteja",
-				"write-self": "Luo omia budjetteja",
-				"update": "Muokkaa budjetteja",
-				"delete": "Poista budjetteja",
-				"update-self": "Muokkaa omia budjetteja",
-				"delete-self": "Poista omia budjetteja"
-			},
-			"receipts": {
-				"read": "Näytä kuitit",
-				"read-self": "Näytä omat kuitit",
-				"write": "Luo kuitteja",
-				"write-self": "Luo omia kuitteja",
-				"update": "Muokkaa kuitteja",
-				"delete": "Poista kuitteja",
-				"update-self": "Muokkaa omia kuitteja",
-				"delete-self": "Poista omia kuitteja"
-			},
-			"view_scope": {
-				"all": "Näet kaikki {{itemType}}",
-				"own_only": "Näet vain omat {{itemType}}",
-				"item_types": {
-					"receipts": "kuitit",
-					"transactions": "transaktiot",
-					"reimbursements": "kulukorvaushakemukset",
-					"budgets": "budjetit",
-					"breakdown": "yhteenveto"
-				}
-			}
-		},
-		"purchases": {
-			"read": "Näytä kaikki ostopyynnöt",
-			"manage": "Päivitä ostopyynnön tila",
-			"delete": "Poista ostopyyntöjä"
-		},
-		"submissions": {
-			"read": "Näytä yhteydenottolomakkeet",
-			"write": "Päivitä yhteydenoton tila",
-			"delete": "Poista yhteydenottoja"
-		},
-		"social": {
-			"read": "Näytä some-linkit",
-			"write": "Luo ja muokkaa some-linkkejä",
-			"delete": "Poista some-linkkejä"
-		},
-		"minutes": {
-			"read": "Näytä ja lataa pöytäkirjat",
-			"guide": "Näytä nimeämiskäytäntöohje"
-		},
-		"events": {
-			"read": "Näytä kalenteritapahtumat",
-			"write": "Luo kalenteritapahtumia",
-			"update": "Muokkaa kalenteritapahtumia",
-			"delete": "Poista kalenteritapahtumia"
-		},
-		"news": {
-			"read": "Näytä uutiset",
-			"write": "Luo uutisia",
-			"update": "Muokkaa uutisia",
-			"delete": "Poista uutisia"
-		},
-		"faq": {
-			"read": "Näytä UKK",
-			"write": "Luo UKK-kohtia",
-			"update": "Muokkaa UKK-kohtia",
-			"delete": "Poista UKK-kohtia"
-		},
-		"forms": {
-			"read": "Näytä lomaketiedot ja analytiikka",
-			"export": "Vie lomaketiedot CSV-tiedostoon"
-		},
-		"polls": {
-			"read": "Näytä kyselyt",
-			"write": "Luo ja hallinnoi omia kyselyitä",
-			"delete": "Poista mikä tahansa kysely"
-		},
-		"profile": {
-			"read": {
-				"own": "Näytä oma profiili"
-			},
-			"write": {
-				"own": "Muokkaa omaa profiilia"
-			}
-		},
-		"avatars": {
-			"read": "Näytä avatar-kuvalista",
-			"delete": "Poista avatar-kuvia"
-		},
-		"admin": {
-			"storage": {
-				"read": "Näytä tallennustilan ylläpito",
-				"write": "Hallinnoi tallennustilan ylläpitoa"
-			}
-		},
-		"roles": {
-			"read": "Näytä roolit ja oikeudet",
-			"write": "Luo ja muokkaa rooleja",
-			"delete": "Poista rooleja"
-		},
-		"settings": {
-			"general": "Pääsy yleisiin asetuksiin",
-			"users": "Pääsy käyttäjähallinnan asetuksiin",
-			"roles": "Pääsy roolihallinnan asetuksiin",
-			"reimbursements": "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
-			"analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)",
-			"news": "Pääsy uutisasetuksiin (AI-käännösmalli)",
-			"faqs": "Pääsy UKK-asetuksiin (AI-käännösmalli)"
-		},
-		"committee": {
-			"email": "Lähetä sähköpostia roolin jäsenille",
-			"read": "Näytä toimikunnan jäsenet"
-		},
-		"categories": {
-			"Users": "Käyttäjät",
-			"Inventory": "Inventaario",
-			"Treasury": "Kassa",
-			"Purchases": "Ostot",
-			"Submissions": "Yhteydenotot",
-			"Social": "Sosiaalinen",
-			"Minutes": "Pöytäkirjat",
-			"Events": "Tapahtumat",
-			"News": "Uutiset",
-			"FAQ": "UKK",
-			"Forms": "Lomakkeet",
-			"Polls": "Kyselyt",
-			"Profile": "Profiili",
-			"Roles": "Roolit",
-			"Settings": "Asetukset",
-			"Storage": "Tallennus",
-			"Admin": "Ylläpito"
-		}
-	}
+  "common": {
+    "date": "Päivämäärä",
+    "time": "Aika",
+    "actions": {
+      "delete": "Poista",
+      "edit": "Muokkaa",
+      "add": "Lisää",
+      "create": "Luo",
+      "remove": "Poista",
+      "search": "Hae",
+      "view": "Näytä",
+      "confirm": "Vahvista",
+      "sort": "Järjestä",
+      "back": "Takaisin",
+      "all": "Kaikki",
+      "loading": "Ladataan...",
+      "update": "Päivitä",
+      "link_existing": "Linkitä olemassa oleva",
+      "create_new": "Luo uusi"
+    },
+    "filters": {
+      "all": "Kaikki kategoriat"
+    },
+    "no_results": "Ei tuloksia",
+    "total": "Yhteensä",
+    "fields": {
+      "name": "Nimi",
+      "description": "Kuvaus",
+      "amount": "Summa",
+      "price": "Hinta",
+      "free": "Ilmainen",
+      "date": "Päivämäärä",
+      "status": "Tila",
+      "type": "Tyyppi",
+      "title": "Otsikko",
+      "search": "Haku",
+      "year": "Vuosi",
+      "category": "Kategoria",
+      "created_by": "Luoja",
+      "location": "Sijainti",
+      "quantity": "Määrä",
+      "value": "Arvo",
+      "url": "Osoite",
+      "icon": "Kuvake",
+      "color": "Väri",
+      "order": "Järjestys",
+      "active": "Aktiivinen",
+      "all_day": "Koko päivä",
+      "start_date": "Alkamispäivä",
+      "end_date": "Päättymispäivä",
+      "start_time": "Alkamisaika",
+      "end_time": "Päättymisaika",
+      "primary": "Ensisijainen",
+      "hidden": "Piilotettu",
+      "none": "Ei mitään"
+    },
+    "file_upload": {
+      "drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
+      "drop_file": "Pudota tiedosto tähän"
+    },
+    "placeholders": {
+      "search": "Hae...",
+      "select": "Valitse...",
+      "title": "Anna otsikko...",
+      "description": "Anna kuvaus..."
+    },
+    "sections": {
+      "basic_info": "Perustiedot",
+      "date_time": "Ajankohta",
+      "attendees": "Osallistujat"
+    },
+    "status": {
+      "error": "Virhe",
+      "saved": "Tallennettu",
+      "saving": "Tallennetaan..."
+    }
+  },
+  "app": {
+    "title": "Asukastoimikunta",
+    "setup_required": "Asetukset tarvitaan",
+    "setup_message": "Sovellusta ei ole vielä määritetty. Tarkista ympäristömuuttujat.",
+    "error_details": "Virheen tiedot",
+    "open_setup": "Avaa asennusopas",
+    "copy_env": "Tai kopioi .env.template tiedostoon .env ja määritä asetukset."
+  },
+  "nav": {
+    "menu": "Valikko",
+    "navigation": "Navigointi",
+    "settings": "Asetukset",
+    "profile": "Profiili",
+    "edit_profile": "Muokkaa profiilia",
+    "messages": "Viestit",
+    "log_out": "Kirjaudu ulos",
+    "users": "Käyttäjät",
+    "roles": "Roolit",
+    "reimbursements": "Korvaukset",
+    "get_involved": "Osallistu",
+    "events": "Tapahtumat",
+    "treasury": "Rahasto",
+    "minutes": "Pöytäkirjat",
+    "news": "Uutiset",
+    "faq": "UKK",
+    "inventory": "Tavaraluettelo",
+    "social": "Sosiaalinen media",
+    "analytics": "Analytiikka",
+    "polls": "Kyselyt",
+    "committee": "Toimikunta",
+    "login": "Kirjaudu",
+    "submissions": "Yhteydenotot",
+    "committee_mail": "Sähköposti",
+    "sidebar_collapse": "Kutista valikko",
+    "sidebar_expand": "Laajenna valikko",
+    "admin": "Ylläpito"
+  },
+  "receipts": {
+    "select_receipts": "Valitse kuitit",
+    "selected": "Valitut kuitit",
+    "add_more": "Lisää kuitteja",
+    "search_placeholder": "Hae kuitteja...",
+    "refresh": "Päivitä kuittilista",
+    "upload_new": "Lataa uusi kuitti",
+    "upload_unavailable": "Lataus ei ole käytettävissä",
+    "upload_failed": "Lataus epäonnistui. Yritä uudelleen.",
+    "invalid_type": "Virheellinen tiedostotyyppi. Sallitut: {{types}}",
+    "uploading": "Ladataan...",
+    "upload_notice": "Suuret tiedostot voivat latautua hetken.",
+    "no_receipts": "Ei kuitteja vuodelta {{year}}",
+    "done": "Valmis",
+    "open": "Avaa",
+    "delete": "Poista",
+    "select_existing_or_upload": "Valitse olemassa olevat kuitit tai lataa uusi kuitti.",
+    "allowed": "Sallitut",
+    "selected_count": "valittu",
+    "analyze_with_ai": "Analysoi tekoälyllä (OCR)"
+  },
+  "lang": {
+    "label": "Kieli"
+  },
+  "search_menu": {
+    "title": "Haku",
+    "filter": "Suodata",
+    "search": "Hae",
+    "clear": "Tyhjennä",
+    "select_placeholder": "Valitse..."
+  },
+  "home": {
+    "header": "Osallistu",
+    "contact": {
+      "title": "Ota yhteyttä"
+    },
+    "options": {
+      "committee": {
+        "title": "Liity toimikuntaan",
+        "description": "Täytä lomake liittyäksesi toimikuntaan."
+      },
+      "events": {
+        "title": "Ehdottaa tapahtumaa",
+        "description": "Ehdottaa tapahtumaa toimikunnalle."
+      },
+      "purchases": {
+        "title": "Pyydä hankintaa",
+        "description": "Pyydä hankintaa toimikunnalta."
+      },
+      "questions": {
+        "title": "Kysy kysymys",
+        "description": "Kysy kysymys toimikunnalta."
+      }
+    }
+  },
+  "treasury": {
+    "overview": "Yleiskuva",
+    "title": "Rahasto {{year}}",
+    "select_year": "Valitse vuosi...",
+    "success": {
+      "transaction_created": "Tapahtuma lisätty",
+      "reimbursement_requested": "Kulukorvaushakemus lähetetty",
+      "transaction_deleted": "Tapahtuma poistettu"
+    },
+    "view_breakdown": "Katso erittely",
+    "balance": "Saldo",
+    "income": "Tulot",
+    "unbudgeted_transactions": "Budjetoimattomat transaktiot",
+    "budgeted_transactions": "Budjetoidut transaktiot",
+    "budget_costs": "Budjetoidut menot",
+    "available": "Käytettävissä",
+    "transactions_count": "{{count}} tapahtumaa",
+    "no_transactions": "Ei tapahtumia",
+    "no_transactions_desc": "Vuodelle {{year}} ei ole vielä kirjattu tapahtumia.",
+    "receipts": {
+      "title": "Kuitit",
+      "new": "Uusi kuitti",
+      "edit": "Muokkaa kuittia",
+      "edit_description": "Muokkaa kuittin tietoja. Tiedostoa ei voi vaihtaa tässä näkymässä.",
+      "view": "Näytä",
+      "reimbursement_request": "Kulukorvaushakemus",
+      "no_receipts": "Ei kuitteja tälle vuodelle",
+      "upload_error": "Lataus epäonnistui",
+      "delete": "Poista kuitti",
+      "delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
+      "file": "Tiedosto",
+      "allowed_types": "Sallitut tiedostotyypit",
+      "name_placeholder": "Kuittin nimi (valinnainen)",
+      "description_placeholder": "Kuvaile kuittia tarvittaessa",
+      "link_to_reimbursement": "Linkitä kulukorvaushakemukseen",
+      "invalid_file_type": "Virheellinen tiedostotyyppi. Sallitut tyypit: {{types}}",
+      "form": {
+        "create": "Luo kuitti"
+      },
+      "success": {
+        "receipt_created": "Kuitti luotu"
+      },
+      "gallery": {},
+      "ai_analysis": "Tekoälyanalyysi",
+      "no_analysis_yet": "Kuittia ei ole vielä analysoitu tekoälyllä.",
+      "analyze_now": "Analysoi tekoälyllä",
+      "ai_results": "Tekoälyn tulokset",
+      "store": "Liike",
+      "date": "Päivämäärä",
+      "total": "Loppusumma",
+      "extracted_items": "Tunnistetut tuotteet",
+      "quantity": "Määrä",
+      "price": "Hinta",
+      "raw_text": "Raakateksti",
+      "re_analyze": "Analysoi uudelleen",
+      "process_receipt": "Käsittele kuitti",
+      "processed": "Käsitelty",
+      "processing": "Käsitellään...",
+      "auto_filled_from_receipt": "Täytetty automaattisesti kuitista: {{name}}",
+      "create_reimbursement": "Luo kulukorvaushakemus",
+      "analyze_with_ai": "Analysoi tekoälyllä (OCR)",
+      "analyzing": "Analysoidaan kuittia...",
+      "analysis_note": "Tämä voi kestää jopa 60 sekuntia suurilla tiedostoilla tai ilmaisilla tekoälymalleilla.",
+      "analysis_complete": "Kuitti analysoitu onnistuneesti",
+      "analysis_failed": "Kuitin analysointi epäonnistui",
+      "analysis_timeout": "Analyysi aikakatkaistiin. Tiedosto saattaa olla liian suuri tai palvelin on hidas.",
+      "uploading": "Ladataan tiedostoa...",
+      "upload_complete": "Tiedosto ladattu onnistuneesti",
+      "upload_failed": "Tiedoston lataus epäonnistui",
+      "upload_timeout": "Lataus aikakatkaistiin. Tiedosto saattaa olla liian suuri.",
+      "receipt_file": "Kuittitiedosto",
+      "replace_file": "Vaihda kuittitiedosto",
+      "parsed_content": "Jäsennelty sisältö",
+      "edit": "Muokkaa kuittia",
+      "extract_text": "Pura teksti",
+      "process_text": "Käsittele raakateksti",
+      "extract_content": "Pura kuitin sisältö",
+      "try_extract": "Yritä purkaa",
+      "no_extraction_yet": "Tiedosto ladattu. Klikkaa 'Yritä purkaa' purkaaksesi tekstin kuitista.",
+      "uploaded_file": "Ladattu tiedosto",
+      "view_file": "Näytä tiedosto",
+      "file_ready": "Tiedosto ladattu ja valmis",
+      "optional_replace": "Valinnainen: lataa eri tiedosto",
+      "no_ai_parsing": "Tekoäly-jäsennystä ei ole konfiguroitu. Vain raakatekstin purku on saatavilla. Konfiguroi OpenRouter API-avain asetuksista ottaaksesi käyttöön rakenteisen datan purun."
+    },
+    "actions": {
+      "breakdown": "Erittely",
+      "transactions": "Transaktiovirta",
+      "receipts": "Kuitit",
+      "reimbursements": "Kulukorvaushakemukset",
+      "budgets": "Budjetit"
+    },
+    "new": {
+      "header": "Uusi transaktio",
+      "details_header": "Transaktion tiedot",
+      "inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
+      "items_selected": "{{count}} tavaraa valittu",
+      "total": "Yhteensä",
+      "select_items": "Valitse tavarat",
+      "link_existing_reimbursement": "Linkitä olemassa olevaan kulukorvaukseen",
+      "link_existing_help": "Valitse olemassa oleva kulukorvauspyyntö, johon tämä transaktio linkitetään.",
+      "select_reimbursement_placeholder": "Valitse kulukorvaus...",
+      "no_link": "Älä linkitä",
+      "or": "tai",
+      "submit": "Lisää",
+      "link_budget": "Linkitä budjettiin",
+      "link_budget_help": "Valinnainen: Käytä varoja olemassa olevasta budjetista.",
+      "no_budget": "Älä käytä budjettia",
+      "budget_note": "Menon summa vähennetään valitusta budjetista.",
+      "add_item": "Lisää tavara"
+    },
+    "form": {
+      "amount": "Summa €",
+      "description": "Kuvaus",
+      "description_placeholder": "Esim. Kahvitarjoilut, Kokoukseen hankitut eväät",
+      "date": "Päivämäärä",
+      "year": "Vuosi"
+    },
+    "placeholders": {},
+    "types": {
+      "income": "Tulo",
+      "expense": "Meno"
+    },
+    "categories": {
+      "inventory": "Tavarat",
+      "snacks": "Eväät",
+      "event": "Tapahtuma",
+      "other": "Muu",
+      "grant": "Avustus",
+      "sales": "Myynti",
+      "event_income": "Tapahtumatulo",
+      "membership": "Jäsenmaksut"
+    },
+    "transactions": {
+      "title": "Transaktiot",
+      "new": "Uusi transaktio",
+      "all": "Kaikki",
+      "type": "Tyyppi",
+      "status": "Tila",
+      "locked_by_reimbursement": "Lukittu (kulukorvaus lähetetty)"
+    },
+    "reimbursements": {
+      "link_to_reimbursement": "Linkitä kulukorvaukseen",
+      "title": "Kulukorvaushakemukset",
+      "new": "Uusi",
+      "status": "Tila",
+      "purchaser": "Ostaja",
+      "receipts": "Kuitit",
+      "view_receipt": "Näytä kuitti",
+      "transaction": "Tapahtuma",
+      "view_transaction": "Näytä transaktio",
+      "email_sent": "Sähköposti lähetetty",
+      "locked_sent": "Lukittu (lähetetty)",
+      "reply_received": "Vastaus vastaanotettu",
+      "delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
+      "use_as_template": "Käytä pohjana",
+      "linked_transactions": "Linkitetyt transaktiot",
+      "statuses": {
+        "pending": "Odottaa",
+        "approved": "Hyväksytty",
+        "reimbursed": "Maksettu",
+        "rejected": "Hylätty"
+      },
+      "view": {
+        "title": "Näytä kulukorvaus"
+      },
+      "edit": {
+        "title": "Muokkaa kulukorvausta",
+        "reimbursement_details": "Kulukorvauksen tiedot"
+      }
+    },
+    "new_reimbursement": {
+      "title": "Uusi kulukorvaus",
+      "description": "Kuvaus",
+      "description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
+      "amount": "Summa €",
+      "receipts": "Kuitit",
+      "select_receipt_error": "Valitse vähintään yksi kuitti",
+      "purchaser_name": "Ostajan nimi",
+      "purchaser_placeholder": "Etu- ja sukunimi",
+      "bank_account": "Tilinumero (IBAN)",
+      "minutes": "Pöytäkirja",
+      "select_minutes": "Valitse pöytäkirja...",
+      "minutes_help": "Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.",
+      "notes": "Lisätiedot",
+      "notes_placeholder": "Vapaamuotoinen viesti...",
+      "receipt_uploaded": "Kuitti ladattu",
+      "error": "Virhe",
+      "email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
+      "link_existing_transaction": "Liitä transaktio",
+      "select_transaction_placeholder": "Valitse transaktio...",
+      "linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
+      "reimbursement_details": "Kulukorvauksen tiedot",
+      "transaction_section_title": "Transaktio",
+      "create_transaction": "Luo transaktio",
+      "no_link": "Älä liitä olemassa olevaan transaktioon"
+    },
+    "breakdown": {
+      "title": "Rahastoerittely",
+      "no_transactions": "Ei tapahtumia tälle vuodelle",
+      "date": "Päivä",
+      "description": "Kuvaus",
+      "category": "Kategoria",
+      "status": "Tila",
+      "reimbursement_status": "Kulukorvauksen tila",
+      "amount": "Summa",
+      "export": "Lataa CSV",
+      "import": "Tuo CSV",
+      "import_success": "Tuotu {{count}} tapahtumaa",
+      "import_error": "Tuonti epäonnistui",
+      "statuses": {
+        "complete": "Valmis",
+        "pending": "Odottaa",
+        "paused": "Keskeytetty",
+        "declined": "Hylätty"
+      },
+      "view": {
+        "title": "Näytä transaktio"
+      },
+      "edit": {
+        "title": "Muokkaa transaktiota",
+        "delete_title": "Poista transaktio?",
+        "delete_confirm": "Haluatko varmasti poistaa tämän transaktion? Tätä toimintoa ei voi peruuttaa.",
+        "delete_blocked": "Poistaminen estetty",
+        "linked_reimbursement": "Linkitetty kulukorvaus",
+        "purchaser": "Ostaja",
+        "iban": "Tilinumero",
+        "minutes": "Pöytäkirja",
+        "email": "Sähköposti",
+        "email_sent": "Lähetetty",
+        "email_not_sent": "Ei lähetetty",
+        "items_linked_success": "Tavarat linkitetty",
+        "delete_error_linked": "Tapahtumaa ei voi poistaa koska siihen on linkitetty aktiivisia tavaroita: {{names}}. Poista tai merkitse tavarat Legacy-tilaan ensin.",
+        "reimbursement_statuses": {},
+        "statuses": {}
+      }
+    },
+    "budgets": {
+      "title": "Budjetit",
+      "new": "Uusi budjetti",
+      "name": "Budjetin nimi",
+      "name_placeholder": "Esim. Kitaran hankinta",
+      "description": "Kuvaus",
+      "description_placeholder": "Lisätietoja budjetista",
+      "amount": "Varattu summa",
+      "used": "Käytetty",
+      "reserved": "Varattu",
+      "remaining": "Jäljellä",
+      "status": "Tila",
+      "created_by": "Luoja",
+      "year": "Vuosi",
+      "statuses": {
+        "open": "Avoinna",
+        "closed": "Suljettu"
+      },
+      "actions": {
+        "edit": "Muokkaa",
+        "delete": "Poista",
+        "close": "Sulje budjetti",
+        "reopen": "Avaa uudelleen"
+      },
+      "close_confirm": "Budjetin sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
+      "reopen_confirm": "Avaa tämä budjetti uudelleen?",
+      "delete_confirm": "Poista tämä budjetti? Tätä ei voi peruuttaa.",
+      "cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
+      "insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
+      "linked_transactions": "Linkitetyt transaktiot",
+      "no_budgets": "Ei budjetteja",
+      "no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
+      "available_funds": "Käytettävissä olevat varat",
+      "success": {
+        "created": "Budjetti luotu",
+        "updated": "Budjetti päivitetty",
+        "deleted": "Budjetti poistettu",
+        "closed": "Budjetti suljettu",
+        "reopened": "Budjetti avattu uudelleen"
+      },
+      "error": {
+        "delete_failed": "Budjetin poisto epäonnistui",
+        "has_transactions": "Budjettia ei voi poistaa, koska siihen on linkitetty transaktioita"
+      },
+      "form": {
+        "create": "Luo budjetti"
+      },
+      "view": {
+        "title": "Näytä budjetti"
+      },
+      "edit": {
+        "title": "Muokkaa budjettia"
+      }
+    }
+  },
+  "inventory": {
+    "title": "Tavaraluettelo",
+    "link_inventory_item": "Linkitä tavaraan",
+    "unit": "kpl",
+    "search": {
+      "name_label": "Nimi",
+      "name_placeholder": "Hae nimellä...",
+      "location_label": "Sijainti",
+      "location_all": "Kaikki sijainnit",
+      "category_label": "Kategoria",
+      "category_all": "Kaikki kategoriat",
+      "columns": "Sarakkeet",
+      "filters": "Suodattimet"
+    },
+    "columns": {
+      "status": "Tila",
+      "name": "Nimi",
+      "location": "Sijainti",
+      "category": "Kategoria",
+      "description": "Kuvaus",
+      "updated": "Päivitetty",
+      "unit_value": "Kpl-arvo",
+      "quantity": "Määrä",
+      "total_value": "Yht. arvo",
+      "transactions": "Tapahtumat",
+      "info_reel": "Info Reel"
+    },
+    "actions": {
+      "menu": "Toiminnot",
+      "add": "Lisää",
+      "close": "Sulje",
+      "export": "Vie CSV",
+      "export_short": "Vie",
+      "import": "Tuo CSV",
+      "import_short": "Tuo",
+      "selected": "Valitut",
+      "report": "Ilmoita",
+      "treasury": "Rahastotapahtumat",
+      "add_to_new": "Lisää uuteen",
+      "add_to_existing": "Lisää olemassaolevaan",
+      "no_transaction": "Ei tapahtumaa",
+      "remove": "Poista",
+      "unlink": "Poista linkki",
+      "remove_marker": "Poista merkintä"
+    },
+    "badge_unknown_title": "Selittämätön määrä – klikkaa valintoja varten",
+    "badge_connect_existing": "Yhdistä olemassa olevaan tapahtumaan",
+    "badge_create_new_transaction": "Luo uusi tapahtuma",
+    "badge_linked_to_transaction": "Yhdistetty tapahtumaan",
+    "inline_edit_saved": "Tallennettu",
+    "messages": {
+      "importing": "Tuodaan tiedostoa...",
+      "import_success": "Tuotu {{count}} riviä",
+      "import_error": "Virhe: {{error}}"
+    },
+    "add_row": {
+      "name_placeholder": "Nimi...",
+      "location_placeholder": "Sijainti...",
+      "category_placeholder": "Kategoria...",
+      "description_placeholder": "Kuvaus...",
+      "search_placeholder": "Etsi...",
+      "new_text": "Uusi",
+      "required_field": "Pakollinen kenttä"
+    },
+    "form": {
+      "title_new": "Uusi tavara",
+      "title_edit": "Muokkaa tavaraa",
+      "details_header": "Tavaran tiedot",
+      "name_placeholder": "Valitse tai kirjoita nimi...",
+      "name_search_placeholder": "Etsi tavaraa...",
+      "name_empty": "Ei löydy.",
+      "location_placeholder": "Valitse tai kirjoita...",
+      "location_search_placeholder": "Etsi sijaintia...",
+      "location_empty": "Ei listalla.",
+      "category_placeholder": "Valitse tai kirjoita...",
+      "category_search_placeholder": "Etsi kategoriaa...",
+      "description_placeholder": "Lisätietoja tavarasta",
+      "value_placeholder": "0.00",
+      "purchased_at_label": "Hankintapäivä",
+      "show_in_info_reel": "Näytä Info Reelissä",
+      "example": "Esim. {{example}}"
+    },
+    "new": {},
+    "modals": {
+      "report_title": "Ilmoita ongelmasta",
+      "selected_items": "Valitut tavarat:",
+      "describe_issue": "Kuvaile ongelma tai mitä pitäisi muuttaa...",
+      "cancel": "Peruuta",
+      "send": "Lähetä",
+      "confirm_unlink_title": "Poista yhdistäminen?",
+      "confirm_unlink_desc": "Tämä poistaa tavaran yhdistämisen valittuun tapahtumaan.",
+      "confirm_unlink_details": "Tavara: {{name}} ({{count}} kpl)\nTapahtuma: {{description}} ({{date}})",
+      "unlink": "Poista yhdistäminen",
+      "confirm_delete_many_title": "Poistetaanko tavarat?",
+      "confirm_delete_many_desc": "Haluatko varmasti poistaa {{count}} tavaraa pysyvästi?",
+      "quantity_selection": {
+        "title_no_txn": "Merkitse ei tapahtumaa",
+        "title_existing": "Lisää olemassaolevaan",
+        "title_txn": "Lisää rahastotapahtumaan",
+        "desc_no_txn": "Valitse kuinka monta kappaletta kustakin tavarasta merkitään ilman tapahtumaa.",
+        "desc_existing": "Valitse kuinka monta kappaletta kustakin tavarasta lisätään olemassaolevaan tapahtumaan.",
+        "desc_txn": "Valitse kuinka monta kappaletta kustakin tavarasta lisätään tapahtumaan.",
+        "available": "Saatavilla",
+        "continue": "Jatka",
+        "confirm": "Vahvista"
+      },
+      "remove": {
+        "title": "Poista tavaraa",
+        "current_quantity": "Nykyinen määrä",
+        "linked_transactions": "Yhdistetyt tapahtumat",
+        "linked_desc": "Valitse mistä tapahtumasta poistat ja kuinka monta.",
+        "expense": "Meno",
+        "income": "Tulo",
+        "linked": "Linkitetty",
+        "no_linked_txns": "Tähän tavaraan ei ole yhdistetty tapahtumia.",
+        "no_linked_desc": "Voit poistaa sen suoraan tai merkitä sen 'legacy'-tavaraksi.",
+        "reason": "Syy",
+        "notes_optional": "Lisätiedot (valinnainen)",
+        "notes_placeholder": "Lisää tarvittaessa lisätietoja...",
+        "removing": "Poistat",
+        "item_will_be_removed": "Tavara merkitään poistetuksi",
+        "remove_count": "Poista {{count}} kpl",
+        "remove_item": "Poista tavara",
+        "reasons": {
+          "broken": "Rikki",
+          "used_up": "Käytetty loppuun",
+          "lost": "Kadonnut",
+          "sold": "Myyty",
+          "other": "Muu"
+        }
+      },
+      "transaction_selector": {
+        "title": "Valitse tapahtuma",
+        "desc": "Valitse tapahtuma, johon haluat lisätä valitut tavarat.",
+        "no_suitable": "Ei sopivia tapahtumia",
+        "select": "Valitse"
+      }
+    },
+    "info_reel": {
+      "no_items": "Ei näytettäviä tavaroita"
+    },
+    "status": {
+      "removed": "Poistettu"
+    },
+    "created_items": "Luodut tavarat",
+    "location_missing": "Sijainti puuttuu",
+    "incomplete_items": "Keskeneräiset tavarat",
+    "complete_item": "Merkitse valmiiksi",
+    "location_tbd": "Sijainti täydennettävä"
+  },
+  "minutes": {
+    "title": "Pöytäkirjat",
+    "all_minutes": "Kaikki pöytäkirjat",
+    "archive": "Arkisto",
+    "no_results": "Ei tuloksia",
+    "no_minutes": "Ei pöytäkirjoja",
+    "no_minutes_yet": "Ei vielä pöytäkirjoja",
+    "this_year": "Tämä vuosi",
+    "search": {
+      "name_label": "Nimi",
+      "name_placeholder": "Hae nimellä...",
+      "year_label": "Vuosi",
+      "year_placeholder": "Valitse vuosi..."
+    },
+    "naming_guide": {
+      "title": "Pöytäkirjojen nimeäminen",
+      "use_format": "Käytä muotoa",
+      "example": "Esim: 2026-01-05_Hallituksen_kokous_1.pdf — Tiedostot järjestyvät automaattisesti uusin ensin."
+    }
+  },
+  "profile": {
+    "title": "Profiili",
+    "update_success": "Profiili päivitetty!",
+    "email_label": "Sähköposti",
+    "email_help": "Sähköpostia ei voi muuttaa",
+    "name_label": "Nimi",
+    "apartment_label": "Asuntonumero",
+    "optional": "vapaaehtoinen",
+    "apartment_placeholder": "esim. A 101",
+    "apartment_help": "Asuntonumeroa käytetään äänestysten validointiin",
+    "role_label": "Rooli",
+    "member_since_label": "Jäsen alkaen",
+    "description_label": "Kuvaus",
+    "description_placeholder": "Kerro itsestäsi...",
+    "picture_label": "Profiilikuva",
+    "picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä. Voit ladata oman kuvasi alla.",
+    "upload_picture": "Lataa uusi kuva",
+    "use_google_picture": "Käytä Google-kuvaa",
+    "use_google_picture_success": "Profiilikuva tyhjennetty. Se päivittyy Google-tilistä seuraavalla kirjautumisella.",
+    "picture_invalid_type": "Virheellinen tiedostotyyppi. Käytä JPG-, PNG- tai WebP-muotoa.",
+    "picture_too_large": "Tiedosto on liian suuri. Maksimikoko on {{maxSize}}MB.",
+    "picture_too_large_dimensions": "Kuvan mitat ovat liian suuret. Maksimikoko on {{maxDimension}}x{{maxDimension}}px.",
+    "picture_updated": "Profiilikuva päivitetty.",
+    "picture_upload_error": "Profiilikuvan päivitys epäonnistui.",
+    "local_ai": {
+      "title": "Paikalliset tekoälymallit",
+      "description": "Käytä omia paikallisia tekoälymalleja käännöksiin palvelinpuolen tekoälyn sijaan. Vaatii Ollaman käynnissä tietokoneellasi.",
+      "enable_label": "Ota paikalliset tekoälymallit käyttöön",
+      "enable_help": "Salli sivujen käyttää paikallista Ollama-instanssia käännöksiin.",
+      "url_label": "Ollama URL",
+      "url_help": "URL johon Ollama on käynnistetty. Oletus: http://localhost:11434",
+      "test_connection": "Testaa yhteyttä",
+      "connection_success": "Yhteys onnistui! Löydettiin {{count}} mallia.",
+      "connection_failed": "Yhteys epäonnistui. Varmista, että Ollama on käynnissä ja CORS on käytössä.",
+      "connection_error": "Yhteysvirhe",
+      "cors_title": "Selainkäyttö (CORS)",
+      "cors_help": "Selainyhteyksiä varten käynnistä Ollama: OLLAMA_ORIGINS=* ollama serve"
+    }
+  },
+  "avatars": {
+    "delete": "Poista"
+  },
+  "admin": {
+    "storage": {
+      "minutes": "Pöytäkirjat",
+      "minutes.title": "Pöytäkirjagalleria",
+      "minutes.description": "Hallitse ladattuja pöytäkirjatiedostoja. Linkitetyt tiedostot vastaavat olemassa olevia pöytäkirjamerkintöjä.",
+      "minutes.empty": "Ei pöytäkirjoja",
+      "minutes.delete_confirm": "Haluatko varmasti poistaa tämän tiedoston? Tätä toimintoa ei voi peruuttaa.",
+      "receipts": "Kuitit",
+      "avatars": "Avatarit",
+      "receipts.title": "Kuittivalikoima",
+      "receipts.description": "Kaikki kuittitiedostot. Linkitetyt kuitit on liitetty korvauspyyntöön, eikä niitä voi poistaa.",
+      "receipts.empty": "Ei kuitteja",
+      "receipts.delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
+      "receipts.delete_success": "Kuitti poistettu",
+      "receipts.delete_error": "Poisto epäonnistui",
+      "receipts.open_pdf": "Avaa PDF",
+      "receipts.linked": "Linkitetty",
+      "receipts.unlinked": "Ei linkitetty",
+      "receipts.reimbursement_request": "Korvauspyyntö",
+      "avatars.title": "Avatarit",
+      "avatars.description": "Kaikki järjestelmään tallennetut käyttäjien avatar-kuvat.",
+      "avatars.empty": "Ei avatar-kuvia",
+      "avatars.delete": "Poista",
+      "avatars.delete_confirm": "Haluatko varmasti poistaa tämän avatarin?",
+      "avatars.delete_success": "Avatar poistettu",
+      "avatars.delete_error": "Poistaminen epäonnistui"
+    }
+  },
+  "local_ai": {
+    "model_selector": {
+      "label": "Paikallinen malli",
+      "loading": "Ladataan...",
+      "no_models": "Malleja ei löytynyt",
+      "connection_failed": "Yhteys epäonnistui",
+      "select_model": "Valitse malli",
+      "disabled": "Pois käytöstä",
+      "model_count": "{{count}} mallia"
+    },
+    "translate": {
+      "button_tooltip": "{{source}} → {{target}} (Käännä)",
+      "input_not_found": "Lähde- tai kohdekenttää ei löytynyt",
+      "empty_source": "Lähdekenttä on tyhjä",
+      "success": "Käännös valmis",
+      "failed": "Käännös epäonnistui: {{error}}"
+    }
+  },
+  "settings": {
+    "receipt_ocr_title": "Kuittien OCR",
+    "receipt_ocr_description": "Määritä tekoälyasetukset kuittien automaattiseen tulkintaan.",
+    "receipt_ocr_requires_api_key": "Kuittien OCR-tulkinta vaatii OpenRouter API-avaimen yleisasetuksissa.",
+    "ai_model": "AI-malli",
+    "select_model": "Valitse malli...",
+    "receipt_ai_model_help": "Valitse tehokas malli (esim. Gemini Flash 1.5, GPT-4o-mini) parhaan tuloksen saamiseksi.",
+    "general": {
+      "title": "Yleiset",
+      "languages_title": "Oletuskielet",
+      "languages_desc": "Määritä oletuskielet uusille käyttäjille ja vierailijoille. Käyttäjät voivat muuttaa näitä omassa profiilissaan.",
+      "primary_language": "Ensisijainen kieli",
+      "secondary_language": "Toissijainen kieli"
+    },
+    "reimbursements": {
+      "title": "Korvausasetukset",
+      "recipient_email_title": "Vastaanottajan sähköposti",
+      "recipient_email_desc": "Määritä sähköpostiosoite, johon kulukorvauspyynnöt lähetetään.",
+      "recipient_email_label": "Vastaanottajan sähköposti",
+      "recipient_email_placeholder": "rahastonhoito@example.com",
+      "recipient_email_fallback": "Käytössä ympäristömuuttuja: {{email}}",
+      "ai_parsing_title": "AI-tulkinta",
+      "ai_parsing_desc": "Ota käyttöön tekoälyavusteinen tulkinta tarkempia vastausten käsittelyä varten",
+      "enable_ai": "Ota AI-tulkinta käyttöön",
+      "select_model": "Valitse malli...",
+      "showing_models": "Näytetään {{count}} / {{total}} mallia",
+      "keywords_title": "Avainsanat",
+      "keywords_desc": "Mukautetut avainsanat hyväksymisen tai hylkäämisen tunnistamiseksi sähköposteista",
+      "default_approval": "Oletusarvoiset hyväksyntäsanat",
+      "additional_approval": "Lisää hyväksyntäsanoja",
+      "approval_placeholder": "maksettu, valmis, hyväksytty (pilkulla erotettuna)",
+      "default_rejection": "Oletusarvoiset hylkäyssanat",
+      "additional_rejection": "Lisää hylkäyssanoja"
+    },
+    "analytics": {
+      "title": "Analytiikka-asetukset"
+    },
+    "news": {
+      "title": "Uutisasetukset",
+      "ai_model_title": "Tekoäly-uutismalli",
+      "ai_model_desc": "Valitse tekoälymalli, jota käytetään uutisten kääntämiseen ensi- ja toisen kielen välillä.",
+      "select_model": "Valitse malli",
+      "select_model_placeholder": "Valitse malli...",
+      "showing_models": "Näytetään {{count}} / {{total}} mallia"
+    },
+    "faqs": {
+      "title": "UKK-asetukset",
+      "ai_model_title": "Tekoäly-UKK-malli",
+      "ai_model_desc": "Valitse tekoälymalli, jota käytetään UKK-rivien kääntämiseen ensi- ja toisen kielen välillä.",
+      "select_model": "Valitse malli",
+      "select_model_placeholder": "Valitse malli...",
+      "showing_models": "Näytetään {{count}} / {{total}} mallia"
+    },
+    "roles": {
+      "title": "Roolihallinta",
+      "create_new_title": "Luo uusi rooli",
+      "color_label": "Väri",
+      "system": "Järjestelmärooli",
+      "delete_title": "Poista rooli",
+      "delete_confirm": "Haluatko varmasti poistaa roolin \"{{name}}\"? Tätä toimintoa ei voi peruuttaa.",
+      "permissions_header": "Oikeudet",
+      "select_role_msg": "Valitse rooli vasemmalta muokataksesi oikeuksia",
+      "select_role": "Valitse rooli",
+      "select_role_placeholder": "Valitse rooli...",
+      "search_placeholder": "Hae oikeuksia...",
+      "category": "Kategoria",
+      "permission_name": "Oikeuden nimi",
+      "description": "Kuvaus",
+      "show_only_assigned": "Näytä vain määritetyt oikeudet"
+    },
+    "users": {
+      "title": "Käyttäjähallinta",
+      "headers": {
+        "name": "Nimi",
+        "email": "Sähköposti",
+        "roles": "Roolit",
+        "joined": "Liittynyt"
+      },
+      "no_users": "Ei käyttäjiä vielä",
+      "roles_placeholder": "Kirjoita roolin nimi ja paina Tab",
+      "no_roles_match": "Ei vastaavia rooleja",
+      "super_admin": "Pääkäyttäjä",
+      "role_updated": "Rooli päivitetty",
+      "cannot_change_super_admin": "Pääkäyttäjän roolia ei voi muuttaa",
+      "update_failed": "Roolin päivitys epäonnistui"
+    }
+  },
+  "committee": {
+    "title": "Toimikunta",
+    "members": "Jäsenet",
+    "no_members": "Toimikunnalla ei ole jäseniä",
+    "no_description": "Ei kuvausta",
+    "mail": {
+      "title": "Sähköposti",
+      "not_configured": "Sähköpostilähetys ei ole konfiguroitu. Aseta SMTP- ja COMMITTEE_FROM_EMAIL -ympäristömuuttujat.",
+      "to": "Vastaanottajat (To)",
+      "cc": "Kopio (CC)",
+      "bcc": "Piilokopio (BCC)",
+      "add_email": "Lisää sähköposti",
+      "type_to_add": "Kirjoita nimi tai rooli ja paina Tab lisätäksesi",
+      "no_suggestions": "Ei ehdotuksia",
+      "role": "Rooli",
+      "subject": "Aihe",
+      "subject_placeholder": "Sähköpostin aihe",
+      "body": "Viesti",
+      "body_placeholder": "Kirjoita viesti..."
+    }
+  },
+  "mail": {
+    "inbox": "Saapuneet",
+    "sent": "Lähetetyt",
+    "compose": "Uusi viesti",
+    "drafts": "Luonnokset",
+    "draft_saved_at": "Luonnos tallennettu kello {{time}}",
+    "send_tooltip": "Lähetä",
+    "no_drafts": "Ei luonnoksia",
+    "no_subject": "(Ei aihetta)",
+    "refresh": "Päivitä",
+    "refreshed": "{{count}} uutta viestiä haettu",
+    "no_messages": "Ei viestejä",
+    "from": "Lähettäjä",
+    "to": "Vastaanottaja",
+    "cc": "Kopio",
+    "date": "Päivä",
+    "delete": "Poista",
+    "delete_draft": "Poista luonnos",
+    "delete_confirm": "Haluatko varmasti poistaa tämän viestin?",
+    "delete_draft_confirm": "Haluatko varmasti poistaa tämän luonnoksen?",
+    "delete_success": "Poistettu onnistuneesti",
+    "delete_error": "Poisto epäonnistui",
+    "select": "Valitse",
+    "reply": "Vastaa",
+    "reply_all": "Vastaa kaikille",
+    "forward": "Välitä",
+    "forwarded_message": "Välitetty viesti",
+    "messages_in_thread": "{{count}} viestiä",
+    "compose_new": "Uusi viesti",
+    "compose_reply": "Vastaus",
+    "compose_reply_all": "Vastaus kaikille",
+    "compose_forward": "Välitys",
+    "quoted_reply_header": "{{date}}, {{name}} <{{email}}> kirjoitti:"
+  },
+  "contact": {
+    "header": "Ota yhteyttä",
+    "select_topic": "Valitse aihe",
+    "select_topic_prompt": "Valitse aihe aloittaaksesi",
+    "types": {
+      "committee": {},
+      "events": {},
+      "purchases": {},
+      "questions": {}
+    },
+    "form": {
+      "name": "Nimi",
+      "email": "Sähköposti",
+      "apartment": "Asunto",
+      "apartment_placeholder": "esim. A 123",
+      "update_apartment_profile": "Päivitä asuntonumero profiiliini",
+      "message": "Viesti",
+      "send": "Lähetä"
+    },
+    "success": {
+      "title": "Viesti lähetetty!",
+      "message": "Kiitos yhteydenotostasi! Vastaamme sinulle mahdollisimman pian.",
+      "back_home": "Takaisin etusivulle"
+    }
+  },
+  "social": {
+    "header": "Sosiaalinen Media",
+    "delete_confirm": "Poista?",
+    "no_channels": "Ei sosiaalisia kanavia",
+    "add_first": "Lisää ensimmäinen",
+    "set_primary": "Aseta ensisijaiseksi",
+    "clear_primary": "Poista ensisijaisuus",
+    "new": {
+      "header": "Uusi some-kanava",
+      "hidden_desc": "Piilotetut kanavat näkyvät vain henkilökunnalle",
+      "sort_desc": "Pienemmät numerot näkyvät ensin",
+      "primary_desc": "Ensisijainen kanava korostetaan"
+    },
+    "colors": {},
+    "icons": {}
+  },
+  "submissions": {
+    "title": "Yhteydenotot",
+    "no_submissions": "Ei vielä yhteydenottoja",
+    "delete_confirm": "Haluatko varmasti poistaa tämän yhteydenoton?",
+    "apartment": "Asunto",
+    "table": {
+      "time": "Aika",
+      "type": "Tyyppi",
+      "sender": "Lähettäjä",
+      "message": "Viesti",
+      "status": "Tila"
+    }
+  },
+  "events": {
+    "title": "Tapahtumat",
+    "upcoming": "Tulevat",
+    "no_upcoming": "Ei tulevia tapahtumia",
+    "no_results": "Ei tuloksia",
+    "open_calendar": "Avaa kalenteri",
+    "add_event": "Lisää tapahtuma",
+    "new": {
+      "header": "Uusi tapahtuma",
+      "recurrence": "Toistuvuus",
+      "reminders": "Muistutukset",
+      "success": "Tapahtuma luotu onnistuneesti!",
+      "error": "Tapahtuman luominen epäonnistui"
+    },
+    "form": {
+      "location_placeholder": "Tapahtuman sijainti (valinnainen)",
+      "frequency": "Toistuvuus",
+      "interval": "Väli",
+      "recurrence_end": "Toistuminen päättyy",
+      "end_never": "Ei koskaan",
+      "end_after": "Jälkeen",
+      "occurrences": "kertaa",
+      "end_on": "Päivänä",
+      "add_reminder": "Lisää muistutus",
+      "no_reminders": "Ei muistutuksia",
+      "attendees_placeholder": "Sähköpostiosoitteet (pilkulla erotettu)",
+      "attendees_help": "Syötä osallistujien sähköpostiosoitteet pilkulla erotettuina"
+    },
+    "frequency": {
+      "daily": "Päivittäin",
+      "weekly": "Viikottain",
+      "monthly": "Kuukausittain",
+      "yearly": "Vuosittain"
+    },
+    "reminder": {
+      "popup": "Ponnahdusikkuna",
+      "email": "Sähköposti"
+    },
+    "edit": {
+      "header": "Muokkaa tapahtumaa",
+      "success": "Tapahtuma päivitetty!",
+      "error": "Tapahtuman päivitys epäonnistui"
+    },
+    "delete": {
+      "success": "Tapahtuma poistettu!",
+      "error": "Tapahtuman poisto epäonnistui"
+    }
+  },
+  "news": {
+    "title": "Uutiset",
+    "add": "Lisää uutinen",
+    "edit": "Muokkaa",
+    "delete": "Poista",
+    "empty": "Ei uutisia vielä.",
+    "no_results": "Ei tuloksia haulla.",
+    "search_placeholder": "Etsi uutisia...",
+    "confirm_delete": "Haluatko varmasti poistaa tämän uutisen?",
+    "new_title": "Uusi uutinen",
+    "edit_title": "Muokkaa uutista",
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "form": {
+      "title": "Otsikko",
+      "title_placeholder": "Uutisen otsikko",
+      "summary": "Yhteenveto",
+      "summary_placeholder": "Lyhyt yhteenveto (valinnainen)",
+      "content": "Sisältö",
+      "content_placeholder": "Uutisen teksti",
+      "default_language": "Oletuskieli ({{language}})",
+      "secondary_language": "Toinen kieli ({{language}})"
+    },
+    "translate_with_ai": "Käännä tekoälyllä:",
+    "translating": "Käännetään...",
+    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+  },
+  "faq": {
+    "title": "Usein kysytyt kysymykset",
+    "add": "Lisää kysymys",
+    "edit": "Muokkaa",
+    "delete": "Poista",
+    "empty": "Ei kysymyksiä vielä.",
+    "no_results": "Ei tuloksia haulla.",
+    "search_placeholder": "Etsi UKK...",
+    "confirm_delete": "Haluatko varmasti poistaa tämän kysymyksen?",
+    "new_title": "Uusi kysymys",
+    "edit_title": "Muokkaa kysymystä",
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "form": {
+      "question": "Kysymys",
+      "question_placeholder": "Kirjoita kysymys",
+      "answer": "Vastaus",
+      "answer_placeholder": "Kirjoita vastaus",
+      "sort_order": "Järjestysnumero",
+      "default_language": "Oletuskieli ({{language}})",
+      "secondary_language": "Toinen kieli ({{language}})"
+    },
+    "translate_with_ai": "Käännä tekoälyllä:",
+    "translating": "Käännetään...",
+    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+  },
+  "polls": {
+    "title": "Kaikki Kyselyt",
+    "description": "Näytä ja hallinnoi kyselyitä",
+    "active": "Aktiiviset",
+    "closed": "Suljetut",
+    "no_active_polls": "Ei aktiivisia kyselyitä tällä hetkellä",
+    "time_remaining": "{{time}} jäljellä",
+    "ends_today": "Päättyy tänään",
+    "ends_tomorrow": "Päättyy huomenna",
+    "status_closed": "Suljettu",
+    "fill_poll": "Täytä kysely",
+    "view_results": "Näytä tulokset",
+    "add_poll": "Lisää kysely",
+    "analytics": "Analytiikka",
+    "analytics_description": "Näytä ja analysoi kyselyn vastauksia",
+    "no_sheets_found": "Analytiikka-taulukoita ei löytynyt",
+    "no_sheets_found_description": "Luo 'analytics'-kansio vuosikansioosi ja lisää Google Sheetejä. Jaa palvelutilille.",
+    "select_sheet": "Valitse taulukko",
+    "select_sheet_description": "Valitse taulukko yläpuolelta nähdäksesi sen tiedot.",
+    "new": {
+      "title": "Lisää kysely",
+      "choose_type": "Valitse kyselyn tyyppi",
+      "type_managed": "Luo uusi Google Form",
+      "type_managed_desc": "Luo lomake Google Forms API:n kautta. Palvelutili omistaa sen, sinusta tulee muokkaaja.",
+      "type_linked": "Linkitä olemassa oleva Google Form",
+      "type_linked_desc": "Yhdistä jo luomasi Google Form. Jaa se palvelutilille.",
+      "type_external": "Ulkoinen kyselylinkki",
+      "type_external_desc": "Linkitä mihin tahansa ulkoiseen kyselyyn, kuten SurveyMonkey, Typeform jne.",
+      "linked_info": "Linkitä omistamaasi Google Formiin. Muista jakaa se palvelutilille.",
+      "external_info": "Linkitä mihin tahansa kyselyyn tai lomakkeeseen.",
+      "name": "Kyselyn nimi",
+      "name_placeholder": "Esim. Tapahtumapalaute",
+      "description": "Kuvaus",
+      "description_placeholder": "Mitä tämä kysely koskee?",
+      "url": "Kyselyn URL",
+      "url_placeholder": "https://forms.google.com/...",
+      "url_help": "Linkki josta käyttäjät voivat täyttää kyselyn",
+      "google_form_url": "Google Form URL",
+      "deadline": "Deadline",
+      "deadline_help": "Milloin kyselyn tulisi sulkeutua? (valinnainen)",
+      "analytics_sheet": "Linkitä analytiikka-taulukkoon",
+      "analytics_sheet_help": "Valinnainen: Valitse taulukko nähdäksesi vastaukset analytiikassa",
+      "no_sheet": "Älä linkitä taulukkoon",
+      "submit": "Lisää kysely",
+      "create_form": "Luo lomake",
+      "creating": "Luodaan lomaketta..."
+    },
+    "instructions": {},
+    "success": {}
+  },
+  "email": {
+    "reimbursement": {
+      "subject": "Kulukorvaus pyyntö",
+      "title": "Kulukorvaus pyyntö",
+      "item": "Tavara",
+      "amount": "Summa",
+      "purchaser": "Ostaja",
+      "bank_account": "Tilinumero",
+      "minutes": "Pöytäkirja",
+      "receipts": "Kuitit",
+      "notes": "Lisätiedot",
+      "attached": "liitteenä",
+      "not_specified": "Ei määritetty",
+      "reply_instruction": "Vastaa tähän viestiin hyväksyäksesi tai hylätäksesi pyynnön."
+    },
+    "reimbursement_status": {
+      "approved": {},
+      "declined": {},
+      "status": "Tila",
+      "view_details": "Näytä tiedot"
+    }
+  },
+  "messages": {
+    "title": "Viestit",
+    "empty": "Ei uusia viestejä",
+    "mark_as_read": "Merkitse luetuksi",
+    "mark_all_read": "Merkitse kaikki luetuksi",
+    "marked_as_read": "Viesti merkitty luetuksi",
+    "view_purchase": "Näytä korvausvaatimus",
+    "reimbursement_approved": {},
+    "reimbursement_declined": {},
+    "news_published": {},
+    "ai_news_translation_failed": {},
+    "ai_faq_translation_failed": {},
+    "view_news": "Näytä uutinen",
+    "unknown_item": "Tuntematon tavara",
+    "see_all": "Näytä kaikki viestit",
+    "select_all": "Valitse kaikki",
+    "selected_count": "{{count}} valittu",
+    "mark_selected_read": "Merkitse valitut luetuksi",
+    "mark_selected_unread": "Merkitse valitut lukemattomiksi",
+    "clear_selection": "Tyhjennä valinta"
+  },
+  "permissions": {
+    "users": {
+      "read": "Näytä käyttäjälista",
+      "write": "Luo ja muokkaa käyttäjiä",
+      "delete": "Poista käyttäjiä",
+      "manage_roles": "Määritä rooleja käyttäjille"
+    },
+    "inventory": {
+      "read": "Näytä inventaariotavarat",
+      "write": "Luo ja muokkaa inventaariotavaroita",
+      "delete": "Poista inventaariotavaroita",
+      "export": "Vie inventaario CSV-tiedostoon",
+      "import": "Tuo inventaario tiedostosta"
+    },
+    "treasury": {
+      "read": "Näytä kassan yleiskuva",
+      "export": "Vie kassatiedot CSV-tiedostoon",
+      "import": "Tuo kassatiedot tiedostosta",
+      "breakdown": {
+        "read": "Näytä kassan erittely"
+      },
+      "transactions": {
+        "read": "Näytä tapahtumalista",
+        "write": "Luo tapahtumia",
+        "write-self": "Luo omia tapahtumia",
+        "update": "Muokkaa tapahtumia",
+        "delete": "Poista tapahtumia",
+        "update-self": "Muokkaa omia tapahtumia",
+        "delete-self": "Poista omia tapahtumia",
+        "read-self": "Näytä omia tapahtumia"
+      },
+      "reimbursements": {
+        "read": "Näytä korvausvaatimukset",
+        "write": "Luo korvausvaatimuksia",
+        "write-self": "Luo omia korvausvaatimuksia",
+        "update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
+        "delete": "Poista korvausvaatimuksia",
+        "update-self": "Muokkaa omia korvausvaatimuksia",
+        "delete-self": "Poista omia korvausvaatimuksia",
+        "read-self": "Näytä omia korvausvaatimuksia"
+      },
+      "budgets": {
+        "read": "Näytä budjetit",
+        "read-self": "Näytä omat budjetit",
+        "write": "Luo budjetteja",
+        "write-self": "Luo omia budjetteja",
+        "update": "Muokkaa budjetteja",
+        "delete": "Poista budjetteja",
+        "update-self": "Muokkaa omia budjetteja",
+        "delete-self": "Poista omia budjetteja"
+      },
+      "receipts": {
+        "read": "Näytä kuitit",
+        "read-self": "Näytä omat kuitit",
+        "write": "Luo kuitteja",
+        "write-self": "Luo omia kuitteja",
+        "update": "Muokkaa kuitteja",
+        "delete": "Poista kuitteja",
+        "update-self": "Muokkaa omia kuitteja",
+        "delete-self": "Poista omia kuitteja"
+      },
+      "view_scope": {
+        "all": "Näet kaikki {{itemType}}",
+        "own_only": "Näet vain omat {{itemType}}",
+        "item_types": {
+          "transactions": "tapahtumat",
+          "reimbursements": "korvausvaatimukset",
+          "budgets": "budjetit",
+          "receipts": "kuitit"
+        }
+      }
+    },
+    "purchases": {
+      "read": "Näytä kaikki ostopyynnöt",
+      "manage": "Päivitä ostopyynnön tila",
+      "delete": "Poista ostopyyntöjä"
+    },
+    "submissions": {
+      "read": "Näytä yhteydenottolomakkeet",
+      "write": "Päivitä yhteydenoton tila",
+      "delete": "Poista yhteydenottoja"
+    },
+    "social": {
+      "read": "Näytä some-linkit",
+      "write": "Luo ja muokkaa some-linkkejä",
+      "delete": "Poista some-linkkejä"
+    },
+    "minutes": {
+      "read": "Näytä ja lataa pöytäkirjat",
+      "guide": "Näytä nimeämiskäytäntöohje"
+    },
+    "events": {
+      "read": "Näytä kalenteritapahtumat",
+      "write": "Luo kalenteritapahtumia",
+      "update": "Muokkaa kalenteritapahtumia",
+      "delete": "Poista kalenteritapahtumia"
+    },
+    "news": {
+      "read": "Näytä uutiset",
+      "write": "Luo uutisia",
+      "update": "Muokkaa uutisia",
+      "delete": "Poista uutisia"
+    },
+    "faq": {
+      "read": "Näytä UKK",
+      "write": "Luo UKK-kohtia",
+      "update": "Muokkaa UKK-kohtia",
+      "delete": "Poista UKK-kohtia"
+    },
+    "forms": {
+      "read": "Näytä lomaketiedot ja analytiikka",
+      "export": "Vie lomaketiedot CSV-tiedostoon"
+    },
+    "polls": {
+      "read": "Näytä kyselyt",
+      "write": "Luo ja hallinnoi omia kyselyitä",
+      "delete": "Poista mikä tahansa kysely"
+    },
+    "profile": {
+      "read": {
+        "own": "Näytä oma profiili"
+      },
+      "write": {
+        "own": "Muokkaa omaa profiilia"
+      }
+    },
+    "avatars": {
+      "read": "Näytä avatar-kuvalista",
+      "delete": "Poista avatar-kuvia"
+    },
+    "admin": {
+      "storage": {
+        "read": "Näytä tallennustilan ylläpito",
+        "write": "Hallinnoi tallennustilan ylläpitoa"
+      }
+    },
+    "roles": {
+      "read": "Näytä roolit ja oikeudet",
+      "write": "Luo ja muokkaa rooleja",
+      "delete": "Poista rooleja"
+    },
+    "settings": {
+      "general": "Pääsy yleisiin asetuksiin",
+      "users": "Pääsy käyttäjähallinnan asetuksiin",
+      "roles": "Pääsy roolihallinnan asetuksiin",
+      "reimbursements": "Pääsy korvausasetusten hallintaan (AI, avainsanat)",
+      "analytics": "Pääsy analytiikka-asetuksiin (tekoälymallit)",
+      "news": "Pääsy uutisasetuksiin (AI-käännösmalli)",
+      "faqs": "Pääsy UKK-asetuksiin (AI-käännösmalli)"
+    },
+    "committee": {
+      "email": "Lähetä sähköpostia roolin jäsenille",
+      "read": "Näytä toimikunnan jäsenet"
+    },
+    "categories": {}
+  }
 }

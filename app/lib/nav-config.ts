@@ -124,6 +124,7 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.admin",
 		permission: "admin:storage:read",
 		children: [
+			{ path: "/admin/storage/minutes", icon: "description", i18nKey: "admin.storage.minutes", permission: "admin:storage:read" },
 			{ path: "/admin/storage/receipts", icon: "receipt_long", i18nKey: "admin.storage.receipts", permission: "admin:storage:read" },
 			{ path: "/admin/storage/avatars", icon: "account_circle", i18nKey: "admin.storage.avatars", permission: "admin:storage:read" },
 		],

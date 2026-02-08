@@ -12,6 +12,7 @@ import { requireAnyPermission } from "~/lib/auth.server";
 import { getReceiptStorage } from "~/lib/receipts";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
+import { TREASURY_PURCHASE_STATUS_VARIANTS } from "~/components/treasury/colored-status-link-badge";
 import type { Route } from "./+types/admin.storage.receipts";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -26,15 +27,7 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
 	await requireAnyPermission(
 		request,
-		[
-			"admin:storage:read",
-			"treasury:receipts:read",
-			"treasury:receipts:read-self",
-			"treasury:read",
-			"treasury:reimbursements:write",
-			"treasury:transactions:write",
-			"inventory:write",
-		],
+		["admin:storage:read"],
 		getDatabase,
 	);
 
@@ -120,15 +113,6 @@ export default function AdminStorageReceipts() {
 		setDeleteConfirmPathname(pathname);
 	}, []);
 
-	const PURCHASE_STATUS_VARIANT_MAP: Record<string, string> = {
-		pending:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-		approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-		reimbursed:
-			"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-		rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-	};
-
 	return (
 		<PageWrapper>
 			<ConfirmDialog
@@ -209,11 +193,10 @@ export default function AdminStorageReceipts() {
 										)}
 										{item.isLinked ? (
 											<Badge
-												className={`absolute top-2 right-2 ${
-													PURCHASE_STATUS_VARIANT_MAP[
-														item.purchaseStatus ?? "pending"
-													] ?? ""
-												}`}
+												className={`absolute top-2 right-2 ${TREASURY_PURCHASE_STATUS_VARIANTS[
+													item.purchaseStatus ?? "pending"
+												] ?? ""
+													}`}
 											>
 												{t("admin.storage.receipts.linked", {
 													defaultValue: "Linked",
@@ -239,8 +222,8 @@ export default function AdminStorageReceipts() {
 												>
 													{deletingPathname === item.pathname
 														? t("common.actions.loading", {
-																defaultValue: "...",
-															})
+															defaultValue: "...",
+														})
 														: t("receipts.delete")}
 												</Button>
 											</>

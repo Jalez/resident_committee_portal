@@ -33,14 +33,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	await requireAnyPermission(
 		request,
-		["treasury:receipts:delete", "treasury:reimbursements:write", "treasury:transactions:write", "inventory:write"],
+		["admin:storage:write", "treasury:receipts:delete", "treasury:reimbursements:write", "treasury:transactions:write", "inventory:write"],
 		getDatabase,
 	);
 
 	// Handle both form data and JSON
 	let pathname: string | null = null;
 	const contentType = request.headers.get("content-type");
-	
+
 	if (contentType?.includes("application/json")) {
 		let body: { pathname?: string };
 		try {
@@ -88,7 +88,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		if (receipt) {
 			await db.deleteReceipt(receipt.id);
 		}
-		
+
 		clearCache("RECEIPTS_BY_YEAR");
 		return Response.json({ success: true });
 	} catch (error) {
