@@ -112,7 +112,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const allItems = await db.getInventoryItems();
 	const uniqueLocations = [
-		...new Set(allItems.map((item) => item.location).filter(Boolean)),
+		...new Set(
+			allItems.map((item) => item.location ?? "missing location"),
+		),
 	].sort();
 	const uniqueCategories = [
 		...new Set(
@@ -166,7 +168,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 	if (locationFilter) {
 		const searchTerm = locationFilter.toLowerCase();
-		items = items.filter((item) => item.location.toLowerCase() === searchTerm);
+		items = items.filter((item) =>
+			(item.location ?? "missing location").toLowerCase() === searchTerm,
+		);
 	}
 	if (categoryFilter) {
 		const searchTerm = categoryFilter.toLowerCase();

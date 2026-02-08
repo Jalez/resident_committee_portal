@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, redirect, useNavigate } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
+import { PageHeader } from "~/components/layout/page-header";
+import {
+	TreasuryDetailCard,
+	TreasuryField,
+} from "~/components/treasury/treasury-detail-components";
+import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
 import { Checkbox } from "~/components/ui/checkbox";
-import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { getDatabase, type NewInventoryItem } from "~/db";
 import i18next from "~/i18next.server";
@@ -63,7 +68,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	await db.updateInventoryItem(params.itemId, updateData);
 
-	return redirect("/inventory");
+	return redirect(`/inventory/${params.itemId}`);
 }
 
 export default function EditInventoryItem({
@@ -73,146 +78,124 @@ export default function EditInventoryItem({
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 
-	const formatDateForInput = (date: Date | null) => {
-		if (!date) return "";
-		return new Date(date).toISOString().split("T")[0];
-	};
+	const [name, setName] = useState(item.name);
+	const [quantity, setQuantity] = useState(String(item.quantity));
+	const [location, setLocation] = useState(item.location ?? "");
+	const [category, setCategory] = useState(item.category || "");
+	const [description, setDescription] = useState(item.description || "");
+	const [value, setValue] = useState(item.value || "0");
+	const [purchasedAt, setPurchasedAt] = useState(
+		item.purchasedAt
+			? new Date(item.purchasedAt).toISOString().split("T")[0]
+			: "",
+	);
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4">
-				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-						{t("inventory.form.title_edit")}
-					</h1>
-					<p className="text-lg text-gray-500">
-						{t("inventory.form.subtitle_edit")}
-					</p>
-				</div>
+			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
+				<PageHeader title={t("inventory.form.title_edit")} />
 
 				<Form method="post" className="space-y-6">
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="name">{t("common.fields.name")} *</Label>
-								<Input
-									id="name"
-									name="name"
-									required
-									defaultValue={item.name}
-									placeholder={t("inventory.form.example", {
-										example: "Kahvinkeitin",
-									})}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="quantity">
-									{t("common.fields.quantity")} *
-								</Label>
-								<Input
-									id="quantity"
-									name="quantity"
-									type="number"
-									min="1"
-									required
-									defaultValue={item.quantity}
-								/>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="location">
-									{t("common.fields.location")} *
-								</Label>
-								<Input
-									id="location"
-									name="location"
-									required
-									defaultValue={item.location}
-									placeholder={t("inventory.form.example", {
-										example: "Kerhohuone",
-									})}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="category">
-									{t("common.fields.category")}
-								</Label>
-								<Input
-									id="category"
-									name="category"
-									defaultValue={item.category || ""}
-									placeholder={t("inventory.form.example", {
-										example: "Keittiö",
-									})}
-								/>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="description">
-								{t("common.fields.description")}
-							</Label>
-							<Input
-								id="description"
+					<TreasuryDetailCard
+						title={t("inventory.details", "Item Details")}
+					>
+						<div className="grid gap-4">
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.name")} *`}
+								name="name"
+								type="text"
+								value={name}
+								onChange={setName}
+								required
+								placeholder={t("inventory.form.example", {
+									example: "Kahvinkeitin",
+								})}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.quantity")} *`}
+								name="quantity"
+								type="number"
+								value={quantity}
+								onChange={setQuantity}
+								required
+								min="1"
+							/>
+							<TreasuryField
+								mode="edit"
+								label={`${t("common.fields.location")} *`}
+								name="location"
+								type="text"
+								value={location}
+								onChange={setLocation}
+								required
+								placeholder={t("inventory.form.example", {
+									example: "Kerhohuone",
+								})}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={t("common.fields.category")}
+								name="category"
+								type="text"
+								value={category}
+								onChange={setCategory}
+								placeholder={t("inventory.form.example", {
+									example: "Keittiö",
+								})}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={t("common.fields.description")}
 								name="description"
-								defaultValue={item.description || ""}
-								placeholder={t("inventory.form.description_placeholder")}
+								type="text"
+								value={description}
+								onChange={setDescription}
+								placeholder={t(
+									"inventory.form.description_placeholder",
+								)}
 							/>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="value">{t("common.fields.value")}</Label>
-								<Input
-									id="value"
-									name="value"
-									type="number"
-									step="0.01"
-									min="0"
-									defaultValue={item.value || "0"}
-									placeholder={t("inventory.form.value_placeholder")}
+							<TreasuryField
+								mode="edit"
+								label={t("common.fields.value")}
+								name="value"
+								type="number"
+								value={value}
+								onChange={setValue}
+								min="0"
+								step="0.01"
+								placeholder={t(
+									"inventory.form.value_placeholder",
+								)}
+							/>
+							<TreasuryField
+								mode="edit"
+								label={t(
+									"inventory.form.purchased_at_label",
+								)}
+								name="purchasedAt"
+								type="date"
+								value={purchasedAt}
+								onChange={setPurchasedAt}
+							/>
+							<div className="flex items-center gap-3 pt-2">
+								<Checkbox
+									id="showInInfoReel"
+									name="showInInfoReel"
+									defaultChecked={item.showInInfoReel}
 								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="purchasedAt">
-									{t("inventory.form.purchased_at_label")}
+								<Label
+									htmlFor="showInInfoReel"
+									className="cursor-pointer"
+								>
+									{t("inventory.form.show_in_info_reel")}
 								</Label>
-								<Input
-									id="purchasedAt"
-									name="purchasedAt"
-									type="date"
-									defaultValue={formatDateForInput(item.purchasedAt)}
-								/>
 							</div>
 						</div>
+					</TreasuryDetailCard>
 
-						<div className="flex items-center gap-3 pt-2">
-							<Checkbox
-								id="showInInfoReel"
-								name="showInInfoReel"
-								defaultChecked={item.showInInfoReel}
-							/>
-							<Label htmlFor="showInInfoReel" className="cursor-pointer">
-								{t("inventory.form.show_in_info_reel")}
-							</Label>
-						</div>
-					</div>
-
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate(-1)}
-							className="flex-1"
-						>
-							{t("common.actions.cancel")}
-						</Button>
-						<Button type="submit" className="flex-1">
-							{t("common.actions.save")}
-						</Button>
-					</div>
+					<TreasuryFormActions />
 				</Form>
 			</div>
 		</PageWrapper>

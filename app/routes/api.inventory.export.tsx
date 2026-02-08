@@ -32,7 +32,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			item.id,
 			escapeCSV(item.name),
 			item.quantity.toString(),
-			escapeCSV(item.location),
+			escapeCSV(item.location ?? "missing location"),
 			escapeCSV(item.category || ""),
 			escapeCSV(item.description || ""),
 			item.value || "0",
