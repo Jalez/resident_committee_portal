@@ -1,4 +1,5 @@
 import type { Route } from "./+types/api.entities.create-draft";
+import { data } from "react-router";
 import { getDatabase } from "~/db";
 import type { RelationshipEntityType } from "~/db/schema";
 import { requireAnyPermission } from "~/lib/auth.server";
@@ -11,7 +12,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const sourceName = formData.get("sourceName") as string | null;
 
 	if (!type) {
-		return { success: false, error: "Missing entity type" };
+		return data({ success: false, error: "Missing entity type" }, { status: 400 });
 	}
 
 	const db = getDatabase();
@@ -116,7 +117,7 @@ export async function action({ request }: Route.ActionArgs) {
 			}
 
 			default:
-				return { success: false, error: `Unknown entity type: ${type}` };
+				return data({ success: false, error: `Unknown entity type: ${type}` }, { status: 400 });
 		}
 
 		// Create relationship immediately if source context is provided
@@ -131,7 +132,7 @@ export async function action({ request }: Route.ActionArgs) {
 			});
 		}
 
-		return { 
+		return data({ 
 			success: true, 
 			entity: {
 				id: entity.id,
@@ -140,9 +141,9 @@ export async function action({ request }: Route.ActionArgs) {
 				status: entity.status || "draft",
 			},
 			linked: !!(sourceType && sourceId),
-		};
+		});
 	} catch (error) {
 		console.error(`[CreateDraft] Failed to create ${type} draft:`, error);
-		return { success: false, error: "Failed to create draft entity" };
+		return data({ success: false, error: "Failed to create draft entity" }, { status: 500 });
 	}
 }
