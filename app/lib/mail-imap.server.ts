@@ -108,16 +108,26 @@ async function applyReimbursementReply(
 	}
 
 	if (decision === "approved" || decision === "rejected") {
-		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
-		if (linkedTransaction) {
-			const newReimbursementStatus =
-				decision === "approved" ? "approved" : "declined";
-			const newTransactionStatus =
-				decision === "approved" ? "complete" : "declined";
-			await db.updateTransaction(linkedTransaction.id, {
-				reimbursementStatus: newReimbursementStatus,
-				status: newTransactionStatus,
-			});
+		// Find linked transaction via entity relationships
+		const relationships = await db.getEntityRelationships("reimbursement", purchaseId);
+		const transactionId = relationships
+			.find(r => r.relationBType === "transaction" || r.relationAType === "transaction")
+			?.relationBType === "transaction" 
+				? relationships.find(r => r.relationBType === "transaction")?.relationBId
+				: relationships.find(r => r.relationAType === "transaction")?.relationId;
+		
+		if (transactionId) {
+			const linkedTransaction = await db.getTransactionById(transactionId);
+			if (linkedTransaction) {
+				const newReimbursementStatus =
+					decision === "approved" ? "approved" : "declined";
+				const newTransactionStatus =
+					decision === "approved" ? "complete" : "declined";
+				await db.updateTransaction(linkedTransaction.id, {
+					reimbursementStatus: newReimbursementStatus,
+					status: newTransactionStatus,
+				});
+			}
 		}
 	}
 }

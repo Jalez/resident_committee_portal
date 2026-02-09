@@ -232,19 +232,26 @@ async function processEmailEvent(event: ResendEmailReceivedEvent) {
 
 		// Also update the linked transaction's reimbursementStatus and status
 		if (decision === "approved" || decision === "rejected") {
-			const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
-			if (linkedTransaction) {
-				const newReimbursementStatus =
-					decision === "approved" ? "approved" : "declined";
-				const newTransactionStatus =
-					decision === "approved" ? "complete" : "declined";
-				await db.updateTransaction(linkedTransaction.id, {
-					reimbursementStatus: newReimbursementStatus,
-					status: newTransactionStatus,
-				});
-				console.log(
-					`[Resend Webhook] Updated transaction ${linkedTransaction.id} status to: ${newTransactionStatus}, reimbursementStatus to: ${newReimbursementStatus}`,
-				);
+			// Find linked transaction via entity relationships
+			const relationships = await db.getEntityRelationships("reimbursement", purchaseId);
+			const linkedTransactionRel = relationships.find(
+				(r) => r.relationAType === "reimbursement" && r.relationBType === "transaction"
+			);
+			if (linkedTransactionRel) {
+				const linkedTransaction = await db.getTransactionById(linkedTransactionRel.relationBId);
+				if (linkedTransaction) {
+					const newReimbursementStatus =
+						decision === "approved" ? "approved" : "declined";
+					const newTransactionStatus =
+						decision === "approved" ? "complete" : "declined";
+					await db.updateTransaction(linkedTransaction.id, {
+						reimbursementStatus: newReimbursementStatus,
+						status: newTransactionStatus,
+					});
+					console.log(
+						`[Resend Webhook] Updated transaction ${linkedTransaction.id} status to: ${newTransactionStatus}, reimbursementStatus to: ${newReimbursementStatus}`,
+					);
+				}
 			}
 		}
 

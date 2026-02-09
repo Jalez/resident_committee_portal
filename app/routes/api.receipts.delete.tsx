@@ -63,20 +63,24 @@ export async function action({ request }: ActionFunctionArgs) {
 		});
 	}
 
-	// Reject delete if receipt is linked to a reimbursement request
+	// Reject delete if receipt is linked to any entity via relationships
 	const db = getDatabase();
 	const receipts = await db.getReceipts();
 	const receipt = receipts.find((r) => r.pathname === pathname);
-	if (receipt?.purchaseId) {
-		return new Response(
-			JSON.stringify({
-				error: "Cannot delete receipt linked to a reimbursement request",
-			}),
-			{
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			},
-		);
+	
+	if (receipt) {
+		const relationships = await db.getEntityRelationships("receipt", receipt.id);
+		if (relationships.length > 0) {
+			return new Response(
+				JSON.stringify({
+					error: "Cannot delete receipt linked to a reimbursement request or transaction",
+				}),
+				{
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
 	}
 
 	try {
@@ -84,7 +88,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		const storage = getReceiptStorage();
 		await storage.deleteFile(pathname);
 
-		// Delete from database if record exists (receipt from above, no purchaseId)
+		// Delete from database if record exists
 		if (receipt) {
 			await db.deleteReceipt(receipt.id);
 		}

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLoaderData, useRevalidator } from "react-router";
+import { useLoaderData, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Thumbnail } from "~/components/ui/thumbnail";
@@ -12,7 +12,6 @@ import { requireAnyPermission } from "~/lib/auth.server";
 import { getReceiptStorage } from "~/lib/receipts";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { TREASURY_PURCHASE_STATUS_VARIANTS } from "~/components/treasury/colored-status-link-badge";
 import type { Route } from "./+types/admin.storage.receipts";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -41,34 +40,25 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const dbReceipts = await db.getReceipts();
 	const dbByPathname = new Map(dbReceipts.map((r) => [r.pathname, r]));
 
-	const purchaseIds = [
-		...new Set(
-			dbReceipts
-				.map((r) => r.purchaseId)
-				.filter((id): id is string => Boolean(id)),
-		),
-	];
-	const purchasesMap = new Map<string, { status: string }>();
-	for (const id of purchaseIds) {
-		const p = await db.getPurchaseById(id);
-		if (p) purchasesMap.set(id, { status: p.status });
-	}
-
-	const items = allFiles.map((file) => {
-		const receipt = dbByPathname.get(file.pathname);
-		const isLinked = Boolean(receipt?.purchaseId);
-		const purchaseStatus = receipt?.purchaseId
-			? purchasesMap.get(receipt.purchaseId)?.status ?? "pending"
-			: null;
-		return {
-			pathname: file.pathname,
-			url: file.url,
-			name: file.name,
-			isLinked,
-			purchaseId: receipt?.purchaseId ?? null,
-			purchaseStatus,
-		};
-	});
+	// Check relationships for each receipt to determine if linked
+	const items = await Promise.all(
+		allFiles.map(async (file) => {
+			const receipt = dbByPathname.get(file.pathname);
+			// Check if receipt has any entity relationships (linked to reimbursement/transaction)
+			let isLinked = false;
+			if (receipt) {
+				const relationships = await db.getEntityRelationships("receipt", receipt.id);
+				isLinked = relationships.length > 0;
+			}
+			return {
+				pathname: file.pathname,
+				url: file.url,
+				name: file.name,
+				isLinked,
+				receiptId: receipt?.id ?? null,
+			};
+		})
+	);
 
 	const systemLanguages = await getSystemLanguageDefaults();
 
@@ -145,7 +135,7 @@ export default function AdminStorageReceipts() {
 				<p className="text-muted-foreground mb-6 -mt-6">
 					{t("admin.storage.receipts.description", {
 						defaultValue:
-							"All receipt files. Linked receipts are attached to a reimbursement request and cannot be deleted.",
+							"All receipt files. Linked receipts are attached to a reimbursement request or transaction and cannot be deleted.",
 					})}
 				</p>
 
@@ -193,10 +183,8 @@ export default function AdminStorageReceipts() {
 										)}
 										{item.isLinked ? (
 											<Badge
-												className={`absolute top-2 right-2 ${TREASURY_PURCHASE_STATUS_VARIANTS[
-													item.purchaseStatus ?? "pending"
-												] ?? ""
-													}`}
+												variant="secondary"
+												className="absolute top-2 right-2"
 											>
 												{t("admin.storage.receipts.linked", {
 													defaultValue: "Linked",
@@ -205,7 +193,7 @@ export default function AdminStorageReceipts() {
 										) : (
 											<>
 												<Badge
-													variant="secondary"
+													variant="outline"
 													className="absolute top-2 right-2"
 												>
 													{t("admin.storage.receipts.unlinked", {
@@ -236,14 +224,6 @@ export default function AdminStorageReceipts() {
 										>
 											{item.name}
 										</p>
-										{item.isLinked && item.purchaseId && (
-											<Link
-												to={`/treasury/reimbursements/${item.purchaseId}`}
-												className="text-xs text-blue-600 hover:underline"
-											>
-												{t("admin.storage.receipts.reimbursement_request")} →
-											</Link>
-										)}
 									</div>
 								</li>
 							))}

@@ -108,7 +108,6 @@ export async function action({ request }: ActionFunctionArgs) {
 					description: description || null,
 					url: result.url,
 					pathname: result.pathname,
-					purchaseId: null, // Not linked yet
 					createdBy: user.userId,
 				});
 				receiptId = receipt.id;

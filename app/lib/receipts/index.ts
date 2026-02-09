@@ -88,24 +88,65 @@ export async function getReceiptsByYear(): Promise<ReceiptsByYear[]> {
 
 export async function getUnconnectedReceiptsByYear(): Promise<ReceiptsByYear[]> {
 	const db = getDatabase();
-	const unlinked = await db.getReceiptsUnlinked();
-	return groupReceiptsByYear(unlinked);
+	const allReceipts = await db.getReceipts();
+	
+	// Get all relationships to find which receipts are linked to purchases
+	const relationships = await db.getEntityRelationships("reimbursement", "all");
+	const linkedReceiptIds = new Set<string>();
+	for (const rel of relationships) {
+		if (rel.relationBType === "receipt") {
+			linkedReceiptIds.add(rel.relationBId);
+		} else if (rel.relationAType === "receipt") {
+			linkedReceiptIds.add(rel.relationId);
+		}
+	}
+	
+	// Filter out linked receipts and drafts (receipts without pathname/url)
+	const unlinked = allReceipts.filter(r => !linkedReceiptIds.has(r.id));
+	const activeReceipts = unlinked.filter(r => r.pathname && r.url) as Array<{
+		pathname: string;
+		name: string | null;
+		url: string;
+		createdAt: Date;
+	}>;
+	return groupReceiptsByYear(activeReceipts);
 }
 
 export async function getReceiptsForPurchaseEdit(
 	purchaseId: string,
 ): Promise<ReceiptsByYear[]> {
 	const db = getDatabase();
-	const unlinked = await db.getReceiptsUnlinked();
-	const forPurchase = await db.getReceiptsByPurchaseId(purchaseId);
-	const merged = [...unlinked, ...forPurchase];
-	// Dedupe by pathname (in case of edge case)
+	
+	// Get all receipts
+	const allReceipts = await db.getReceipts();
+	
+	// Get receipts linked to this purchase via entity relationships
+	const relationships = await db.getEntityRelationships("reimbursement", purchaseId);
+	const linkedReceiptIds = new Set<string>();
+	for (const rel of relationships) {
+		if (rel.relationBType === "receipt") {
+			linkedReceiptIds.add(rel.relationBId);
+		} else if (rel.relationAType === "receipt") {
+			linkedReceiptIds.add(rel.relationId);
+		}
+	}
+	
+	// Include: (1) receipts linked to this purchase, (2) unlinked receipts
+	const merged = allReceipts.filter(r => linkedReceiptIds.has(r.id) || !Array.from(linkedReceiptIds).some(id => allReceipts.find(ar => ar.id === id)?.id === r.id));
+	
+	// Filter out drafts and dedupe by pathname
 	const seen = new Set<string>();
 	const unique = merged.filter((r) => {
+		if (!r.pathname || !r.url) return false; // Skip drafts
 		if (seen.has(r.pathname)) return false;
 		seen.add(r.pathname);
 		return true;
-	});
+	}) as Array<{
+		pathname: string;
+		name: string | null;
+		url: string;
+		createdAt: Date;
+	}>;
 	return groupReceiptsByYear(unique);
 }
 
