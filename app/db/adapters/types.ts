@@ -5,7 +5,6 @@ import type {
 	Faq,
 	FundBudget,
 	InventoryItem,
-	InventoryItemTransaction,
 	Message,
 	NewCommitteeMailMessage,
 	NewMailDraft,
@@ -26,7 +25,6 @@ import type {
 	News,
 	Poll,
 	Purchase,
-	BudgetTransaction,
 	Receipt,
 	ReceiptContent,
 	Role,
@@ -37,8 +35,9 @@ import type {
 	User,
 	Minute,
 	NewMinute,
-	MinuteLink,
-	NewMinuteLink,
+	EntityRelationship,
+	NewEntityRelationship,
+	RelationshipEntityType,
 } from "../schema";
 
 /**
@@ -89,7 +88,6 @@ export interface DatabaseAdapter {
 	// ==================== Inventory Methods ====================
 	getInventoryItems(): Promise<InventoryItem[]>;
 	getInventoryItemById(id: string): Promise<InventoryItem | null>;
-	getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]>;
 	createInventoryItem(item: NewInventoryItem): Promise<InventoryItem>;
 	updateInventoryItem(
 		id: string,
@@ -105,32 +103,13 @@ export interface DatabaseAdapter {
 		notes?: string,
 	): Promise<InventoryItem | null>;
 	markInventoryItemAsLegacy(id: string): Promise<InventoryItem | null>;
-	/** Get items available for transaction picker (active, non-legacy, with available quantity) */
-	getInventoryItemsForPicker(): Promise<
-		(InventoryItem & { availableQuantity: number })[]
-	>;
-	/** Get transaction links with quantities for an item */
-	getTransactionLinksForItem(
-		itemId: string,
-	): Promise<{ transaction: Transaction; quantity: number }[]>;
-	/** Reduce quantity from a specific transaction link */
-	reduceInventoryFromTransaction(
-		itemId: string,
-		transactionId: string,
-		quantityToRemove: number,
-	): Promise<boolean>;
-	/** Update manually accounted quantity (no transaction) for an item */
-	updateInventoryItemManualCount(
-		itemId: string,
-		manualCount: number,
-	): Promise<InventoryItem | null>;
+
 
 	// ==================== Purchase Methods ====================
 	getPurchases(): Promise<Purchase[]>;
 	getPurchaseById(id: string): Promise<Purchase | null>;
 	getPurchasesByInventoryItem(inventoryItemId: string): Promise<Purchase[]>;
-	/** Get purchases that don't have a linked transaction */
-	getPurchasesWithoutTransactions(): Promise<Purchase[]>;
+
 	createPurchase(purchase: NewPurchase): Promise<Purchase>;
 	updatePurchase(
 		id: string,
@@ -142,34 +121,12 @@ export interface DatabaseAdapter {
 	getTransactionById(id: string): Promise<Transaction | null>;
 	getTransactionsByYear(year: number): Promise<Transaction[]>;
 	getAllTransactions(): Promise<Transaction[]>;
-	getTransactionByPurchaseId(purchaseId: string): Promise<Transaction | null>;
-	/** Get expense transactions that don't have a linked purchase (reimbursement) */
-	getExpenseTransactionsWithoutReimbursement(): Promise<Transaction[]>;
 	createTransaction(transaction: NewTransaction): Promise<Transaction>;
 	updateTransaction(
 		id: string,
 		data: Partial<Omit<NewTransaction, "id">>,
 	): Promise<Transaction | null>;
 	deleteTransaction(id: string): Promise<boolean>;
-
-	// ==================== Inventory-Transaction Junction Methods ====================
-	linkInventoryItemToTransaction(
-		itemId: string,
-		transactionId: string,
-		quantity?: number,
-	): Promise<InventoryItemTransaction>;
-	unlinkInventoryItemFromTransaction(
-		itemId: string,
-		transactionId: string,
-	): Promise<boolean>;
-	getTransactionsForInventoryItem(itemId: string): Promise<Transaction[]>;
-	getInventoryItemsForTransaction(
-		transactionId: string,
-	): Promise<(InventoryItem & { quantity: number })[]>;
-	/** Get only active (non-removed, non-legacy) inventory items for a transaction */
-	getActiveInventoryItemsForTransaction(
-		transactionId: string,
-	): Promise<(InventoryItem & { quantity: number })[]>;
 
 	// ==================== Submission Methods ====================
 	getSubmissions(): Promise<Submission[]>;
@@ -220,15 +177,7 @@ export interface DatabaseAdapter {
 	updateMinute(id: string, data: Partial<Omit<NewMinute, "id">>): Promise<Minute | null>;
 	deleteMinute(id: string): Promise<boolean>;
 
-	// ==================== Minute Link Methods ====================
-	createMinuteLink(link: NewMinuteLink): Promise<MinuteLink>;
-	deleteMinuteLink(id: string): Promise<boolean>;
-	getMinuteLinks(minuteId: string): Promise<MinuteLink[]>;
-	// Get specialized links
-	getMinuteLinkByPurchaseId(purchaseId: string): Promise<MinuteLink | null>;
-	getMinuteLinkByNewsId(newsId: string): Promise<MinuteLink | null>;
-	getMinuteLinkByFaqId(faqId: string): Promise<MinuteLink | null>;
-	getMinuteLinkByInventoryItemId(inventoryItemId: string): Promise<MinuteLink | null>;
+
 
 	// ==================== App Settings Methods ====================
 	getSetting(key: string): Promise<string | null>;
@@ -318,31 +267,13 @@ export interface DatabaseAdapter {
 	): Promise<FundBudget | null>;
 	/** Delete a fund budget (only if no linked transactions) */
 	deleteFundBudget(id: string): Promise<boolean>;
-	/** Link a transaction to a budget with a specific deduction amount */
-	linkTransactionToBudget(
-		transactionId: string,
-		budgetId: string,
-		amount: string,
-	): Promise<BudgetTransaction>;
-	/** Unlink a transaction from a budget */
-	unlinkTransactionFromBudget(
-		transactionId: string,
-		budgetId: string,
-	): Promise<boolean>;
-	/** Get all transactions linked to a budget */
-	getBudgetTransactions(
-		budgetId: string,
-	): Promise<{ transaction: Transaction; amount: string }[]>;
+
 	/** Get the total used amount for a budget (only complete transactions) */
 	getBudgetUsedAmount(budgetId: string): Promise<number>;
 	/** Get the total reserved amount for a budget (only pending transactions) */
 	getBudgetReservedAmount(budgetId: string): Promise<number>;
 	/** Calculate available funds for a year (balance - open budget amounts) */
 	getAvailableFundsForYear(year: number): Promise<number>;
-	/** Get budget linked to a transaction (if any) */
-	getBudgetForTransaction(
-		transactionId: string,
-	): Promise<{ budget: FundBudget; amount: string } | null>;
 
 	// ==================== Poll Methods ====================
 	/** Get all polls */
@@ -366,10 +297,6 @@ export interface DatabaseAdapter {
 	getReceipts(): Promise<Receipt[]>;
 	/** Get a single receipt by ID */
 	getReceiptById(id: string): Promise<Receipt | null>;
-	/** Get all receipts for a purchase (reimbursement request) */
-	getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]>;
-	/** Get receipts not linked to any purchase */
-	getReceiptsUnlinked(): Promise<Receipt[]>;
 	/** Create a new receipt */
 	createReceipt(receipt: NewReceipt): Promise<Receipt>;
 	/** Update a receipt */
@@ -394,10 +321,47 @@ export interface DatabaseAdapter {
 	): Promise<ReceiptContent | null>;
 	/** Delete receipt content */
 	deleteReceiptContent(id: string): Promise<boolean>;
-	/** Get receipts for a purchase (reimbursement) */
-	getReceiptsForPurchase(purchaseId: string): Promise<Receipt[]>;
+
 	/** Get incomplete inventory items (needs_completion = true) */
 	getIncompleteInventoryItems(): Promise<InventoryItem[]>;
 	/** Get app setting by key */
 	getAppSetting(key: string): Promise<AppSetting | null>;
+
+	// ==================== Universal Relationship Methods ====================
+	createEntityRelationship(
+		relationship: NewEntityRelationship,
+	): Promise<EntityRelationship>;
+	deleteEntityRelationship(id: string): Promise<boolean>;
+	deleteEntityRelationshipByPair(
+		relationAType: RelationshipEntityType,
+		relationAId: string,
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	): Promise<boolean>;
+	getEntityRelationships(
+		type: RelationshipEntityType,
+		id: string,
+	): Promise<EntityRelationship[]>;
+	entityRelationshipExists(
+		relationAType: RelationshipEntityType,
+		relationAId: string,
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	): Promise<boolean>;
+	/**
+	 * Get IDs of draft entities of a specific type that have no relationships
+	 * and are older than the specified time.
+	 */
+	getOrphanedDrafts(
+		type: RelationshipEntityType,
+		olderThanMinutes: number,
+	): Promise<string[]>;
+	/**
+	 * Bulk delete entities of a specific type.
+	 * Used for cleaning up orphaned drafts.
+	 */
+	bulkDeleteDraftEntities(
+		type: RelationshipEntityType,
+		ids: string[],
+	): Promise<number>;
 }

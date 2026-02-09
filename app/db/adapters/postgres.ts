@@ -4,6 +4,8 @@ import postgres from "postgres";
 import {
 	type AppSetting,
 	appSettings,
+	type BudgetTransaction,
+	budgetTransactions,
 	type CommitteeMailMessage,
 	committeeMailMessages,
 	type Faq,
@@ -11,9 +13,7 @@ import {
 	type FundBudget,
 	fundBudgets,
 	type InventoryItem,
-	type InventoryItemTransaction,
 	inventoryItems,
-	inventoryItemTransactions,
 	type MailDraft,
 	mailDrafts,
 	type Message,
@@ -40,8 +40,6 @@ import {
 	polls,
 	type Purchase,
 	purchases,
-	type BudgetTransaction,
-	budgetTransactions,
 	type Receipt,
 	type ReceiptContent,
 	receipts,
@@ -61,9 +59,10 @@ import {
 	type Minute,
 	minutes,
 	type NewMinute,
-	type MinuteLink,
-	minuteLinks,
-	type NewMinuteLink,
+	type EntityRelationship,
+	entityRelationships,
+	type NewEntityRelationship,
+	type RelationshipEntityType,
 } from "../schema";
 import type { DatabaseAdapter } from "./types";
 
@@ -353,10 +352,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deleteInventoryItem(id: string): Promise<boolean> {
-		// First delete any transaction links
-		await this.db
-			.delete(inventoryItemTransactions)
-			.where(eq(inventoryItemTransactions.inventoryItemId, id));
 		// Unlink from purchases (set inventoryItemId to null)
 		await this.db
 			.update(purchases)
@@ -375,22 +370,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 	): Promise<InventoryItem[]> {
 		if (items.length === 0) return [];
 		return this.db.insert(inventoryItems).values(items).returning();
-	}
-
-	async getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]> {
-		const linkedItems = await this.db
-			.select({ id: inventoryItemTransactions.inventoryItemId })
-			.from(inventoryItemTransactions);
-		const linkedIds = linkedItems.map((l) => l.id);
-
-		if (linkedIds.length === 0) {
-			return this.db.select().from(inventoryItems);
-		}
-
-		return this.db
-			.select()
-			.from(inventoryItems)
-			.where(notInArray(inventoryItems.id, linkedIds));
 	}
 
 	async getActiveInventoryItems(): Promise<InventoryItem[]> {
@@ -431,111 +410,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
-	async getInventoryItemsForPicker(): Promise<
-		(InventoryItem & { availableQuantity: number })[]
-	> {
-		const activeItems = await this.db
-			.select()
-			.from(inventoryItems)
-			.where(eq(inventoryItems.status, "active"));
-
-		const allLinks = await this.db.select().from(inventoryItemTransactions);
-
-		const linkedQuantityMap = new Map<string, number>();
-		for (const link of allLinks) {
-			const current = linkedQuantityMap.get(link.inventoryItemId) || 0;
-			linkedQuantityMap.set(link.inventoryItemId, current + link.quantity);
-		}
-
-		const result: (InventoryItem & { availableQuantity: number })[] = [];
-		for (const item of activeItems) {
-			const linkedQty = linkedQuantityMap.get(item.id) || 0;
-			const availableQuantity =
-				item.quantity - linkedQty - (item.manualCount || 0);
-			if (availableQuantity > 0) {
-				result.push({ ...item, availableQuantity });
-			}
-		}
-
-		return result;
-	}
-
-	async getTransactionLinksForItem(
-		itemId: string,
-	): Promise<{ transaction: Transaction; quantity: number }[]> {
-		const links = await this.db
-			.select()
-			.from(inventoryItemTransactions)
-			.where(eq(inventoryItemTransactions.inventoryItemId, itemId));
-
-		if (links.length === 0) return [];
-
-		const result: { transaction: Transaction; quantity: number }[] = [];
-		for (const link of links) {
-			const txResult = await this.db
-				.select()
-				.from(transactions)
-				.where(eq(transactions.id, link.transactionId))
-				.limit(1);
-			if (txResult[0]) {
-				result.push({ transaction: txResult[0], quantity: link.quantity });
-			}
-		}
-
-		return result;
-	}
-
-	async reduceInventoryFromTransaction(
-		itemId: string,
-		transactionId: string,
-		quantityToRemove: number,
-	): Promise<boolean> {
-		const links = await this.db
-			.select()
-			.from(inventoryItemTransactions)
-			.where(
-				and(
-					eq(inventoryItemTransactions.inventoryItemId, itemId),
-					eq(inventoryItemTransactions.transactionId, transactionId),
-				),
-			);
-
-		if (links.length === 0) return false;
-
-		const currentQty = links[0].quantity;
-		const newQty = currentQty - quantityToRemove;
-
-		if (newQty <= 0) {
-			await this.db
-				.delete(inventoryItemTransactions)
-				.where(
-					and(
-						eq(inventoryItemTransactions.inventoryItemId, itemId),
-						eq(inventoryItemTransactions.transactionId, transactionId),
-					),
-				);
-		} else {
-			await this.db
-				.update(inventoryItemTransactions)
-				.set({ quantity: newQty })
-				.where(
-					and(
-						eq(inventoryItemTransactions.inventoryItemId, itemId),
-						eq(inventoryItemTransactions.transactionId, transactionId),
-					),
-				);
-		}
-
-		const item = await this.getInventoryItemById(itemId);
-		if (item) {
-			const newItemQty = Math.max(0, item.quantity - quantityToRemove);
-			await this.updateInventoryItem(itemId, { quantity: newItemQty });
-		}
-
-		return true;
-	}
-
-	// ==================== Purchase Methods ====================
+// ==================== Purchase Methods ====================
 	async getPurchases(): Promise<Purchase[]> {
 		return this.db.select().from(purchases);
 	}
@@ -558,21 +433,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.where(eq(purchases.inventoryItemId, inventoryItemId));
 	}
 
-	async getPurchasesWithoutTransactions(): Promise<Purchase[]> {
-		// Get all purchases, then filter out those that have a linked transaction
-		const allPurchases = await this.db.select().from(purchases);
-		const linkedPurchaseIds = await this.db
-			.select({ purchaseId: transactions.purchaseId })
-			.from(transactions);
 
-		const linkedIds = new Set(
-			linkedPurchaseIds
-				.map((t) => t.purchaseId)
-				.filter(Boolean) as string[],
-		);
-
-		return allPurchases.filter((p) => !linkedIds.has(p.id));
-	}
 
 	async createPurchase(purchase: NewPurchase): Promise<Purchase> {
 		const result = await this.db.insert(purchases).values(purchase).returning();
@@ -592,10 +453,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deletePurchase(id: string): Promise<boolean> {
-		await this.db
-			.update(transactions)
-			.set({ purchaseId: null })
-			.where(eq(transactions.purchaseId, id));
 		const result = await this.db
 			.delete(purchases)
 			.where(eq(purchases.id, id))
@@ -624,45 +481,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return this.db.select().from(transactions);
 	}
 
-	async getTransactionByPurchaseId(
-		purchaseId: string,
-	): Promise<Transaction | null> {
-		const result = await this.db
-			.select()
-			.from(transactions)
-			.where(eq(transactions.purchaseId, purchaseId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-	async getExpenseTransactionsWithoutReimbursement(): Promise<Transaction[]> {
-		return this.db
-			.select()
-			.from(transactions)
-			.where(
-				and(
-					eq(transactions.type, "expense"),
-					or(
-						isNull(transactions.purchaseId),
-						eq(transactions.reimbursementStatus, "declined"),
-					),
-				),
-			);
-	}
-
 	async createTransaction(transaction: NewTransaction): Promise<Transaction> {
-		// Validate: if purchaseId is provided, ensure no other transaction links to it
-		if (transaction.purchaseId) {
-			const existingLink = await this.getTransactionByPurchaseId(
-				transaction.purchaseId,
-			);
-			if (existingLink) {
-				throw new Error(
-					`Purchase ${transaction.purchaseId} is already linked to transaction ${existingLink.id}`,
-				);
-			}
-		}
-
 		const result = await this.db
 			.insert(transactions)
 			.values(transaction)
@@ -700,86 +519,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.where(eq(inventoryItems.id, itemId))
 			.returning();
 		return result[0] ?? null;
-	}
-
-	// ==================== Inventory-Transaction Junction Methods ====================
-	async linkInventoryItemToTransaction(
-		itemId: string,
-		transactionId: string,
-		quantity = 1,
-	): Promise<InventoryItemTransaction> {
-		const result = await this.db
-			.insert(inventoryItemTransactions)
-			.values({
-				inventoryItemId: itemId,
-				transactionId,
-				quantity,
-			})
-			.returning();
-		return result[0];
-	}
-
-	async unlinkInventoryItemFromTransaction(
-		itemId: string,
-		transactionId: string,
-	): Promise<boolean> {
-		const result = await this.db
-			.delete(inventoryItemTransactions)
-			.where(
-				and(
-					eq(inventoryItemTransactions.inventoryItemId, itemId),
-					eq(inventoryItemTransactions.transactionId, transactionId),
-				),
-			)
-			.returning();
-		return result.length > 0;
-	}
-
-	async getTransactionsForInventoryItem(
-		itemId: string,
-	): Promise<Transaction[]> {
-		const links = await this.db
-			.select()
-			.from(inventoryItemTransactions)
-			.where(eq(inventoryItemTransactions.inventoryItemId, itemId));
-		if (links.length === 0) return [];
-		const result: Transaction[] = [];
-		for (const link of links) {
-			const t = await this.db
-				.select()
-				.from(transactions)
-				.where(eq(transactions.id, link.transactionId))
-				.limit(1);
-			if (t[0]) result.push(t[0]);
-		}
-		return result;
-	}
-
-	async getInventoryItemsForTransaction(
-		transactionId: string,
-	): Promise<(InventoryItem & { quantity: number })[]> {
-		const links = await this.db
-			.select()
-			.from(inventoryItemTransactions)
-			.where(eq(inventoryItemTransactions.transactionId, transactionId));
-		if (links.length === 0) return [];
-		const result: (InventoryItem & { quantity: number })[] = [];
-		for (const link of links) {
-			const item = await this.db
-				.select()
-				.from(inventoryItems)
-				.where(eq(inventoryItems.id, link.inventoryItemId))
-				.limit(1);
-			if (item[0]) result.push({ ...item[0], quantity: link.quantity });
-		}
-		return result;
-	}
-
-	async getActiveInventoryItemsForTransaction(
-		transactionId: string,
-	): Promise<(InventoryItem & { quantity: number })[]> {
-		const allItems = await this.getInventoryItemsForTransaction(transactionId);
-		return allItems.filter((item) => item.status === "active");
 	}
 
 	// ==================== Submission Methods ====================
@@ -865,7 +604,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deleteMinute(id: string): Promise<boolean> {
-		// Links should cascade delete due to mismatch in Drizzle/DB, but explicit delete is safer?
 		// Schema has onDelete: "cascade" for minuteId, so it should be fine.
 		const result = await this.db
 			.delete(minutes)
@@ -873,70 +611,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.returning();
 		return result.length > 0;
 	}
-
-	// ==================== Minute Link Methods ====================
-	async createMinuteLink(link: NewMinuteLink): Promise<MinuteLink> {
-		const result = await this.db
-			.insert(minuteLinks)
-			.values(link)
-			.returning();
-		return result[0];
-	}
-
-	async deleteMinuteLink(id: string): Promise<boolean> {
-		const result = await this.db
-			.delete(minuteLinks)
-			.where(eq(minuteLinks.id, id))
-			.returning();
-		return result.length > 0;
-	}
-
-	async getMinuteLinks(minuteId: string): Promise<MinuteLink[]> {
-		return this.db
-			.select()
-			.from(minuteLinks)
-			.where(eq(minuteLinks.minuteId, minuteId));
-	}
-
-	async getMinuteLinkByPurchaseId(purchaseId: string): Promise<MinuteLink | null> {
-		const result = await this.db
-			.select()
-			.from(minuteLinks)
-			.where(eq(minuteLinks.purchaseId, purchaseId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-	async getMinuteLinkByNewsId(newsId: string): Promise<MinuteLink | null> {
-		const result = await this.db
-			.select()
-			.from(minuteLinks)
-			.where(eq(minuteLinks.newsId, newsId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-	async getMinuteLinkByFaqId(faqId: string): Promise<MinuteLink | null> {
-		const result = await this.db
-			.select()
-			.from(minuteLinks)
-			.where(eq(minuteLinks.faqId, faqId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-	async getMinuteLinkByInventoryItemId(
-		inventoryItemId: string,
-	): Promise<MinuteLink | null> {
-		const result = await this.db
-			.select()
-			.from(minuteLinks)
-			.where(eq(minuteLinks.inventoryItemId, inventoryItemId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-
 
 	// ==================== Social Link Methods ====================
 	async getSocialLinks(): Promise<SocialLink[]> {
@@ -1677,22 +1351,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
-	async getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]> {
-		return this.db
-			.select()
-			.from(receipts)
-			.where(eq(receipts.purchaseId, purchaseId))
-			.orderBy(desc(receipts.createdAt));
-	}
-
-	async getReceiptsUnlinked(): Promise<Receipt[]> {
-		return this.db
-			.select()
-			.from(receipts)
-			.where(isNull(receipts.purchaseId))
-			.orderBy(desc(receipts.createdAt));
-	}
-
 	async createReceipt(receipt: NewReceipt): Promise<Receipt> {
 		const result = await this.db
 			.insert(receipts)
@@ -1773,13 +1431,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
-	async getReceiptsForPurchase(purchaseId: string): Promise<Receipt[]> {
-		return this.db
-			.select()
-			.from(receipts)
-			.where(eq(receipts.purchaseId, purchaseId));
-	}
-
 	async getIncompleteInventoryItems(): Promise<InventoryItem[]> {
 		return this.db
 			.select()
@@ -1795,5 +1446,169 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.where(eq(appSettings.key, key))
 			.limit(1);
 		return result[0] ?? null;
+	}
+
+	// ==================== Universal Relationship Methods ====================
+	async createEntityRelationship(
+		relationship: NewEntityRelationship,
+	): Promise<EntityRelationship> {
+		const result = await this.db
+			.insert(entityRelationships)
+			.values(relationship)
+			.returning();
+		return result[0];
+	}
+
+	async deleteEntityRelationship(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(entityRelationships)
+			.where(eq(entityRelationships.id, id))
+			.returning();
+		return result.length > 0;
+	}
+
+	async deleteEntityRelationshipByPair(
+		relationAType: RelationshipEntityType,
+		relationAId: string,
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	): Promise<boolean> {
+		const result = await this.db
+			.delete(entityRelationships)
+			.where(
+				and(
+					eq(entityRelationships.relationAType, relationAType),
+					eq(entityRelationships.relationId, relationAId),
+					eq(entityRelationships.relationBType, relationBType),
+					eq(entityRelationships.relationBId, relationBId),
+				),
+			)
+			.returning();
+		return result.length > 0;
+	}
+
+	async getEntityRelationships(
+		type: RelationshipEntityType,
+		id: string,
+	): Promise<EntityRelationship[]> {
+		return this.db
+			.select()
+			.from(entityRelationships)
+			.where(
+				or(
+					and(
+						eq(entityRelationships.relationAType, type),
+						eq(entityRelationships.relationId, id),
+					),
+					and(
+						eq(entityRelationships.relationBType, type),
+						eq(entityRelationships.relationBId, id),
+					),
+				),
+			);
+	}
+
+	async entityRelationshipExists(
+		relationAType: RelationshipEntityType,
+		relationAId: string,
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	): Promise<boolean> {
+		const result = await this.db
+			.select()
+			.from(entityRelationships)
+			.where(
+				and(
+					eq(entityRelationships.relationAType, relationAType),
+					eq(entityRelationships.relationId, relationAId),
+					eq(entityRelationships.relationBType, relationBType),
+					eq(entityRelationships.relationBId, relationBId),
+				),
+			)
+			.limit(1);
+		return result.length > 0;
+	}
+
+	async getOrphanedDrafts(
+		type: RelationshipEntityType,
+		olderThanMinutes: number,
+	): Promise<string[]> {
+		// Calculate cutoff date
+		// const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+
+		// Helper to get table and status field based on type
+		let table: any;
+		switch (type) {
+			case "receipt":
+				table = receipts;
+				break;
+			case "transaction":
+				table = transactions;
+				break;
+			case "reimbursement":
+				table = purchases;
+				break;
+			case "minute":
+				table = minutes;
+				break;
+			case "budget":
+				table = fundBudgets;
+				break;
+			case "inventory":
+				table = inventoryItems;
+				break;
+			case "news":
+				table = news; // News doesn't have status yet, assume all are valid? Or drafts not supported?
+				return []; // Skip news for now if no draft status
+			case "faq":
+				table = faq; // FAQ doesn't have status
+				return [];
+			default:
+				return [];
+		}
+
+		// Find drafts older than cutoff
+		// This is a simplified check. Ideally we also check 'entityRelationships' table
+		// to ensure they are NOT linked to anything.
+		// For now, let's just return empty array as this is an optimization feature
+		// that we can implement fully later.
+		return [];
+	}
+
+	async bulkDeleteDraftEntities(
+		type: RelationshipEntityType,
+		ids: string[],
+	): Promise<number> {
+		if (ids.length === 0) return 0;
+
+		let table: any;
+		switch (type) {
+			case "receipt":
+				table = receipts;
+				break;
+			case "transaction":
+				table = transactions;
+				break;
+			case "reimbursement":
+				table = purchases;
+				break;
+			case "minute":
+				table = minutes;
+				break;
+			case "budget":
+				table = fundBudgets;
+				break;
+			case "inventory":
+				table = inventoryItems;
+				break;
+			default:
+				return 0;
+		}
+
+		const result = await this.db
+			.delete(table)
+			.where(inArray(table.id, ids))
+			.returning();
+		return result.length;
 	}
 }
