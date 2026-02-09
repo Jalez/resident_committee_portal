@@ -57,7 +57,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const url = new URL(request.url);
 	const sourceContext = getRelationshipContextFromUrl(url);
 	const returnUrl = url.searchParams.get("returnUrl");
-	console.log(`[BudgetLoader] URL: ${request.url}, sourceContext:`, sourceContext, `returnUrl: ${returnUrl}`);
 
 	// Get values from source entity (for pre-populating this entity)
 	let sourceValues: { amount?: number; description?: string } | null = null;
@@ -68,7 +67,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				amount: Number.parseFloat(sourceTransaction.amount),
 				description: sourceTransaction.description,
 			};
-			console.log(`[BudgetLoader] Source transaction values:`, sourceValues);
 		}
 	}
 
@@ -201,12 +199,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 	);
 	await saveRelationshipChanges(db, "budget", params.budgetId, formData, user?.userId || null);
 
-	// Check for source context to create auto-link
+	// Check for source context to create auto-link (for backwards compatibility with old flow)
 	const sourceType = formData.get("_sourceType") as string | null;
 	const sourceId = formData.get("_sourceId") as string | null;
-	console.log(`[BudgetAction] sourceType: ${sourceType}, sourceId: ${sourceId}`);
 	if (sourceType && sourceId) {
-		console.log(`[BudgetAction] Creating relationship: ${sourceType}:${sourceId} <-> budget:${params.budgetId}`);
 		await db.createEntityRelationship({
 			relationAType: sourceType as any,
 			relationId: sourceId,

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import type { RelationshipEntityType } from "~/db/schema";
@@ -65,37 +66,131 @@ export interface RelationshipPickerProps {
 }
 
 /**
- * Universal relationship picker component
- * Replaces entity-specific pickers with a unified interface
- * Delegates rendering to RelationActions component for consistency
- *
- * NOTE: relationAId is required for AI analysis. In "New" routes, we now
- * auto-create a draft immediately (see Phase 6), so relationAId should
- * always be present even for "new" items.
+ * Response from create-draft API
  */
-/**
- * Hook to create a draft entity
- */
-function useCreateDraft() {
-	const fetcher = useFetcher();
-
-	return {
-		createDraft: (type: RelationshipEntityType, sourceType?: RelationshipEntityType, sourceId?: string, sourceName?: string, returnUrl?: string) => {
-			const formData = new FormData();
-			formData.append("type", type);
-			if (sourceType) formData.append("sourceType", sourceType);
-			if (sourceId) formData.append("sourceId", sourceId);
-			if (sourceName) formData.append("sourceName", sourceName);
-			if (returnUrl) formData.append("returnUrl", returnUrl);
-			fetcher.submit(formData, {
-				method: "POST",
-				action: "/api/entities/create-draft",
-			});
-		},
-		navigating: fetcher.state !== "idle",
+interface CreateDraftResponse {
+	success: boolean;
+	entity?: {
+		id: string;
+		type: RelationshipEntityType;
+		name: string;
+		status: string;
 	};
+	linked?: boolean;
+	error?: string;
 }
 
+/**
+ * Individual section component that handles its own draft creation
+ */
+function RelationshipSectionComponent({
+	section,
+	relationAType,
+	relationAId,
+	relationAName,
+	mode,
+	currentPath,
+	onLink,
+	onUnlink,
+	storageKeyPrefix,
+	sourceEntityType,
+}: {
+	section: RelationshipSection;
+	relationAType: RelationshipEntityType;
+	relationAId: string;
+	relationAName?: string;
+	mode?: "view" | "edit";
+	currentPath?: string;
+	onLink?: (relationBType: RelationshipEntityType, relationBId: string, metadata?: Record<string, unknown>) => void;
+	onUnlink?: (relationBType: RelationshipEntityType, relationBId: string) => void;
+	storageKeyPrefix: string;
+	sourceEntityType: EntityType;
+}) {
+	const { t } = useTranslation();
+	const fetcher = useFetcher<CreateDraftResponse>();
+	
+	// Track locally created drafts
+	const [localDrafts, setLocalDrafts] = useState<AnyEntity[]>([]);
+
+	// Handle successful draft creation
+	useEffect(() => {
+		if (fetcher.data?.success && fetcher.data.entity) {
+			const entity = fetcher.data.entity;
+			
+			// Create a minimal entity object that matches AnyEntity shape
+			const draftEntity = {
+				id: entity.id,
+				name: entity.name,
+				status: entity.status,
+				description: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			} as AnyEntity;
+
+			// Add to local drafts
+			setLocalDrafts(prev => [...prev, draftEntity]);
+			
+			// Call onLink to add to pending links
+			onLink?.(section.relationBType, entity.id);
+		}
+	}, [fetcher.data, fetcher.state, section.relationBType, onLink]);
+
+	const config = ENTITY_REGISTRY[section.relationBType];
+	const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
+
+	// Merge server-side linked entities with locally created drafts
+	const allLinkedEntities = [...section.linkedEntities, ...localDrafts];
+
+	// Convert entities to the format expected by RelationActions
+	const items = allLinkedEntities.map((entity) =>
+		entityToRelationItem(section.relationBType, entity)
+	);
+
+	const linkableItems = section.availableEntities.map((entity) =>
+		entityToLinkableItem(section.relationBType, entity)
+	);
+
+	// Handler for creating new entities via draft system
+	const handleAdd = () => {
+		const formData = new FormData();
+		formData.append("type", section.relationBType);
+		formData.append("sourceType", relationAType);
+		formData.append("sourceId", relationAId);
+		if (relationAName) formData.append("sourceName", relationAName);
+		
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/api/entities/create-draft",
+		});
+	};
+
+	const isCreating = fetcher.state !== "idle";
+
+	return (
+		<RelationActions
+			label={section.label || t(config.pluralKey)}
+			items={items}
+			linkableItems={linkableItems}
+			mode={mode}
+			currentPath={currentPath}
+			onRemove={(id) => onUnlink?.(section.relationBType, id)}
+			onSelectionChange={(id) => onLink?.(section.relationBType, id)}
+			maxItems={section.maxItems}
+			storageKey={storageKey}
+			sourceEntityType={sourceEntityType}
+			sourceEntityId={relationAId}
+			sourceEntityName={relationAName}
+			onAdd={config.supportsDraft ? handleAdd : undefined}
+			addLabel={config.supportsDraft ? t("common.actions.create_new") : undefined}
+			withSeparator
+		/>
+	);
+}
+
+/**
+ * Universal relationship picker component
+ * Replaces entity-specific pickers with a unified interface
+ */
 export function RelationshipPicker({
 	relationAType,
 	relationAId,
@@ -112,7 +207,6 @@ export function RelationshipPicker({
 	formData,
 }: RelationshipPickerProps) {
 	const { t } = useTranslation();
-	const { createDraft } = useCreateDraft();
 
 	// Convert relationAType to EntityType for legacy RelationActions compatibility
 	const sourceEntityType = relationAType as unknown as EntityType;
@@ -134,46 +228,21 @@ export function RelationshipPicker({
 
 			{/* Relationship Sections */}
 			<div className="space-y-4">
-				{sections.map((section) => {
-					const config = ENTITY_REGISTRY[section.relationBType];
-					const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
-
-					// Convert entities to the format expected by RelationActions
-					const items = section.linkedEntities.map((entity) =>
-						entityToRelationItem(section.relationBType, entity)
-					);
-
-					const linkableItems = section.availableEntities.map((entity) =>
-						entityToLinkableItem(section.relationBType, entity)
-					);
-
-					// Handler for creating new entities via draft system
-					// Pass source context so the relationship can be created on save
-					const handleAdd = config.supportsDraft
-						? () => createDraft(section.relationBType, relationAType, relationAId, relationAName, currentPath)
-						: undefined;
-
-					return (
-						<RelationActions
-							key={section.relationBType}
-							label={section.label || t(config.pluralKey)}
-							items={items}
-							linkableItems={linkableItems}
-							mode={mode}
-							currentPath={currentPath}
-							onRemove={(id) => onUnlink?.(section.relationBType, id)}
-							onSelectionChange={(id) => onLink?.(section.relationBType, id)}
-							maxItems={section.maxItems}
-							storageKey={storageKey}
-							sourceEntityType={sourceEntityType}
-							sourceEntityId={relationAId}
-							sourceEntityName={relationAName}
-							onAdd={handleAdd}
-							addLabel={handleAdd ? t("common.actions.create_new") : undefined}
-							withSeparator
-						/>
-					);
-				})}
+				{sections.map((section) => (
+					<RelationshipSectionComponent
+						key={section.relationBType}
+						section={section}
+						relationAType={relationAType}
+						relationAId={relationAId}
+						relationAName={relationAName}
+						mode={mode}
+						currentPath={currentPath}
+						onLink={onLink}
+						onUnlink={onUnlink}
+						storageKeyPrefix={storageKeyPrefix}
+						sourceEntityType={sourceEntityType}
+					/>
+				))}
 			</div>
 
 			{/* File Upload Inputs (hidden, triggered by upload handlers) */}

@@ -1,5 +1,4 @@
 import type { Route } from "./+types/api.entities.create-draft";
-import { redirect } from "react-router";
 import { getDatabase } from "~/db";
 import type { RelationshipEntityType } from "~/db/schema";
 import { requireAnyPermission } from "~/lib/auth.server";
@@ -7,13 +6,12 @@ import { requireAnyPermission } from "~/lib/auth.server";
 export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const type = formData.get("type") as RelationshipEntityType;
-	const returnUrl = formData.get("returnUrl") as string | null;
 	const sourceType = formData.get("sourceType") as RelationshipEntityType | null;
 	const sourceId = formData.get("sourceId") as string | null;
 	const sourceName = formData.get("sourceName") as string | null;
 
 	if (!type) {
-		return { error: "Missing entity type" };
+		return { success: false, error: "Missing entity type" };
 	}
 
 	const db = getDatabase();
@@ -35,12 +33,12 @@ export async function action({ request }: Route.ActionArgs) {
 
 	const userId = user.userId || null;
 
-	let redirectUrl = "/";
-
 	try {
+		let entity: { id: string; name?: string | null; description?: string | null; status?: string } | null = null;
+
 		switch (type) {
 			case "transaction": {
-				const transaction = await db.createTransaction({
+				entity = await db.createTransaction({
 					amount: "0",
 					date: new Date(),
 					description: "",
@@ -49,21 +47,19 @@ export async function action({ request }: Route.ActionArgs) {
 					status: "draft",
 					createdBy: userId,
 				});
-				redirectUrl = `/treasury/transactions/${transaction.id}/edit`;
 				break;
 			}
 
 			case "receipt": {
-				const receipt = await db.createReceipt({
+				entity = await db.createReceipt({
 					status: "draft",
 					createdBy: userId,
 				});
-				redirectUrl = `/treasury/receipts/${receipt.id}/edit`;
 				break;
 			}
 
 			case "reimbursement": {
-				const reimbursement = await db.createPurchase({
+				entity = await db.createPurchase({
 					amount: "0",
 					year: new Date().getFullYear(),
 					purchaserName: "",
@@ -72,80 +68,81 @@ export async function action({ request }: Route.ActionArgs) {
 					status: "draft",
 					createdBy: userId,
 				});
-				redirectUrl = `/treasury/reimbursements/${reimbursement.id}/edit`;
 				break;
 			}
 
 			case "budget": {
-				const budget = await db.createFundBudget({
+				entity = await db.createFundBudget({
 					amount: "0",
 					name: "",
 					year: new Date().getFullYear(),
 					status: "draft",
 					createdBy: userId,
 				});
-				redirectUrl = `/treasury/budgets/${budget.id}/edit`;
 				break;
 			}
 
 			case "inventory": {
-				const item = await db.createInventoryItem({
+				entity = await db.createInventoryItem({
 					name: "",
 					status: "draft",
 				});
-				redirectUrl = `/inventory/${item.id}/edit`;
 				break;
 			}
 
 			case "minute": {
-				const minute = await db.createMinute({
+				entity = await db.createMinute({
 					status: "draft",
 					createdBy: userId,
 				});
-				redirectUrl = `/minutes/${minute.id}/edit`;
 				break;
 			}
 
 			case "news": {
-				const news = await db.createNews({
+				entity = await db.createNews({
 					title: "",
 					content: "",
 					createdBy: userId,
 				});
-				redirectUrl = `/news/${news.id}/edit`;
 				break;
 			}
 
 			case "faq": {
-				const faq = await db.createFaq({
+				entity = await db.createFaq({
 					question: "",
 					answer: "",
 				});
-				redirectUrl = `/faq/${faq.id}/edit`;
 				break;
 			}
 
 			default:
-				return { error: `Unknown entity type: ${type}` };
+				return { success: false, error: `Unknown entity type: ${type}` };
 		}
 
-		// Append source context and returnUrl as query params
-		const params = new URLSearchParams();
-		if (sourceType && sourceId) {
-			params.append("source", `${sourceType}:${sourceId}${sourceName ? `:${encodeURIComponent(sourceName)}` : ''}`);
-		}
-		if (returnUrl) {
-			params.append("returnUrl", returnUrl);
-		}
-		if (params.toString()) {
-			redirectUrl += `?${params.toString()}`;
+		// Create relationship immediately if source context is provided
+		// This links the new draft to the source entity right away
+		if (sourceType && sourceId && entity) {
+			await db.createEntityRelationship({
+				relationAType: sourceType,
+				relationId: sourceId,
+				relationBType: type,
+				relationBId: entity.id,
+				createdBy: userId,
+			});
 		}
 
-		console.log(`[CreateDraft] Creating ${type} draft, redirecting to: ${redirectUrl}`);
-
-		return redirect(redirectUrl);
+		return { 
+			success: true, 
+			entity: {
+				id: entity.id,
+				type,
+				name: entity.name || entity.description || `${type} (draft)`,
+				status: entity.status || "draft",
+			},
+			linked: !!(sourceType && sourceId),
+		};
 	} catch (error) {
 		console.error(`[CreateDraft] Failed to create ${type} draft:`, error);
-		return { error: "Failed to create draft entity" };
+		return { success: false, error: "Failed to create draft entity" };
 	}
 }
