@@ -1,19 +1,31 @@
 import type { Route } from "./+types/api.entities.create-draft";
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { getDatabase } from "~/db";
 import type { RelationshipEntityType } from "~/db/schema";
 import { requireAnyPermission } from "~/lib/auth.server";
 
+// Handle GET requests - redirect to home
+export function loader() {
+	return redirect("/");
+}
+
+// Handle POST requests to create draft entities
 export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const type = formData.get("type") as RelationshipEntityType;
 	const sourceType = formData.get("sourceType") as RelationshipEntityType | null;
 	const sourceId = formData.get("sourceId") as string | null;
 	const sourceName = formData.get("sourceName") as string | null;
+	const returnUrl = formData.get("returnUrl") as string | null;
 
 	if (!type) {
 		return data({ success: false, error: "Missing entity type" }, { status: 400 });
 	}
+
+	// Check if request is from a fetcher (expects JSON) or regular form (expects redirect)
+	// Fetcher requests typically have Accept: application/json header
+	const acceptHeader = request.headers.get("Accept") || "";
+	const isFetcher = acceptHeader.includes("application/json");
 
 	const db = getDatabase();
 
@@ -132,6 +144,35 @@ export async function action({ request }: Route.ActionArgs) {
 			});
 		}
 
+		// Build redirect URL for the new entity's edit page
+		const editUrls: Record<RelationshipEntityType, string> = {
+			transaction: `/treasury/transactions/${entity.id}/edit`,
+			receipt: `/treasury/receipts/${entity.id}/edit`,
+			reimbursement: `/treasury/reimbursements/${entity.id}/edit`,
+			budget: `/treasury/budgets/${entity.id}/edit`,
+			inventory: `/inventory/${entity.id}/edit`,
+			minute: `/minutes/${entity.id}/edit`,
+			news: `/news/${entity.id}/edit`,
+			faq: `/faq/${entity.id}/edit`,
+		};
+		let redirectUrl = editUrls[type] || "/";
+
+		// Append source context and returnUrl as query params for regular form submissions
+		if (!isFetcher) {
+			const params = new URLSearchParams();
+			if (sourceType && sourceId) {
+				params.append("source", `${sourceType}:${sourceId}${sourceName ? `:${encodeURIComponent(sourceName)}` : ''}`);
+			}
+			if (returnUrl) {
+				params.append("returnUrl", returnUrl);
+			}
+			if (params.toString()) {
+				redirectUrl += `?${params.toString()}`;
+			}
+			return redirect(redirectUrl);
+		}
+
+		// For fetcher requests (RelationshipPicker), return JSON
 		return data({ 
 			success: true, 
 			entity: {
