@@ -9,7 +9,6 @@ import {
 	TreasuryField,
 } from "~/components/treasury/treasury-detail-components";
 import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
-import { TransactionsPicker } from "~/components/treasury/pickers/transactions-picker";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { getDatabase } from "~/db";
@@ -17,6 +16,11 @@ import {
 	requirePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -48,22 +52,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const usedAmount = await db.getBudgetUsedAmount(budget.id);
 	const availableFunds = await db.getAvailableFundsForYear(budget.year);
 
-	// Get currently linked transactions
-	const linkedBudgetTransactions = await db.getBudgetTransactions(budget.id);
-	const linkedTransactions = linkedBudgetTransactions.map(l => l.transaction);
+	// Get currently linked transactions via entity relationships
+	const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
+	const linkedTransactionIds = budgetRelationships
+		.filter((r) => r.relationBType === "transaction")
+		.map((r) => r.relationBId);
+	const linkedTransactions = await Promise.all(
+		linkedTransactionIds.map((id) => db.getTransactionById(id))
+	).then((results) => results.filter((t): t is NonNullable<typeof t> => t !== null));
 
 	// Get unlinked transactions for this year
 	const allTransactions = await db.getTransactionsByYear(budget.year);
-	const allBudgetTransactions = await Promise.all(
-		allTransactions.map(async (t) => {
-			const link = await db.getBudgetForTransaction(t.id);
-			return link ? t.id : null;
-		}),
-	);
-	const linkedTransactionIds = new Set(allBudgetTransactions.filter(Boolean));
-
 	const unlinkedTransactions = allTransactions.filter(
-		(t) => t.type === "expense" && !linkedTransactionIds.has(t.id),
+		(t) => t.type === "expense" && !linkedTransactionIds.includes(t.id),
+	);
+
+	// Load relationships using new universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"budget",
+		params.budgetId,
+		["transaction"],
 	);
 
 	return {
@@ -76,6 +85,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		availableFunds,
 		linkedTransactions,
 		unlinkedTransactions,
+		relationships,
 	};
 }
 
@@ -103,8 +113,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string | null;
-	const transactionIdsJson = formData.get("transactionIds") as string;
-	const selectedTransactionIds = transactionIdsJson ? JSON.parse(transactionIdsJson) as string[] : [];
 
 	if (actionType === "close") {
 		await db.updateFundBudget(params.budgetId, { status: "closed" });
@@ -160,27 +168,15 @@ export async function action({ request, params }: Route.ActionArgs) {
 		amount: newAmount.toFixed(2),
 	});
 
-	// Sync transaction links
-	const currentLinks = await db.getBudgetTransactions(params.budgetId);
-	const currentIds = new Set(currentLinks.map(l => l.transaction.id));
-	const selectedIds = new Set(selectedTransactionIds);
-
-	// Add new links
-	for (const id of selectedTransactionIds) {
-		if (!currentIds.has(id)) {
-			const tx = (await db.getAllTransactions()).find(t => t.id === id);
-			if (tx) {
-				await db.linkTransactionToBudget(tx.id, params.budgetId, tx.amount);
-			}
-		}
-	}
-
-	// Remove old links
-	for (const link of currentLinks) {
-		if (!selectedIds.has(link.transaction.id)) {
-			await db.unlinkTransactionFromBudget(link.transaction.id, params.budgetId);
-		}
-	}
+	// Save relationships using new universal system
+	const user = await requirePermissionOrSelf(
+		request,
+		"treasury:budgets:update",
+		"treasury:budgets:update-self",
+		budget.createdBy,
+		getDatabase,
+	);
+	await saveRelationshipChanges(db, "budget", params.budgetId, formData, user?.userId || null);
 
 	return redirect(
 		`/treasury/budgets/${params.budgetId}?success=updated`,
@@ -191,7 +187,7 @@ export default function TreasuryBudgetsEdit({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { budget, availableFunds, linkedTransactions, unlinkedTransactions } = loaderData;
+	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships } = loaderData;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [confirmAction, setConfirmAction] = useState<
@@ -205,13 +201,23 @@ export default function TreasuryBudgetsEdit({
 	const [amount, setAmount] = useState(
 		Number.parseFloat(budget.amount).toFixed(2).replace(".", ","),
 	);
-	const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>(
-		linkedTransactions.map(t => t.id)
-	);
+
+	// Use relationship picker hook
+	// Use relationship picker hook with existing linked transactions
+	const relationshipPicker = useRelationshipPicker({
+		relationAType: "budget",
+		relationAId: budget.id,
+		initialRelationships: linkedTransactions.map((t) => ({
+			relationBType: "transaction",
+			relationBId: t.id,
+		})),
+	});
 
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;
 	};
+
+	const currentPath = `/treasury/budgets/${budget.id}/edit`;
 
 	return (
 		<PageWrapper>
@@ -239,7 +245,6 @@ export default function TreasuryBudgetsEdit({
 				)}
 
 				<Form method="post" className="space-y-6">
-					<input type="hidden" name="transactionIds" value={JSON.stringify(selectedTransactionIds)} />
 					<TreasuryDetailCard title={t("treasury.budgets.view.title")}>
 						<div className="grid gap-4">
 							<TreasuryField
@@ -295,19 +300,26 @@ export default function TreasuryBudgetsEdit({
 							</TreasuryField>
 						</div>
 
-						<TransactionsPicker
-							linkedTransactions={linkedTransactions}
-							unlinkedTransactions={unlinkedTransactions}
-							selectedTransactionIds={selectedTransactionIds}
-							onSelectionChange={(ids) => setSelectedTransactionIds(Array.isArray(ids) ? ids : [ids].filter(Boolean) as string[])}
-							createUrl={`/treasury/transactions/new?year=${budget.year}&type=expense`}
-							currentPath={`/treasury/budgets/${budget.id}/edit`}
-							storageKey={`budget-${budget.id}-transactions`}
-							label={t("treasury.budgets.linked_transactions")}
-							maxItems={100}
-							sourceEntityType="budget"
-							sourceEntityId={budget.id}
-							sourceEntityName={budget.name || ""}
+						{/* Relationships Section */}
+						<RelationshipPicker
+							relationAType="budget"
+							relationAId={budget.id}
+							relationAName={budget.name || ""}
+							mode="edit"
+							currentPath={currentPath}
+							showAnalyzeButton={false}
+							sections={[
+								{
+									relationBType: "transaction",
+									linkedEntities: ((relationships.transaction?.linked || []) as unknown) as AnyEntity[],
+									availableEntities: ((relationships.transaction?.available || []) as unknown) as AnyEntity[],
+									createType: "transaction",
+									label: t("treasury.budgets.linked_transactions"),
+								},
+							]}
+							onLink={relationshipPicker.handleLink}
+							onUnlink={relationshipPicker.handleUnlink}
+							formData={relationshipPicker.toFormData()}
 						/>
 					</TreasuryDetailCard>
 

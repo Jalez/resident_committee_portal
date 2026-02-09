@@ -9,13 +9,13 @@ import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
 	ColoredStatusLinkBadge,
 	TREASURY_PURCHASE_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
 	TreasuryTable,
 	TREASURY_TABLE_STYLES,
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
-import { getDatabase, type Receipt } from "~/db";
+import { getDatabase, type Receipt, type EntityRelationship } from "~/db";
 import {
 	hasAnyPermission,
 	requireAnyPermission,
@@ -98,7 +98,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	if (yearParam && yearParam !== "all") {
 		receipts = receipts.filter((r) => {
 			// Try to extract year from pathname first (format: receipts/YYYY/...)
-			const yearMatch = r.pathname.match(/receipts\/(\d{4})/);
+			const yearMatch = r.pathname?.match(/receipts\/(\d{4})/);
 			if (yearMatch) {
 				return parseInt(yearMatch[1], 10) === year;
 			}
@@ -128,27 +128,35 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	// Fetch purchase statuses for receipts with purchaseId
+	// Fetch reimbursement statuses for receipts via entity relationships
 	const purchaseStatusMap = new Map<string, string>();
-	const purchaseIds = [
-		...new Set(
-			sortedReceipts
-				.map((r) => r.purchaseId)
-				.filter((id): id is string => Boolean(id)),
-		),
-	];
-	for (const purchaseId of purchaseIds) {
-		const purchase = await db.getPurchaseById(purchaseId);
-		if (purchase) {
-			purchaseStatusMap.set(purchaseId, purchase.status);
-		}
-	}
+	const receiptReimbursementMap = new Map<string, string>(); // receiptId -> reimbursementId
+	
+	// Get relationships for all receipts in parallel
+	await Promise.all(
+		sortedReceipts.map(async (receipt) => {
+			const relationships = await db.getEntityRelationships("receipt", receipt.id);
+			const reimbursementRel = relationships.find(
+				(r: EntityRelationship) => r.relationAType === "reimbursement" || r.relationBType === "reimbursement"
+			);
+			if (reimbursementRel) {
+				const reimbursementId = reimbursementRel.relationAType === "reimbursement" 
+					? reimbursementRel.relationId 
+					: reimbursementRel.relationBId;
+				receiptReimbursementMap.set(receipt.id, reimbursementId);
+				const purchase = await db.getPurchaseById(reimbursementId);
+				if (purchase) {
+					purchaseStatusMap.set(reimbursementId, purchase.status);
+				}
+			}
+		})
+	);
 
 	// Get unique years from receipts for filter
 	const years = [
 		...new Set(
 			allReceipts.map((r) => {
-				const yearMatch = r.pathname.match(/receipts\/(\d{4})/);
+				const yearMatch = r.pathname?.match(/receipts\/(\d{4})/);
 				if (yearMatch) {
 					return parseInt(yearMatch[1], 10);
 				}
@@ -169,6 +177,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentYear: year,
 		creatorsMap: Object.fromEntries(creatorsMap),
 		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
+		receiptReimbursementMap: Object.fromEntries(receiptReimbursementMap),
 	};
 }
 
@@ -185,12 +194,16 @@ export default function TreasuryReceipts({
 		canDelete,
 		canReadAll,
 		purchaseStatusMap: purchaseStatusMapRaw,
+		receiptReimbursementMap: receiptReimbursementMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
 	const purchaseStatusMap = new Map(
 		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
+	);
+	const receiptReimbursementMap = new Map(
+		Object.entries(receiptReimbursementMapRaw ?? {}) as [string, string][],
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
@@ -229,13 +242,15 @@ export default function TreasuryReceipts({
 			<SearchMenu fields={searchFields} />
 			{canWrite && (
 				<AddItemButton
-					to="/treasury/receipts/new"
 					title={t("treasury.receipts.new")}
 					variant="icon"
+					createType="receipt"
 				/>
 			)}
 		</div>
 	);
+
+
 
 	// Canonical treasury column order: Date, Name/Description, [route-specific], Created by
 	const columns = [
@@ -248,7 +263,7 @@ export default function TreasuryReceipts({
 		{
 			key: "name",
 			header: t("common.fields.name"),
-			cell: (row: Receipt) => row.name || row.pathname.split("/").pop() || "—",
+			cell: (row: Receipt) => row.name || row.pathname?.split("/").pop() || "—",
 			cellClassName: "font-medium",
 		},
 		{
@@ -261,16 +276,17 @@ export default function TreasuryReceipts({
 			key: "purchase",
 			header: t("treasury.receipts.reimbursement_request"),
 			cell: (row: Receipt) => {
-				if (!row.purchaseId) {
+				const reimbursementId = receiptReimbursementMap.get(row.id);
+				if (!reimbursementId) {
 					return <span className="text-gray-400">—</span>;
 				}
-				const purchaseStatus = purchaseStatusMap.get(row.purchaseId) || "pending";
+				const purchaseStatus = purchaseStatusMap.get(reimbursementId) || "pending";
 				return (
 					<ColoredStatusLinkBadge
-						to={`/treasury/reimbursements/${row.purchaseId}`}
+						to={`/treasury/reimbursements/${reimbursementId}`}
 						title={t("treasury.receipts.reimbursement_request")}
 						status={purchaseStatus}
-						id={row.purchaseId}
+						id={reimbursementId}
 						icon="link"
 					/>
 				);
@@ -315,7 +331,7 @@ export default function TreasuryReceipts({
 											action: `/api/receipts/delete`,
 											hiddenFields: {
 												_action: "delete",
-												pathname: receipt.pathname,
+												pathname: receipt.pathname || "",
 											},
 											confirmMessage: t(
 												"treasury.receipts.delete_confirm",

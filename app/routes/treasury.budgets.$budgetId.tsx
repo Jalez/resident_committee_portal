@@ -7,7 +7,7 @@ import { PageHeader } from "~/components/layout/page-header";
 import {
     TREASURY_BUDGET_STATUS_VARIANTS,
     TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
     TreasuryDetailCard,
     TreasuryField,
@@ -48,8 +48,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         throw new Response("Not Found", { status: 404 });
     }
 
-    // Get linked transactions
-    const linkedTransactions = await db.getBudgetTransactions(budget.id);
+    // Get linked transactions via entity relationships
+    const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
+    const linkedTransactionIds = budgetRelationships
+        .filter((r) => r.relationBType === "transaction")
+        .map((r) => r.relationBId);
+    const linkedTransactions = await Promise.all(
+        linkedTransactionIds.map(async (id) => {
+            const transaction = await db.getTransactionById(id);
+            return transaction ? { transaction } : null;
+        })
+    ).then((results) => results.filter((t): t is { transaction: NonNullable<typeof t>['transaction'] } => t !== null));
 
     return {
         siteConfig: SITE_CONFIG,

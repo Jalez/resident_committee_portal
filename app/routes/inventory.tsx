@@ -184,7 +184,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const startIndex = (page - 1) * PAGE_SIZE;
 	const paginatedItems = items.slice(startIndex, startIndex + PAGE_SIZE);
 
-	// Fetch transaction links for each item (for remove modal)
+	// Fetch transaction links for each item via entity relationships (for remove modal)
 	const transactionLinksMap: Record<
 		string,
 		{
@@ -198,16 +198,27 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}[]
 	> = {};
 	for (const item of paginatedItems) {
-		const links = await db.getTransactionLinksForItem(item.id);
-		transactionLinksMap[item.id] = links.map((l) => ({
-			transaction: {
-				id: l.transaction.id,
-				description: l.transaction.description,
-				date: l.transaction.date,
-				type: l.transaction.type,
-			},
-			quantity: l.quantity,
-		}));
+		const relationships = await db.getEntityRelationships("inventory", item.id);
+		const links: { transaction: { id: string; description: string; date: Date; type: string }; quantity: number }[] = [];
+		
+		for (const rel of relationships) {
+			if (rel.relationBType === "transaction" || rel.relationAType === "transaction") {
+				const transactionId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+				const transaction = await db.getTransactionById(transactionId);
+				if (transaction) {
+					links.push({
+						transaction: {
+							id: transaction.id,
+							description: transaction.description,
+							date: transaction.date,
+							type: transaction.type,
+						},
+						quantity: 1,
+					});
+				}
+			}
+		}
+		transactionLinksMap[item.id] = links;
 	}
 
 	// Fetch inventory-category transactions for "Add to Existing" feature
@@ -366,11 +377,13 @@ export async function action({ request }: Route.ActionArgs) {
 			parseInt(formData.get("totalToRemove") as string, 10) || 0;
 
 		// Process each removal from linked transactions
+		// Note: reduceInventoryFromTransaction no longer exists - we delete the relationship directly
 		for (const removal of removals) {
-			await db.reduceInventoryFromTransaction(
+			await db.deleteEntityRelationshipByPair(
+				"inventory",
 				itemId,
+				"transaction",
 				removal.transactionId,
-				removal.quantity,
 			);
 		}
 
@@ -400,7 +413,7 @@ export async function action({ request }: Route.ActionArgs) {
 			const newManualCount = (item.manualCount || 0) + quantityToAdd;
 			// Ensure we don't exceed total quantity (logic check)
 			// We trust the client/dialog roughly, but could enforce strict check here
-			await db.updateInventoryItemManualCount(itemId, newManualCount);
+			await db.updateInventoryItem(itemId, { manualCount: newManualCount });
 		}
 	}
 
@@ -419,7 +432,7 @@ export async function action({ request }: Route.ActionArgs) {
 					0,
 					(item.manualCount || 0) - quantityToRemove,
 				);
-				await db.updateInventoryItemManualCount(itemId, newManualCount);
+				await db.updateInventoryItem(itemId, { manualCount: newManualCount });
 			}
 		}
 	}
@@ -428,10 +441,14 @@ export async function action({ request }: Route.ActionArgs) {
 	if (actionType === "linkItemToTransaction") {
 		const itemId = formData.get("itemId") as string;
 		const transactionId = formData.get("transactionId") as string;
-		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
 
 		if (itemId && transactionId) {
-			await db.linkInventoryItemToTransaction(itemId, transactionId, quantity);
+			await db.createEntityRelationship({
+				relationAType: "inventory",
+				relationId: itemId,
+				relationBType: "transaction",
+				relationBId: transactionId,
+			});
 			return { success: true, linked: true };
 		}
 		return { success: true };
@@ -445,17 +462,16 @@ export async function action({ request }: Route.ActionArgs) {
 		if (itemId && transactionId) {
 			// Fetch validation data to calculate amount reduction
 			const item = await db.getInventoryItemById(itemId);
-			const links = await db.getTransactionLinksForItem(itemId);
-			const link = links.find((l) => l.transaction.id === transactionId);
+			const transaction = await db.getTransactionById(transactionId);
 
-			if (item && link) {
+			if (item && transaction) {
 				// Calculate unit value and deduction
 				// item.value stores the UNIT VALUE (per item)
 				const unitValue = parseFloat(item.value || "0");
-				const deduction = link.quantity * unitValue;
+				const deduction = unitValue; // Assume 1 unit per relationship
 
 				if (deduction > 0) {
-					const currentAmount = parseFloat(link.transaction.amount);
+					const currentAmount = parseFloat(transaction.amount);
 					const newAmount = Math.max(0, currentAmount - deduction).toFixed(2);
 
 					console.log(
@@ -466,7 +482,12 @@ export async function action({ request }: Route.ActionArgs) {
 				}
 			}
 
-			await db.unlinkInventoryItemFromTransaction(itemId, transactionId);
+			await db.deleteEntityRelationshipByPair(
+				"inventory",
+				itemId,
+				"transaction",
+				transactionId,
+			);
 		}
 	}
 
@@ -477,8 +498,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 		for (const item of legacyItems) {
 			// Set manualCount = quantity and status = active
-			await db.updateInventoryItem(item.id, { status: "active" });
-			await db.updateInventoryItemManualCount(item.id, item.quantity);
+			await db.updateInventoryItem(item.id, { status: "active", manualCount: item.quantity });
 		}
 
 		return { success: true, migratedCount: legacyItems.length };

@@ -6,7 +6,7 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -19,6 +19,7 @@ import {
 	type Purchase,
 	type Transaction,
 } from "~/db";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
@@ -54,13 +55,28 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked purchase if exists
-	let purchase = null;
-	if (transaction.purchaseId) {
-		purchase = await db.getPurchaseById(transaction.purchaseId);
-	}
+	// Load relationships using new universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"transaction",
+		params.transactionId,
+		["reimbursement", "budget"],
+	);
 
-	const budgetLink = await db.getBudgetForTransaction(transaction.id);
+	// Get linked purchase (reimbursement) if exists
+	const linkedReimbursements = relationships.reimbursement?.linked || [];
+	const purchase = linkedReimbursements.length > 0
+		? (linkedReimbursements[0] as Purchase)
+		: null;
+
+	// Get linked budget if exists
+	const linkedBudgets = relationships.budget?.linked || [];
+	const budgetLink = linkedBudgets.length > 0
+		? {
+			budget: linkedBudgets[0] as { id: string; status: string; name: string },
+			amount: transaction.amount,
+		}
+		: null;
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -124,38 +140,38 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 
 	const purchaseRelations = purchase
 		? [
-				{
-					to: `/treasury/reimbursements/${purchase.id}`,
-					title:
-						purchase.description ||
-						purchase.id.substring(0, 8),
-					status: "linked",
-					id: purchase.id,
-					variantMap: {
-						linked:
-							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-					},
+			{
+				to: `/treasury/reimbursements/${purchase.id}`,
+				title:
+					purchase.description ||
+					purchase.id.substring(0, 8),
+				status: "linked",
+				id: purchase.id,
+				variantMap: {
+					linked:
+						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				},
-			]
+			},
+		]
 		: [];
 
 	const budgetRelations = budgetLink
 		? [
-				{
-					to: `/treasury/budgets/${budgetLink.budget.id}`,
-					title: budgetLink.budget.name,
-					status: budgetLink.budget.status,
-					id: budgetLink.budget.id,
-					variantMap: {
-						linked:
-							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-						open:
-							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-						closed:
-							"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-					},
+			{
+				to: `/treasury/budgets/${budgetLink.budget.id}`,
+				title: budgetLink.budget.name,
+				status: budgetLink.budget.status,
+				id: budgetLink.budget.id,
+				variantMap: {
+					linked:
+						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+					open:
+						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+					closed:
+						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				},
-			]
+			},
+		]
 		: [];
 
 	return (

@@ -14,7 +14,7 @@ import {
     ColoredStatusLinkBadge,
     TREASURY_BUDGET_STATUS_VARIANTS,
     TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
     TreasuryTable,
@@ -113,7 +113,17 @@ export async function loader({ request }: Route.LoaderArgs) {
         budgets.map(async (budget) => {
             const usedAmount = await db.getBudgetUsedAmount(budget.id);
             const reservedAmount = await db.getBudgetReservedAmount(budget.id);
-            const linkedTransactions = await db.getBudgetTransactions(budget.id);
+            // Get linked transactions via entity relationships
+            const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
+            const linkedTransactionIds = budgetRelationships
+                .filter((r) => r.relationBType === "transaction")
+                .map((r) => r.relationBId);
+            const linkedTransactions = await Promise.all(
+                linkedTransactionIds.map(async (id) => {
+                    const transaction = await db.getTransactionById(id);
+                    return transaction ? { transaction } : null;
+                })
+            ).then((results) => results.filter((t): t is { transaction: NonNullable<typeof t>['transaction'] } => t !== null));
             return {
                 ...budget,
                 usedAmount,
@@ -266,9 +276,9 @@ export default function TreasuryBudgets({
             <SearchMenu fields={searchFields} />
             {canWrite && (
                 <AddItemButton
-                    to={`/treasury/budgets/new?year=${selectedYear}`}
                     title={t("treasury.budgets.new")}
                     variant="icon"
+                    createType="budget"
                 />
             )}
         </div>
@@ -428,9 +438,9 @@ export default function TreasuryBudgets({
                             ),
                             action: canWrite ? (
                                 <AddItemButton
-                                    to={`/treasury/budgets/new?year=${selectedYear}`}
                                     title={t("treasury.budgets.new")}
                                     variant="button"
+                                    createType="budget"
                                 />
                             ) : undefined,
                         }}

@@ -4,7 +4,7 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -43,20 +43,32 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	const transactionLinks = await db.getTransactionLinksForItem(item.id);
+	// Get linked transactions via entity relationships
+	const relationships = await db.getEntityRelationships("inventory", item.id);
+	const transactionLinks: { transaction: { id: string; description: string; status: string; type: string }; quantity: number }[] = [];
+	
+	for (const rel of relationships) {
+		if (rel.relationBType === "transaction" || rel.relationAType === "transaction") {
+			const transactionId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+			const transaction = await db.getTransactionById(transactionId);
+			if (transaction) {
+				transactionLinks.push({
+					transaction: {
+						id: transaction.id,
+						description: transaction.description,
+						status: transaction.status,
+						type: transaction.type,
+					},
+					quantity: 1,
+				});
+			}
+		}
+	}
 
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
-		transactionLinks: transactionLinks.map((l) => ({
-			transaction: {
-				id: l.transaction.id,
-				description: l.transaction.description,
-				status: l.transaction.status,
-				type: l.transaction.type,
-			},
-			quantity: l.quantity,
-		})),
+		transactionLinks,
 	};
 }
 

@@ -11,7 +11,7 @@ import {
 	TREASURY_PURCHASE_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_TYPE_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
 	TreasuryTable,
@@ -19,7 +19,8 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Transaction } from "~/db";
+import { getDatabase, type Transaction, type Purchase } from "~/db";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import {
 	requireAnyPermission,
 	hasAnyPermission,
@@ -133,50 +134,60 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	// Fetch budgets for each transaction
+	// Fetch budgets for each transaction using entity relationships
 	const budgetMap = new Map<string, string>();
 	for (const transaction of sortedTransactions) {
-		const budgetLink = await db.getBudgetForTransaction(transaction.id);
-		if (budgetLink) {
-			budgetMap.set(transaction.id, budgetLink.budget.id);
+		const relationships = await loadRelationshipsForEntity(
+			db,
+			"transaction",
+			transaction.id,
+			["budget"],
+		);
+		const linkedBudgets = relationships.budget?.linked || [];
+		if (linkedBudgets.length > 0) {
+			budgetMap.set(transaction.id, (linkedBudgets[0] as { id: string }).id);
 		}
 	}
 
 	// Track edit lock for transactions linked to sent reimbursements
 	const transactionLockMap = new Map<string, boolean>();
 	const purchaseStatusMap = new Map<string, string>();
-	const purchaseIds = [
-		...new Set(
-			sortedTransactions
-				.map((t) => t.purchaseId)
-				.filter((id): id is string => Boolean(id)),
-		),
-	];
-	for (const purchaseId of purchaseIds) {
-		const purchase = await db.getPurchaseById(purchaseId);
-		if (purchase) {
-			purchaseStatusMap.set(purchaseId, purchase.status);
+	const purchaseIds = new Map<string, string>(); // transactionId -> purchaseId
+
+	for (const transaction of sortedTransactions) {
+		const relationships = await loadRelationshipsForEntity(
+			db,
+			"transaction",
+			transaction.id,
+			["reimbursement"],
+		);
+		const linkedReimbursements = relationships.reimbursement?.linked || [];
+		if (linkedReimbursements.length > 0) {
+			const purchase = linkedReimbursements[0] as Purchase;
+			purchaseIds.set(transaction.id, purchase.id);
+			purchaseStatusMap.set(purchase.id, purchase.status);
 			const isLocked = purchase.emailSent && purchase.status !== "rejected";
-			const linkedTransactions = sortedTransactions.filter(
-				(t) => t.purchaseId === purchaseId,
-			);
-			for (const tx of linkedTransactions) {
-				transactionLockMap.set(tx.id, isLocked || false);
-			}
+			transactionLockMap.set(transaction.id, isLocked || false);
 		}
 	}
 
-	// Fetch inventory items for each transaction
+	// Fetch inventory items for each transaction using entity relationships
 	const inventoryItemsMap = new Map<string, Array<{ id: string; name: string; quantity: number }>>();
 	for (const transaction of sortedTransactions) {
-		const items = await db.getInventoryItemsForTransaction(transaction.id);
-		if (items.length > 0) {
+		const relationships = await loadRelationshipsForEntity(
+			db,
+			"transaction",
+			transaction.id,
+			["inventory"],
+		);
+		const linkedItems = relationships.inventory?.linked || [];
+		if (linkedItems.length > 0) {
 			inventoryItemsMap.set(
 				transaction.id,
-				items.map((item) => ({
-					id: item.id,
-					name: item.name,
-					quantity: item.quantity,
+				linkedItems.map((item) => ({
+					id: (item as { id: string; name: string }).id,
+					name: (item as { id: string; name: string }).name,
+					quantity: 1,
 				})),
 			);
 		}
@@ -196,6 +207,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalCount: allTransactions.length,
 		canReadAll,
 		budgetMap: Object.fromEntries(budgetMap),
+		purchaseIds: Object.fromEntries(purchaseIds),
 		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
 		transactionLockMap: Object.fromEntries(transactionLockMap),
 		inventoryItemsMap: Object.fromEntries(inventoryItemsMap),
@@ -216,6 +228,7 @@ export default function TreasuryTransactions({
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
 		budgetMap: budgetMapRaw,
+		purchaseIds: purchaseIdsRaw,
 		purchaseStatusMap: purchaseStatusMapRaw,
 		transactionLockMap: transactionLockMapRaw,
 		inventoryItemsMap: inventoryItemsMapRaw,
@@ -225,6 +238,9 @@ export default function TreasuryTransactions({
 	);
 	const budgetMap = new Map(
 		Object.entries(budgetMapRaw ?? {}) as [string, string][],
+	);
+	const purchaseIds = new Map(
+		Object.entries(purchaseIdsRaw ?? {}) as [string, string][],
 	);
 	const purchaseStatusMap = new Map(
 		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
@@ -320,9 +336,9 @@ export default function TreasuryTransactions({
 			<SearchMenu fields={searchFields} />
 			{canWrite && (
 				<AddItemButton
-					to="/treasury/transactions/new"
 					title={t("treasury.transactions.new")}
 					variant="icon"
+					createType="transaction"
 				/>
 			)}
 		</div>
@@ -434,16 +450,17 @@ export default function TreasuryTransactions({
 			key: "reimbursement",
 			header: t("treasury.receipts.reimbursement_request"),
 			cell: (row: Transaction) => {
-				if (!row.purchaseId) {
+				const purchaseId = purchaseIds.get(row.id);
+				if (!purchaseId) {
 					return <span className="text-gray-400">—</span>;
 				}
-				const purchaseStatus = purchaseStatusMap.get(row.purchaseId) || "pending";
+				const purchaseStatus = purchaseStatusMap.get(purchaseId) || "pending";
 				return (
 					<ColoredStatusLinkBadge
-						to={`/treasury/reimbursements/${row.purchaseId}`}
+						to={`/treasury/reimbursements/${purchaseId}`}
 						title={t("treasury.receipts.reimbursement_request")}
 						status={purchaseStatus}
-						id={row.purchaseId}
+						id={purchaseId}
 						icon="link"
 						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
 					/>

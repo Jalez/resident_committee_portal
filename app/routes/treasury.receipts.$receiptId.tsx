@@ -4,23 +4,23 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
 	TREASURY_PURCHASE_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
 	TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type Purchase } from "~/db";
+import { getDatabase, type Purchase, type EntityRelationship } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import { ReceiptContentsDisplay } from "~/components/treasury/receipt-contents-display";
-import { encodeSourceContext } from "~/lib/linking/source-context";
+import { encodeRelationshipContext } from "~/lib/linking/relationship-context";
 import type { Route } from "./+types/treasury.receipts.$receiptId";
 
 export function meta({ data }: Route.MetaArgs) {
-	const receiptName = data?.receipt?.name || data?.receipt?.pathname.split("/").pop() || "Receipt";
+	const receiptName = data?.receipt?.name || data?.receipt?.pathname?.split("/").pop() || "Receipt";
 	const title = `${receiptName.substring(0, 30)} / View Receipt`;
 	return [
 		{ title: `${data?.siteConfig?.name || "Portal"} - ${title}` },
@@ -46,10 +46,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked purchase if exists
+	// Get linked reimbursements via entity relationships
+	const relationships = await db.getEntityRelationships("receipt", receipt.id);
+	const reimbursementRelationships = relationships.filter(
+		(r: EntityRelationship) => r.relationAType === "reimbursement" || r.relationBType === "reimbursement"
+	);
+	
+	// Get the first linked reimbursement (if any)
 	let linkedPurchase: Purchase | null = null;
-	if (receipt.purchaseId) {
-		linkedPurchase = await db.getPurchaseById(receipt.purchaseId);
+	if (reimbursementRelationships.length > 0) {
+		const rel = reimbursementRelationships[0];
+		const reimbursementId = rel.relationAType === "reimbursement" ? rel.relationId : rel.relationBId;
+		linkedPurchase = await db.getPurchaseById(reimbursementId);
 	}
 
 	// Get creator name
@@ -80,11 +88,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		creatorName: creator?.name || null,
 		receiptContent,
 		createdInventoryItems,
+		hasLinkedReimbursement: reimbursementRelationships.length > 0,
 	};
 }
 
 export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
-	const { receipt, linkedPurchase, creatorName, receiptContent, createdInventoryItems } = loaderData;
+	const { receipt, linkedPurchase, creatorName, receiptContent, createdInventoryItems, hasLinkedReimbursement } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 
@@ -108,7 +117,7 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 	const canProcess = canProcessGeneral || canProcessSelf;
 
 	// Extract year from pathname for navigation
-	const pathnameParts = receipt.pathname.split("/");
+	const pathnameParts = receipt.pathname?.split("/") || [];
 	const year = pathnameParts[1] || new Date().getFullYear().toString();
 
 	const purchaseRelations = linkedPurchase
@@ -173,29 +182,31 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 					<TreasuryDetailCard title={t("treasury.receipts.details", "Receipt Details")}>
 						<div className="grid gap-4">
 							<TreasuryField label={t("common.fields.name")}>
-								{receipt.name || receipt.pathname.split("/").pop() || "—"}
+								{receipt.name || receipt.pathname?.split("/").pop() || "—"}
 							</TreasuryField>
 							{receipt.description ? (
 								<TreasuryField label={t("common.fields.description")}>
 									{receipt.description}
 								</TreasuryField>
 							) : null}
-							<TreasuryField label={t("treasury.receipts.receipt_file", "Receipt File")}
-								valueClassName="text-foreground"
-							>
-								<Button asChild variant="outline" size="sm">
-									<a
-										href={receipt.url}
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										<span className="material-symbols-outlined text-base">
-											open_in_new
-										</span>
-										{t("treasury.receipts.open_receipt", "Open Receipt")}
-									</a>
-								</Button>
-							</TreasuryField>
+							{receipt.url ? (
+								<TreasuryField label={t("treasury.receipts.receipt_file", "Receipt File")}
+									valueClassName="text-foreground"
+								>
+									<Button asChild variant="outline" size="sm">
+										<a
+											href={receipt.url}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											<span className="material-symbols-outlined text-base">
+												open_in_new
+											</span>
+											{t("treasury.receipts.open_receipt", "Open Receipt")}
+										</a>
+									</Button>
+								</TreasuryField>
+							) : null}
 							{creatorName ? (
 								<TreasuryField label={t("common.fields.created_by")}>
 									{creatorName}
@@ -211,11 +222,13 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 					</TreasuryDetailCard>
 
 					{/* OCR Content Display */}
-					<ReceiptContentsDisplay
-						receiptId={receipt.id}
-						receiptUrl={receipt.url}
-						content={receiptContent}
-					/>
+					{receipt.url && (
+						<ReceiptContentsDisplay
+							receiptId={receipt.id}
+							receiptUrl={receipt.url}
+							content={receiptContent}
+						/>
+					)}
 
 					{/* Created Inventory Items */}
 					{inventoryRelations.length > 0 && (
@@ -236,12 +249,12 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 								{t("common.actions.back_to_list", "Back to Receipts")}
 							</Button>
 						</Link>
-						{receiptContent && !receipt.purchaseId && (
+						{receiptContent && !hasLinkedReimbursement && (
 							<Link
-								to={`/treasury/reimbursements/new?source=${encodeSourceContext({
+								to={`/treasury/reimbursements/new?source=${encodeRelationshipContext({
 									type: "receipt",
 									id: receipt.id,
-									name: receipt.name || receipt.pathname.split("/").pop()
+									name: receipt.name || receipt.pathname?.split("/").pop() || "Receipt"
 								})}`}
 							>
 								<Button variant="default">

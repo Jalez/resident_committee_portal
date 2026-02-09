@@ -38,7 +38,7 @@ import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements";
-import { ColoredStatusLinkBadge, TREASURY_PURCHASE_STATUS_VARIANTS, TREASURY_TRANSACTION_STATUS_VARIANTS } from "~/components/treasury/colored-status-link-badge";
+import { ColoredStatusLinkBadge, TREASURY_PURCHASE_STATUS_VARIANTS, TREASURY_TRANSACTION_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -103,24 +103,32 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const inventoryItems = await db.getInventoryItems();
 	const itemsMap = new Map(inventoryItems.map((item) => [item.id, item]));
 
-	// Check which purchases have linked transactions and create map of purchase ID to transaction ID and status
+	// Check which purchases have linked transactions via entity relationships
 	const purchasesWithLinkedTransactions = new Set<string>();
 	const purchaseTransactionMap = new Map<string, string>();
 	const transactionStatusMap = new Map<string, string>();
 	for (const purchase of purchases) {
-		const linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
-		if (linkedTransaction) {
-			purchasesWithLinkedTransactions.add(purchase.id);
-			purchaseTransactionMap.set(purchase.id, linkedTransaction.id);
-			transactionStatusMap.set(linkedTransaction.id, linkedTransaction.status);
+		const txRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
+		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
+		if (txRel) {
+			const txId = txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId;
+			const linkedTransaction = await db.getTransactionById(txId);
+			if (linkedTransaction) {
+				purchasesWithLinkedTransactions.add(purchase.id);
+				purchaseTransactionMap.set(purchase.id, linkedTransaction.id);
+				transactionStatusMap.set(linkedTransaction.id, linkedTransaction.status);
+			}
 		}
 	}
 
-	// Fetch receipts for each purchase
+	// Fetch receipts for each purchase via entity relationships
 	const purchaseReceiptsMap = new Map<string, string[]>();
 	for (const purchase of purchases) {
-		const receipts = await db.getReceiptsByPurchaseId(purchase.id);
-		purchaseReceiptsMap.set(purchase.id, receipts.map((r) => r.id));
+		const receiptRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
+		const receiptIds = receiptRelationships
+			.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
+			.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
+		purchaseReceiptsMap.set(purchase.id, receiptIds);
 	}
 
 	// Map reimbursement emails to committee mail threads
@@ -216,7 +224,11 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 
 		// Also update the linked transaction's reimbursementStatus and status
-		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
+		const txRelationships = await db.getEntityRelationships("reimbursement", purchaseId);
+		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
+		const linkedTransaction = txRel 
+			? await db.getTransactionById(txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId)
+			: null;
 		if (linkedTransaction) {
 			// Map purchase status to transaction reimbursementStatus and status
 			let newReimbursementStatus:
@@ -259,7 +271,11 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 
 		// Decline linked transaction before deleting purchase
-		const linkedTransaction = await db.getTransactionByPurchaseId(purchaseId);
+		const txRelationships = await db.getEntityRelationships("reimbursement", purchaseId);
+		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
+		const linkedTransaction = txRel 
+			? await db.getTransactionById(txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId)
+			: null;
 		if (linkedTransaction) {
 			await db.updateTransaction(linkedTransaction.id, {
 				status: "declined",
@@ -357,9 +373,9 @@ export default function BudgetReimbursements({
 			<SearchMenu fields={searchFields} />
 			{canCreate && (
 				<AddItemButton
-					to="/treasury/reimbursement/new"
 					title={t("treasury.reimbursements.new")}
 					variant="icon"
+					createType="reimbursement"
 				/>
 			)}
 		</div>

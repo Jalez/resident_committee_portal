@@ -8,7 +8,7 @@ import { PageHeader } from "~/components/layout/page-header";
 import {
 	TREASURY_PURCHASE_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -31,6 +31,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
+import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.reimbursements.$purchaseId";
 
@@ -63,14 +64,25 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked transaction if exists
+	// Get linked transaction via entity relationships
 	let linkedTransaction = null;
 	if (purchase.id) {
-		linkedTransaction = await db.getTransactionByPurchaseId(purchase.id);
+		const txRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
+		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
+		if (txRel) {
+			const txId = txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId;
+			linkedTransaction = await db.getTransactionById(txId);
+		}
 	}
 
-	// Get receipts linked to this purchase
-	const linkedReceipts = await db.getReceiptsByPurchaseId(purchase.id);
+	// Get receipts linked via entity relationships
+	const receiptRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
+	const linkedReceiptIds = receiptRelationships
+		.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
+		.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
+	const linkedReceipts = linkedReceiptIds.length > 0 
+		? await Promise.all(linkedReceiptIds.map(id => db.getReceiptById(id))).then(receipts => receipts.filter((r): r is NonNullable<typeof r> => r !== null))
+		: [];
 
 	// Get OCR content for receipts
 	const receiptIds = linkedReceipts.map(r => r.id);
@@ -105,17 +117,27 @@ export async function action({ request, params }: Route.ActionArgs) {
 	);
 
 	if (actionType === "sendRequest") {
-		const linkedReceipts = await db.getReceiptsByPurchaseId(purchase.id);
+		// Get linked receipts via entity relationships
+		const receiptRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
+		const linkedReceiptIds = receiptRelationships
+			.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
+			.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
+		const linkedReceipts = linkedReceiptIds.length > 0 
+			? await Promise.all(linkedReceiptIds.map(id => db.getReceiptById(id))).then(receipts => receipts.filter((r): r is NonNullable<typeof r> => r !== null))
+			: [];
 
 		if (linkedReceipts.length === 0) {
 			return { success: false, error: "treasury.new_reimbursement.missing_receipts" };
 		}
 
-		const receiptLinks = linkedReceipts.map(r => ({
-			id: r.pathname,
-			name: r.name || r.pathname.split("/").pop() || "Receipt",
-			url: r.url
-		}));
+		// Filter out drafts (receipts without pathname/url)
+		const receiptLinks: ReceiptLink[] = linkedReceipts
+			.filter(r => r.pathname && r.url)
+			.map(r => ({
+				id: r.pathname!,
+				name: r.name || r.pathname!.split("/").pop() || "Receipt",
+				url: r.url!
+			}));
 
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
 		const minutesAttachmentPromise = buildMinutesAttachment(
@@ -230,18 +252,20 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 		]
 		: [];
 
-	const receiptRelations = linkedReceipts.map((receipt) => {
-		const ocr = receiptContentsData?.find(rc => rc.receiptId === receipt.id);
-		const subtitle = ocr ? [ocr.storeName, ocr.totalAmount ? `${ocr.totalAmount} ${ocr.currency || 'EUR'}` : null].filter(Boolean).join(' \u2022 ') : null;
-		return {
-			to: `/treasury/receipts/${receipt.id}`,
-			title: receipt.name || receipt.pathname.split("/").pop() || "Receipt",
-			status: purchase.status,
-			id: receipt.id,
-			variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
-			subtitle,
-		};
-	});
+	const receiptRelations = linkedReceipts
+		.filter((receipt) => receipt.pathname) // Filter out drafts
+		.map((receipt) => {
+			const ocr = receiptContentsData?.find(rc => rc.receiptId === receipt.id);
+			const subtitle = ocr ? [ocr.storeName, ocr.totalAmount ? `${ocr.totalAmount} ${ocr.currency || 'EUR'}` : null].filter(Boolean).join(' \u2022 ') : null;
+			return {
+				to: `/treasury/receipts/${receipt.id}`,
+				title: receipt.name || receipt.pathname!.split("/").pop() || "Receipt",
+				status: purchase.status,
+				id: receipt.id,
+				variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
+				subtitle,
+			};
+		});
 
 	const canSendRequest =
 		canUpdate &&

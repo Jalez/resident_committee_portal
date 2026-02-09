@@ -12,6 +12,7 @@ import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/treasury";
@@ -85,13 +86,19 @@ export async function loader({ request }: Route.LoaderArgs) {
 			t.reimbursementStatus === "approved",
 	);
 
-	// Get all transaction IDs that are linked to budgets
+	// Get all transaction IDs that are linked to budgets using entity relationships
 	const allBudgets = await db.getFundBudgetsByYear(selectedYear);
 	const budgetLinkedTransactionIds = new Set<string>();
 	for (const budget of allBudgets) {
-		const budgetTxs = await db.getBudgetTransactions(budget.id);
-		for (const { transaction } of budgetTxs) {
-			budgetLinkedTransactionIds.add(transaction.id);
+		const relationships = await loadRelationshipsForEntity(
+			db,
+			"budget",
+			budget.id,
+			["transaction"],
+		);
+		const linkedTransactions = relationships.transaction?.linked || [];
+		for (const transaction of linkedTransactions) {
+			budgetLinkedTransactionIds.add((transaction as { id: string }).id);
 		}
 	}
 
