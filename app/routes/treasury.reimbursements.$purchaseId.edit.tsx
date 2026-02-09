@@ -194,14 +194,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const sourceContext = getRelationshipContextFromUrl(url);
 	const returnUrl = url.searchParams.get("returnUrl");
 
-	// Get relationship context from source entity (for pre-populating values)
-	let sourceRelationshipContext = null;
-	if (sourceContext) {
-		sourceRelationshipContext = await getRelationshipContext(
-			db,
-			sourceContext.type as any,
-			sourceContext.id,
-		);
+	// Get values from source entity (for pre-populating this entity)
+	let sourceValues: { amount?: number; description?: string } | null = null;
+	if (sourceContext && sourceContext.type === "transaction") {
+		const sourceTransaction = await db.getTransactionById(sourceContext.id);
+		if (sourceTransaction) {
+			sourceValues = {
+				amount: Number.parseFloat(sourceTransaction.amount),
+				description: sourceTransaction.description,
+			};
+		}
 	}
 
 	return {
@@ -224,7 +226,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		relationships,
 		sourceContext,
 		returnUrl,
-		sourceRelationshipContext,
+		sourceValues,
 	};
 }
 
@@ -608,7 +610,7 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		relationships,
 		sourceContext,
 		returnUrl,
-		sourceRelationshipContext,
+		sourceValues,
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
@@ -619,12 +621,12 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 	const isSubmitting =
 		navigation.state === "submitting" || fetcher.state === "submitting";
 
-	// Pre-populate from source context if reimbursement is a draft with default values
-	const initialDescription = (purchase.status === "draft" && (!purchase.description || purchase.description === "") && sourceRelationshipContext?.description)
-		? sourceRelationshipContext.description
+	// Pre-populate from source entity values if reimbursement is a draft with defaults
+	const initialDescription = (purchase.status === "draft" && (!purchase.description || purchase.description === "") && sourceValues?.description)
+		? sourceValues.description
 		: (purchase.description || "");
-	const initialAmount = (purchase.status === "draft" && Number.parseFloat(purchase.amount) === 0 && sourceRelationshipContext?.totalAmount)
-		? sourceRelationshipContext.totalAmount.toFixed(2)
+	const initialAmount = (purchase.status === "draft" && Number.parseFloat(purchase.amount) === 0 && sourceValues?.amount)
+		? sourceValues.amount.toFixed(2)
 		: purchase.amount;
 
 	// Form state

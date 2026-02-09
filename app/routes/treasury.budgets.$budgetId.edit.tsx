@@ -21,7 +21,6 @@ import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
-import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
@@ -60,15 +59,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const returnUrl = url.searchParams.get("returnUrl");
 	console.log(`[BudgetLoader] URL: ${request.url}, sourceContext:`, sourceContext, `returnUrl: ${returnUrl}`);
 
-	// Get relationship context from source entity (for pre-populating values)
-	let sourceRelationshipContext = null;
-	if (sourceContext) {
-		sourceRelationshipContext = await getRelationshipContext(
-			db,
-			sourceContext.type as any,
-			sourceContext.id,
-		);
-		console.log(`[BudgetLoader] Source relationship context:`, sourceRelationshipContext);
+	// Get values from source entity (for pre-populating this entity)
+	let sourceValues: { amount?: number; description?: string } | null = null;
+	if (sourceContext && sourceContext.type === "transaction") {
+		const sourceTransaction = await db.getTransactionById(sourceContext.id);
+		if (sourceTransaction) {
+			sourceValues = {
+				amount: Number.parseFloat(sourceTransaction.amount),
+				description: sourceTransaction.description,
+			};
+			console.log(`[BudgetLoader] Source transaction values:`, sourceValues);
+		}
 	}
 
 	// Get currently linked transactions via entity relationships
@@ -107,7 +108,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		relationships,
 		sourceContext,
 		returnUrl,
-		sourceRelationshipContext,
+		sourceValues,
 	};
 }
 
@@ -230,7 +231,7 @@ export default function TreasuryBudgetsEdit({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships, sourceContext, returnUrl, sourceRelationshipContext } = loaderData;
+	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships, sourceContext, returnUrl, sourceValues } = loaderData;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [confirmAction, setConfirmAction] = useState<
@@ -239,12 +240,12 @@ export default function TreasuryBudgetsEdit({
 	const closeFormRef = useRef<HTMLFormElement>(null);
 	const reopenFormRef = useRef<HTMLFormElement>(null);
 
-	// Pre-populate from source context if budget is a draft with default amount
-	const initialAmount = (budget.status === "draft" && Number.parseFloat(budget.amount) === 0 && sourceRelationshipContext?.totalAmount)
-		? sourceRelationshipContext.totalAmount.toFixed(2).replace(".", ",")
+	// Pre-populate from source entity values if budget is a draft with defaults
+	const initialAmount = (budget.status === "draft" && Number.parseFloat(budget.amount) === 0 && sourceValues?.amount)
+		? sourceValues.amount.toFixed(2).replace(".", ",")
 		: Number.parseFloat(budget.amount).toFixed(2).replace(".", ",");
-	const initialName = (budget.status === "draft" && (!budget.name || budget.name === "") && sourceRelationshipContext?.description)
-		? sourceRelationshipContext.description
+	const initialName = (budget.status === "draft" && (!budget.name || budget.name === "") && sourceValues?.description)
+		? sourceValues.description
 		: budget.name;
 
 	const [name, setName] = useState(initialName);
