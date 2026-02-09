@@ -10,18 +10,18 @@ import {
 import {
 	TreasuryDetailCard,
 	TreasuryField,
-	TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Button } from "~/components/ui/button";
 import {
 	getDatabase,
-	type Purchase,
 	type Transaction,
 } from "~/db";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/treasury.transactions.$transactionId";
 
@@ -60,41 +60,23 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		db,
 		"transaction",
 		params.transactionId,
-		["reimbursement", "budget"],
+		["inventory", "budget", "reimbursement"],
 	);
-
-	// Get linked purchase (reimbursement) if exists
-	const linkedReimbursements = relationships.reimbursement?.linked || [];
-	const purchase = linkedReimbursements.length > 0
-		? (linkedReimbursements[0] as Purchase)
-		: null;
-
-	// Get linked budget if exists
-	const linkedBudgets = relationships.budget?.linked || [];
-	const budgetLink = linkedBudgets.length > 0
-		? {
-			budget: linkedBudgets[0] as { id: string; status: string; name: string },
-			amount: transaction.amount,
-		}
-		: null;
 
 	return {
 		siteConfig: SITE_CONFIG,
 		transaction,
-		purchase,
-		budgetLink,
+		relationships,
 	};
 }
 
 export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 	const {
 		transaction,
-		purchase,
-		budgetLink,
+		relationships,
 	} = loaderData as {
 		transaction: Transaction;
-		purchase: Purchase | null;
-		budgetLink: { budget: { id: string; status: string; name: string }; amount: string } | null;
+		relationships: Awaited<ReturnType<typeof loadRelationshipsForEntity>>;
 	};
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t, i18n } = useTranslation();
@@ -109,8 +91,13 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		transaction.createdBy &&
 		rootData?.user?.userId === transaction.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
+
+	// Check if editing is locked due to linked reimbursement
+	const linkedReimbursements = relationships.reimbursement?.linked || [];
+	const purchase = linkedReimbursements.length > 0 ? linkedReimbursements[0] : null;
 	const isEditLocked = Boolean(
-		purchase?.emailSent && purchase.status !== "rejected",
+		purchase && (purchase as { emailSent?: boolean; status?: string }).emailSent &&
+		(purchase as { emailSent?: boolean; status?: string }).status !== "rejected",
 	);
 
 	useEffect(() => {
@@ -137,42 +124,6 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		new Date(date).toLocaleDateString(
 			i18n.language === "fi" ? "fi-FI" : "en-US",
 		);
-
-	const purchaseRelations = purchase
-		? [
-			{
-				to: `/treasury/reimbursements/${purchase.id}`,
-				title:
-					purchase.description ||
-					purchase.id.substring(0, 8),
-				status: "linked",
-				id: purchase.id,
-				variantMap: {
-					linked:
-						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-				},
-			},
-		]
-		: [];
-
-	const budgetRelations = budgetLink
-		? [
-			{
-				to: `/treasury/budgets/${budgetLink.budget.id}`,
-				title: budgetLink.budget.name,
-				status: budgetLink.budget.status,
-				id: budgetLink.budget.id,
-				variantMap: {
-					linked:
-						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-					open:
-						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-					closed:
-						"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-				},
-			},
-		]
-		: [];
 
 	return (
 		<PageWrapper>
@@ -225,16 +176,28 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 							</TreasuryField>
 						</div>
 
-						<TreasuryRelationList
-							label={t("treasury.reimbursements.reimbursement_request", "Reimbursement")}
-							items={purchaseRelations}
-							withSeparator
-						/>
-
-						<TreasuryRelationList
-							label={t("treasury.budgets.title", "Budget")}
-							items={budgetRelations}
-							withSeparator
+						<RelationshipPicker
+							relationAType="transaction"
+							relationAId={transaction.id}
+							relationAName={transaction.description || ""}
+							mode="view"
+							sections={[
+								{
+									relationBType: "inventory",
+									linkedEntities: (relationships.inventory?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+								{
+									relationBType: "budget",
+									linkedEntities: (relationships.budget?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+								{
+									relationBType: "reimbursement",
+									linkedEntities: (relationships.reimbursement?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+							]}
 						/>
 					</TreasuryDetailCard>
 				</div>

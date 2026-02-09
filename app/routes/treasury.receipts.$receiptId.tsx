@@ -2,21 +2,21 @@ import { useTranslation } from "react-i18next";
 import { Form, Link, useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
-import {
-	TREASURY_PURCHASE_STATUS_VARIANTS,
-} from "~/components/colored-status-link-badge";
+
 import {
 	TreasuryDetailCard,
 	TreasuryField,
-	TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type Purchase, type EntityRelationship } from "~/db";
+import { getDatabase } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import { ReceiptContentsDisplay } from "~/components/treasury/receipt-contents-display";
 import { encodeRelationshipContext } from "~/lib/linking/relationship-context";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.receipts.$receiptId";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -46,19 +46,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked reimbursements via entity relationships
-	const relationships = await db.getEntityRelationships("receipt", receipt.id);
-	const reimbursementRelationships = relationships.filter(
-		(r: EntityRelationship) => r.relationAType === "reimbursement" || r.relationBType === "reimbursement"
+	// Load relationships using universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"receipt",
+		receipt.id,
+		["reimbursement"],
 	);
-	
-	// Get the first linked reimbursement (if any)
-	let linkedPurchase: Purchase | null = null;
-	if (reimbursementRelationships.length > 0) {
-		const rel = reimbursementRelationships[0];
-		const reimbursementId = rel.relationAType === "reimbursement" ? rel.relationId : rel.relationBId;
-		linkedPurchase = await db.getPurchaseById(reimbursementId);
-	}
 
 	// Get creator name
 	const creator = receipt.createdBy ? await db.findUserById(receipt.createdBy) : null;
@@ -84,16 +78,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		receipt,
-		linkedPurchase,
+		relationships,
 		creatorName: creator?.name || null,
 		receiptContent,
 		createdInventoryItems,
-		hasLinkedReimbursement: reimbursementRelationships.length > 0,
 	};
 }
 
 export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
-	const { receipt, linkedPurchase, creatorName, receiptContent, createdInventoryItems, hasLinkedReimbursement } = loaderData;
+	const { receipt, relationships, creatorName, receiptContent, createdInventoryItems } = loaderData;
+	const hasLinkedReimbursement = (relationships.reimbursement?.linked.length || 0) > 0;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 
@@ -119,20 +113,6 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 	// Extract year from pathname for navigation
 	const pathnameParts = receipt.pathname?.split("/") || [];
 	const year = pathnameParts[1] || new Date().getFullYear().toString();
-
-	const purchaseRelations = linkedPurchase
-		? [
-			{
-				to: `/treasury/reimbursements/${linkedPurchase.id}`,
-				title:
-					linkedPurchase.description ||
-					linkedPurchase.id.substring(0, 8),
-				status: linkedPurchase.status,
-				id: linkedPurchase.id,
-				variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
-			},
-		]
-		: [];
 
 	// Prepare inventory items for relation list
 	const inventoryRelations = createdInventoryItems.map((item) => ({
@@ -214,10 +194,18 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 							) : null}
 						</div>
 
-						<TreasuryRelationList
-							label={t("treasury.receipts.reimbursement_request")}
-							items={purchaseRelations}
-							withSeparator
+						<RelationshipPicker
+							relationAType="receipt"
+							relationAId={receipt.id}
+							relationAName={receipt.name || ""}
+							mode="view"
+							sections={[
+								{
+									relationBType: "reimbursement",
+									linkedEntities: (relationships.reimbursement?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+							]}
 						/>
 					</TreasuryDetailCard>
 
@@ -233,11 +221,23 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 					{/* Created Inventory Items */}
 					{inventoryRelations.length > 0 && (
 						<TreasuryDetailCard title={t("inventory.created_items", "Created Inventory Items")}>
-							<TreasuryRelationList
-								label=""
-								items={inventoryRelations}
-								withSeparator={false}
-							/>
+							<div className="space-y-2">
+								{inventoryRelations.map((item) => (
+									<Link
+										key={item.id}
+										to={item.to}
+										className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
+									>
+										<div className="flex flex-col">
+											<span className="font-medium">{item.title}</span>
+											<span className="text-sm text-muted-foreground">{item.description}</span>
+										</div>
+										<span className={`px-2 py-1 text-xs rounded-full ${item.variantMap[item.status as keyof typeof item.variantMap]}`}>
+											{item.status === "complete" ? t("common.status.complete") : t("common.status.incomplete")}
+										</span>
+									</Link>
+								))}
+							</div>
 						</TreasuryDetailCard>
 					)}
 

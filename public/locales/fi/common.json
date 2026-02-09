@@ -425,7 +425,7 @@
       "name_placeholder": "Esim. Kitaran hankinta",
       "description": "Kuvaus",
       "description_placeholder": "Lisätietoja budjetista",
-      "amount": "Varattu summa",
+      "amount": "Budjetin koko",
       "used": "Käytetty",
       "reserved": "Varattu",
       "remaining": "Jäljellä",

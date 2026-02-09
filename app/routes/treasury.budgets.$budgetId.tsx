@@ -6,12 +6,10 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import {
     TREASURY_BUDGET_STATUS_VARIANTS,
-    TREASURY_TRANSACTION_STATUS_VARIANTS,
 } from "~/components/colored-status-link-badge";
 import {
     TreasuryDetailCard,
     TreasuryField,
-    TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Button } from "~/components/ui/button";
@@ -25,6 +23,9 @@ import {
     requireDeletePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.budgets.$budgetId";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -48,22 +49,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         throw new Response("Not Found", { status: 404 });
     }
 
-    // Get linked transactions via entity relationships
-    const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
-    const linkedTransactionIds = budgetRelationships
-        .filter((r) => r.relationBType === "transaction")
-        .map((r) => r.relationBId);
-    const linkedTransactions = await Promise.all(
-        linkedTransactionIds.map(async (id) => {
-            const transaction = await db.getTransactionById(id);
-            return transaction ? { transaction } : null;
-        })
-    ).then((results) => results.filter((t): t is { transaction: NonNullable<typeof t>['transaction'] } => t !== null));
+    // Load relationships using universal system
+    const relationships = await loadRelationshipsForEntity(
+        db,
+        "budget",
+        budget.id,
+        ["transaction"],
+    );
 
     return {
         siteConfig: SITE_CONFIG,
         budget,
-        linkedTransactions,
+        relationships,
         currentUserId: authUser?.userId || null,
     };
 }
@@ -107,7 +104,7 @@ export default function TreasuryBudgetsView({
 }: Route.ComponentProps) {
     const {
         budget,
-        linkedTransactions,
+        relationships,
         currentUserId,
     } = loaderData;
     const { t } = useTranslation();
@@ -144,14 +141,6 @@ export default function TreasuryBudgetsView({
     const formatCurrency = (value: number) => {
         return `${value.toFixed(2).replace(".", ",")} €`;
     };
-
-    const transactionRelations = linkedTransactions.map(({ transaction }) => ({
-        to: `/treasury/transactions/${transaction.id}`,
-        title: transaction.description || transaction.id.substring(0, 8),
-        status: transaction.status,
-        id: transaction.id,
-        variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
-    }));
 
     return (
         <PageWrapper>
@@ -203,15 +192,23 @@ export default function TreasuryBudgetsView({
                             </TreasuryField>
                         </div>
 
-                        <TreasuryRelationList
-                            label={t("treasury.budgets.linked_transactions")}
-                            items={transactionRelations}
-                            withSeparator
+                        <RelationshipPicker
+                            relationAType="budget"
+                            relationAId={budget.id}
+                            relationAName={budget.name || ""}
+                            mode="view"
+                            sections={[
+                                {
+                                    relationBType: "transaction",
+                                    linkedEntities: (relationships.transaction?.linked || []) as unknown as AnyEntity[],
+                                    availableEntities: [],
+                                },
+                            ]}
                         />
 
                         <Separator />
                         <div className="flex gap-2">
-                            {canDelete && linkedTransactions.length === 0 && (
+                            {canDelete && (relationships.transaction?.linked.length || 0) === 0 && (
                                 <>
                                     <Form method="post" className="hidden" ref={deleteFormRef}>
                                         <input type="hidden" name="_action" value="delete" />

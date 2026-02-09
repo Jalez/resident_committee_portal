@@ -12,7 +12,6 @@ import {
 import {
 	TreasuryDetailCard,
 	TreasuryField,
-	TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -33,6 +32,9 @@ import {
 } from "~/lib/email.server";
 import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
 import type { loader as rootLoader } from "~/root";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.reimbursements.$purchaseId";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -64,35 +66,23 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	// Get linked transaction via entity relationships
-	let linkedTransaction = null;
-	if (purchase.id) {
-		const txRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
-		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
-		if (txRel) {
-			const txId = txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId;
-			linkedTransaction = await db.getTransactionById(txId);
-		}
-	}
+	// Load relationships using universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"reimbursement",
+		purchase.id,
+		["transaction", "receipt", "inventory"],
+	);
 
-	// Get receipts linked via entity relationships
-	const receiptRelationships = await db.getEntityRelationships("reimbursement", purchase.id);
-	const linkedReceiptIds = receiptRelationships
-		.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
-		.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
-	const linkedReceipts = linkedReceiptIds.length > 0 
-		? await Promise.all(linkedReceiptIds.map(id => db.getReceiptById(id))).then(receipts => receipts.filter((r): r is NonNullable<typeof r> => r !== null))
-		: [];
-
-	// Get OCR content for receipts
-	const receiptIds = linkedReceipts.map(r => r.id);
+	// Get OCR content for linked receipts
+	const linkedReceipts = (relationships.receipt?.linked || []) as unknown as AnyEntity[];
+	const receiptIds = linkedReceipts.map((r) => r.id);
 	const receiptContents = receiptIds.length > 0 ? await db.getReceiptContentsByReceiptIds(receiptIds) : [];
 
 	return {
 		siteConfig: SITE_CONFIG,
 		purchase,
-		linkedTransaction,
-		linkedReceipts,
+		relationships,
 		receiptContents,
 		emailConfigured: await isEmailConfigured(),
 	};
@@ -194,17 +184,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function ViewReimbursement({ loaderData }: Route.ComponentProps) {
-	const {
-		purchase,
-		linkedTransaction,
-		linkedReceipts,
-		receiptContents: receiptContentsData,
-	} = loaderData as {
-		purchase: Purchase;
-		linkedTransaction: Transaction | null;
-		linkedReceipts: Receipt[];
-		receiptContents: ReceiptContent[];
-	};
+	const { purchase, relationships, receiptContents: receiptContentsData } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 	const fetcher = useFetcher();
@@ -240,32 +220,9 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 		return `${num.toFixed(2).replace(".", ",")} €`;
 	};
 
-	const transactionRelations = linkedTransaction
-		? [
-			{
-				to: `/treasury/transactions/${linkedTransaction.id}`,
-				title: t("treasury.reimbursements.view_transaction"),
-				status: linkedTransaction.status,
-				id: linkedTransaction.id,
-				variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
-			},
-		]
-		: [];
-
-	const receiptRelations = linkedReceipts
-		.filter((receipt) => receipt.pathname) // Filter out drafts
-		.map((receipt) => {
-			const ocr = receiptContentsData?.find(rc => rc.receiptId === receipt.id);
-			const subtitle = ocr ? [ocr.storeName, ocr.totalAmount ? `${ocr.totalAmount} ${ocr.currency || 'EUR'}` : null].filter(Boolean).join(' \u2022 ') : null;
-			return {
-				to: `/treasury/receipts/${receipt.id}`,
-				title: receipt.name || receipt.pathname!.split("/").pop() || "Receipt",
-				status: purchase.status,
-				id: receipt.id,
-				variantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
-				subtitle,
-			};
-		});
+	// Get linked receipts count for email button check
+	const linkedReceipts = (relationships.receipt?.linked || []) as unknown as AnyEntity[];
+	const nonDraftReceipts = linkedReceipts.filter((r) => (r as Receipt).pathname);
 
 	const canSendRequest =
 		canUpdate &&
@@ -359,16 +316,28 @@ export default function ViewReimbursement({ loaderData }: Route.ComponentProps) 
 							)}
 						</div>
 
-						<TreasuryRelationList
-							label={t("treasury.new_reimbursement.transaction_section_title")}
-							items={transactionRelations}
-							withSeparator
-						/>
-
-						<TreasuryRelationList
-							label={t("treasury.receipts.title")}
-							items={receiptRelations}
-							withSeparator
+						<RelationshipPicker
+							relationAType="reimbursement"
+							relationAId={purchase.id}
+							relationAName={purchase.description || ""}
+							mode="view"
+							sections={[
+								{
+									relationBType: "transaction",
+									linkedEntities: (relationships.transaction?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+								{
+									relationBType: "receipt",
+									linkedEntities: (relationships.receipt?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+								{
+									relationBType: "inventory",
+									linkedEntities: (relationships.inventory?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+							]}
 						/>
 					</TreasuryDetailCard>
 				</div>

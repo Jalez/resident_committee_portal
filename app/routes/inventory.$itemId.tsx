@@ -2,13 +2,10 @@ import { useTranslation } from "react-i18next";
 import { Link, useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
-import {
-	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/colored-status-link-badge";
+
 import {
 	TreasuryDetailCard,
 	TreasuryField,
-	TreasuryRelationList,
 } from "~/components/treasury/treasury-detail-components";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Badge } from "~/components/ui/badge";
@@ -18,6 +15,9 @@ import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/inventory.$itemId";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import type { AnyEntity } from "~/lib/entity-converters";
 
 const INVENTORY_STATUS_VARIANTS: Record<string, string> = {
 	active:
@@ -43,39 +43,25 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	// Get linked transactions via entity relationships
-	const relationships = await db.getEntityRelationships("inventory", item.id);
-	const transactionLinks: { transaction: { id: string; description: string; status: string; type: string }; quantity: number }[] = [];
-	
-	for (const rel of relationships) {
-		if (rel.relationBType === "transaction" || rel.relationAType === "transaction") {
-			const transactionId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
-			const transaction = await db.getTransactionById(transactionId);
-			if (transaction) {
-				transactionLinks.push({
-					transaction: {
-						id: transaction.id,
-						description: transaction.description,
-						status: transaction.status,
-						type: transaction.type,
-					},
-					quantity: 1,
-				});
-			}
-		}
-	}
+	// Load relationships using universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"inventory",
+		item.id,
+		["transaction"],
+	);
 
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
-		transactionLinks,
+		relationships,
 	};
 }
 
 export default function ViewInventoryItem({
 	loaderData,
 }: Route.ComponentProps) {
-	const { item, transactionLinks } = loaderData;
+	const { item, relationships } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t, i18n } = useTranslation();
 
@@ -95,15 +81,7 @@ export default function ViewInventoryItem({
 		);
 	};
 
-	const transactionRelations = transactionLinks.map(
-		({ transaction, quantity }) => ({
-			to: `/treasury/transactions/${transaction.id}`,
-			title: `${transaction.description} (${quantity}x)`,
-			status: transaction.status,
-			id: transaction.id,
-			variantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
-		}),
-	);
+
 
 	return (
 		<PageWrapper>
@@ -198,13 +176,18 @@ export default function ViewInventoryItem({
 							</TreasuryField>
 						</div>
 
-						<TreasuryRelationList
-							label={t(
-								"inventory.linked_transactions",
-								"Linked Transactions",
-							)}
-							items={transactionRelations}
-							withSeparator
+						<RelationshipPicker
+							relationAType="inventory"
+							relationAId={item.id}
+							relationAName={item.name || ""}
+							mode="view"
+							sections={[
+								{
+									relationBType: "transaction",
+									linkedEntities: (relationships.transaction?.linked || []) as unknown as AnyEntity[],
+									availableEntities: [],
+								},
+							]}
 						/>
 					</TreasuryDetailCard>
 
