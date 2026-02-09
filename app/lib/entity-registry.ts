@@ -136,11 +136,11 @@ export const ENTITY_REGISTRY: Record<RelationshipEntityType, EntityTypeConfig> =
         labelKey: "common.entity_types.faq",
         pluralKey: "faq.title",
         icon: "help",
-        detailUrl: (id) => `/faq/${id}`, // Assuming FAQs have detail/edit page
+        detailUrl: (id) => `/faq/${id}`,
         editUrl: (id) => `/faq/${id}/edit`,
         statusVariants: GENERIC_VARIANTS,
         supportsUpload: false,
         supportsAIDraft: false,
-        supportsDraft: false, // FAQ usually created directly, maybe no draft status? Assuming false for now.
+        supportsDraft: true,
     },
 };

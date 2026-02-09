@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useFetcher } from "react-router";
 import type { RelationshipEntityType } from "~/db/schema";
 import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import { entityToRelationItem, entityToLinkableItem, type AnyEntity } from "~/lib/entity-converters";
@@ -72,6 +73,29 @@ export interface RelationshipPickerProps {
  * auto-create a draft immediately (see Phase 6), so relationAId should
  * always be present even for "new" items.
  */
+/**
+ * Hook to create a draft entity
+ */
+function useCreateDraft() {
+	const fetcher = useFetcher();
+
+	return {
+		createDraft: (type: RelationshipEntityType, sourceType?: RelationshipEntityType, sourceId?: string, sourceName?: string, returnUrl?: string) => {
+			const formData = new FormData();
+			formData.append("type", type);
+			if (sourceType) formData.append("sourceType", sourceType);
+			if (sourceId) formData.append("sourceId", sourceId);
+			if (sourceName) formData.append("sourceName", sourceName);
+			if (returnUrl) formData.append("returnUrl", returnUrl);
+			fetcher.submit(formData, {
+				method: "POST",
+				action: "/api/entities/create-draft",
+			});
+		},
+		navigating: fetcher.state !== "idle",
+	};
+}
+
 export function RelationshipPicker({
 	relationAType,
 	relationAId,
@@ -88,6 +112,7 @@ export function RelationshipPicker({
 	formData,
 }: RelationshipPickerProps) {
 	const { t } = useTranslation();
+	const { createDraft } = useCreateDraft();
 
 	// Convert relationAType to EntityType for legacy RelationActions compatibility
 	const sourceEntityType = relationAType as unknown as EntityType;
@@ -122,6 +147,12 @@ export function RelationshipPicker({
 						entityToLinkableItem(section.relationBType, entity)
 					);
 
+					// Handler for creating new entities via draft system
+					// Pass source context so the relationship can be created on save
+					const handleAdd = config.supportsDraft
+						? () => createDraft(section.relationBType, relationAType, relationAId, relationAName, currentPath)
+						: undefined;
+
 					return (
 						<RelationActions
 							key={section.relationBType}
@@ -137,6 +168,8 @@ export function RelationshipPicker({
 							sourceEntityType={sourceEntityType}
 							sourceEntityId={relationAId}
 							sourceEntityName={relationAName}
+							onAdd={handleAdd}
+							addLabel={handleAdd ? t("common.actions.create_new") : undefined}
 							withSeparator
 						/>
 					);

@@ -237,7 +237,7 @@ export default function EditTransaction({
 	const { t } = useTranslation();
 
 	// Transaction form state
-	const transactionType = transaction.type as TransactionType;
+	const [transactionType, setTransactionType] = useState<TransactionType>(transaction.type as TransactionType);
 	const [amount, setAmount] = useState(String(transaction.amount));
 	const [descriptionValue, setDescriptionValue] = useState(
 		transaction.description,
@@ -249,6 +249,12 @@ export default function EditTransaction({
 	const [status, setStatus] = useState<TransactionStatus>(
 		transaction.status,
 	);
+
+	// Type is editable for draft transactions with no relationships
+	const hasRelationships = relationships.inventory?.linked.length > 0 || 
+		relationships.budget?.linked.length > 0 || 
+		relationships.reimbursement?.linked.length > 0;
+	const isTypeEditable = transaction.status === "draft" && !hasRelationships;
 
 	// Use relationship picker hook
 	const relationshipPicker = useRelationshipPicker({
@@ -273,6 +279,11 @@ export default function EditTransaction({
 		value: s,
 		label: t(`treasury.breakdown.statuses.${s}`),
 	}));
+
+	const typeOptions = [
+		{ value: "income", label: t("treasury.types.income") },
+		{ value: "expense", label: t("treasury.types.expense") },
+	];
 
 	// Strict amount from inventory items — always override when items exist
 	useEffect(() => {
@@ -356,13 +367,29 @@ export default function EditTransaction({
 						title={t("treasury.breakdown.edit.title")}
 					>
 						<div className="grid gap-4">
-							<TreasuryField
-								label={t("common.fields.type")}
-							>
-								{t(
-									`treasury.types.${transactionType}`,
-								)}
-							</TreasuryField>
+							{isTypeEditable ? (
+								<TreasuryField
+									mode="edit"
+									label={`${t("common.fields.type")} *`}
+									name="type"
+									type="select"
+									value={transactionType}
+									onChange={(v) => {
+										setTransactionType(v as TransactionType);
+										// Reset category when type changes
+										setCategory("");
+									}}
+									options={typeOptions}
+									required
+								/>
+							) : (
+								<TreasuryField
+									label={t("common.fields.type")}
+								>
+									<input type="hidden" name="type" value={transactionType} />
+									{t(`treasury.types.${transactionType}`)}
+								</TreasuryField>
+							)}
 							<TreasuryField
 								label={t("common.fields.year")}
 							>

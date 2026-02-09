@@ -20,6 +20,8 @@ import { RelationshipPicker } from "~/components/relationships/relationship-pick
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
@@ -51,6 +53,23 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 	const usedAmount = await db.getBudgetUsedAmount(budget.id);
 	const availableFunds = await db.getAvailableFundsForYear(budget.year);
+
+	// Get source context from URL (for auto-linking when created from picker)
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+	console.log(`[BudgetLoader] URL: ${request.url}, sourceContext:`, sourceContext, `returnUrl: ${returnUrl}`);
+
+	// Get relationship context from source entity (for pre-populating values)
+	let sourceRelationshipContext = null;
+	if (sourceContext) {
+		sourceRelationshipContext = await getRelationshipContext(
+			db,
+			sourceContext.type as any,
+			sourceContext.id,
+		);
+		console.log(`[BudgetLoader] Source relationship context:`, sourceRelationshipContext);
+	}
 
 	// Get currently linked transactions via entity relationships
 	const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
@@ -86,6 +105,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedTransactions,
 		unlinkedTransactions,
 		relationships,
+		sourceContext,
+		returnUrl,
+		sourceRelationshipContext,
 	};
 }
 
@@ -178,6 +200,27 @@ export async function action({ request, params }: Route.ActionArgs) {
 	);
 	await saveRelationshipChanges(db, "budget", params.budgetId, formData, user?.userId || null);
 
+	// Check for source context to create auto-link
+	const sourceType = formData.get("_sourceType") as string | null;
+	const sourceId = formData.get("_sourceId") as string | null;
+	console.log(`[BudgetAction] sourceType: ${sourceType}, sourceId: ${sourceId}`);
+	if (sourceType && sourceId) {
+		console.log(`[BudgetAction] Creating relationship: ${sourceType}:${sourceId} <-> budget:${params.budgetId}`);
+		await db.createEntityRelationship({
+			relationAType: sourceType as any,
+			relationId: sourceId,
+			relationBType: "budget",
+			relationBId: params.budgetId,
+			createdBy: user?.userId || null,
+		});
+	}
+
+	// Handle returnUrl redirect (from source entity picker)
+	const returnUrl = formData.get("_returnUrl") as string | null;
+	if (returnUrl) {
+		return redirect(returnUrl);
+	}
+
 	return redirect(
 		`/treasury/budgets/${params.budgetId}?success=updated`,
 	);
@@ -187,7 +230,7 @@ export default function TreasuryBudgetsEdit({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships } = loaderData;
+	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships, sourceContext, returnUrl, sourceRelationshipContext } = loaderData;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [confirmAction, setConfirmAction] = useState<
@@ -196,11 +239,17 @@ export default function TreasuryBudgetsEdit({
 	const closeFormRef = useRef<HTMLFormElement>(null);
 	const reopenFormRef = useRef<HTMLFormElement>(null);
 
-	const [name, setName] = useState(budget.name);
+	// Pre-populate from source context if budget is a draft with default amount
+	const initialAmount = (budget.status === "draft" && Number.parseFloat(budget.amount) === 0 && sourceRelationshipContext?.totalAmount)
+		? sourceRelationshipContext.totalAmount.toFixed(2).replace(".", ",")
+		: Number.parseFloat(budget.amount).toFixed(2).replace(".", ",");
+	const initialName = (budget.status === "draft" && (!budget.name || budget.name === "") && sourceRelationshipContext?.description)
+		? sourceRelationshipContext.description
+		: budget.name;
+
+	const [name, setName] = useState(initialName);
 	const [description, setDescription] = useState(budget.description || "");
-	const [amount, setAmount] = useState(
-		Number.parseFloat(budget.amount).toFixed(2).replace(".", ","),
-	);
+	const [amount, setAmount] = useState(initialAmount);
 
 	// Use relationship picker hook
 	// Use relationship picker hook with existing linked transactions
@@ -245,6 +294,15 @@ export default function TreasuryBudgetsEdit({
 				)}
 
 				<Form method="post" className="space-y-6">
+					{/* Hidden fields for source context (auto-linking when created from picker) */}
+					{sourceContext && (
+						<>
+							<input type="hidden" name="_sourceType" value={sourceContext.type} />
+							<input type="hidden" name="_sourceId" value={sourceContext.id} />
+						</>
+					)}
+					{returnUrl && <input type="hidden" name="_returnUrl" value={returnUrl} />}
+
 					<TreasuryDetailCard title={t("treasury.budgets.view.title")}>
 						<div className="grid gap-4">
 							<TreasuryField

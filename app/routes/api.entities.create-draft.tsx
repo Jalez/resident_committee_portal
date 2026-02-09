@@ -8,6 +8,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const type = formData.get("type") as RelationshipEntityType;
 	const returnUrl = formData.get("returnUrl") as string | null;
+	const sourceType = formData.get("sourceType") as RelationshipEntityType | null;
+	const sourceId = formData.get("sourceId") as string | null;
+	const sourceName = formData.get("sourceName") as string | null;
 
 	if (!type) {
 		return { error: "Missing entity type" };
@@ -126,10 +129,19 @@ export async function action({ request }: Route.ActionArgs) {
 				return { error: `Unknown entity type: ${type}` };
 		}
 
-		// Append returnUrl as query param if provided
-		if (returnUrl) {
-			redirectUrl += `?returnUrl=${encodeURIComponent(returnUrl)}`;
+		// Append source context and returnUrl as query params
+		const params = new URLSearchParams();
+		if (sourceType && sourceId) {
+			params.append("source", `${sourceType}:${sourceId}${sourceName ? `:${encodeURIComponent(sourceName)}` : ''}`);
 		}
+		if (returnUrl) {
+			params.append("returnUrl", returnUrl);
+		}
+		if (params.toString()) {
+			redirectUrl += `?${params.toString()}`;
+		}
+
+		console.log(`[CreateDraft] Creating ${type} draft, redirecting to: ${redirectUrl}`);
 
 		return redirect(redirectUrl);
 	} catch (error) {

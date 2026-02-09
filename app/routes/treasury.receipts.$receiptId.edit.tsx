@@ -10,6 +10,7 @@ import { useReceiptUpload } from "~/hooks/use-receipt-upload";
 import { getDatabase } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
@@ -57,12 +58,19 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		["reimbursement", "transaction", "inventory"],
 	);
 
+	// Get relationship context from URL for auto-linking
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
 	return {
 		siteConfig: SITE_CONFIG,
 		receipt,
 		receiptContent: await db.getReceiptContentByReceiptId(receipt.id),
 		relationshipContext: await getRelationshipContext(db, "receipt", receipt.id, undefined),
 		relationships,
+		sourceContext,
+		returnUrl,
 	};
 }
 
@@ -116,8 +124,27 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Save relationships
 	await saveRelationshipChanges(db, "receipt", receipt.id, formData, user?.userId || null);
 
+	// Create relationship from source context if present
+	const sourceType = formData.get("sourceType") as string | null;
+	const sourceId = formData.get("sourceId") as string | null;
+	if (sourceType && sourceId) {
+		await db.createEntityRelationship({
+			relationAType: sourceType as any,
+			relationId: sourceId,
+			relationBType: "receipt",
+			relationBId: receipt.id,
+			createdBy: user?.userId || null,
+		});
+	}
+
 	// Save OCR content
 	await saveReceiptOCRContent(formData, receipt);
+
+	// Handle returnUrl if present
+	const returnUrl = formData.get("returnUrl") as string | null;
+	if (returnUrl) {
+		return redirect(returnUrl);
+	}
 
 	const pathnameParts = receipt.pathname?.split("/") || [];
 	const year = pathnameParts[1] || new Date().getFullYear().toString();
@@ -189,6 +216,15 @@ export default function TreasuryReceiptsEdit({
 				)}
 
 				<Form method="post" encType="multipart/form-data" className="space-y-6" onSubmit={handleSubmit}>
+					{/* Hidden fields for auto-linking */}
+					{loaderData.sourceContext && (
+						<>
+							<input type="hidden" name="sourceType" value={loaderData.sourceContext.type} />
+							<input type="hidden" name="sourceId" value={loaderData.sourceContext.id} />
+						</>
+					)}
+					{loaderData.returnUrl && <input type="hidden" name="returnUrl" value={loaderData.returnUrl} />}
+
 					{tempUrl && <input type="hidden" name="tempUrl" value={tempUrl} />}
 					{tempPathname && <input type="hidden" name="tempPathname" value={tempPathname} />}
 					{ocrData && (

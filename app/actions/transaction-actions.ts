@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
 import { getDatabase } from "~/db";
-import type { ReimbursementStatus, Transaction, TransactionStatus } from "~/db/schema";
+import type { ReimbursementStatus, Transaction, TransactionStatus, TransactionType } from "~/db/schema";
 
 export async function handleDeleteTransaction(
 	transaction: Transaction,
@@ -59,6 +59,7 @@ export async function handleUpdateTransaction(
 	const amount = amountStr
 		? amountStr.replace(",", ".")
 		: transaction.amount.toString();
+	const type = (formData.get("type") as TransactionType) || transaction.type;
 
 	await db.updateTransaction(transaction.id, {
 		status,
@@ -66,6 +67,7 @@ export async function handleUpdateTransaction(
 		description,
 		category,
 		amount: amount || "0",
+		type,
 	});
 
 	return redirect(`/treasury/breakdown?year=${year}`);

@@ -45,6 +45,7 @@ import {
 } from "~/lib/treasury/receipt-validation";
 import { getMinutesByYear } from "~/lib/google.server";
 import { getRelationshipContext } from "~/lib/linking/relationship-context.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { RelationshipContextStatus } from "~/components/treasury/relationship-context-status";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
@@ -188,6 +189,21 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		["transaction", "receipt", "inventory"],
 	);
 
+	// Get source context from URL (for auto-linking when created from picker)
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
+	// Get relationship context from source entity (for pre-populating values)
+	let sourceRelationshipContext = null;
+	if (sourceContext) {
+		sourceRelationshipContext = await getRelationshipContext(
+			db,
+			sourceContext.type as any,
+			sourceContext.id,
+		);
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		purchase,
@@ -206,6 +222,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		unlinkedTransactions,
 		relationshipContext: await getRelationshipContext(db, "reimbursement", purchase.id),
 		relationships,
+		sourceContext,
+		returnUrl,
+		sourceRelationshipContext,
 	};
 }
 
@@ -549,6 +568,25 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Save relationships using new universal system
 	await saveRelationshipChanges(db, "reimbursement", params.purchaseId, formData, user?.userId || null);
 
+	// Check for source context to create auto-link
+	const sourceType = formData.get("_sourceType") as string | null;
+	const sourceId = formData.get("_sourceId") as string | null;
+	if (sourceType && sourceId) {
+		await db.createEntityRelationship({
+			relationAType: sourceType as any,
+			relationId: sourceId,
+			relationBType: "reimbursement",
+			relationBId: params.purchaseId,
+			createdBy: user?.userId || null,
+		});
+	}
+
+	// Handle returnUrl redirect (from source entity picker)
+	const returnUrl = formData.get("_returnUrl") as string | null;
+	if (returnUrl) {
+		return redirect(returnUrl);
+	}
+
 	return redirect(`/treasury/reimbursements?year=${year}&success=Reimbursement updated`);
 }
 
@@ -568,6 +606,9 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		receiptContents: receiptContentsData,
 		relationshipContext,
 		relationships,
+		sourceContext,
+		returnUrl,
+		sourceRelationshipContext,
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
@@ -578,9 +619,17 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 	const isSubmitting =
 		navigation.state === "submitting" || fetcher.state === "submitting";
 
+	// Pre-populate from source context if reimbursement is a draft with default values
+	const initialDescription = (purchase.status === "draft" && (!purchase.description || purchase.description === "") && sourceRelationshipContext?.description)
+		? sourceRelationshipContext.description
+		: (purchase.description || "");
+	const initialAmount = (purchase.status === "draft" && Number.parseFloat(purchase.amount) === 0 && sourceRelationshipContext?.totalAmount)
+		? sourceRelationshipContext.totalAmount.toFixed(2)
+		: purchase.amount;
+
 	// Form state
-	const [description, setDescription] = useState(purchase.description || "");
-	const [amount, setAmount] = useState(purchase.amount);
+	const [description, setDescription] = useState(initialDescription);
+	const [amount, setAmount] = useState(initialAmount);
 	const [purchaserName, setPurchaserName] = useState(purchase.purchaserName || "");
 	const [bankAccount, setBankAccount] = useState(purchase.bankAccount || "");
 	const [minutesId, setMinutesId] = useState(purchase.minutesId || "");
@@ -729,6 +778,14 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 
 				<Form method="post" className="space-y-6">
 					<input type="hidden" name="receiptLinks" value={JSON.stringify(selectedReceipts)} />
+					{/* Hidden fields for source context (auto-linking when created from picker) */}
+					{sourceContext && (
+						<>
+							<input type="hidden" name="_sourceType" value={sourceContext.type} />
+							<input type="hidden" name="_sourceId" value={sourceContext.id} />
+						</>
+					)}
+					{returnUrl && <input type="hidden" name="_returnUrl" value={returnUrl} />}
 
 					{/* Reimbursement Details */}
 					<TreasuryDetailCard title={t("treasury.reimbursements.edit.reimbursement_details")}>

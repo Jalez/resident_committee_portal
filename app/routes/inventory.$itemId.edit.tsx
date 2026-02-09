@@ -14,6 +14,7 @@ import { getDatabase, type NewInventoryItem } from "~/db";
 import i18next from "~/i18next.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import type { Route } from "./+types/inventory.$itemId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -40,10 +41,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		? `${t("inventory.form.title_edit")}: ${itemName}`
 		: t("inventory.form.title_edit");
 
+	// Get source context from URL (for auto-linking when created from picker)
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
 		metaTitle: title,
+		sourceContext,
+		returnUrl,
 	};
 }
 
@@ -68,13 +76,33 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	await db.updateInventoryItem(params.itemId, updateData);
 
+	// Check for source context to create auto-link
+	const sourceType = formData.get("_sourceType") as string | null;
+	const sourceId = formData.get("_sourceId") as string | null;
+	if (sourceType && sourceId) {
+		const user = await requirePermission(request, "inventory:write", getDatabase);
+		await db.createEntityRelationship({
+			relationAType: sourceType as any,
+			relationId: sourceId,
+			relationBType: "inventory",
+			relationBId: params.itemId,
+			createdBy: user?.userId || null,
+		});
+	}
+
+	// Handle returnUrl redirect (from source entity picker)
+	const returnUrl = formData.get("_returnUrl") as string | null;
+	if (returnUrl) {
+		return redirect(returnUrl);
+	}
+
 	return redirect(`/inventory/${params.itemId}`);
 }
 
 export default function EditInventoryItem({
 	loaderData,
 }: Route.ComponentProps) {
-	const { item } = loaderData;
+	const { item, sourceContext, returnUrl } = loaderData;
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 
@@ -96,6 +124,15 @@ export default function EditInventoryItem({
 				<PageHeader title={t("inventory.form.title_edit")} />
 
 				<Form method="post" className="space-y-6">
+					{/* Hidden fields for source context (auto-linking when created from picker) */}
+					{sourceContext && (
+						<>
+							<input type="hidden" name="_sourceType" value={sourceContext.type} />
+							<input type="hidden" name="_sourceId" value={sourceContext.id} />
+						</>
+					)}
+					{returnUrl && <input type="hidden" name="_returnUrl" value={returnUrl} />}
+
 					<TreasuryDetailCard
 						title={t("inventory.details", "Item Details")}
 					>
