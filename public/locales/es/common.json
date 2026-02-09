@@ -7,7 +7,9 @@
       "reimbursement": "Reembolso",
       "budget": "Presupuesto",
       "inventory": "Artículo de Inventario",
-      "minute": "Acta"
+      "minute": "Acta",
+      "news": "Noticias",
+      "faq": "Preguntas Frecuentes"
     },
     "fields": {
       "created_by": "Creado por",
@@ -535,5 +537,18 @@
     "incomplete_items": "Artículos incompletos",
     "complete_item": "Marcar como completo",
     "location_tbd": "Ubicación pendiente"
+  },
+  "relationships": {
+    "ai": {
+      "analyze": "Analizar con IA",
+      "analyzing": "Analizando...",
+      "success": "{{count}} borradores creados",
+      "error": "Error en el análisis"
+    },
+    "draft": {
+      "badge": "Borrador",
+      "cleanup": "Limpiar borradores",
+      "cleanup_success": "{{count}} borradores eliminados"
+    }
   }
 }

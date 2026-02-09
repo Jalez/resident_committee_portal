@@ -131,79 +131,79 @@ export default function News({ loaderData }: Route.ComponentProps) {
 						/>
 						{canWrite && (
 							<AddItemButton
-								to="/news/new"
 								title={t("news.add")}
 								variant="icon"
+								createType="news"
 							/>
 						)}
 					</div>
 				}
 			>
 				<div className="space-y-4">
-				{items.length === 0 ? (
-					<div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-8 text-center">
-						<p className="text-gray-600 dark:text-gray-400">
-							{searchQ ? t("news.no_results") : t("news.empty")}
-						</p>
-					</div>
-				) : (
-					<ul className="divide-y divide-gray-200 dark:divide-gray-700">
-						{items.map((item) => {
-							const title =
-								useSecondary && item.titleSecondary
-									? item.titleSecondary
-									: item.title;
-							const summary =
-								useSecondary && item.summarySecondary
-									? item.summarySecondary
-									: item.summary;
-							return (
-							<li
-								key={item.id}
-								className="py-4 flex items-start justify-between gap-4"
-							>
-								<div className="min-w-0 flex-1">
-									<Link
-										to={`/news/${item.id}/edit`}
-										className="font-semibold text-gray-900 dark:text-white hover:underline"
+					{items.length === 0 ? (
+						<div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-8 text-center">
+							<p className="text-gray-600 dark:text-gray-400">
+								{searchQ ? t("news.no_results") : t("news.empty")}
+							</p>
+						</div>
+					) : (
+						<ul className="divide-y divide-gray-200 dark:divide-gray-700">
+							{items.map((item) => {
+								const title =
+									useSecondary && item.titleSecondary
+										? item.titleSecondary
+										: item.title;
+								const summary =
+									useSecondary && item.summarySecondary
+										? item.summarySecondary
+										: item.summary;
+								return (
+									<li
+										key={item.id}
+										className="py-4 flex items-start justify-between gap-4"
 									>
-										{title}
-									</Link>
-									{summary && (
-										<p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-											{summary}
-										</p>
-									)}
-									<p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-										{new Date(item.createdAt).toLocaleDateString()}
-									</p>
-								</div>
-								{(canUpdate || canDelete) && (
-									<div className="flex items-center gap-2 shrink-0">
-										{canUpdate && (
-											<Button variant="outline" size="sm" asChild>
-												<Link to={`/news/${item.id}/edit`}>
-													{t("news.edit")}
-												</Link>
-											</Button>
-										)}
-										{canDelete && (
-											<Button
-												type="button"
-												variant="destructive"
-												size="sm"
-												onClick={() => setDeleteConfirmId(item.id)}
+										<div className="min-w-0 flex-1">
+											<Link
+												to={`/news/${item.id}/edit`}
+												className="font-semibold text-gray-900 dark:text-white hover:underline"
 											>
-												{t("news.delete")}
-											</Button>
+												{title}
+											</Link>
+											{summary && (
+												<p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+													{summary}
+												</p>
+											)}
+											<p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+												{new Date(item.createdAt).toLocaleDateString()}
+											</p>
+										</div>
+										{(canUpdate || canDelete) && (
+											<div className="flex items-center gap-2 shrink-0">
+												{canUpdate && (
+													<Button variant="outline" size="sm" asChild>
+														<Link to={`/news/${item.id}/edit`}>
+															{t("news.edit")}
+														</Link>
+													</Button>
+												)}
+												{canDelete && (
+													<Button
+														type="button"
+														variant="destructive"
+														size="sm"
+														onClick={() => setDeleteConfirmId(item.id)}
+													>
+														{t("news.delete")}
+													</Button>
+												)}
+											</div>
 										)}
-									</div>
-								)}
-							</li>
-							);
-						})}
-					</ul>
-				)}
+									</li>
+								);
+							})}
+						</ul>
+					)}
 				</div>
 			</SplitLayout>
 		</PageWrapper>

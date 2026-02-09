@@ -8,7 +8,9 @@
       "reimbursement": "Reimbursement",
       "budget": "Budget",
       "inventory": "Inventory Item",
-      "minute": "Minute"
+      "minute": "Minute",
+      "news": "News",
+      "faq": "FAQ"
     },
     "actions": {
       "save": "Save",
@@ -1272,5 +1274,18 @@
       "read": "View committee members"
     },
     "categories": {}
+  },
+  "relationships": {
+    "ai": {
+      "analyze": "Analyze with AI",
+      "analyzing": "Analyzing...",
+      "success": "Created {{count}} draft items",
+      "error": "Analysis failed"
+    },
+    "draft": {
+      "badge": "Draft",
+      "cleanup": "Clean Up Drafts",
+      "cleanup_success": "Deleted {{count}} drafts"
+    }
   }
 }

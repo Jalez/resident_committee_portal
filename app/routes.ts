@@ -21,7 +21,7 @@ export default [
 		"routes/treasury.transactions.$transactionId.edit.tsx",
 	),
 	route("treasury/receipts", "routes/treasury.receipts.tsx"),
-	route("treasury/receipts/new", "routes/treasury.receipts.new.tsx"),
+
 	route(
 		"treasury/receipts/:receiptId",
 		"routes/treasury.receipts.$receiptId.tsx",
@@ -39,10 +39,9 @@ export default [
 		"treasury/reimbursements/:purchaseId/edit",
 		"routes/treasury.reimbursements.$purchaseId.edit.tsx",
 	),
-	route("treasury/reimbursement/new", "routes/treasury.reimbursement.new.tsx"),
-	route("treasury/reimbursements/new", "routes/treasury.reimbursement.new.tsx", { id: "treasury-reimbursements-new-alias" }),
+
 	route("treasury/budgets", "routes/treasury.budgets.tsx"),
-	route("treasury/budgets/new", "routes/treasury.budgets.new.tsx"),
+
 	route(
 		"treasury/budgets/:budgetId",
 		"routes/treasury.budgets.$budgetId.tsx",
@@ -51,18 +50,18 @@ export default [
 		"treasury/budgets/:budgetId/edit",
 		"routes/treasury.budgets.$budgetId.edit.tsx",
 	),
-	route("treasury/transactions/new", "routes/treasury.transactions.new.tsx"),
+
 	route("minutes", "routes/minutes.tsx"),
-	route("minutes/new", "routes/minutes.new.tsx"),
+
 	route("minutes/:minuteId/edit", "routes/minutes.$minuteId.edit.tsx"),
 	route("news", "routes/news.tsx"),
-	route("news/new", "routes/news.new.tsx"),
+
 	route("news/:newsId/edit", "routes/news.$newsId.edit.tsx"),
 	route("faq", "routes/faq.tsx"),
-	route("faq/new", "routes/faq.new.tsx"),
+
 	route("faq/:faqId/edit", "routes/faq.$faqId.edit.tsx"),
 	route("inventory", "routes/inventory.tsx"),
-	route("inventory/new", "routes/inventory.new.tsx"),
+
 	route("inventory/incomplete", "routes/inventory.incomplete.tsx"),
 	route("inventory/:itemId", "routes/inventory.$itemId.tsx"),
 	route("inventory/:itemId/edit", "routes/inventory.$itemId.edit.tsx"),
@@ -99,6 +98,7 @@ export default [
 	route("settings/news", "routes/settings.news.tsx"),
 	route("settings/faqs", "routes/settings.faqs.tsx"),
 	route("settings/receipts", "routes/settings.receipts.tsx"),
+	route("settings/relationship-contexts", "routes/settings.relationship-contexts.tsx"),
 
 	// Analytics (redirect to polls/analytics)
 	route("analytics", "routes/analytics.tsx"),
@@ -137,4 +137,8 @@ export default [
 	route("api/treasury/import", "routes/api.treasury.import.tsx"),
 	route("api/messages/mark-read", "routes/api.messages.mark-read.tsx"),
 	route("api/set-language", "routes/api.set-language.ts"),
+	route("api/entities/create-draft", "routes/api.entities.create-draft.tsx"),
+	route("api/relationship/analyze", "routes/api.relationship.analyze.ts"),
+	route("api/drafts/cleanup", "routes/api.drafts.cleanup.tsx"),
+	route("admin/migrate/relationships", "routes/admin.migrate.relationships.tsx"),
 ] satisfies RouteConfig;

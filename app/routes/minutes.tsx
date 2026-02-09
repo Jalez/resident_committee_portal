@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { AddItemButton } from "~/components/add-item-button";
 import {
+	ActionButton,
 	ContentArea,
 	PageWrapper,
 	QRPanel,
@@ -18,7 +18,9 @@ import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { type Minute } from "~/db/schema";
+import { getMinutesByYear, type MinutesByYear } from "~/lib/google.server";
+import { queryClient } from "~/lib/query-client";
+import { queryKeys, STALE_TIME } from "~/lib/query-config";
 import type { Route } from "./+types/minutes";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -30,15 +32,6 @@ export function meta({ data }: Route.MetaArgs) {
 				"Toimikunnan kokouspöytäkirjat / Tenant Committee Meeting Minutes",
 		},
 	];
-}
-
-export interface MinutesByYear {
-	year: string;
-	files: {
-		id: string;
-		name: string;
-		url: string;
-	}[];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -65,46 +58,32 @@ export async function loader({ request }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	const canCreate = permissions.some((p) => p === "minutes:create" || p === "*");
-
 	const url = new URL(request.url);
 	const yearFilter = url.searchParams.get("year") || "";
 	const nameFilter = url.searchParams.get("name") || "";
 	const hasFilters = yearFilter || nameFilter;
 
-	const db = getDatabase();
-	const allMinutes = await db.getMinutes();
+	const minutesByYear = await queryClient.ensureQueryData({
+		queryKey: queryKeys.minutes,
+		queryFn: getMinutesByYear,
+		staleTime: STALE_TIME,
+	});
 
-	// Group by year
-	const minutesByYearMap = new Map<string, MinutesByYear>();
-
-	for (const minute of allMinutes) {
-		const year = new Date(minute.date).getFullYear().toString();
-		if (!minutesByYearMap.has(year)) {
-			minutesByYearMap.set(year, { year, files: [] });
-		}
-		minutesByYearMap.get(year)?.files.push({
-			id: minute.id,
-			name: minute.title,
-			url: minute.fileUrl,
-		});
-	}
-
-	const minutesByYear = Array.from(minutesByYearMap.values()).sort((a, b) => Number(b.year) - Number(a.year));
-
+	const archiveUrl =
+		minutesByYear.find((y) => y.files.length > 0)?.folderUrl || "#";
 	const uniqueYears = minutesByYear
 		.map((y) => y.year)
-		.sort((a, b) => Number(b) - Number(a));
+		.sort()
+		.reverse();
 
 	return {
 		siteConfig: SITE_CONFIG,
 		minutesByYear,
-		archiveUrl: "#",
+		archiveUrl,
 		uniqueYears,
 		filters: { year: yearFilter, name: nameFilter },
 		hasFilters,
 		languages,
-		canCreate,
 	};
 }
 
@@ -116,7 +95,6 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 		filters,
 		hasFilters,
 		languages,
-		canCreate,
 	} = loaderData;
 	const { hasPermission } = useUser();
 	const canSeeNamingGuide = hasPermission("minutes:naming-guide");
@@ -175,17 +153,17 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 		/>
 	);
 
-	// Header actions: Search + Add button
+	// Header actions: Search + Link button
 	const FooterContent = (
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
-			{canCreate && (
-				<AddItemButton
-					to="/minutes/new"
-					title={t("minutes.new")}
-					variant="icon"
-				/>
-			)}
+			<ActionButton
+				href={archiveUrl}
+				icon="folder_open"
+				labelPrimary={t("minutes.archive", { lng: languages.primary })}
+				labelSecondary={t("minutes.archive", { lng: languages.secondary })}
+				external={true}
+			/>
 		</div>
 	);
 
@@ -289,20 +267,9 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 																		{file.name}
 																	</h3>
 																</div>
-																<div className="flex items-center gap-2">
-																	{canCreate && (
-																		<a
-																			href={`/minutes/${file.id}/edit`}
-																			className="p-2 text-gray-400 hover:text-primary transition-colors z-10"
-																			onClick={(e) => e.stopPropagation()}
-																		>
-																			<span className="material-symbols-outlined">edit</span>
-																		</a>
-																	)}
-																	<span className="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors shrink-0 ml-4">
-																		description
-																	</span>
-																</div>
+																<span className="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors shrink-0 ml-4">
+																	description
+																</span>
 															</div>
 														</a>
 													))}

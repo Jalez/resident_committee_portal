@@ -566,7 +566,7 @@ export async function buildMinutesAttachment(
 		try {
 			const db = getDatabase();
 			const minute = await db.getMinuteById(minutesId);
-			if (minute) {
+			if (minute && minute.fileUrl && minute.fileKey) {
 				const storage = getMinuteStorage();
 				const content = await storage.getMinuteContentBase64(minute.fileUrl);
 				if (content) {

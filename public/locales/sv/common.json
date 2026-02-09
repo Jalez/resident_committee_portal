@@ -7,7 +7,9 @@
       "reimbursement": "Ersättning",
       "budget": "Budget",
       "inventory": "Lagerföremål",
-      "minute": "Protokoll"
+      "minute": "Protokoll",
+      "news": "Nyheter",
+      "faq": "FAQ"
     },
     "fields": {
       "created_by": "Skapad av",
@@ -950,5 +952,18 @@
     "incomplete_items": "Ofullständiga objekt",
     "complete_item": "Markera som fullständig",
     "location_tbd": "Plats väntande"
+  },
+  "relationships": {
+    "ai": {
+      "analyze": "Analysera med AI",
+      "analyzing": "Analyserar...",
+      "success": "{{count}} utkast skapade",
+      "error": "Analys misslyckades"
+    },
+    "draft": {
+      "badge": "Utkast",
+      "cleanup": "Rensa utkast",
+      "cleanup_success": "{{count}} utkast borttagna"
+    }
   }
 }

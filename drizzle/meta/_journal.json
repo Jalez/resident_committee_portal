@@ -152,8 +152,22 @@
     {
       "idx": 21,
       "version": "7",
-      "when": 1770557404114,
+      "when": 1737305930000,
       "tag": "0021_solid_mad_thinker",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1738964000000,
+      "tag": "0022_add_draft_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1770600636150,
+      "tag": "0023_nice_the_executioner",
       "breakpoints": true
     }
   ]

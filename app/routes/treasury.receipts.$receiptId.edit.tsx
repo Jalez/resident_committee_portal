@@ -1,20 +1,27 @@
 import { useState } from "react";
 import { Form, redirect } from "react-router";
 import { useTranslation } from "react-i18next";
-import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
 import { TreasuryDetailCard } from "~/components/treasury/treasury-detail-components";
 import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
-import { ReimbursementsPicker } from "~/components/treasury/pickers/reimbursements-picker";
 import { ReceiptFormFields } from "~/components/treasury/receipt-form-fields";
 import { useReceiptUpload } from "~/hooks/use-receipt-upload";
-import { getDatabase, type NewReceiptContent } from "~/db";
+import { getDatabase } from "~/db";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { RECEIPT_ALLOWED_MIME_TYPES, RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
-import { getReceiptStorage } from "~/lib/receipts";
-import { buildReceiptPath } from "~/lib/receipts/utils";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
+import {
+	validateReceiptUpdate,
+	handleFileUpload,
+	updateReceiptInDB,
+	saveReceiptOCRContent,
+} from "~/actions/receipt-actions";
+import { type AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.receipts.$receiptId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -25,17 +32,6 @@ export function meta({ data }: Route.MetaArgs) {
 		{ name: "robots", content: "noindex" },
 	];
 }
-
-const updateReceiptSchema = z.object({
-	name: z.string().optional(),
-	description: z.string().optional(),
-	purchaseId: z
-		.string()
-		.uuid()
-		.optional()
-		.or(z.literal(""))
-		.or(z.literal("none")),
-});
 
 export async function loader({ request, params }: Route.LoaderArgs) {
 	const db = getDatabase();
@@ -53,30 +49,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 
-	const allPurchases = await db.getPurchases();
-	const linkablePurchases = allPurchases.filter(
-		(p) =>
-			(p.status === "pending" || p.status === "approved") &&
-			!p.emailSent,
+	// Load relationships using new universal system
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"receipt",
+		receipt.id,
+		["reimbursement", "transaction", "inventory"],
 	);
-
-	const linkedPurchase = receipt.purchaseId
-		? allPurchases.find((p) => p.id === receipt.purchaseId) || null
-		: null;
-
-	if (
-		linkedPurchase &&
-		!linkablePurchases.find((p) => p.id === linkedPurchase.id)
-	) {
-		linkablePurchases.unshift(linkedPurchase);
-	}
 
 	return {
 		siteConfig: SITE_CONFIG,
 		receipt,
-		linkablePurchases,
-		linkedPurchase,
 		receiptContent: await db.getReceiptContentByReceiptId(receipt.id),
+		relationshipContext: await getRelationshipContext(db, "receipt", receipt.id, undefined),
+		relationships,
 	};
 }
 
@@ -88,7 +74,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	await requirePermissionOrSelf(
+	const user = await requirePermissionOrSelf(
 		request,
 		"treasury:receipts:update",
 		"treasury:receipts:update-self",
@@ -97,124 +83,44 @@ export async function action({ request, params }: Route.ActionArgs) {
 	);
 
 	const formData = await request.formData();
-	const name = formData.get("name") as string;
-	const description = formData.get("description") as string;
-	const purchaseId = formData.get("purchaseId") as string;
-	const file = formData.get("file") as File | null;
-	const tempUrl = formData.get("tempUrl") as string | null;
-	const tempPathname = formData.get("tempPathname") as string | null;
 
-	// OCR data from client-side analysis
-	const ocrDataJson = formData.get("ocr_data") as string | null;
-	let ocrData: {
-		rawText: string;
-		parsedData: any;
-	} | null = null;
-
-	if (ocrDataJson) {
-		try {
-			ocrData = JSON.parse(ocrDataJson);
-		} catch (error) {
-			console.error("Failed to parse OCR data:", error);
-		}
-	}
-
-	const result = updateReceiptSchema.safeParse({
-		name,
-		description,
-		purchaseId: purchaseId === "none" ? "" : purchaseId || "",
-	});
-
-	if (!result.success) {
+	// Validate form data
+	const validationResult = await validateReceiptUpdate(formData);
+	if (!validationResult.success) {
 		return {
 			error: "Validation failed",
-			fieldErrors: result.error.flatten().fieldErrors,
+			fieldErrors: validationResult.error.flatten().fieldErrors,
 		};
 	}
 
-	const pathnameParts = receipt.pathname.split("/");
+	const name = (formData.get("name") as string | null) || "";
+	const description = formData.get("description") as string | null;
+
+	// Handle file upload
+	const uploadResult = await handleFileUpload(formData, receipt, name);
+	if ("error" in uploadResult) {
+		return uploadResult;
+	}
+
+	const { nextUrl, nextPathname, nextName } = uploadResult;
+
+	// Update receipt in DB
+	await updateReceiptInDB(
+		receipt.id,
+		nextName,
+		description?.trim() || null,
+		nextUrl,
+		nextPathname,
+	);
+
+	// Save relationships
+	await saveRelationshipChanges(db, "receipt", receipt.id, formData, user?.userId || null);
+
+	// Save OCR content
+	await saveReceiptOCRContent(formData, receipt);
+
+	const pathnameParts = receipt.pathname?.split("/") || [];
 	const year = pathnameParts[1] || new Date().getFullYear().toString();
-
-	let nextUrl = receipt.url;
-	let nextPathname = receipt.pathname;
-	let nextName = name?.trim() || receipt.name || null;
-
-	// Use temp file if available, otherwise check for new file upload
-	if (tempUrl && tempPathname) {
-		nextUrl = tempUrl;
-		nextPathname = tempPathname;
-	} else if (file) {
-		const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`;
-		if (!RECEIPT_ALLOWED_TYPES.includes(fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number])) {
-			return {
-				error: "invalid_file_type",
-				allowedTypes: RECEIPT_ALLOWED_TYPES.join(", "),
-			};
-		}
-		if (
-			!RECEIPT_ALLOWED_MIME_TYPES.includes(
-				file.type as (typeof RECEIPT_ALLOWED_MIME_TYPES)[number],
-			)
-		) {
-			return {
-				error: "invalid_file_type",
-				allowedTypes: RECEIPT_ALLOWED_TYPES.join(", "),
-			};
-		}
-
-		const pathname = buildReceiptPath(year, file.name, nextName || "kuitti");
-		const storage = getReceiptStorage();
-		const uploadResult = await storage.uploadFile(pathname, file, {
-			access: "public",
-			addRandomSuffix: true,
-		});
-		nextUrl = uploadResult.url;
-		nextPathname = uploadResult.pathname;
-		if (!name?.trim()) {
-			nextName = file.name;
-		}
-	}
-
-	await db.updateReceipt(params.receiptId, {
-		name: nextName,
-		description: description?.trim() || null,
-		purchaseId:
-			purchaseId && purchaseId !== "" && purchaseId !== "none"
-				? purchaseId
-				: null,
-		url: nextUrl,
-		pathname: nextPathname,
-	});
-
-	// Save OCR content if available (new file was uploaded with OCR analysis)
-	if ((file || tempUrl) && ocrData) {
-		try {
-			// Delete existing content first
-			const existingContent = await db.getReceiptContentByReceiptId(receipt.id);
-			if (existingContent) {
-				await db.deleteReceiptContent(existingContent.id);
-			}
-
-			// Create new content
-			const content: NewReceiptContent = {
-				receiptId: receipt.id,
-				rawText: ocrData.rawText,
-				storeName: ocrData.parsedData?.storeName || null,
-				items: ocrData.parsedData?.items
-					? JSON.stringify(ocrData.parsedData.items)
-					: null,
-				totalAmount: ocrData.parsedData?.totalAmount?.toString() || null,
-				currency: ocrData.parsedData?.currency || "EUR",
-				purchaseDate: ocrData.parsedData?.purchaseDate
-					? new Date(ocrData.parsedData.purchaseDate)
-					: null,
-				aiModel: "OpenRouter via analyze API",
-			};
-			await db.createReceiptContent(content);
-		} catch (error) {
-			console.error("[Receipt Edit] Failed to save OCR content:", error);
-		}
-	}
 
 	return redirect(`/treasury/receipts?year=${year}&success=receipt_updated`);
 }
@@ -223,13 +129,26 @@ export default function TreasuryReceiptsEdit({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { receipt, linkablePurchases, linkedPurchase, receiptContent } = loaderData;
+	const { receipt, receiptContent, relationships } = loaderData;
 	const { t } = useTranslation();
+
+	const allowedTypes =
+		actionData &&
+		typeof actionData === "object" &&
+		"allowedTypes" in actionData
+			? (actionData.allowedTypes as string)
+			: "";
 
 	const [name, setName] = useState(receipt.name || "");
 	const [description, setDescription] = useState(receipt.description || "");
-	const [purchaseId, setPurchaseId] = useState(receipt.purchaseId || "");
 	const [analyzeWithAI, setAnalyzeWithAI] = useState(true);
+
+	// Use relationship picker hook
+	const relationshipPicker = useRelationshipPicker({
+		relationAType: "receipt",
+		relationAId: receipt.id,
+		initialRelationships: [],
+	});
 
 	const {
 		isUploading,
@@ -247,11 +166,7 @@ export default function TreasuryReceiptsEdit({
 		analyzeWithAI,
 	});
 
-	const pathnameParts = receipt.pathname.split("/");
-	const year = pathnameParts[1] || new Date().getFullYear().toString();
-
-	const currentPath = `/treasury/receipts/${receipt.id}/edit`;
-	const currentFileName = receipt.pathname.split("/").pop() || "receipt";
+	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
 
 	// Clear draft on successful submission
 	const handleSubmit = () => {
@@ -263,18 +178,17 @@ export default function TreasuryReceiptsEdit({
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<PageHeader title={t("treasury.receipts.edit")} />
 
-				{actionData?.error && (
+				{actionData && typeof actionData === "object" && "error" in actionData && (
 					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-							{actionData.error === "invalid_file_type"
-								? t("treasury.receipts.invalid_file_type", {
-									types: (actionData.allowedTypes as string) || "",
-								})
-								: (actionData.error as string)}
+						{actionData.error === "invalid_file_type"
+							? t("treasury.receipts.invalid_file_type", {
+									types: allowedTypes,
+							})
+							: (actionData.error as string)}
 					</div>
 				)}
 
 				<Form method="post" encType="multipart/form-data" className="space-y-6" onSubmit={handleSubmit}>
-					<input type="hidden" name="purchaseId" value={purchaseId} />
 					{tempUrl && <input type="hidden" name="tempUrl" value={tempUrl} />}
 					{tempPathname && <input type="hidden" name="tempPathname" value={tempPathname} />}
 					{ocrData && (
@@ -288,38 +202,58 @@ export default function TreasuryReceiptsEdit({
 						/>
 					)}
 
-					<TreasuryDetailCard title={t("treasury.receipts.edit")}>
-						<ReceiptFormFields
-							analyzeWithAI={analyzeWithAI}
-							onAnalyzeChange={setAnalyzeWithAI}
-							onFileChange={handleFileChange}
-							isUploading={isUploading}
-							isAnalyzing={isAnalyzing}
-							name={name}
-							onNameChange={setName}
-							description={description}
-							onDescriptionChange={setDescription}
-							ocrData={ocrData}
-							tempUrl={tempUrl}
-							receiptId={receipt.id}
-							onReanalyze={handleReanalyze}
-							selectedFile={selectedFile}
-							existingReceiptUrl={receipt.url}
-							existingFileName={currentFileName}
-							existingReceiptContent={receiptContent}
-						/>
+					<ReceiptFormFields
+						receiptId={receipt.id}
+						analyzeWithAI={analyzeWithAI}
+						onAnalyzeChange={setAnalyzeWithAI}
+						onFileChange={handleFileChange}
+						isUploading={isUploading}
+						isAnalyzing={isAnalyzing}
+						name={name}
+						onNameChange={setName}
+						description={description || ""}
+						onDescriptionChange={setDescription}
+						ocrData={ocrData}
+						tempUrl={tempUrl}
+						onReanalyze={handleReanalyze}
+						selectedFile={selectedFile}
+						existingReceiptUrl={receipt.url || undefined}
+						existingFileName={currentFileName}
+						existingReceiptContent={receiptContent}
+					/>
 
-						<ReimbursementsPicker
-							linkedReimbursement={linkedPurchase}
-							unlinkedReimbursements={linkablePurchases}
-							selectedReimbursementId={purchaseId}
-							onSelectionChange={setPurchaseId}
-							createUrl="/treasury/reimbursements/new"
-							currentPath={currentPath}
-							storageKey={`receipt-${receipt.id}-reimbursement`}
-							sourceEntityType="receipt"
-							sourceEntityId={receipt.id}
-							sourceEntityName={receipt.name || ""}
+					<TreasuryDetailCard title={t("treasury.receipts.link_to_reimbursement")}>
+						<RelationshipPicker
+							relationAType="receipt"
+							relationAId={receipt.id}
+							relationAName={receipt.name || "Receipt"}
+							sections={[
+								{
+									relationBType: "reimbursement",
+									linkedEntities: ((relationships.reimbursement?.linked || []) as unknown) as AnyEntity[],
+									availableEntities: ((relationships.reimbursement?.available || []) as unknown) as AnyEntity[],
+									maxItems: 1,
+									createType: "reimbursement",
+								},
+								{
+									relationBType: "transaction",
+									linkedEntities: ((relationships.transaction?.linked || []) as unknown) as AnyEntity[],
+									availableEntities: ((relationships.transaction?.available || []) as unknown) as AnyEntity[],
+									createType: "transaction",
+								},
+								{
+									relationBType: "inventory",
+									linkedEntities: ((relationships.inventory?.linked || []) as unknown) as AnyEntity[],
+									availableEntities: ((relationships.inventory?.available || []) as unknown) as AnyEntity[],
+									createType: "inventory",
+								},
+							]}
+							mode="edit"
+							onLink={relationshipPicker.handleLink}
+							onUnlink={relationshipPicker.handleUnlink}
+							showAnalyzeButton={true}
+							storageKeyPrefix={`receipt-${receipt.id}`}
+							formData={relationshipPicker.toFormData()}
 						/>
 					</TreasuryDetailCard>
 

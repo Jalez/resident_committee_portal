@@ -444,6 +444,10 @@ export const PERMISSIONS = {
 		translationKey: "permissions.settings.receipts",
 		category: "Settings",
 	},
+	"settings:relationship-context": {
+		translationKey: "permissions.settings.source.context",
+		category: "Settings",
+	},
 
 	// Committee email (direct communication)
 	"committee:email": {

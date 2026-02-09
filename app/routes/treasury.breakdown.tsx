@@ -6,7 +6,7 @@ import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/treasury/colored-status-link-badge";
+} from "~/components/colored-status-link-badge";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import {
 	TreasuryTable,

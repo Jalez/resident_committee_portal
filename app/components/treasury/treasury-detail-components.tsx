@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ColoredStatusLinkBadge } from "~/components/treasury/colored-status-link-badge";
+import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";

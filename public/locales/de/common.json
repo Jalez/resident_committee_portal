@@ -7,7 +7,9 @@
       "reimbursement": "Erstattung",
       "budget": "Budget",
       "inventory": "Lagerartikel",
-      "minute": "Protokoll"
+      "minute": "Protokoll",
+      "news": "Nachrichten",
+      "faq": "FAQ"
     },
     "fields": {
       "created_by": "Erstellt von",
@@ -535,5 +537,18 @@
     "incomplete_items": "Unvollständige Gegenstände",
     "complete_item": "Als vollständig markieren",
     "location_tbd": "Standort ausstehend"
+  },
+  "relationships": {
+    "ai": {
+      "analyze": "Mit KI analysieren",
+      "analyzing": "Analysieren...",
+      "success": "{{count}} Entwürfe erstellt",
+      "error": "Analyse fehlgeschlagen"
+    },
+    "draft": {
+      "badge": "Entwurf",
+      "cleanup": "Entwürfe bereinigen",
+      "cleanup_success": "{{count}} Entwürfe gelöscht"
+    }
   }
 }

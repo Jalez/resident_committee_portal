@@ -116,6 +116,7 @@ export function Navigation({ variant }: NavigationProps) {
 			"settings:faqs",
 			"settings:general",
 			"settings:receipts",
+			"settings:relationship-context",
 		]);
 
 	// Use shared nav items configuration
@@ -454,6 +455,15 @@ export function Navigation({ variant }: NavigationProps) {
 							"receipt_long",
 							t("settings.receipt_ocr_title", { defaultValue: "Receipt OCR" }),
 							pathname === "/settings/receipts",
+							showLabels,
+							onNavigate,
+						)}
+					{hasPermission("settings:relationship-context") &&
+						renderMenuLink(
+							"/settings/relationship-contexts",
+							"dataset_linked",
+							t("nav.source_contexts", { defaultValue: "Source Contexts" }),
+							pathname === "/settings/relationship-contexts",
 							showLabels,
 							onNavigate,
 						)}
