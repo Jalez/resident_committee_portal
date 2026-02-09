@@ -99,11 +99,12 @@ export type NewUserRole = typeof userRoles.$inferInsert;
 
 /**
  * Inventory item status for lifecycle tracking
+ * - draft: Item is being created but not yet finalized
  * - active: Item is currently in use
  * - removed: Item was removed from inventory (soft-deleted)
  * - legacy: Item existed before treasury records (no linked transactions expected)
  */
-export type InventoryItemStatus = "active" | "removed" | "legacy";
+export type InventoryItemStatus = "draft" | "active" | "removed" | "legacy";
 
 /**
  * Removal reason for audit purposes
@@ -147,12 +148,13 @@ export type NewInventoryItem = typeof inventoryItems.$inferInsert;
 
 /**
  * Purchase status values
+ * - draft: Purchase is being created but not yet submitted
  * - pending: Waiting for approval
  * - approved: Approved, reserved from treasury
  * - reimbursed: Paid, deducted from treasury
  * - rejected: Not approved, not deducted
  */
-export type PurchaseStatus = "pending" | "approved" | "reimbursed" | "rejected";
+export type PurchaseStatus = "draft" | "pending" | "approved" | "reimbursed" | "rejected";
 
 /**
  * Purchases table schema
@@ -204,12 +206,13 @@ export type TransactionType = "income" | "expense";
 
 /**
  * Transaction status values
+ * - draft: Transaction is being created but not yet finalized
  * - pending: Awaiting reimbursement or admin action
  * - complete: Finalized transaction
  * - paused: Temporarily on hold
  * - declined: Rejected by admin
  */
-export type TransactionStatus = "pending" | "complete" | "paused" | "declined";
+export type TransactionStatus = "draft" | "pending" | "complete" | "paused" | "declined";
 
 /**
  * Reimbursement status values
@@ -244,8 +247,7 @@ export const transactions = pgTable("transactions", {
 	reimbursementStatus: text("reimbursement_status")
 		.$type<ReimbursementStatus>()
 		.default("not_requested"),
-	// Links to other entities (inventoryItemId moved to junction table)
-	purchaseId: uuid("purchase_id").references(() => purchases.id),
+	// Links to other entities via entity_relationships table (universal relationships)
 	// Creator tracking for self-edit/delete permissions
 	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
@@ -255,32 +257,6 @@ export const transactions = pgTable("transactions", {
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
-
-/**
- * Junction table for inventory items <-> transactions (many-to-many)
- * Allows multiple items per transaction (bulk purchases) and
- * items appearing in multiple transactions (restocking)
- */
-export const inventoryItemTransactions = pgTable(
-	"inventory_item_transactions",
-	{
-		id: uuid("id").primaryKey().defaultRandom(),
-		inventoryItemId: uuid("inventory_item_id")
-			.references(() => inventoryItems.id)
-			.notNull(),
-		transactionId: uuid("transaction_id")
-			.references(() => transactions.id)
-			.notNull(),
-		// Quantity of this item in this transaction (for bulk purchases)
-		quantity: integer("quantity").notNull().default(1),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-	},
-);
-
-export type InventoryItemTransaction =
-	typeof inventoryItemTransactions.$inferSelect;
-export type NewInventoryItemTransaction =
-	typeof inventoryItemTransactions.$inferInsert;
 
 /**
  * Submission types matching contact form options
@@ -474,10 +450,11 @@ export type NewMailDraft = typeof mailDrafts.$inferInsert;
 
 /**
  * Budget status values
+ * - draft: Budget is being created but not yet finalized
  * - open: Funds are reserved and can be used
  * - closed: Budget is closed, unused funds returned to available
  */
-export type BudgetStatus = "open" | "closed";
+export type BudgetStatus = "draft" | "open" | "closed";
 
 /**
  * Fund budgets table schema
@@ -575,13 +552,14 @@ export const polls = pgTable("polls", {
 export type Poll = typeof polls.$inferSelect;
 export type NewPoll = typeof polls.$inferInsert;
 
-// ============================================
-// RECEIPTS
-// ============================================
 
-// ============================================
-// RECEIPTS
-// ============================================
+/**
+ * Receipt status values
+ * - draft: Receipt is being created but not yet finalized
+ * - active: Normal active receipt
+ * - archived: Soft-deleted or archived receipt
+ */
+export type ReceiptStatus = "draft" | "active" | "archived";
 
 /**
  * Receipts table schema
@@ -590,14 +568,18 @@ export type NewPoll = typeof polls.$inferInsert;
  */
 export const receipts = pgTable("receipts", {
 	id: uuid("id").primaryKey().defaultRandom(),
+	// Status tracking
+	status: text("status")
+		.$type<ReceiptStatus>()
+		.notNull()
+		.default("draft"),
 	// Receipt metadata
 	name: text("name"), // Optional name (defaults to filename if not provided)
 	description: text("description"), // Optional description
-	// File storage info
-	url: text("url").notNull(), // Link to actual receipt file in blob storage
-	pathname: text("pathname").notNull(), // Storage path for the receipt file
-	// Link to purchase (reimbursement request) - one receipt can only be connected to one reimbursement request
-	purchaseId: uuid("purchase_id").references(() => purchases.id),
+	// File storage info (nullable for drafts)
+	url: text("url"), // Link to actual receipt file in blob storage
+	pathname: text("pathname"), // Storage path for the receipt file
+	// Link to purchase via entity_relationships table (universal relationships)
 	// Creator tracking
 	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
@@ -644,18 +626,31 @@ export type NewReceiptContent = typeof receiptContents.$inferInsert;
 // ============================================
 
 /**
+ * Minute status values
+ * - draft: Minute is being created but not yet finalized
+ * - active: Normal active minute
+ * - archived: Soft-deleted or archived minute
+ */
+export type MinuteStatus = "draft" | "active" | "archived";
+
+/**
  * Minutes table schema
  * Stores meeting minutes metadata and file references (blob storage)
  */
 export const minutes = pgTable("minutes", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	date: timestamp("date").notNull(),
-	title: text("title").notNull(),
+	// Status tracking
+	status: text("status")
+		.$type<MinuteStatus>()
+		.notNull()
+		.default("draft"),
+	date: timestamp("date"), // Can be null for drafts
+	title: text("title"), // Can be null for drafts
 	description: text("description"),
-	// File storage info
-	fileUrl: text("file_url").notNull(),
-	fileKey: text("file_key").notNull(), // Path in blob storage
-	year: integer("year").notNull(),
+	// File storage info (nullable for drafts)
+	fileUrl: text("file_url"), // Can be null for drafts
+	fileKey: text("file_key"), // Can be null for drafts
+	year: integer("year"), // Can be null for drafts
 	// Creator tracking
 	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
@@ -665,44 +660,6 @@ export const minutes = pgTable("minutes", {
 
 export type Minute = typeof minutes.$inferSelect;
 export type NewMinute = typeof minutes.$inferInsert;
-
-/**
- * Minute Links table schema (Junction Table)
- * Connects minutes to various other entities (Purchases, News, etc.)
- * Allows for generic "Mentioned in Minute X" relationships
- */
-export const minuteLinks = pgTable(
-	"minute_links",
-	{
-		id: uuid("id").primaryKey().defaultRandom(),
-		minuteId: uuid("minute_id")
-			.references(() => minutes.id, { onDelete: "cascade" })
-			.notNull(),
-		// Polymorphic-style foreign keys (only one should be set per row generally, but multiple is technically possible)
-		purchaseId: uuid("purchase_id").references(() => purchases.id, {
-			onDelete: "set null",
-		}),
-		newsId: uuid("news_id").references(() => news.id, { onDelete: "set null" }),
-		faqId: uuid("faq_id").references(() => faq.id, { onDelete: "set null" }),
-		inventoryItemId: uuid("inventory_item_id").references(
-			() => inventoryItems.id,
-			{ onDelete: "set null" },
-		),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-	},
-	// Indexes for fast lookups
-	(t) => ({
-		minuteIdIdx: index("minute_links_minute_id_idx").on(t.minuteId),
-		purchaseIdIdx: index("minute_links_purchase_id_idx").on(t.purchaseId),
-		newsIdIdx: index("minute_links_news_id_idx").on(t.newsId),
-		inventoryItemIdIdx: index("minute_links_inventory_item_id_idx").on(
-			t.inventoryItemId,
-		),
-	}),
-);
-
-export type MinuteLink = typeof minuteLinks.$inferSelect;
-export type NewMinuteLink = typeof minuteLinks.$inferInsert;
 
 // ============================================
 // APPLICATION SETTINGS
@@ -721,3 +678,54 @@ export const appSettings = pgTable("app_settings", {
 
 export type AppSetting = typeof appSettings.$inferSelect;
 export type NewAppSetting = typeof appSettings.$inferInsert;
+
+// ============================================
+// UNIVERSAL RELATIONSHIPS
+// ============================================
+
+export type RelationshipEntityType =
+	| "receipt"
+	| "transaction"
+	| "reimbursement"
+	| "budget"
+	| "inventory"
+	| "minute"
+	| "news"
+	| "faq";
+
+export const entityRelationships = pgTable(
+	"entity_relationships",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		relationAType: text("relation_a_type")
+			.$type<RelationshipEntityType>()
+			.notNull(),
+		relationId: uuid("relation_a_id").notNull(),
+		relationBType: text("relation_b_type")
+			.$type<RelationshipEntityType>()
+			.notNull(),
+		relationBId: uuid("relation_b_id").notNull(),
+		metadata: text("metadata"), // JSON string
+		createdBy: uuid("created_by").references(() => users.id),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(t) => ({
+		pairUnique: unique().on(
+			t.relationAType,
+			t.relationId,
+			t.relationBType,
+			t.relationBId,
+		),
+		relationIdx: index("entity_rel_relation_a_idx").on(
+			t.relationAType,
+			t.relationId,
+		),
+		relationBIdx: index("entity_rel_relation_b_idx").on(
+			t.relationBType,
+			t.relationBId,
+		),
+	}),
+);
+
+export type EntityRelationship = typeof entityRelationships.$inferSelect;
+export type NewEntityRelationship = typeof entityRelationships.$inferInsert;
