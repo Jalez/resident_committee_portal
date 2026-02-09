@@ -570,17 +570,25 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Save relationships using new universal system
 	await saveRelationshipChanges(db, "reimbursement", params.purchaseId, formData, user?.userId || null);
 
-	// Check for source context to create auto-link
+	// Check for source context to create auto-link (skip if already exists from create-draft)
 	const sourceType = formData.get("_sourceType") as string | null;
 	const sourceId = formData.get("_sourceId") as string | null;
 	if (sourceType && sourceId) {
-		await db.createEntityRelationship({
-			relationAType: sourceType as any,
-			relationId: sourceId,
-			relationBType: "reimbursement",
-			relationBId: params.purchaseId,
-			createdBy: user?.userId || null,
-		});
+		const exists = await db.entityRelationshipExists(
+			sourceType as any,
+			sourceId,
+			"reimbursement",
+			params.purchaseId,
+		);
+		if (!exists) {
+			await db.createEntityRelationship({
+				relationAType: sourceType as any,
+				relationId: sourceId,
+				relationBType: "reimbursement",
+				relationBId: params.purchaseId,
+				createdBy: user?.userId || null,
+			});
+		}
 	}
 
 	// Handle returnUrl redirect (from source entity picker)

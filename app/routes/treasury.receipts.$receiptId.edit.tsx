@@ -124,17 +124,25 @@ export async function action({ request, params }: Route.ActionArgs) {
 	// Save relationships
 	await saveRelationshipChanges(db, "receipt", receipt.id, formData, user?.userId || null);
 
-	// Create relationship from source context if present
+	// Create relationship from source context if present (skip if already exists from create-draft)
 	const sourceType = formData.get("sourceType") as string | null;
 	const sourceId = formData.get("sourceId") as string | null;
 	if (sourceType && sourceId) {
-		await db.createEntityRelationship({
-			relationAType: sourceType as any,
-			relationId: sourceId,
-			relationBType: "receipt",
-			relationBId: receipt.id,
-			createdBy: user?.userId || null,
-		});
+		const exists = await db.entityRelationshipExists(
+			sourceType as any,
+			sourceId,
+			"receipt",
+			receipt.id,
+		);
+		if (!exists) {
+			await db.createEntityRelationship({
+				relationAType: sourceType as any,
+				relationId: sourceId,
+				relationBType: "receipt",
+				relationBId: receipt.id,
+				createdBy: user?.userId || null,
+			});
+		}
 	}
 
 	// Save OCR content

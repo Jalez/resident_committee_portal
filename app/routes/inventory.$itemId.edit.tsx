@@ -76,18 +76,26 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 	await db.updateInventoryItem(params.itemId, updateData);
 
-	// Check for source context to create auto-link
+	// Check for source context to create auto-link (skip if already exists from create-draft)
 	const sourceType = formData.get("_sourceType") as string | null;
 	const sourceId = formData.get("_sourceId") as string | null;
 	if (sourceType && sourceId) {
-		const user = await requirePermission(request, "inventory:write", getDatabase);
-		await db.createEntityRelationship({
-			relationAType: sourceType as any,
-			relationId: sourceId,
-			relationBType: "inventory",
-			relationBId: params.itemId,
-			createdBy: user?.userId || null,
-		});
+		const exists = await db.entityRelationshipExists(
+			sourceType as any,
+			sourceId,
+			"inventory",
+			params.itemId,
+		);
+		if (!exists) {
+			const user = await requirePermission(request, "inventory:write", getDatabase);
+			await db.createEntityRelationship({
+				relationAType: sourceType as any,
+				relationId: sourceId,
+				relationBType: "inventory",
+				relationBId: params.itemId,
+				createdBy: user?.userId || null,
+			});
+		}
 	}
 
 	// Handle returnUrl redirect (from source entity picker)

@@ -200,16 +200,26 @@ export async function action({ request, params }: Route.ActionArgs) {
 	await saveRelationshipChanges(db, "budget", params.budgetId, formData, user?.userId || null);
 
 	// Check for source context to create auto-link (for backwards compatibility with old flow)
+	// Note: Relationship may already exist if created via create-draft API
 	const sourceType = formData.get("_sourceType") as string | null;
 	const sourceId = formData.get("_sourceId") as string | null;
 	if (sourceType && sourceId) {
-		await db.createEntityRelationship({
-			relationAType: sourceType as any,
-			relationId: sourceId,
-			relationBType: "budget",
-			relationBId: params.budgetId,
-			createdBy: user?.userId || null,
-		});
+		// Check if relationship already exists
+		const exists = await db.entityRelationshipExists(
+			sourceType as any,
+			sourceId,
+			"budget",
+			params.budgetId,
+		);
+		if (!exists) {
+			await db.createEntityRelationship({
+				relationAType: sourceType as any,
+				relationId: sourceId,
+				relationBType: "budget",
+				relationBId: params.budgetId,
+				createdBy: user?.userId || null,
+			});
+		}
 	}
 
 	// Handle returnUrl redirect (from source entity picker)
