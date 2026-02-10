@@ -77,10 +77,12 @@ export function getEntityStatus(type: RelationshipEntityType, entity: AnyEntity)
 
 /**
  * Converts any entity to the format required by TreasuryRelationActions (RelationActions)
+ * @param currentPath - If provided, draft entities will link to their edit page with a returnUrl query param
  */
 export function entityToRelationItem(
     type: RelationshipEntityType,
-    entity: AnyEntity
+    entity: AnyEntity,
+    currentPath?: string,
 ): TreasuryRelationItem {
     const config = ENTITY_REGISTRY[type];
     const title = getEntityTitle(type, entity);
@@ -101,11 +103,19 @@ export function entityToRelationItem(
         // URL is handled by detailUrl
     }
 
+    // Link to edit page for drafts, detail page otherwise
+    // Always include returnUrl when currentPath is provided so user can navigate back
+    let targetUrl = status === "draft" ? config.editUrl(entity.id) : config.detailUrl(entity.id);
+    if (currentPath) {
+        targetUrl += `?returnUrl=${encodeURIComponent(currentPath)}`;
+    }
+
     return {
         id: entity.id,
-        to: config.detailUrl(entity.id), // Use detail URL (e.g. /treasury/transactions/123)
+        to: targetUrl,
         title: title,
         status: status,
+        icon: config.icon,
         variantMap: config.statusVariants,
         description: description,
         subtitle: subtitle,

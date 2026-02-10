@@ -36,21 +36,23 @@ export async function loadRelationshipsForEntity(
 ): Promise<Record<string, RelationshipData>> {
 	const result: Record<string, RelationshipData> = {};
 
+	// Fetch all relationships once (they don't change per type)
+	const allRelationships = await db.getEntityRelationships(entityType, entityId);
+
 	// Load relationships for each type
 	for (const relationBType of relationBTypes) {
-		const relationships = await db.getEntityRelationships(
-			entityType,
-			entityId,
-		);
-
-		// Extract linked entity IDs
-		const linkedIds = relationships.map((rel) => {
-			// Entity can be either relationA or relationB
-			if (rel.relationAType === entityType && rel.relationId === entityId) {
-				return rel.relationBId;
-			}
-			return rel.relationId;
-		});
+		// Filter relationships to only include those matching the current relationBType
+		const linkedIds = allRelationships
+			.map((rel) => {
+				// Entity can be either relationA or relationB — find the "other" side
+				if (rel.relationAType === entityType && rel.relationId === entityId) {
+					// We are relationA, check if relationB matches the target type
+					return rel.relationBType === relationBType ? rel.relationBId : null;
+				}
+				// We are relationB, check if relationA matches the target type
+				return rel.relationAType === relationBType ? rel.relationId : null;
+			})
+			.filter((id): id is string => id !== null);
 
 		// Fetch linked entities with full data
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);

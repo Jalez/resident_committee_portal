@@ -23,9 +23,8 @@ export async function action({ request }: Route.ActionArgs) {
 	}
 
 	// Check if request is from a fetcher (expects JSON) or regular form (expects redirect)
-	// Fetcher requests typically have Accept: application/json header
-	const acceptHeader = request.headers.get("Accept") || "";
-	const isFetcher = acceptHeader.includes("application/json");
+	// Fetcher requests pass _fetcher=true in formData
+	const isFetcher = formData.get("_fetcher") === "true";
 
 	const db = getDatabase();
 

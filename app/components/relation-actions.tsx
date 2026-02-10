@@ -18,6 +18,7 @@ export type TreasuryRelationItem = {
 	title: string;
 	status: string;
 	id: string;
+	icon?: string;
 	variantMap?: Record<string, string>;
 	description?: string | null;
 	subtitle?: string | null;
@@ -56,6 +57,12 @@ type RelationActionsProps = {
 	sourceEntityType?: EntityType;
 	sourceEntityId?: string;
 	sourceEntityName?: string;
+	/** Import sources - third option alongside create/link */
+	importSources?: Array<{
+		label: string;
+		icon: string;
+		onClick: () => void;
+	}>;
 };
 
 type RelationActionsState = {
@@ -101,6 +108,7 @@ export function RelationActions({
 	sourceEntityType,
 	sourceEntityId,
 	sourceEntityName,
+	importSources,
 }: RelationActionsProps) {
 	const { t } = useTranslation();
 
@@ -154,6 +162,7 @@ export function RelationActions({
 							title={item.title}
 							status={item.status}
 							id={item.id}
+							icon={item.icon}
 							variantMap={item.variantMap}
 							mode={mode}
 							onRemove={onRemove}
@@ -243,6 +252,35 @@ export function RelationActions({
 													</span>
 													{linkExistingLabel || t("common.actions.link_existing")}
 												</Button>
+											)}
+
+											{importSources && importSources.length > 0 && (
+												<>
+													{(addUrl || onAdd || (linkableItems.length > 0 && onSelectionChange)) && (
+														<div className="relative flex items-center px-2">
+															<Separator className="flex-1" />
+															<span className="px-2 text-xs text-muted-foreground font-medium select-none">
+																{t("common.or", "or")}
+															</span>
+															<Separator className="flex-1" />
+														</div>
+													)}
+													{importSources.map((source, idx) => (
+														<Button
+															key={idx}
+															type="button"
+															variant="ghost"
+															size="sm"
+															className="h-8"
+															onClick={source.onClick}
+														>
+															<span className="material-symbols-outlined mr-2 text-sm">
+																{source.icon}
+															</span>
+															{source.label}
+														</Button>
+													))}
+												</>
 											)}
 
 											<Button

@@ -7,6 +7,7 @@ import { requirePermission } from "~/lib/auth.server";
  * Returns receipt with OCR content if available
  */
 export async function loader({ request, params }: LoaderFunctionArgs) {
+	console.log("[api.receipts.$receiptId] loader hit for:", params.receiptId);
 	await requirePermission(request, "treasury:receipts:read", getDatabase);
 
 	const db = getDatabase();

@@ -110,7 +110,7 @@ export function ColoredStatusLinkBadge({
 						{icon}
 					</span>
 				) : null}
-				{description ? description.toUpperCase() : id.slice(0, 8)}
+				{title || id.slice(0, 8)}
 			</Link>
 
 			{subtitle && (

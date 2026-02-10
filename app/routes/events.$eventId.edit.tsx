@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, redirect, useNavigation } from "react-router";
+import { Form, redirect, useNavigate, useNavigation } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
@@ -42,7 +42,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Event not found", { status: 404 });
 	}
 
-	return { siteConfig: SITE_CONFIG, event };
+	return { siteConfig: SITE_CONFIG, event, returnUrl: new URL(request.url).searchParams.get("returnUrl") };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -108,6 +108,12 @@ export async function action({ request, params }: Route.ActionArgs) {
 		// Force refresh: invalidate calendar query so next load fetches fresh events
 		await queryClient.invalidateQueries({ queryKey: queryKeys.calendar });
 
+		// Handle returnUrl redirect (from source entity picker)
+		const returnUrl = formData.get("_returnUrl") as string | null;
+		if (returnUrl) {
+			return redirect(returnUrl);
+		}
+
 		return redirect("/events?updated=true");
 	} catch (error) {
 		console.error("[events.edit] Error updating event:", error);
@@ -117,6 +123,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 export default function EventsEdit({ loaderData, actionData }: Route.ComponentProps) {
 	const navigation = useNavigation();
+	const navigate = useNavigate();
 	const { t } = useTranslation();
 	const { event } = loaderData as unknown as { event: NonNullable<Awaited<ReturnType<typeof getCalendarEvent>>> };
 	const actionResult = actionData as { error?: string } | undefined;
@@ -173,6 +180,9 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 
 				{/* Form */}
 				<Form method="post" className="space-y-6">
+					{/* Hidden fields for returnUrl */}
+					{loaderData.returnUrl && <input type="hidden" name="_returnUrl" value={loaderData.returnUrl} />}
+
 					{/* Basic Info */}
 					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
 						<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -313,6 +323,7 @@ export default function EventsEdit({ loaderData, actionData }: Route.ComponentPr
 							type="button"
 							variant="outline"
 							disabled={isSubmitting}
+							onClick={() => navigate(loaderData.returnUrl || "/events")}
 						>
 							{t("common.actions.cancel")}
 						</Button>

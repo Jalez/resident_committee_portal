@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Form, redirect, useActionData, useNavigation } from "react-router";
+import { Form, redirect, useActionData, useNavigate, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db";
@@ -95,6 +95,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         canUpdate,
         canDelete,
         systemLanguages,
+        returnUrl: new URL(request.url).searchParams.get("returnUrl"),
     };
 }
 
@@ -179,6 +180,13 @@ export async function action({ request, params }: Route.ActionArgs) {
     }
 
     await db.updatePoll(pollId, updates);
+
+    // Handle returnUrl redirect (from source entity picker)
+    const returnUrl = formData.get("_returnUrl") as string | null;
+    if (returnUrl) {
+        return redirect(returnUrl);
+    }
+
     return redirect("/polls");
 }
 
@@ -188,6 +196,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 export default function EditPoll({ loaderData }: Route.ComponentProps) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { poll, analyticsSheets, systemLanguages } = loaderData;
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
@@ -239,6 +248,7 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
                 <CardContent>
                     <Form method="post" className="space-y-6">
                         <input type="hidden" name="actionType" value="update" />
+                        {loaderData.returnUrl && <input type="hidden" name="_returnUrl" value={loaderData.returnUrl} />}
 
                         {poll.type === "linked" ? (
                             <div className="space-y-4">
@@ -322,9 +332,18 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
                         )}
 
                         <div className="flex justify-between pt-4">
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? t("common.saving") : t("common.actions.save")}
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? t("common.saving") : t("common.actions.save")}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => navigate(loaderData.returnUrl || "/polls")}
+                                >
+                                    {t("common.actions.cancel")}
+                                </Button>
+                            </div>
 
                             <Button
                                 type="button"

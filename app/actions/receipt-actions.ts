@@ -23,14 +23,14 @@ export async function validateReceiptUpdate(formData: FormData) {
 
 type FileUploadResult =
 	| {
-			nextUrl: string | null;
-			nextPathname: string | null;
-			nextName: string | null;
-	  }
+		nextUrl: string | null;
+		nextPathname: string | null;
+		nextName: string | null;
+	}
 	| {
-			error: "invalid_file_type";
-			allowedTypes: string;
-	  };
+		error: "invalid_file_type";
+		allowedTypes: string;
+	};
 
 export async function handleFileUpload(
 	formData: FormData,
@@ -167,4 +167,15 @@ export async function saveReceiptOCRContent(
 	} catch (error) {
 		console.error("[Receipt Edit] Failed to save OCR content:", error);
 	}
+}
+
+export async function deleteReceipt(receiptId: string) {
+	const db = getDatabase();
+	//Get entity relationships
+	const relationships = await db.getEntityRelationships("receipt", receiptId);
+
+	//Delete file from storage
+	const storage = getReceiptStorage();
+
+	await db.deleteReceipt(receiptId);
 }

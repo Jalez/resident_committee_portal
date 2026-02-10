@@ -1,51 +1,25 @@
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
-import { Info, CheckCircle2, AlertTriangle, ArrowRight, Sparkles } from "lucide-react";
-import type { RelationshipContext } from "~/lib/linking/relationship-context.server";
+import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import type { RelationshipContextValues } from "~/lib/relationships/relationship-context.server";
 import { cn } from "~/lib/utils";
-import { useFetcher } from "react-router";
-import type { AIEnrichmentResult } from "~/lib/ai/relationship-analyzer.server";
-import { toast } from "sonner";
-import { useEffect } from "react";
 
 interface RelationshipContextStatusProps {
-    context: RelationshipContext | null;
+    context: RelationshipContextValues | null;
     currentEntityValue?: {
         amount?: number | null;
         description?: string | null;
         date?: Date | null;
     };
     entityType: "receipt" | "reimbursement" | "transaction";
-    entityId?: string; // Needed for analysis
+    entityId?: string;
 }
 
 export function RelationshipContextStatus({
     context,
     currentEntityValue,
     entityType,
-    entityId
 }: RelationshipContextStatusProps) {
-    const fetcher = useFetcher<{ analysis: AIEnrichmentResult }>();
-
-    useEffect(() => {
-        if (fetcher.data?.analysis) {
-            toast.success("AI Analysis Complete", {
-                description: fetcher.data.analysis.reasoning
-            });
-            // In a real app, we'd probably want to auto-fill or offer to apply these changes.
-            // For now, just showing the toast is the "MVP" step.
-        }
-    }, [fetcher.data]);
-
-    const handleAnalyze = () => {
-        if (!entityId) return;
-        fetcher.submit(
-            { entityType, entityId },
-            { method: "POST", action: "/api/relationship/analyze" }
-        );
-    };
-
     if (!context) return null;
 
     // Check for divergence
@@ -112,20 +86,6 @@ export function RelationshipContextStatus({
                     <ArrowRight className="w-3 h-3 mx-1" />
                     <span className="font-medium text-destructive">{context.totalAmount?.toFixed(2)}</span>
                 </div>
-            )}
-
-            {entityId && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    className="h-6 w-6 p-0 ml-2"
-                    onClick={handleAnalyze}
-                    disabled={fetcher.state !== "idle"}
-                    title="Analyze with AI"
-                >
-                    <Sparkles className={cn("w-3 h-3 text-muted-foreground", fetcher.state !== "idle" && "animate-pulse")} />
-                </Button>
             )}
         </div>
     );
