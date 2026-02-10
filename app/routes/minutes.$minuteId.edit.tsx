@@ -18,6 +18,8 @@ import { RelationshipPicker } from "~/components/relationships/relationship-pick
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import type { AnyEntity } from "~/lib/entity-converters";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -45,61 +47,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         ["reimbursement", "inventory"]
     );
 
+    // Get source context and returnUrl from URL
+    const url = new URL(request.url);
+    const sourceContext = getRelationshipContextFromUrl(url);
+    const returnUrl = url.searchParams.get("returnUrl");
+
     return {
         minute,
         relationships,
+        sourceContext,
+        returnUrl,
     };
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-    await requirePermission(request, "minutes:update", getDatabase);
-    const db = getDatabase();
-    const minute = await db.getMinuteById(params.minuteId);
-    if (!minute) {
-        throw new Response("Not Found", { status: 404 });
-    }
-
-    const formData = await request.formData();
-    const intent = formData.get("intent") as string;
-
-    if (intent === "update_minute") {
-        const title = formData.get("title") as string;
-        const description = formData.get("description") as string;
-        const dateStr = formData.get("date") as string;
-
-        let fileUrl = minute.fileUrl;
-        let fileKey = minute.fileKey;
-
-        const file = formData.get("file") as File | null;
-        if (file && file.size > 0) {
-            const year = new Date(dateStr).getFullYear().toString();
-            const pathname = buildMinutePath(year, file.name);
-            const storage = getMinuteStorage();
-            const result = await storage.uploadFile(pathname, file, { access: "public" });
-            fileUrl = result.url;
-            fileKey = result.pathname;
-        }
-
-        await db.updateMinute(minute.id, {
-            title,
-            description,
-            date: new Date(dateStr),
-            fileUrl,
-            fileKey,
-        });
-
-        // Save relationship changes using the new universal system
-        await saveRelationshipChanges(db, "minute", minute.id, formData, null);
-
-        return redirect("/minutes");
-    }
-
+export async function action() {
+    // Update logic has been moved to /api/minutes/:minuteId/update
     return null;
 }
 
 export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
     const { t } = useTranslation();
-    const { minute, relationships } = loaderData;
+    const { minute, relationships, sourceContext, returnUrl } = loaderData;
     const navigate = useNavigate();
 
     const [date, setDate] = useState(minute.date ? new Date(minute.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]);
@@ -130,11 +98,20 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 
                 <Form
                     method="post"
+                    action={`/api/minutes/${minute.id}/update`}
                     encType="multipart/form-data"
                     className="space-y-6"
                 >
                     <input type="hidden" name="intent" value="update_minute" />
-                    
+                    {/* Hidden fields for source context (auto-linking when created from picker) */}
+                    {sourceContext && (
+                        <>
+                            <input type="hidden" name="_sourceType" value={sourceContext.type} />
+                            <input type="hidden" name="_sourceId" value={sourceContext.id} />
+                        </>
+                    )}
+                    {returnUrl && <input type="hidden" name="_returnUrl" value={returnUrl} />}
+
                     {/* Hidden inputs for relationship changes */}
                     <input
                         type="hidden"
@@ -222,7 +199,7 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 
                     <TreasuryFormActions
                         saveLabel={t("common.actions.save", "Save")}
-                        onCancel={() => navigate("/minutes")}
+                        onCancel={() => navigate(loaderData.returnUrl || "/minutes")}
                     />
                 </Form>
             </div>

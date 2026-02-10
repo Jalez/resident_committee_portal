@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
+import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -44,13 +45,14 @@ import {
 	RECEIPTS_SECTION_ID,
 } from "~/lib/treasury/receipt-validation";
 import { getMinutesByYear } from "~/lib/google.server";
-import { getRelationshipContext } from "~/lib/linking/relationship-context.server";
+import { getRelationshipContext, type RelationshipContextValues } from "~/lib/relationships/relationship-context.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { RelationshipContextStatus } from "~/components/treasury/relationship-context-status";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.reimbursements.$purchaseId.edit";
 
@@ -173,7 +175,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const linkedReceiptIds = receiptRelationships
 		.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
 		.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
-	const linkedReceipts = linkedReceiptIds.length > 0 
+	const linkedReceipts = linkedReceiptIds.length > 0
 		? await Promise.all(linkedReceiptIds.map(id => db.getReceiptById(id))).then(receipts => receipts.filter((r): r is NonNullable<typeof r> => r !== null))
 		: [];
 
@@ -194,17 +196,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const sourceContext = getRelationshipContextFromUrl(url);
 	const returnUrl = url.searchParams.get("returnUrl");
 
-	// Get values from source entity (for pre-populating this entity)
-	let sourceValues: { amount?: number; description?: string } | null = null;
-	if (sourceContext && sourceContext.type === "transaction") {
-		const sourceTransaction = await db.getTransactionById(sourceContext.id);
-		if (sourceTransaction) {
-			sourceValues = {
-				amount: Number.parseFloat(sourceTransaction.amount),
-				description: sourceTransaction.description,
-			};
-		}
-	}
+	// Get relationship context values for autofill (uses domination scale)
+	const contextValues = await getRelationshipContext(db, "reimbursement", purchase.id);
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -222,382 +215,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		uniqueCategories,
 		// Unlinked transactions for linking selector
 		unlinkedTransactions,
-		relationshipContext: await getRelationshipContext(db, "reimbursement", purchase.id),
+		contextValues,
 		relationships,
 		sourceContext,
 		returnUrl,
-		sourceValues,
 	};
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-	const db = getDatabase();
-
-	const formData = await request.formData();
-	const actionType = formData.get("_action") as string;
-
-	// Get purchase to preserve year for redirect and check permissions
-	const purchase = await db.getPurchaseById(params.purchaseId);
-	if (!purchase) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
-	// Block edits to sent reimbursements
-	if (purchase.emailSent) {
-		return { success: false, error: "Cannot edit a sent reimbursement" };
-	}
-
-	const year = purchase.year;
-
-	// Check permission with self-edit support
-	const user = await requirePermissionOrSelf(
-		request,
-		"treasury:reimbursements:update",
-		"treasury:reimbursements:update-self",
-		purchase.createdBy,
-		getDatabase,
-	);
-
-	// Handle createItem action for InventoryPicker (if needed in future)
-	if (actionType === "createItem") {
-		const name = formData.get("name") as string;
-		const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
-		const location = formData.get("location") as string;
-		const category = (formData.get("category") as string) || null;
-		const description = (formData.get("description") as string) || null;
-		const value = (formData.get("value") as string) || "0";
-
-		const newItem: NewInventoryItem = {
-			name,
-			quantity,
-			location,
-			category,
-			description,
-			value,
-			showInInfoReel: false,
-		};
-
-		const item = await db.createInventoryItem(newItem);
-		return {
-			success: true,
-			item,
-			message: "Inventory item created successfully",
-		};
-	}
-
-	// Handle updateField action for inline editing inventory items
-	if (actionType === "updateField") {
-		const itemId = formData.get("itemId") as string;
-		const field = formData.get("field") as string;
-		const value = formData.get("value") as string;
-
-		if (!itemId || !field) {
-			return { success: false, error: "Missing itemId or field" };
-		}
-
-		// Validate field name
-		const allowedFields = ["name", "quantity", "location", "category", "description", "value"];
-		if (!allowedFields.includes(field)) {
-			return { success: false, error: "Invalid field" };
-		}
-
-		// Parse value based on field type
-		let parsedValue: string | number = value;
-		if (field === "quantity") {
-			parsedValue = parseInt(value, 10) || 1;
-		}
-
-		await db.updateInventoryItem(itemId, { [field]: parsedValue });
-		return { success: true };
-	}
-
-	// Handle refreshReceipts action to clear cache
-	if (actionType === "refreshReceipts") {
-		clearCache("RECEIPTS_BY_YEAR");
-		return { success: true };
-	}
-
-	// Handle sendRequest action
-	if (actionType === "sendRequest") {
-		const receiptLinks = parseReceiptLinks(formData);
-
-		// Validate receipts
-		const receiptError = getMissingReceiptsError(receiptLinks, true);
-		if (receiptError) {
-			return { success: false, error: receiptError, action: "sendRequest" };
-		}
-
-		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			purchase.minutesId,
-			purchase.minutesName || undefined,
-		);
-
-		try {
-			const [minutesAttachment, receiptAttachments] = await Promise.all([
-				minutesAttachmentPromise,
-				receiptAttachmentsPromise,
-			]);
-
-			const emailResult = await sendReimbursementEmail(
-				{
-					itemName: purchase.description || "Reimbursement request",
-					itemValue: purchase.amount,
-					purchaserName: purchase.purchaserName,
-					bankAccount: purchase.bankAccount,
-					minutesReference: purchase.minutesName || purchase.minutesId || "Ei määritetty / Not specified",
-					notes: purchase.notes || undefined,
-					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
-				},
-				purchase.id,
-				minutesAttachment || undefined,
-				receiptAttachments,
-				db,
-			);
-
-			if (emailResult.success) {
-				await db.updatePurchase(purchase.id, {
-					emailSent: true,
-					emailMessageId: emailResult.messageId,
-					emailError: null,
-				});
-				return { success: true, message: "treasury.reimbursements.email_sent_success" };
-			} else {
-				await db.updatePurchase(purchase.id, {
-					emailError: emailResult.error || "Email sending failed",
-				});
-				return { success: false, error: emailResult.error || "Email sending failed" };
-			}
-		} catch (error) {
-			console.error("[Reimbursement Edit] Email error:", error);
-			const errorMessage = error instanceof Error ? error.message : "Unknown error";
-			await db.updatePurchase(purchase.id, {
-				emailError: errorMessage,
-			});
-			return { success: false, error: errorMessage };
-		}
-	}
-
-	// Guard: if actionType was set but not handled above
-	if (actionType) {
-		console.warn(`[Action] Unhandled action type: ${actionType}`);
-		return { success: false, error: `Unhandled action type: ${actionType}` };
-	}
-
-	// Handle update action (default)
-	const linkTransactionId = formData.get("linkTransactionId") as string;
-	const isLinkingToExisting = !!linkTransactionId;
-	const createTransaction = formData.get("createTransaction") === "on";
-	const txRelationships = await db.getEntityRelationships("reimbursement", params.purchaseId);
-	const currentTxRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
-	const currentLinkedTransaction = currentTxRel 
-		? await db.getTransactionById(currentTxRel.relationBType === "transaction" ? currentTxRel.relationBId : currentTxRel.relationId)
-		: null;
-
-	const purchaserName = formData.get("purchaserName") as string;
-	const bankAccount = formData.get("bankAccount") as string;
-	const minutesInfo = formData.get("minutesId") as string; // value is "id|name" or just "id"
-	const [minutesId, minutesName] = minutesInfo.includes("|")
-		? minutesInfo.split("|")
-		: [minutesInfo, ""];
-
-	const notes = formData.get("notes") as string;
-
-	// Get amount/description which might be edited if no transaction linked
-	const amount = formData.get("amount") as string;
-	const description = formData.get("description") as string;
-
-	// Parse receipt links
-	const receiptLinks = parseReceiptLinks(formData);
-
-	// Handle transaction linking/creation
-	if (isLinkingToExisting && linkTransactionId !== currentLinkedTransaction?.id) {
-		// Link to different existing transaction
-		const existingTransaction = (await db.getAllTransactions()).find(
-			(t) => t.id === linkTransactionId,
-		);
-		if (!existingTransaction) {
-			return { success: false, error: "Transaction not found" };
-		}
-
-		// Unlink current transaction if exists
-		if (currentLinkedTransaction && currentTxRel) {
-			await db.deleteEntityRelationship(currentTxRel.id);
-			await db.updateTransaction(currentLinkedTransaction.id, {
-				reimbursementStatus: "not_requested",
-			});
-		}
-
-		// Link new transaction via entity relationship
-		await db.createEntityRelationship({
-			relationAType: "reimbursement",
-			relationId: params.purchaseId,
-			relationBType: "transaction",
-			relationBId: linkTransactionId,
-		});
-		await db.updateTransaction(linkTransactionId, {
-			status: "pending",
-			reimbursementStatus: "requested",
-		});
-
-		// Update purchase amount and description from transaction
-		await db.updatePurchase(params.purchaseId, {
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName: minutesName || null,
-			notes: notes || null,
-			amount: existingTransaction.amount,
-			description: existingTransaction.description,
-		});
-	} else if (!isLinkingToExisting && currentLinkedTransaction) {
-		// Unlink logic: if we had a linked transaction but now we don't (user cleared it)
-		// NOTE: The UI I'm building uses RelationActions which handles unlinking via separate nav stack logic usually,
-		// but here we might just want to support form submission updating the link.
-		// However, for consistency with other forms, maybe we should just handle updates to the purchase fields.
-		// If user wants to UNLINK, they should probably go to the transaction edit page?
-		// Actually, let's keep it simple: we only update the Purchase fields here. 
-		// Linking/Unlinking transactions is best done via the separate flow, 
-		// BUT standard form behavior expects "if I change the dropdown, it updates".
-		// The new pattern says "Link Existing" dropdown in edit mode.
-
-		// If I select a transaction in the dropdown, updates the link. 
-		// If I select "None" (empty string), it unlinks.
-
-		if (!linkTransactionId && currentTxRel) {
-			await db.deleteEntityRelationship(currentTxRel.id);
-			await db.updateTransaction(currentLinkedTransaction.id, {
-				reimbursementStatus: "not_requested",
-			});
-			// Update purchase with submitted values
-			await db.updatePurchase(params.purchaseId, {
-				purchaserName,
-				bankAccount,
-				minutesId,
-				minutesName: minutesName || null,
-				notes: notes || null,
-				amount,
-				description,
-			});
-		}
-	} else {
-		// Update purchase only (no transaction changes)
-		// When a linked transaction exists, derive amount/description from it
-		const derivedAmount = currentLinkedTransaction ? currentLinkedTransaction.amount.toString() : amount;
-		const derivedDescription = currentLinkedTransaction ? currentLinkedTransaction.description : description;
-
-		await db.updatePurchase(params.purchaseId, {
-			purchaserName,
-			bankAccount,
-			minutesId,
-			minutesName: minutesName || null,
-			notes: notes || null,
-			amount: derivedAmount,
-			description: derivedDescription,
-		});
-	}
-
-	// Handle receipt linking/unlinking via entity relationships
-	// Get existing receipt relationships
-	const existingReceiptRels = await db.getEntityRelationships("reimbursement", params.purchaseId);
-	const existingReceiptIds = new Set(
-		existingReceiptRels
-			.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
-			.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId)
-	);
-	const newReceiptPathnames = new Set(receiptLinks.map((rl) => rl.id));
-
-	// Get all receipts to find by pathname
-	const allReceipts = await db.getReceipts();
-
-	// Build map of pathname to receipt
-	const pathnameToReceipt = new Map(allReceipts.map(r => [r.pathname, r]));
-
-	// Find new receipt IDs to link
-	const newReceiptIds = new Set<string>();
-	for (const receiptLink of receiptLinks) {
-		const pathname = receiptLink.id;
-		const existingReceipt = pathnameToReceipt.get(pathname);
-		if (existingReceipt) {
-			newReceiptIds.add(existingReceipt.id);
-		}
-	}
-
-	// Unlink receipts that are no longer selected
-	for (const existingRel of existingReceiptRels) {
-		if (existingRel.relationBType === "receipt" || existingRel.relationAType === "receipt") {
-			const receiptId = existingRel.relationBType === "receipt" ? existingRel.relationBId : existingRel.relationId;
-			if (!newReceiptIds.has(receiptId)) {
-				await db.deleteEntityRelationship(existingRel.id);
-			}
-		}
-	}
-
-	// Link new receipts
-	for (const receiptId of newReceiptIds) {
-		if (!existingReceiptIds.has(receiptId)) {
-			await db.createEntityRelationship({
-				relationAType: "reimbursement",
-				relationId: params.purchaseId,
-				relationBType: "receipt",
-				relationBId: receiptId,
-			});
-		}
-	}
-
-	// Create new receipts that don't exist yet
-	for (const receiptLink of receiptLinks) {
-		const pathname = receiptLink.id;
-		if (!pathnameToReceipt.has(pathname)) {
-			// Create new receipt record
-			const newReceipt = await db.createReceipt({
-				name: receiptLink.name || null,
-				description: null,
-				url: receiptLink.url,
-				pathname,
-				createdBy: user?.userId || null,
-			});
-			// Link the new receipt
-			await db.createEntityRelationship({
-				relationAType: "reimbursement",
-				relationId: params.purchaseId,
-				relationBType: "receipt",
-				relationBId: newReceipt.id,
-			});
-		}
-	}
-
-	// Save relationships using new universal system
-	await saveRelationshipChanges(db, "reimbursement", params.purchaseId, formData, user?.userId || null);
-
-	// Check for source context to create auto-link (skip if already exists from create-draft)
-	const sourceType = formData.get("_sourceType") as string | null;
-	const sourceId = formData.get("_sourceId") as string | null;
-	if (sourceType && sourceId) {
-		const exists = await db.entityRelationshipExists(
-			sourceType as any,
-			sourceId,
-			"reimbursement",
-			params.purchaseId,
-		);
-		if (!exists) {
-			await db.createEntityRelationship({
-				relationAType: sourceType as any,
-				relationId: sourceId,
-				relationBType: "reimbursement",
-				relationBId: params.purchaseId,
-				createdBy: user?.userId || null,
-			});
-		}
-	}
-
-	// Handle returnUrl redirect (from source entity picker)
-	const returnUrl = formData.get("_returnUrl") as string | null;
-	if (returnUrl) {
-		return redirect(returnUrl);
-	}
-
-	return redirect(`/treasury/reimbursements?year=${year}&success=Reimbursement updated`);
+export async function action() {
+	// Reimbursement update logic has been moved to /api/reimbursements/:reimbursementId/update
+	return null;
 }
 
 export default function EditReimbursement({ loaderData }: Route.ComponentProps) {
@@ -614,27 +241,26 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		unlinkedTransactions,
 		linkedReceipts,
 		receiptContents: receiptContentsData,
-		relationshipContext,
+		contextValues,
 		relationships,
 		sourceContext,
 		returnUrl,
-		sourceValues,
 	} = loaderData;
 	const navigate = useNavigate();
 	const fetcher = useFetcher();
-	const actionData = useActionData<typeof action>();
+	const actionData = useActionData<any>();
 	const { t } = useTranslation();
 
 	const navigation = useNavigation();
 	const isSubmitting =
 		navigation.state === "submitting" || fetcher.state === "submitting";
 
-	// Pre-populate from source entity values if reimbursement is a draft with defaults
-	const initialDescription = (purchase.status === "draft" && (!purchase.description || purchase.description === "") && sourceValues?.description)
-		? sourceValues.description
+	// Pre-populate from relationship context if reimbursement is a draft with defaults
+	const initialDescription = (purchase.status === "draft" && (!purchase.description || purchase.description === "") && contextValues?.description)
+		? contextValues.description
 		: (purchase.description || "");
-	const initialAmount = (purchase.status === "draft" && Number.parseFloat(purchase.amount) === 0 && sourceValues?.amount)
-		? sourceValues.amount.toFixed(2)
+	const initialAmount = (purchase.status === "draft" && Number.parseFloat(purchase.amount) === 0 && contextValues?.totalAmount)
+		? contextValues.totalAmount.toFixed(2)
 		: purchase.amount;
 
 	// Form state
@@ -651,6 +277,16 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		relationAId: purchase.id,
 		initialRelationships: [],
 	});
+
+	// Smart autofill handlers
+	const getReimbursementValues = () => ({
+		amount: amount,
+		description: description,
+	});
+	const handleAutofillSuggestions = (suggestions: Record<string, string | number | null>) => {
+		if (suggestions.amount != null) setAmount(String(suggestions.amount));
+		if (suggestions.description != null) setDescription(String(suggestions.description));
+	};
 
 	// Receipt state (filter out drafts - receipts without pathname/url)
 	const [selectedReceipts, setSelectedReceipts] = useState<{ id: string; name: string; url: string }[]>(
@@ -784,9 +420,24 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<PageHeader title={t("treasury.reimbursements.edit.title")} />
+				<PageHeader
+					title={t("treasury.reimbursements.edit.title")}
+					actions={
+						<SmartAutofillButton
+							entityType="reimbursement"
+							entityId={purchase.id}
+							getCurrentValues={getReimbursementValues}
+							onSuggestions={handleAutofillSuggestions}
+							useAI={purchase.status === "draft"}
+						/>
+					}
+				/>
 
-				<Form method="post" className="space-y-6">
+				<Form
+					method="post"
+					action={`/api/reimbursements/${purchase.id}/update`}
+					className="space-y-6"
+				>
 					<input type="hidden" name="receiptLinks" value={JSON.stringify(selectedReceipts)} />
 					{/* Hidden fields for source context (auto-linking when created from picker) */}
 					{sourceContext && (
@@ -858,7 +509,6 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 							relationAName={purchase.description || ""}
 							mode="edit"
 							currentPath={currentPath}
-							showAnalyzeButton={true}
 							sections={[
 								{
 									relationBType: "transaction",
@@ -886,17 +536,10 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 							onLink={relationshipPicker.handleLink}
 							onUnlink={relationshipPicker.handleUnlink}
 							formData={relationshipPicker.toFormData()}
-							onAnalyzeComplete={(result) => {
-								if (result.success) {
-									toast.success(t("relationships.ai.success", { count: result.createdCount }));
-								} else {
-									toast.error(t("relationships.ai.error"));
-								}
-							}}
 						/>
 
 						<RelationshipContextStatus
-							context={relationshipContext}
+							context={contextValues}
 							entityType="reimbursement"
 							entityId={purchase.id}
 							currentEntityValue={{
@@ -909,8 +552,7 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 
 					<TreasuryFormActions
 						isSubmitting={isSubmitting}
-						disabled={!isDirty}
-						extraActions={
+						disabled={!isDirty} onCancel={() => navigate(returnUrl || "/treasury/reimbursements")} extraActions={
 							canSendRequest ? (
 								<Button
 									type="submit"

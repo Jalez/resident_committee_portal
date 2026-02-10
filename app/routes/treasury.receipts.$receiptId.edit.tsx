@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Form, redirect } from "react-router";
+import { Form, redirect, useNavigate, useActionData } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
@@ -21,7 +21,9 @@ import {
 	handleFileUpload,
 	updateReceiptInDB,
 	saveReceiptOCRContent,
+	deleteReceipt,
 } from "~/actions/receipt-actions";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import { type AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.receipts.$receiptId.edit";
 
@@ -74,103 +76,23 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	};
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-	const db = getDatabase();
-	const receipt = await db.getReceiptById(params.receiptId);
-
-	if (!receipt) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
-	const user = await requirePermissionOrSelf(
-		request,
-		"treasury:receipts:update",
-		"treasury:receipts:update-self",
-		receipt.createdBy,
-		getDatabase,
-	);
-
-	const formData = await request.formData();
-
-	// Validate form data
-	const validationResult = await validateReceiptUpdate(formData);
-	if (!validationResult.success) {
-		return {
-			error: "Validation failed",
-			fieldErrors: validationResult.error.flatten().fieldErrors,
-		};
-	}
-
-	const name = (formData.get("name") as string | null) || "";
-	const description = formData.get("description") as string | null;
-
-	// Handle file upload
-	const uploadResult = await handleFileUpload(formData, receipt, name);
-	if ("error" in uploadResult) {
-		return uploadResult;
-	}
-
-	const { nextUrl, nextPathname, nextName } = uploadResult;
-
-	// Update receipt in DB
-	await updateReceiptInDB(
-		receipt.id,
-		nextName,
-		description?.trim() || null,
-		nextUrl,
-		nextPathname,
-	);
-
-	// Save relationships
-	await saveRelationshipChanges(db, "receipt", receipt.id, formData, user?.userId || null);
-
-	// Create relationship from source context if present (skip if already exists from create-draft)
-	const sourceType = formData.get("sourceType") as string | null;
-	const sourceId = formData.get("sourceId") as string | null;
-	if (sourceType && sourceId) {
-		const exists = await db.entityRelationshipExists(
-			sourceType as any,
-			sourceId,
-			"receipt",
-			receipt.id,
-		);
-		if (!exists) {
-			await db.createEntityRelationship({
-				relationAType: sourceType as any,
-				relationId: sourceId,
-				relationBType: "receipt",
-				relationBId: receipt.id,
-				createdBy: user?.userId || null,
-			});
-		}
-	}
-
-	// Save OCR content
-	await saveReceiptOCRContent(formData, receipt);
-
-	// Handle returnUrl if present
-	const returnUrl = formData.get("returnUrl") as string | null;
-	if (returnUrl) {
-		return redirect(returnUrl);
-	}
-
-	const pathnameParts = receipt.pathname?.split("/") || [];
-	const year = pathnameParts[1] || new Date().getFullYear().toString();
-
-	return redirect(`/treasury/receipts?year=${year}&success=receipt_updated`);
+export async function action() {
+	// Receipt update logic has been moved to /api/receipts/:receiptId/update
+	return null;
 }
 
 export default function TreasuryReceiptsEdit({
 	loaderData,
-	actionData,
 }: Route.ComponentProps) {
+	const actionData = useActionData<any>();
 	const { receipt, receiptContent, relationships } = loaderData;
 	const { t } = useTranslation();
+	const navigate = useNavigate();
 
 	const allowedTypes =
 		actionData &&
-		typeof actionData === "object" &&
-		"allowedTypes" in actionData
+			typeof actionData === "object" &&
+			"allowedTypes" in actionData
 			? (actionData.allowedTypes as string)
 			: "";
 
@@ -217,56 +139,62 @@ export default function TreasuryReceiptsEdit({
 					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
 						{actionData.error === "invalid_file_type"
 							? t("treasury.receipts.invalid_file_type", {
-									types: allowedTypes,
+								types: allowedTypes,
 							})
 							: (actionData.error as string)}
 					</div>
 				)}
+				<TreasuryDetailCard title={t("treasury.receipts.link_to_reimbursement")}>
 
-				<Form method="post" encType="multipart/form-data" className="space-y-6" onSubmit={handleSubmit}>
-					{/* Hidden fields for auto-linking */}
-					{loaderData.sourceContext && (
-						<>
-							<input type="hidden" name="sourceType" value={loaderData.sourceContext.type} />
-							<input type="hidden" name="sourceId" value={loaderData.sourceContext.id} />
-						</>
-					)}
-					{loaderData.returnUrl && <input type="hidden" name="returnUrl" value={loaderData.returnUrl} />}
+					<Form
+						method="post"
+						action={`/api/receipts/${receipt.id}/update`}
+						encType="multipart/form-data"
+						className="space-y-6"
+						onSubmit={handleSubmit}
+					>
+						{/* Hidden fields for auto-linking */}
+						{loaderData.sourceContext && (
+							<>
+								<input type="hidden" name="sourceType" value={loaderData.sourceContext.type} />
+								<input type="hidden" name="sourceId" value={loaderData.sourceContext.id} />
+							</>
+						)}
+						{loaderData.returnUrl && <input type="hidden" name="_returnUrl" value={loaderData.returnUrl} />}
 
-					{tempUrl && <input type="hidden" name="tempUrl" value={tempUrl} />}
-					{tempPathname && <input type="hidden" name="tempPathname" value={tempPathname} />}
-					{ocrData && (
-						<input
-							type="hidden"
-							name="ocr_data"
-							value={JSON.stringify({
-								rawText: ocrData.rawText,
-								parsedData: ocrData.parsedData,
-							})}
+						{tempUrl && <input type="hidden" name="tempUrl" value={tempUrl} />}
+						{tempPathname && <input type="hidden" name="tempPathname" value={tempPathname} />}
+						{ocrData && (
+							<input
+								type="hidden"
+								name="ocr_data"
+								value={JSON.stringify({
+									rawText: ocrData.rawText,
+									parsedData: ocrData.parsedData,
+								})}
+							/>
+						)}
+
+						<ReceiptFormFields
+							receiptId={receipt.id}
+							analyzeWithAI={analyzeWithAI}
+							onAnalyzeChange={setAnalyzeWithAI}
+							onFileChange={handleFileChange}
+							isUploading={isUploading}
+							isAnalyzing={isAnalyzing}
+							name={name}
+							onNameChange={setName}
+							description={description || ""}
+							onDescriptionChange={setDescription}
+							ocrData={ocrData}
+							tempUrl={tempUrl}
+							onReanalyze={handleReanalyze}
+							selectedFile={selectedFile}
+							existingReceiptUrl={receipt.url || undefined}
+							existingFileName={currentFileName}
+							existingReceiptContent={receiptContent}
 						/>
-					)}
 
-					<ReceiptFormFields
-						receiptId={receipt.id}
-						analyzeWithAI={analyzeWithAI}
-						onAnalyzeChange={setAnalyzeWithAI}
-						onFileChange={handleFileChange}
-						isUploading={isUploading}
-						isAnalyzing={isAnalyzing}
-						name={name}
-						onNameChange={setName}
-						description={description || ""}
-						onDescriptionChange={setDescription}
-						ocrData={ocrData}
-						tempUrl={tempUrl}
-						onReanalyze={handleReanalyze}
-						selectedFile={selectedFile}
-						existingReceiptUrl={receipt.url || undefined}
-						existingFileName={currentFileName}
-						existingReceiptContent={receiptContent}
-					/>
-
-					<TreasuryDetailCard title={t("treasury.receipts.link_to_reimbursement")}>
 						<RelationshipPicker
 							relationAType="receipt"
 							relationAId={receipt.id}
@@ -295,17 +223,21 @@ export default function TreasuryReceiptsEdit({
 							mode="edit"
 							onLink={relationshipPicker.handleLink}
 							onUnlink={relationshipPicker.handleUnlink}
-							showAnalyzeButton={true}
+
 							storageKeyPrefix={`receipt-${receipt.id}`}
 							formData={relationshipPicker.toFormData()}
 						/>
-					</TreasuryDetailCard>
 
-					<TreasuryFormActions
-						disabled={isAnalyzing || isUploading}
-						onCancel={handleCancel}
-					/>
-				</Form>
+						<TreasuryFormActions
+							disabled={isAnalyzing || isUploading}
+							onCancel={() => {
+								handleCancel();
+								navigate(loaderData.returnUrl || "/treasury/receipts");
+							}}
+						/>
+					</Form>
+				</TreasuryDetailCard>
+
 			</div>
 		</PageWrapper>
 	);

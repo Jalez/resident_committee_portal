@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
+import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import {
 	EXPENSE_CATEGORIES,
 	INCOME_CATEGORIES,
@@ -41,6 +42,9 @@ import {
 import { handleCreateItem, handleUpdateField } from "~/actions/inventory-actions";
 import { handleDeleteTransaction, handleUpdateTransaction } from "~/actions/transaction-actions";
 import { loadTransactionEditData } from "~/loaders/transaction-edit-loader";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
@@ -79,22 +83,33 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		["inventory", "budget", "reimbursement"],
 	);
 
+	// Get relationship context values for autofill
+	const contextValues = await getRelationshipContext(db, "transaction", params.transactionId);
+
+	// Get source context and returnUrl from URL
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
 	return {
 		...data,
 		relationships,
+		contextValues,
+		sourceContext,
+		returnUrl,
 	};
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
 	const db = getDatabase();
+	const transaction = await db.getTransactionById(params.transactionId);
+	if (!transaction) {
+		throw new Response("Not Found", { status: 404 });
+	}
 
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;
 
-	const transactions = await db.getAllTransactions();
-	const transaction = transactions.find(
-		(t) => t.id === params.transactionId,
-	);
 	const year = transaction?.year || new Date().getFullYear();
 
 	let user: AuthenticatedUser | undefined;
@@ -118,22 +133,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 		return await handleUpdateField(formData);
 	}
 
-	// Handle delete action
-	if (actionType === "delete") {
-
-		user = await requireDeletePermissionOrSelf(
-			request,
-			"treasury:transactions:delete",
-			"treasury:transactions:delete-self",
-			transaction?.createdBy,
-			getDatabase,
-		);
-		
-		if (!transaction) {
-			return { error: "Transaction not found" };
-		}
-		return await handleDeleteTransaction(transaction, year);
-	}
 
 
 
@@ -146,15 +145,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 		};
 	}
 
-	// Handle update action (default)
-	if (!transaction) {
-		return { success: false, error: "Transaction not found" };
-	}
-
-	// Save relationships
-	await saveRelationshipChanges(db, "transaction", transaction.id, formData, user?.userId || "system");
-
-	return await handleUpdateTransaction(formData, transaction, year);
+	// Transaction update logic has been moved to /api/transactions/:transactionId/update
+	return null;
 }
 
 export default function EditTransaction({
@@ -169,6 +161,9 @@ export default function EditTransaction({
 		openBudgets,
 		budgetLink,
 		relationships,
+		contextValues,
+		sourceContext,
+		returnUrl,
 	} = loaderData as {
 		transaction: Transaction;
 		purchase: Purchase | null;
@@ -212,6 +207,15 @@ export default function EditTransaction({
 			amount: string;
 		} | null;
 		relationships: Record<string, { linked: unknown[]; available: unknown[] }>;
+		contextValues: {
+			date: Date | null;
+			totalAmount: number | null;
+			description: string | null;
+			category: string | null;
+			valueSource: string | null;
+		};
+		sourceContext: { type: string; id: string; name?: string } | null;
+		returnUrl: string | null;
 	};
 	const navigate = useNavigate();
 	const navigation = useNavigation();
@@ -236,25 +240,52 @@ export default function EditTransaction({
 	} = useNewTransaction();
 	const { t } = useTranslation();
 
-	// Transaction form state
+	// Transaction form state — pre-populate from relationship context for drafts
+	const isDraft = transaction.status === "draft";
 	const [transactionType, setTransactionType] = useState<TransactionType>(transaction.type as TransactionType);
-	const [amount, setAmount] = useState(String(transaction.amount));
-	const [descriptionValue, setDescriptionValue] = useState(
-		transaction.description,
+	const [amount, setAmount] = useState(
+		isDraft && parseFloat(String(transaction.amount)) === 0 && contextValues?.totalAmount
+			? String(contextValues.totalAmount)
+			: String(transaction.amount)
 	);
-	const [category, setCategory] = useState(transaction.category || "");
+	const [descriptionValue, setDescriptionValue] = useState(
+		isDraft && !transaction.description && contextValues?.description
+			? contextValues.description
+			: transaction.description
+	);
+	const [category, setCategory] = useState(
+		isDraft && !transaction.category && contextValues?.category
+			? contextValues.category
+			: (transaction.category || "")
+	);
 	const [dateValue, setDateValue] = useState(
-		new Date(transaction.date).toISOString().split("T")[0],
+		isDraft && contextValues?.date
+			? new Date(contextValues.date).toISOString().split("T")[0]
+			: new Date(transaction.date).toISOString().split("T")[0]
 	);
 	const [status, setStatus] = useState<TransactionStatus>(
 		transaction.status,
 	);
 
 	// Type is editable for draft transactions with no relationships
-	const hasRelationships = relationships.inventory?.linked.length > 0 || 
-		relationships.budget?.linked.length > 0 || 
+	const hasRelationships = relationships.inventory?.linked.length > 0 ||
+		relationships.budget?.linked.length > 0 ||
 		relationships.reimbursement?.linked.length > 0;
 	const isTypeEditable = transaction.status === "draft" && !hasRelationships;
+
+	// Smart autofill handlers
+	const getTransactionValues = () => ({
+		amount: amount,
+		description: descriptionValue || "",
+		category: category,
+		date: dateValue,
+	});
+	const handleAutofillSuggestions = (suggestions: Record<string, string | number | null>) => {
+		if (suggestions.amount != null) setAmount(String(suggestions.amount));
+		if (suggestions.description != null) setDescriptionValue(String(suggestions.description));
+		if (suggestions.category != null) setCategory(String(suggestions.category));
+		if (suggestions.date != null) setDateValue(String(suggestions.date));
+	};
 
 	// Use relationship picker hook
 	const relationshipPicker = useRelationshipPicker({
@@ -348,10 +379,32 @@ export default function EditTransaction({
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
 				<PageHeader
 					title={t("treasury.breakdown.edit.title")}
+					actions={
+						<SmartAutofillButton
+							entityType="transaction"
+							entityId={transaction.id}
+							getCurrentValues={getTransactionValues}
+							onSuggestions={handleAutofillSuggestions}
+							useAI={isDraft}
+						/>
+					}
 				/>
 
 
-				<Form method="post" className="space-y-6">
+				<Form
+					method="post"
+					action={`/api/transactions/${transaction.id}/update`}
+					className="space-y-6"
+				>
+					{/* Hidden fields for source context (auto-linking when created from picker) */}
+					{sourceContext && (
+						<>
+							<input type="hidden" name="_sourceType" value={sourceContext.type} />
+							<input type="hidden" name="_sourceId" value={sourceContext.id} />
+						</>
+					)}
+					{returnUrl && <input type="hidden" name="_returnUrl" value={returnUrl} />}
+
 					<input
 						type="hidden"
 						name="type"
@@ -463,7 +516,6 @@ export default function EditTransaction({
 							relationAName={transaction.description || ""}
 							mode="edit"
 							currentPath={currentPath}
-							showAnalyzeButton={false}
 							sections={[
 								// Inventory section - only for inventory category
 								...(category === "inventory" ? [{
@@ -499,10 +551,9 @@ export default function EditTransaction({
 					</TreasuryDetailCard>
 					<TreasuryFormActions
 						isSubmitting={isSubmitting}
-						showDelete
-						deleteTitle={t(
-							"treasury.breakdown.edit.delete_title",
-						)}
+						deleteAction={`/api/transactions/${transaction.id}/delete`}
+						deleteTitle={t("treasury.breakdown.edit.delete_title")}
+						onCancel={() => navigate(returnUrl || "/treasury/transactions")}
 						deleteDescription={`${t("treasury.breakdown.edit.delete_confirm")}\n\n${transaction.description} (${formatCurrency(transaction.amount)})`}
 					/>
 				</Form>

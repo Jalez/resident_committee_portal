@@ -18,6 +18,7 @@ import {
 } from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { useUser } from "~/contexts/user-context";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import { translateFaq } from "~/lib/translate.server";
@@ -33,18 +34,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	const authUser = await getAuthenticatedUser(request, getDatabase);
-	let permissions: string[];
-	if (authUser) {
-		permissions = authUser.permissions;
-	} else {
-		const guestContext = await getGuestContext(() => getDatabase());
-		permissions = guestContext.permissions;
-	}
-	const canRead = permissions.some((p) => p === "faq:read" || p === "*");
-	if (!canRead) {
-		throw new Response("Not Found", { status: 404 });
-	}
+	await requirePermission(request, "faq:update", getDatabase);
 	const db = getDatabase();
 	const item = await db.getFaqById(params.faqId);
 	if (!item) {
@@ -56,12 +46,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	]);
 	const primaryLabel = languageNames[systemLanguages.primary] ?? systemLanguages.primary;
 	const secondaryLabel = languageNames[systemLanguages.secondary] ?? systemLanguages.secondary;
+
+	// Get source context and returnUrl from URL
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
 		systemLanguages,
 		primaryLabel,
 		secondaryLabel,
+		sourceContext,
+		returnUrl,
 	};
 }
 
@@ -136,22 +134,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 		}
 	}
 
-	const question = (formData.get("question") as string)?.trim();
-	const answer = (formData.get("answer") as string)?.trim();
-	const questionSecondary = (formData.get("questionSecondary") as string)?.trim() || null;
-	const answerSecondary = (formData.get("answerSecondary") as string)?.trim() || null;
-	const sortOrder = parseInt((formData.get("sortOrder") as string) || "0", 10);
-	if (!question || !answer) {
-		return { error: "Question and answer are required (default language)" };
-	}
-	await db.updateFaq(params.faqId, {
-		question,
-		answer,
-		questionSecondary,
-		answerSecondary,
-		sortOrder,
-	});
-	return redirect("/faq");
+	// Update logic has been moved to /api/faq/:faqId/update
+	return null;
 }
 
 export default function FaqEdit({ loaderData }: Route.ComponentProps) {
@@ -187,13 +171,13 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 	const secondaryDefaults =
 		translated?.direction === "to_secondary" && translated
 			? {
-					questionSecondary: translated.questionSecondary,
-					answerSecondary: translated.answerSecondary,
-				}
+				questionSecondary: translated.questionSecondary,
+				answerSecondary: translated.answerSecondary,
+			}
 			: {
-					questionSecondary: item.questionSecondary ?? "",
-					answerSecondary: item.answerSecondary ?? "",
-				};
+				questionSecondary: item.questionSecondary ?? "",
+				answerSecondary: item.answerSecondary ?? "",
+			};
 
 	const headerPrimary = canUpdate
 		? t("faq.edit_title", { lng: systemLanguages.primary })
@@ -211,8 +195,14 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 				}}
 			>
 				<div className="max-w-2xl">
-				{canUpdate ? (
-					<Form method="post" className="space-y-6">
+					<Form
+						method="post"
+						action={`/api/faq/${item.id}/update`}
+						className="space-y-6"
+					>
+						{/* Hidden fields for returnUrl */}
+						{loaderData.returnUrl && <input type="hidden" name="_returnUrl" value={loaderData.returnUrl} />}
+
 						{/* Local Model Selector */}
 						<LocalModelSelector onModelChange={setLocalModel} />
 
@@ -235,9 +225,9 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 								{isTranslating
 									? t("faq.translating")
 									: t("faq.translate_primary_to_secondary", {
-											primary: primaryLabel,
-											secondary: secondaryLabel,
-										})}
+										primary: primaryLabel,
+										secondary: secondaryLabel,
+									})}
 							</Button>
 							<Button
 								type="button"
@@ -254,9 +244,9 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 								{isTranslating
 									? t("faq.translating")
 									: t("faq.translate_secondary_to_primary", {
-											primary: primaryLabel,
-											secondary: secondaryLabel,
-										})}
+										primary: primaryLabel,
+										secondary: secondaryLabel,
+									})}
 							</Button>
 						</div>
 						<div
@@ -376,22 +366,12 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 							<Button
 								type="button"
 								variant="outline"
-								onClick={() => navigate("/faq")}
+								onClick={() => navigate(loaderData.returnUrl || "/faq")}
 							>
 								{t("faq.cancel")}
 							</Button>
 						</div>
 					</Form>
-				) : (
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-						<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-							{displayQuestion}
-						</h2>
-						<div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-							{displayAnswer}
-						</div>
-					</div>
-				)}
 				</div>
 			</SplitLayout>
 		</PageWrapper>

@@ -18,6 +18,7 @@ import {
 } from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { useUser } from "~/contexts/user-context";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import { translateNews } from "~/lib/translate.server";
@@ -33,18 +34,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	const authUser = await getAuthenticatedUser(request, getDatabase);
-	let permissions: string[];
-	if (authUser) {
-		permissions = authUser.permissions;
-	} else {
-		const guestContext = await getGuestContext(() => getDatabase());
-		permissions = guestContext.permissions;
-	}
-	const canRead = permissions.some((p) => p === "news:read" || p === "*");
-	if (!canRead) {
-		throw new Response("Not Found", { status: 404 });
-	}
+	await requirePermission(request, "news:update", getDatabase);
 	const db = getDatabase();
 	const item = await db.getNewsById(params.newsId);
 	if (!item) {
@@ -56,12 +46,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	]);
 	const primaryLabel = languageNames[systemLanguages.primary] ?? systemLanguages.primary;
 	const secondaryLabel = languageNames[systemLanguages.secondary] ?? systemLanguages.secondary;
+
+	// Get source context and returnUrl from URL
+	const url = new URL(request.url);
+	const sourceContext = getRelationshipContextFromUrl(url);
+	const returnUrl = url.searchParams.get("returnUrl");
+
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
 		systemLanguages,
 		primaryLabel,
 		secondaryLabel,
+		sourceContext,
+		returnUrl,
 	};
 }
 
@@ -143,24 +141,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 		}
 	}
 
-	const title = (formData.get("title") as string)?.trim();
-	const summary = (formData.get("summary") as string)?.trim() || null;
-	const content = (formData.get("content") as string)?.trim();
-	const titleSecondary = (formData.get("titleSecondary") as string)?.trim() || null;
-	const summarySecondary = (formData.get("summarySecondary") as string)?.trim() || null;
-	const contentSecondary = (formData.get("contentSecondary") as string)?.trim() || null;
-	if (!title || !content) {
-		return { error: "Title and content are required (default language)" };
-	}
-	await db.updateNews(params.newsId, {
-		title,
-		summary,
-		content,
-		titleSecondary,
-		summarySecondary,
-		contentSecondary,
-	});
-	return redirect("/news");
+	// Update logic has been moved to /api/news/:newsId/update
+	return null;
 }
 
 export default function NewsEdit({ loaderData }: Route.ComponentProps) {
@@ -184,23 +166,23 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 	const primaryDefaults =
 		translated?.direction === "to_primary" && translated
 			? {
-					title: translated.title,
-					summary: translated.summary ?? "",
-					content: translated.content,
-				}
+				title: translated.title,
+				summary: translated.summary ?? "",
+				content: translated.content,
+			}
 			: { title: item.title, summary: item.summary ?? "", content: item.content };
 	const secondaryDefaults =
 		translated?.direction === "to_secondary" && translated
 			? {
-					titleSecondary: translated.titleSecondary,
-					summarySecondary: translated.summarySecondary ?? "",
-					contentSecondary: translated.contentSecondary,
-				}
+				titleSecondary: translated.titleSecondary,
+				summarySecondary: translated.summarySecondary ?? "",
+				contentSecondary: translated.contentSecondary,
+			}
 			: {
-					titleSecondary: item.titleSecondary ?? "",
-					summarySecondary: item.summarySecondary ?? "",
-					contentSecondary: item.contentSecondary ?? "",
-				};
+				titleSecondary: item.titleSecondary ?? "",
+				summarySecondary: item.summarySecondary ?? "",
+				contentSecondary: item.contentSecondary ?? "",
+			};
 
 	const headerPrimary = canUpdate
 		? t("news.edit_title", { lng: systemLanguages.primary })
@@ -218,56 +200,60 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 				}}
 			>
 				<div className="max-w-2xl">
-				{canUpdate ? (
-					<Form method="post" className="space-y-6">
+					<Form
+						method="post"
+						action={`/api/news/${item.id}/update`}
+						className="space-y-6"
+					>
+						{/* Hidden fields for returnUrl */}
+						{loaderData.returnUrl && <input type="hidden" name="_returnUrl" value={loaderData.returnUrl} />}
+
 						{/* Local Model Selector */}
 						<LocalModelSelector onModelChange={setLocalModel} />
 
-						{canUpdate && (
-							<div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
-								<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{t("news.translate_with_ai")}
-								</span>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={isTranslating}
-									onClick={() =>
-										translateFetcher.submit(
-											{ _action: "translate", direction: "to_secondary" },
-											{ method: "post" },
-										)
-									}
-								>
-									{isTranslating
-										? t("news.translating")
-										: t("news.translate_primary_to_secondary", {
-												primary: primaryLabel,
-												secondary: secondaryLabel,
-											})}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={isTranslating}
-									onClick={() =>
-										translateFetcher.submit(
-											{ _action: "translate", direction: "to_primary" },
-											{ method: "post" },
-										)
-									}
-								>
-									{isTranslating
-										? t("news.translating")
-										: t("news.translate_secondary_to_primary", {
-												primary: primaryLabel,
-												secondary: secondaryLabel,
-											})}
-								</Button>
-							</div>
-						)}
+						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
+							<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+								{t("news.translate_with_ai")}
+							</span>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={isTranslating}
+								onClick={() =>
+									translateFetcher.submit(
+										{ _action: "translate", direction: "to_secondary" },
+										{ method: "post" },
+									)
+								}
+							>
+								{isTranslating
+									? t("news.translating")
+									: t("news.translate_primary_to_secondary", {
+										primary: primaryLabel,
+										secondary: secondaryLabel,
+									})}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={isTranslating}
+								onClick={() =>
+									translateFetcher.submit(
+										{ _action: "translate", direction: "to_primary" },
+										{ method: "post" },
+									)
+								}
+							>
+								{isTranslating
+									? t("news.translating")
+									: t("news.translate_secondary_to_primary", {
+										primary: primaryLabel,
+										secondary: secondaryLabel,
+									})}
+							</Button>
+						</div>
 						<div
 							key={translated?.direction === "to_primary" ? "primary-translated" : "primary"}
 							className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6"
@@ -413,47 +399,12 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 							<Button
 								type="button"
 								variant="outline"
-								onClick={() => navigate("/news")}
+								onClick={() => navigate(loaderData.returnUrl || "/news")}
 							>
 								{t("news.cancel")}
 							</Button>
 						</div>
 					</Form>
-				) : (
-					(() => {
-						const useSecondary =
-							loaderData.systemLanguages.secondary &&
-							loaderData.systemLanguages.secondary === i18n.language;
-						const title =
-							useSecondary && item.titleSecondary
-								? item.titleSecondary
-								: item.title;
-						const summary =
-							useSecondary && item.summarySecondary
-								? item.summarySecondary
-								: item.summary;
-						const content =
-							useSecondary && item.contentSecondary
-								? item.contentSecondary
-								: item.content;
-						return (
-							<div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-								<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-									{title}
-								</h2>
-								{summary && (
-									<p className="text-gray-600 dark:text-gray-400">{summary}</p>
-								)}
-								<div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-									{content}
-								</div>
-								<p className="text-xs text-gray-500 dark:text-gray-500 pt-4">
-									{new Date(item.updatedAt).toLocaleDateString()}
-								</p>
-							</div>
-						);
-					})()
-				)}
 				</div>
 			</SplitLayout>
 		</PageWrapper>

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
+import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -21,6 +22,8 @@ import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/treasury.budgets.$budgetId.edit";
 
@@ -58,17 +61,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const sourceContext = getRelationshipContextFromUrl(url);
 	const returnUrl = url.searchParams.get("returnUrl");
 
-	// Get values from source entity (for pre-populating this entity)
-	let sourceValues: { amount?: number; description?: string } | null = null;
-	if (sourceContext && sourceContext.type === "transaction") {
-		const sourceTransaction = await db.getTransactionById(sourceContext.id);
-		if (sourceTransaction) {
-			sourceValues = {
-				amount: Number.parseFloat(sourceTransaction.amount),
-				description: sourceTransaction.description,
-			};
-		}
-	}
+	// Get relationship context values for autofill (uses domination scale)
+	const contextValues = await getRelationshipContext(db, "budget", params.budgetId);
 
 	// Get currently linked transactions via entity relationships
 	const budgetRelationships = await db.getEntityRelationships("budget", budget.id);
@@ -104,9 +98,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		linkedTransactions,
 		unlinkedTransactions,
 		relationships,
+		contextValues,
 		sourceContext,
 		returnUrl,
-		sourceValues,
 	};
 }
 
@@ -116,128 +110,15 @@ const updateBudgetSchema = z.object({
 	amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
 });
 
-export async function action({ request, params }: Route.ActionArgs) {
-	const db = getDatabase();
-	const budget = await db.getFundBudgetById(params.budgetId);
-
-	if (!budget) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
-	await requirePermissionOrSelf(
-		request,
-		"treasury:budgets:update",
-		"treasury:budgets:update-self",
-		budget.createdBy,
-		getDatabase,
-	);
-
-	const formData = await request.formData();
-	const actionType = formData.get("_action") as string | null;
-
-	if (actionType === "close") {
-		await db.updateFundBudget(params.budgetId, { status: "closed" });
-		return redirect(
-			`/treasury/budgets/${params.budgetId}?success=closed`,
-		);
-	}
-
-	if (actionType === "reopen") {
-		await db.updateFundBudget(params.budgetId, { status: "open" });
-		return redirect(
-			`/treasury/budgets/${params.budgetId}?success=reopened`,
-		);
-	}
-
-	const name = formData.get("name") as string;
-	const description = formData.get("description") as string;
-	const amountStr = formData.get("amount") as string;
-
-	const result = updateBudgetSchema.safeParse({
-		name,
-		description,
-		amount: amountStr,
-	});
-
-	if (!result.success) {
-		return {
-			error: "Validation failed",
-			fieldErrors: result.error.flatten().fieldErrors,
-		};
-	}
-
-	const newAmount = Number.parseFloat(amountStr.replace(",", "."));
-	const usedAmount = await db.getBudgetUsedAmount(params.budgetId);
-
-	if (newAmount < usedAmount) {
-		return { error: "cannot_reduce", usedAmount };
-	}
-
-	const currentAmount = Number.parseFloat(budget.amount);
-	if (newAmount > currentAmount) {
-		const increase = newAmount - currentAmount;
-		const availableFunds = await db.getAvailableFundsForYear(budget.year);
-
-		if (increase > availableFunds) {
-			return { error: "insufficient_funds", availableFunds };
-		}
-	}
-
-	await db.updateFundBudget(params.budgetId, {
-		name,
-		description: description || null,
-		amount: newAmount.toFixed(2),
-	});
-
-	// Save relationships using new universal system
-	const user = await requirePermissionOrSelf(
-		request,
-		"treasury:budgets:update",
-		"treasury:budgets:update-self",
-		budget.createdBy,
-		getDatabase,
-	);
-	await saveRelationshipChanges(db, "budget", params.budgetId, formData, user?.userId || null);
-
-	// Check for source context to create auto-link (for backwards compatibility with old flow)
-	// Note: Relationship may already exist if created via create-draft API
-	const sourceType = formData.get("_sourceType") as string | null;
-	const sourceId = formData.get("_sourceId") as string | null;
-	if (sourceType && sourceId) {
-		// Check if relationship already exists
-		const exists = await db.entityRelationshipExists(
-			sourceType as any,
-			sourceId,
-			"budget",
-			params.budgetId,
-		);
-		if (!exists) {
-			await db.createEntityRelationship({
-				relationAType: sourceType as any,
-				relationId: sourceId,
-				relationBType: "budget",
-				relationBId: params.budgetId,
-				createdBy: user?.userId || null,
-			});
-		}
-	}
-
-	// Handle returnUrl redirect (from source entity picker)
-	const returnUrl = formData.get("_returnUrl") as string | null;
-	if (returnUrl) {
-		return redirect(returnUrl);
-	}
-
-	return redirect(
-		`/treasury/budgets/${params.budgetId}?success=updated`,
-	);
+export async function action() {
+	// Budget update logic has been moved to /api/budgets/:budgetId/update
+	return null;
 }
 
 export default function TreasuryBudgetsEdit({
 	loaderData,
-	actionData,
 }: Route.ComponentProps) {
-	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships, sourceContext, returnUrl, sourceValues } = loaderData;
+	const { budget, availableFunds, linkedTransactions, unlinkedTransactions, relationships, contextValues, sourceContext, returnUrl } = loaderData;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [confirmAction, setConfirmAction] = useState<
@@ -246,12 +127,12 @@ export default function TreasuryBudgetsEdit({
 	const closeFormRef = useRef<HTMLFormElement>(null);
 	const reopenFormRef = useRef<HTMLFormElement>(null);
 
-	// Pre-populate from source entity values if budget is a draft with defaults
-	const initialAmount = (budget.status === "draft" && Number.parseFloat(budget.amount) === 0 && sourceValues?.amount)
-		? sourceValues.amount.toFixed(2).replace(".", ",")
+	// Pre-populate from relationship context if budget is a draft with defaults
+	const initialAmount = (budget.status === "draft" && Number.parseFloat(budget.amount) === 0 && contextValues?.totalAmount)
+		? contextValues.totalAmount.toFixed(2).replace(".", ",")
 		: Number.parseFloat(budget.amount).toFixed(2).replace(".", ",");
-	const initialName = (budget.status === "draft" && (!budget.name || budget.name === "") && sourceValues?.description)
-		? sourceValues.description
+	const initialName = (budget.status === "draft" && (!budget.name || budget.name === "") && contextValues?.description)
+		? contextValues.description
 		: budget.name;
 
 	const [name, setName] = useState(initialName);
@@ -269,6 +150,18 @@ export default function TreasuryBudgetsEdit({
 		})),
 	});
 
+	// Smart autofill handlers
+	const getBudgetValues = () => ({
+		amount: amount,
+		name: name || "",
+		description: description,
+	});
+	const handleAutofillSuggestions = (suggestions: Record<string, string | number | null>) => {
+		if (suggestions.amount != null) setAmount(String(suggestions.amount).replace(".", ","));
+		if (suggestions.name != null) setName(String(suggestions.name));
+		if (suggestions.description != null) setDescription(String(suggestions.description));
+	};
+
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;
 	};
@@ -278,29 +171,23 @@ export default function TreasuryBudgetsEdit({
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<PageHeader title={t("treasury.budgets.edit.title")} />
+				<PageHeader
+					title={t("treasury.budgets.edit.title")}
+					actions={
+						<SmartAutofillButton
+							entityType="budget"
+							entityId={budget.id}
+							getCurrentValues={getBudgetValues}
+							onSuggestions={handleAutofillSuggestions}
+						/>
+					}
+				/>
 
-				{/* Error displays */}
-				{actionData?.error === "insufficient_funds" && (
-					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-						{t("treasury.budgets.insufficient_funds", {
-							available: formatCurrency(
-								actionData.availableFunds as number,
-							),
-						})}
-					</div>
-				)}
-				{actionData?.error === "cannot_reduce" && (
-					<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-						{t("treasury.budgets.cannot_reduce", {
-							used: formatCurrency(
-								actionData.usedAmount as number,
-							),
-						})}
-					</div>
-				)}
-
-				<Form method="post" className="space-y-6">
+				<Form
+					method="post"
+					action={`/api/budgets/${budget.id}/update`}
+					className="space-y-6"
+				>
 					{/* Hidden fields for source context (auto-linking when created from picker) */}
 					{sourceContext && (
 						<>
@@ -372,7 +259,6 @@ export default function TreasuryBudgetsEdit({
 							relationAName={budget.name || ""}
 							mode="edit"
 							currentPath={currentPath}
-							showAnalyzeButton={false}
 							sections={[
 								{
 									relationBType: "transaction",
@@ -388,68 +274,69 @@ export default function TreasuryBudgetsEdit({
 						/>
 					</TreasuryDetailCard>
 
-					<TreasuryFormActions
-						extraActions={
-							<>
-								{budget.status === "open" ? (
-									<>
-										<Form
-											method="post"
-											className="hidden"
-											ref={closeFormRef}
-										>
-											<input
-												type="hidden"
-												name="_action"
-												value="close"
-											/>
-										</Form>
-										<Button
-											type="button"
-											variant="outline"
-											onClick={() =>
-												setConfirmAction("close")
-											}
-										>
-											<span className="material-symbols-outlined mr-2 text-sm">
-												lock
-											</span>
-											{t(
-												"treasury.budgets.actions.close",
-											)}
-										</Button>
-									</>
-								) : (
-									<>
-										<Form
-											method="post"
-											className="hidden"
-											ref={reopenFormRef}
-										>
-											<input
-												type="hidden"
-												name="_action"
-												value="reopen"
-											/>
-										</Form>
-										<Button
-											type="button"
-											variant="outline"
-											onClick={() =>
-												setConfirmAction("reopen")
-											}
-										>
-											<span className="material-symbols-outlined mr-2 text-sm">
-												lock_open
-											</span>
-											{t(
-												"treasury.budgets.actions.reopen",
-											)}
-										</Button>
-									</>
-								)}
-							</>
-						}
+					<TreasuryFormActions onCancel={() => navigate(returnUrl || "/treasury/budgets")} extraActions={
+						<>
+							{budget.status === "open" ? (
+								<>
+									<Form
+										method="post"
+										action={`/api/budgets/${budget.id}/update`}
+										className="hidden"
+										ref={closeFormRef}
+									>
+										<input
+											type="hidden"
+											name="_action"
+											value="close"
+										/>
+									</Form>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() =>
+											setConfirmAction("close")
+										}
+									>
+										<span className="material-symbols-outlined mr-2 text-sm">
+											lock
+										</span>
+										{t(
+											"treasury.budgets.actions.close",
+										)}
+									</Button>
+								</>
+							) : (
+								<>
+									<Form
+										method="post"
+										action={`/api/budgets/${budget.id}/update`}
+										className="hidden"
+										ref={reopenFormRef}
+									>
+										<input
+											type="hidden"
+											name="_action"
+											value="reopen"
+										/>
+									</Form>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() =>
+											setConfirmAction("reopen")
+										}
+									>
+										<span className="material-symbols-outlined mr-2 text-sm">
+											lock_open
+										</span>
+										{t(
+											"treasury.budgets.actions.reopen",
+										)}
+									</Button>
+								</>
+							)}
+						</>
+					}
 					/>
 				</Form>
 

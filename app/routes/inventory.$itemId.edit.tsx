@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Form, redirect, useNavigate } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PageHeader } from "~/components/layout/page-header";
+import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import {
 	TreasuryDetailCard,
 	TreasuryField,
@@ -15,6 +16,8 @@ import i18next from "~/i18next.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import type { Route } from "./+types/inventory.$itemId.edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -46,92 +49,90 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const sourceContext = getRelationshipContextFromUrl(url);
 	const returnUrl = url.searchParams.get("returnUrl");
 
+	// Get relationship context values for autofill (uses domination scale)
+	const contextValues = await getRelationshipContext(db, "inventory", params.itemId);
+
 	return {
 		siteConfig: SITE_CONFIG,
 		item,
 		metaTitle: title,
+		contextValues,
 		sourceContext,
 		returnUrl,
 	};
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-	await requirePermission(request, "inventory:write", getDatabase);
-	const db = getDatabase();
-
-	const formData = await request.formData();
-
-	const updateData: Partial<Omit<NewInventoryItem, "id">> = {
-		name: formData.get("name") as string,
-		quantity: parseInt(formData.get("quantity") as string, 10) || 1,
-		location: formData.get("location") as string,
-		category: (formData.get("category") as string) || null,
-		description: (formData.get("description") as string) || null,
-		value: (formData.get("value") as string) || "0",
-		showInInfoReel: formData.get("showInInfoReel") === "on",
-		purchasedAt: formData.get("purchasedAt")
-			? new Date(formData.get("purchasedAt") as string)
-			: null,
-	};
-
-	await db.updateInventoryItem(params.itemId, updateData);
-
-	// Check for source context to create auto-link (skip if already exists from create-draft)
-	const sourceType = formData.get("_sourceType") as string | null;
-	const sourceId = formData.get("_sourceId") as string | null;
-	if (sourceType && sourceId) {
-		const exists = await db.entityRelationshipExists(
-			sourceType as any,
-			sourceId,
-			"inventory",
-			params.itemId,
-		);
-		if (!exists) {
-			const user = await requirePermission(request, "inventory:write", getDatabase);
-			await db.createEntityRelationship({
-				relationAType: sourceType as any,
-				relationId: sourceId,
-				relationBType: "inventory",
-				relationBId: params.itemId,
-				createdBy: user?.userId || null,
-			});
-		}
-	}
-
-	// Handle returnUrl redirect (from source entity picker)
-	const returnUrl = formData.get("_returnUrl") as string | null;
-	if (returnUrl) {
-		return redirect(returnUrl);
-	}
-
-	return redirect(`/inventory/${params.itemId}`);
+export async function action() {
+	// Inventory update logic has been moved to /api/inventory/:itemId/update
+	return null;
 }
 
 export default function EditInventoryItem({
 	loaderData,
 }: Route.ComponentProps) {
-	const { item, sourceContext, returnUrl } = loaderData;
+	const { item, contextValues, sourceContext, returnUrl } = loaderData;
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 
-	const [name, setName] = useState(item.name);
+	const isDraft = item.status === "draft";
+
+	// Pre-populate from relationship context if inventory item is a draft with defaults
+	const [name, setName] = useState(
+		isDraft && !item.name && contextValues?.description ? contextValues.description : item.name
+	);
 	const [quantity, setQuantity] = useState(String(item.quantity));
 	const [location, setLocation] = useState(item.location ?? "");
-	const [category, setCategory] = useState(item.category || "");
-	const [description, setDescription] = useState(item.description || "");
-	const [value, setValue] = useState(item.value || "0");
-	const [purchasedAt, setPurchasedAt] = useState(
-		item.purchasedAt
-			? new Date(item.purchasedAt).toISOString().split("T")[0]
-			: "",
+	const [category, setCategory] = useState(
+		isDraft && !item.category && contextValues?.category ? contextValues.category : (item.category || "")
 	);
+	const [description, setDescription] = useState(item.description || "");
+	const [value, setValue] = useState(
+		isDraft && (!item.value || item.value === "0") && contextValues?.totalAmount
+			? String(contextValues.totalAmount)
+			: (item.value || "0")
+	);
+	const [purchasedAt, setPurchasedAt] = useState(
+		isDraft && !item.purchasedAt && contextValues?.date
+			? new Date(contextValues.date).toISOString().split("T")[0]
+			: (item.purchasedAt ? new Date(item.purchasedAt).toISOString().split("T")[0] : "")
+	);
+
+	// Smart autofill handlers
+	const getInventoryValues = () => ({
+		name: name,
+		value: value,
+		category: category,
+		description: description,
+		purchasedAt: purchasedAt,
+	});
+	const handleAutofillSuggestions = (suggestions: Record<string, string | number | null>) => {
+		if (suggestions.name != null) setName(String(suggestions.name));
+		if (suggestions.value != null) setValue(String(suggestions.value));
+		if (suggestions.category != null) setCategory(String(suggestions.category));
+		if (suggestions.description != null) setDescription(String(suggestions.description));
+		if (suggestions.purchasedAt != null) setPurchasedAt(String(suggestions.purchasedAt));
+	};
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<PageHeader title={t("inventory.form.title_edit")} />
+				<PageHeader
+					title={t("inventory.form.title_edit")}
+					actions={
+						<SmartAutofillButton
+							entityType="inventory"
+							entityId={item.id}
+							getCurrentValues={getInventoryValues}
+							onSuggestions={handleAutofillSuggestions}
+						/>
+					}
+				/>
 
-				<Form method="post" className="space-y-6">
+				<Form
+					method="post"
+					action={`/api/inventory/${item.id}/update`}
+					className="space-y-6"
+				>
 					{/* Hidden fields for source context (auto-linking when created from picker) */}
 					{sourceContext && (
 						<>
@@ -240,7 +241,7 @@ export default function EditInventoryItem({
 						</div>
 					</TreasuryDetailCard>
 
-					<TreasuryFormActions />
+					<TreasuryFormActions onCancel={() => navigate(returnUrl || "/inventory")} />
 				</Form>
 			</div>
 		</PageWrapper>
