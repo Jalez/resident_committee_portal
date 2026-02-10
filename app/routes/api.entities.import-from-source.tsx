@@ -1,8 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
-import { json } from "react-router";
 import { getDatabase } from "~/db";
 import type { RelationshipEntityType } from "~/db/schema";
-import { requireUser } from "~/lib/auth.server";
+import { getAuthenticatedUser } from "~/lib/auth.server";
 
 /**
  * Generic API endpoint for importing entities from a source entity.
@@ -20,10 +19,13 @@ import { requireUser } from "~/lib/auth.server";
  * 5. Returns the created entities
  */
 export async function action({ request }: ActionFunctionArgs) {
-    const user = await requireUser(request);
     const db = getDatabase();
-
+    const user = await getAuthenticatedUser(request, getDatabase);
+    if (!user) {
+        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { status: 401 });
+    }
     const formData = await request.formData();
+
     const targetType = formData.get("targetType") as RelationshipEntityType;
     const sourceType = formData.get("sourceType") as RelationshipEntityType;
     const sourceId = formData.get("sourceId") as string;
@@ -31,22 +33,22 @@ export async function action({ request }: ActionFunctionArgs) {
     const relationAId = formData.get("relationAId") as string;
 
     if (!targetType || !sourceType || !sourceId || !relationAType || !relationAId) {
-        return json({ success: false, error: "Missing required parameters" }, { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: "Missing required parameters" }), { status: 400 });
     }
 
     try {
         // Handle different source -> target combinations
         if (sourceType === "receipt" && targetType === "inventory") {
-            return await importInventoryFromReceipt(db, sourceId, relationAId, user.id);
+            return await importInventoryFromReceipt(db, sourceId, relationAId, user.userId);
         }
 
         // Add more import patterns here as needed
         // e.g. minutes -> news, transaction -> reimbursement, etc.
 
-        return json({ success: false, error: `Import from ${sourceType} to ${targetType} not implemented` }, { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: `Import from ${sourceType} to ${targetType} not implemented` }), { status: 400 });
     } catch (error) {
         console.error("[import-from-source] Error:", error);
-        return json({ success: false, error: "Failed to import entities" }, { status: 500 });
+        return new Response(JSON.stringify({ success: false, error: "Failed to import entities" }), { status: 500 });
     }
 }
 
@@ -63,7 +65,7 @@ async function importInventoryFromReceipt(
     const receiptContent = await db.getReceiptContentByReceiptId(receiptId);
 
     if (!receiptContent || !receiptContent.items) {
-        return json({ success: false, error: "Receipt has no line items to import" }, { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: "Receipt has no line items to import" }), { status: 400 });
     }
 
     // Parse line items
@@ -80,11 +82,11 @@ async function importInventoryFromReceipt(
             ? JSON.parse(receiptContent.items)
             : receiptContent.items;
     } catch {
-        return json({ success: false, error: "Failed to parse receipt items" }, { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: "Failed to parse receipt items" }), { status: 400 });
     }
 
     if (!items || items.length === 0) {
-        return json({ success: false, error: "Receipt has no line items to import" }, { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: "Receipt has no line items to import" }), { status: 400 });
     }
 
     // Create inventory items from receipt line items
@@ -102,11 +104,10 @@ async function importInventoryFromReceipt(
             quantity,
             value: value.toString(),
             status: "draft",
-            createdBy: userId,
         });
 
         // Link to the source entity (e.g. reimbursement)
-        await db.createRelationship({
+        await db.createEntityRelationship({
             relationAType: "inventory",
             relationId: inventoryItem.id,
             relationBType: "receipt",
@@ -116,7 +117,7 @@ async function importInventoryFromReceipt(
 
         // Also link to relationAId if it's different
         if (relationAId !== receiptId) {
-            await db.createRelationship({
+            await db.createEntityRelationship({
                 relationAType: "inventory",
                 relationId: inventoryItem.id,
                 relationBType: "receipt", // This should be relationAType but we need to handle the type properly
@@ -133,8 +134,8 @@ async function importInventoryFromReceipt(
         });
     }
 
-    return json({
+    return new Response(JSON.stringify({
         success: true,
         entities: createdEntities,
-    });
+    }));
 }
