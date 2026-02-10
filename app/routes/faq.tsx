@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, Link } from "react-router";
+import { Form, Link, useFetcher } from "react-router";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
@@ -65,17 +65,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	};
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "faq:delete", getDatabase);
-	const db = getDatabase();
-	const formData = await request.formData();
-	const actionType = formData.get("_action") as string;
-	if (actionType === "delete") {
-		const id = formData.get("id") as string;
-		if (id) await db.deleteFaq(id);
-	}
-	return { success: true };
-}
+// Deletion is now handled by /api/faq/:faqId/delete
 
 export default function Faq({ loaderData }: Route.ComponentProps) {
 	const { items, searchQ, systemLanguages } = loaderData;
@@ -89,14 +79,10 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 	const deleteFormRef = useRef<HTMLFormElement>(null);
 
+	const deleteFetcher = useFetcher();
+
 	return (
 		<PageWrapper>
-			{canDelete && (
-				<Form method="post" className="hidden" ref={deleteFormRef}>
-					<input type="hidden" name="_action" value="delete" />
-					<input type="hidden" name="id" value={deleteConfirmId ?? ""} />
-				</Form>
-			)}
 			<ConfirmDialog
 				open={deleteConfirmId !== null}
 				onOpenChange={(open) => !open && setDeleteConfirmId(null)}
@@ -106,9 +92,15 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 				cancelLabel={t("common.actions.cancel")}
 				variant="destructive"
 				onConfirm={() => {
-					deleteFormRef.current?.requestSubmit();
-					setDeleteConfirmId(null);
+					if (deleteConfirmId) {
+						deleteFetcher.submit(null, {
+							method: "DELETE",
+							action: `/api/faq/${deleteConfirmId}/delete`,
+						});
+						setDeleteConfirmId(null);
+					}
 				}}
+				loading={deleteFetcher.state !== "idle"}
 			/>
 			<SplitLayout
 				header={{
@@ -162,7 +154,7 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 									>
 										<div className="min-w-0 flex-1">
 											<Link
-												to={`/faq/${item.id}/edit`}
+												to={`/faq/${item.id}`}
 												className="font-semibold text-gray-900 dark:text-white hover:underline"
 											>
 												{question}

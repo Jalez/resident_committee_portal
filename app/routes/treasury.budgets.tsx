@@ -418,8 +418,8 @@ export default function TreasuryBudgets({
                                 deleteProps={
                                     canDeleteBudget(budget)
                                         ? {
-                                            action: `/treasury/budgets/${budget.id}`,
-                                            hiddenFields: { _action: "delete" },
+                                            action: `/api/budgets/${budget.id}/delete`,
+                                            hiddenFields: {},
                                             confirmMessage: t(
                                                 "treasury.budgets.delete_confirm",
                                             ),

@@ -226,7 +226,7 @@ export async function action({ request }: Route.ActionArgs) {
 		// Also update the linked transaction's reimbursementStatus and status
 		const txRelationships = await db.getEntityRelationships("reimbursement", purchaseId);
 		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
-		const linkedTransaction = txRel 
+		const linkedTransaction = txRel
 			? await db.getTransactionById(txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId)
 			: null;
 		if (linkedTransaction) {
@@ -254,36 +254,6 @@ export async function action({ request }: Route.ActionArgs) {
 				status: newTransactionStatus,
 			});
 		}
-	} else if (actionType === "delete" && purchaseId) {
-		// Get purchase to check createdBy for self-delete permission
-		const purchase = await db.getPurchaseById(purchaseId);
-		if (!purchase) {
-			return { success: false, error: "Purchase not found" };
-		}
-
-		// Check delete permission with self-delete support
-		await requireDeletePermissionOrSelf(
-			request,
-			"treasury:reimbursements:delete",
-			"treasury:reimbursements:delete-self",
-			purchase.createdBy,
-			getDatabase,
-		);
-
-		// Decline linked transaction before deleting purchase
-		const txRelationships = await db.getEntityRelationships("reimbursement", purchaseId);
-		const txRel = txRelationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction");
-		const linkedTransaction = txRel 
-			? await db.getTransactionById(txRel.relationBType === "transaction" ? txRel.relationBId : txRel.relationId)
-			: null;
-		if (linkedTransaction) {
-			await db.updateTransaction(linkedTransaction.id, {
-				status: "declined",
-				reimbursementStatus: "declined",
-			});
-		}
-
-		await db.deletePurchase(purchaseId);
 	}
 
 	return { success: true };
@@ -636,10 +606,8 @@ export default function BudgetReimbursements({
 									deleteProps={
 										canDelete
 											? {
-												hiddenFields: {
-													_action: "delete",
-													purchaseId: purchase.id,
-												},
+												action: `/api/reimbursements/${purchase.id}/delete`,
+												hiddenFields: {},
 												confirmMessage: t(
 													"treasury.reimbursements.delete_confirm",
 												),

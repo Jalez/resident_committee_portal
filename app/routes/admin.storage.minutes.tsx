@@ -239,8 +239,8 @@ export default function AdminStorageMinutes() {
                                                 <div className="font-semibold truncate">{item.minuteTitle}</div>
                                                 <div className="text-muted-foreground">{item.minuteDate}</div>
                                                 {/* Edit Link */}
-                                                <Link to={`/minutes/${item.minuteId}/edit`} className="text-blue-600 hover:underline">
-                                                    {t("common.actions.edit")} &rarr;
+                                                <Link to={`/minutes/${item.minuteId}`} className="text-blue-600 hover:underline">
+                                                    {t("common.actions.view", "View")} &rarr;
                                                 </Link>
                                             </div>
                                         )}

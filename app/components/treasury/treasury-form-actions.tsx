@@ -1,5 +1,5 @@
-import { useRef, useState, type ReactNode } from "react";
-import { Form, useNavigate, useNavigation } from "react-router";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Form, useFetcher, useNavigate, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "~/components/ui/button";
@@ -26,6 +26,10 @@ type TreasuryFormActionsProps = {
 	disabled?: boolean;
 	/** Custom cancel handler (defaults to nav stack pop or navigate(-1)) */
 	onCancel?: () => void;
+	/** Custom delete action URL (submits to API) */
+	deleteAction?: string;
+	/** Custom delete method (defaults to DELETE if deleteAction is provided) */
+	deleteMethod?: "DELETE" | "POST";
 };
 
 export function TreasuryFormActions({
@@ -38,6 +42,8 @@ export function TreasuryFormActions({
 	isSubmitting: isSubmittingProp,
 	disabled,
 	onCancel,
+	deleteAction,
+	deleteMethod,
 }: TreasuryFormActionsProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
@@ -45,11 +51,13 @@ export function TreasuryFormActions({
 	const { pop } = useNavigationStack();
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const deleteFormRef = useRef<HTMLFormElement>(null);
-
+	const deleteFetcher = useFetcher();
 	const isSubmitting =
-		isSubmittingProp ?? navigation.state === "submitting";
+		isSubmittingProp ??
+		(navigation.state === "submitting" ||
+			deleteFetcher.state === "submitting");
 
-	const handleCancel = () => {
+	const handleCancel = useCallback(() => {
 		if (onCancel) {
 			onCancel();
 			return;
@@ -60,6 +68,25 @@ export function TreasuryFormActions({
 		} else {
 			navigate(-1);
 		}
+	}, [onCancel, pop, navigate]);
+
+	// Handle successful delete from fetcher
+	useEffect(() => {
+		if (deleteFetcher.state === "idle" && deleteFetcher.data?.success) {
+			handleCancel();
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, handleCancel]);
+
+	const doDelete = () => {
+		if (deleteAction) {
+			deleteFetcher.submit(null, {
+				method: deleteMethod || "DELETE",
+				action: deleteAction,
+			});
+		} else {
+			deleteFormRef.current?.requestSubmit();
+		}
+		setShowDeleteConfirm(false);
 	};
 
 	return (
@@ -94,11 +121,16 @@ export function TreasuryFormActions({
 				)}
 			</div>
 
-			{showDelete && (
+			{(showDelete || deleteAction) && (
 				<>
 					<Separator className="my-4" />
-					<Form method="post" className="hidden" ref={deleteFormRef}>
-						<input type="hidden" name="_action" value="delete" />
+					<Form
+						method={deleteMethod || (deleteAction ? "DELETE" : "POST")}
+						action={deleteAction}
+						className="hidden"
+						ref={deleteFormRef}
+					>
+						{!deleteAction && <input type="hidden" name="_action" value="delete" />}
 					</Form>
 					<Button
 						type="button"

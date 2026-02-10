@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Form, Link, redirect, useSearchParams } from "react-router";
+import { useEffect, useState } from "react";
+import { Form, Link, useFetcher, useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
@@ -20,7 +20,6 @@ import { getDatabase } from "~/db";
 import {
     requirePermission,
     getAuthenticatedUser,
-    requireDeletePermissionOrSelf,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
@@ -65,37 +64,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     };
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-    const db = getDatabase();
-    const budget = await db.getFundBudgetById(params.budgetId);
-
-    if (!budget) {
-        throw new Response("Not Found", { status: 404 });
-    }
-
-    const formData = await request.formData();
-    const actionType = formData.get("_action");
-
-    if (actionType === "delete") {
-        // Check delete permission
-        await requireDeletePermissionOrSelf(
-            request,
-            "treasury:budgets:delete",
-            "treasury:budgets:delete-self",
-            budget.createdBy,
-            getDatabase,
-        );
-
-        const deleted = await db.deleteFundBudget(params.budgetId);
-        if (!deleted) {
-            return redirect(
-                `/treasury/budgets/${params.budgetId}?error=has_transactions`,
-            );
-        }
-
-        return redirect(`/treasury/budgets?year=${budget.year}&success=deleted`);
-    }
-
+export async function action({ request: _request, params: _params }: Route.ActionArgs) {
+    // Moved delete logic to api.budgets.$budgetId.delete.tsx
     return null;
 }
 
@@ -108,10 +78,19 @@ export default function TreasuryBudgetsView({
         currentUserId,
     } = loaderData;
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { hasPermission } = useUser();
     const [searchParams, setSearchParams] = useSearchParams();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const deleteFormRef = useRef<HTMLFormElement>(null);
+    const deleteFetcher = useFetcher();
+
+    useEffect(() => {
+        if (deleteFetcher.state === "idle" && deleteFetcher.data?.success) {
+            navigate(`/treasury/budgets?year=${budget.year}&success=deleted`);
+        } else if (deleteFetcher.state === "idle" && deleteFetcher.data?.error) {
+            toast.error(deleteFetcher.data.error);
+        }
+    }, [deleteFetcher.state, deleteFetcher.data, navigate, budget.year]);
 
     useEffect(() => {
         const success = searchParams.get("success");
@@ -210,13 +189,11 @@ export default function TreasuryBudgetsView({
                         <div className="flex gap-2">
                             {canDelete && (relationships.transaction?.linked.length || 0) === 0 && (
                                 <>
-                                    <Form method="post" className="hidden" ref={deleteFormRef}>
-                                        <input type="hidden" name="_action" value="delete" />
-                                    </Form>
                                     <Button
                                         type="button"
                                         variant="destructive"
                                         onClick={() => setShowDeleteConfirm(true)}
+                                        disabled={deleteFetcher.state !== "idle"}
                                     >
                                         <span className="material-symbols-outlined mr-2 text-sm">
                                             delete
@@ -232,9 +209,13 @@ export default function TreasuryBudgetsView({
                                         cancelLabel={t("common.actions.cancel")}
                                         variant="destructive"
                                         onConfirm={() => {
-                                            deleteFormRef.current?.requestSubmit();
+                                            deleteFetcher.submit(null, {
+                                                method: "DELETE",
+                                                action: `/api/budgets/${budget.id}/delete`
+                                            });
                                             setShowDeleteConfirm(false);
                                         }}
+                                        loading={deleteFetcher.state !== "idle"}
                                     />
                                 </>
                             )}

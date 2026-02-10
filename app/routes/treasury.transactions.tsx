@@ -135,7 +135,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	});
 
 	// Fetch budgets for each transaction using entity relationships
-	const budgetMap = new Map<string, string>();
+	const budgetMap = new Map<string, { id: string; name: string; status: string }>();
 	for (const transaction of sortedTransactions) {
 		const relationships = await loadRelationshipsForEntity(
 			db,
@@ -145,7 +145,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		);
 		const linkedBudgets = relationships.budget?.linked || [];
 		if (linkedBudgets.length > 0) {
-			budgetMap.set(transaction.id, (linkedBudgets[0] as { id: string }).id);
+			const budget = linkedBudgets[0] as { id: string; name: string; status: string };
+			budgetMap.set(transaction.id, { id: budget.id, name: budget.name, status: budget.status });
 		}
 	}
 
@@ -237,7 +238,7 @@ export default function TreasuryTransactions({
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
 	const budgetMap = new Map(
-		Object.entries(budgetMapRaw ?? {}) as [string, string][],
+		Object.entries(budgetMapRaw ?? {}) as [string, { id: string; name: string; status: string }][],
 	);
 	const purchaseIds = new Map(
 		Object.entries(purchaseIdsRaw ?? {}) as [string, string][],
@@ -430,16 +431,16 @@ export default function TreasuryTransactions({
 			key: "budget",
 			header: t("treasury.actions.budgets"),
 			cell: (row: Transaction) => {
-				const budgetId = budgetMap.get(row.id);
-				if (!budgetId) {
+				const budget = budgetMap.get(row.id);
+				if (!budget) {
 					return <span className="text-gray-400">—</span>;
 				}
 				return (
 					<ColoredStatusLinkBadge
-						to={`/treasury/budgets/${budgetId}`}
-						title={t("treasury.budgets.view")}
-						status={row.status}
-						id={budgetId}
+						to={`/treasury/budgets/${budget.id}`}
+						title={budget.name}
+						status={budget.status}
+						id={budget.id}
 						icon="bookmark"
 						variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
 					/>
@@ -516,8 +517,8 @@ export default function TreasuryTransactions({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-											action: `/treasury/transactions/${transaction.id}/edit`,
-											hiddenFields: { _action: "delete" },
+											action: `/api/transactions/${transaction.id}/delete`,
+											hiddenFields: {},
 											confirmMessage: t(
 												"treasury.breakdown.edit.delete_confirm",
 											),

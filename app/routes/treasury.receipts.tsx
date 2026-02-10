@@ -131,7 +131,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Fetch reimbursement statuses for receipts via entity relationships
 	const purchaseStatusMap = new Map<string, string>();
 	const receiptReimbursementMap = new Map<string, string>(); // receiptId -> reimbursementId
-	
+
 	// Get relationships for all receipts in parallel
 	await Promise.all(
 		sortedReceipts.map(async (receipt) => {
@@ -140,8 +140,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 				(r: EntityRelationship) => r.relationAType === "reimbursement" || r.relationBType === "reimbursement"
 			);
 			if (reimbursementRel) {
-				const reimbursementId = reimbursementRel.relationAType === "reimbursement" 
-					? reimbursementRel.relationId 
+				const reimbursementId = reimbursementRel.relationAType === "reimbursement"
+					? reimbursementRel.relationId
 					: reimbursementRel.relationBId;
 				receiptReimbursementMap.set(receipt.id, reimbursementId);
 				const purchase = await db.getPurchaseById(reimbursementId);
@@ -328,11 +328,8 @@ export default function TreasuryReceipts({
 								deleteProps={
 									canDelete
 										? {
-											action: `/api/receipts/delete`,
-											hiddenFields: {
-												_action: "delete",
-												pathname: receipt.pathname || "",
-											},
+											action: `/api/receipts/${receipt.id}/delete`,
+											hiddenFields: {},
 											confirmMessage: t(
 												"treasury.receipts.delete_confirm",
 											),
