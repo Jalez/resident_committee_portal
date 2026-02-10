@@ -57,13 +57,12 @@ export function TreasuryActionCell({
 
 	const doDelete = () => {
 		if (!deleteProps) return;
-		const formData = new FormData();
-		Object.entries(deleteProps.hiddenFields).forEach(([name, value]) => {
-			formData.append(name, value);
-		});
-		deleteFetcher.submit(formData, {
-			method: "POST",
+		console.log("[TreasuryActionCell] Submitting delete action:", deleteProps.action, "method: DELETE");
+		const data = { ...deleteProps.hiddenFields };
+		deleteFetcher.submit(data, {
+			method: "DELETE",
 			action: deleteProps.action,
+			encType: "application/json",
 		});
 	};
 
