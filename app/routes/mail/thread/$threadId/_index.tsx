@@ -24,7 +24,53 @@ import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
+import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
+import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/_index";
+
+export async function action({ request, params }: Route.ActionArgs) {
+	await requirePermission(request, "committee:email", getDatabase);
+	const formData = await request.formData();
+	const intent = formData.get("_action") as string;
+	const db = getDatabase();
+
+	if (intent === "save_relationships") {
+		const messageId = formData.get("relationAId") as string;
+		if (!messageId) return { success: false, error: "Missing messageId" };
+
+		// Save relationship changes using the universal system
+		await saveRelationshipChanges(db, "mail", messageId, formData, null);
+
+		// Check for source context to create auto-link (if creating new from specific context)
+		const sourceType = formData.get("_sourceType") as string | null;
+		const sourceId = formData.get("_sourceId") as string | null;
+		if (sourceType && sourceId) {
+			const exists = await db.entityRelationshipExists(
+				sourceType as any,
+				sourceId,
+				"mail",
+				messageId,
+			);
+			if (!exists) {
+				await db.createEntityRelationship({
+					relationAType: sourceType as any,
+					relationId: sourceId,
+					relationBType: "mail",
+					relationBId: messageId,
+					createdBy: null,
+				});
+			}
+		}
+
+		return { success: true };
+	}
+
+	return { success: false, error: "Unknown action" };
+}
 
 export function meta({ data }: Route.MetaArgs) {
 	const subject = data?.messages?.[0]?.subject;
@@ -50,10 +96,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
+	// Use the latest message as the main anchor for relationships in this thread
+	const mainMessage = messages[messages.length - 1];
+
+	// Load relationships
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"mail",
+		mainMessage.id,
+		["reimbursement", "transaction", "event", "minute"],
+	);
+
+	// Get context
+	const contextValues = await getRelationshipContext(db, "mail", mainMessage.id);
+
 	return {
 		siteConfig: SITE_CONFIG,
 		messages,
 		threadId,
+		relationships,
+		contextValues,
+		mainMessageId: mainMessage.id,
 	};
 }
 
@@ -70,10 +133,20 @@ function formatRecipientsJson(json: string | null): string {
 	}
 }
 
-export default function MailThread({ loaderData }: Route.ComponentProps) {
-	const { messages, threadId } = loaderData;
+export default function MailThread({
+	loaderData,
+	actionData,
+}: Route.ComponentProps) {
+	const { messages, threadId, mainMessageId } = loaderData;
 	const { t } = useTranslation();
 	const deleteFetcher = useFetcher();
+
+	// Use relationship picker hook
+	const relationshipPicker = useRelationshipPicker({
+		relationAType: "mail",
+		relationAId: mainMessageId,
+		initialRelationships: [],
+	});
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(() => {
 		// Expand the last message by default
 		const set = new Set<string>();
@@ -264,6 +337,64 @@ export default function MailThread({ loaderData }: Route.ComponentProps) {
 						</div>
 					);
 				})}
+			</div>
+
+			{/* Relationships Section */}
+			<div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+				<h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+					<span className="material-symbols-outlined text-primary">link</span>
+					{t("common.sections.relationships", {
+						defaultValue: "Linked Items",
+					})}
+				</h2>
+				<RelationshipPicker
+					relationAType="mail"
+					relationAId={mainMessageId}
+					relationAName={threadSubject}
+					mode="edit"
+					currentPath={`/mail/thread/${encodeURIComponent(threadId)}`}
+					sections={[
+						{
+							relationBType: "reimbursement",
+							linkedEntities: (loaderData.relationships.reimbursement?.linked ||
+								[]) as unknown as AnyEntity[],
+							availableEntities: (loaderData.relationships.reimbursement
+								?.available || []) as unknown as AnyEntity[],
+							createType: "reimbursement",
+							label: t("treasury.reimbursements.title"),
+						},
+						{
+							relationBType: "transaction",
+							linkedEntities: (loaderData.relationships.transaction?.linked ||
+								[]) as unknown as AnyEntity[],
+							availableEntities: (loaderData.relationships.transaction
+								?.available || []) as unknown as AnyEntity[],
+							createType: "transaction",
+							label: t("treasury.transactions.title"),
+						},
+						{
+							relationBType: "event",
+							linkedEntities: (loaderData.relationships.event?.linked ||
+								[]) as unknown as AnyEntity[],
+							availableEntities: (loaderData.relationships.event?.available ||
+								[]) as unknown as AnyEntity[],
+							createType: "event",
+							label: t("events.title"),
+						},
+						{
+							relationBType: "minute",
+							linkedEntities: (loaderData.relationships.minute?.linked ||
+								[]) as unknown as AnyEntity[],
+							availableEntities: (loaderData.relationships.minute?.available ||
+								[]) as unknown as AnyEntity[],
+							createType: "minute",
+							label: t("minutes.title"),
+						},
+					]}
+					onLink={relationshipPicker.handleLink}
+					onUnlink={relationshipPicker.handleUnlink}
+					formData={relationshipPicker.toFormData()}
+				/>
 			</div>
 
 			{/* Delete confirmation dialog */}

@@ -157,6 +157,7 @@ async function checkPermissions(
 		poll: "polls:update",
 		social: "social:write",
 		event: "events:write",
+		mail: "mail:read",
 	};
 
 	const permission = permissionMap[entityType];
@@ -188,6 +189,8 @@ async function fetchEntity(
 			return db.getTransactionById(entityId);
 		case "minute":
 			return db.getMinuteById(entityId);
+		case "mail":
+			return db.getCommitteeMailMessageById(entityId);
 		default:
 			return null;
 	}
@@ -222,6 +225,8 @@ async function createDraftEntity(
 			);
 		case "receipt":
 			return db.createReceipt(data as Parameters<typeof db.createReceipt>[0]);
+		case "mail":
+			return db.insertMailDraft(data as Parameters<typeof db.insertMailDraft>[0]);
 		default:
 			return null;
 	}

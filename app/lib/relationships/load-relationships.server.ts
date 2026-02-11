@@ -129,6 +129,16 @@ async function fetchEntityById(
 			return db.getNewsById(id);
 		case "faq":
 			return db.getFaqById(id);
+		case "poll":
+			return db.getPollById(id);
+		case "social":
+			return db.getSocialLinkById(id);
+		case "mail":
+			return db.getCommitteeMailMessageById(id);
+		case "event": {
+			const { getCalendarEvent } = await import("~/lib/google.server");
+			return getCalendarEvent(id);
+		}
 		default:
 			return null;
 	}
@@ -169,6 +179,20 @@ async function fetchAvailableEntities(
 		case "faq":
 			allEntities = await db.getFaqs();
 			break;
+		case "poll":
+			allEntities = await db.getPolls();
+			break;
+		case "social":
+			allEntities = await db.getSocialLinks();
+			break;
+		case "mail":
+			allEntities = await db.getCommitteeMailMessages("inbox", 50); // Get recent inbox messages
+			break;
+		case "event": {
+			const { getCalendarEvents } = await import("~/lib/google.server");
+			allEntities = await getCalendarEvents();
+			break;
+		}
 	}
 
 	// Filter out archived entities and already linked ones

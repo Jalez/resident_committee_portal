@@ -46,6 +46,7 @@ export async function action({ request }: Route.ActionArgs) {
 		poll: ["polls:write"],
 		social: ["social:write"],
 		event: ["events:write"],
+		mail: ["mail:write"],
 	};
 
 	const permissions = permissionMap[type] || ["admin"];
@@ -184,6 +185,15 @@ export async function action({ request }: Route.ActionArgs) {
 				}
 				break;
 			}
+			case "mail": {
+				entity = await db.insertMailDraft({
+					toJson: "[]",
+					subject: "",
+					body: "",
+					draftType: "new",
+				});
+				break;
+			}
 
 			default:
 				return data(
@@ -234,6 +244,7 @@ export async function action({ request }: Route.ActionArgs) {
 			poll: `/polls/${entity.id}/edit`,
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
+			mail: `/mail/compose?draftId=${entity.id}`,
 		};
 		let redirectUrl = editUrls[type] || "/";
 

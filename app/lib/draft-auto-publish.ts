@@ -26,6 +26,8 @@ function getPublishedStatus(type: RelationshipEntityType): string | null {
 			return "active";
 		case "poll":
 			return "active";
+		case "mail":
+			return "sent";
 		default:
 			return null;
 	}
@@ -155,6 +157,17 @@ function isEventReady(fields: RequiredFieldsCheck): boolean {
 }
 
 /**
+ * Check if a mail draft should be auto-published (sent).
+ * Required: subject, body, and at least one recipient in toJson
+ */
+function isMailReady(fields: RequiredFieldsCheck): boolean {
+	const subject = String(fields.subject || "").trim();
+	const body = String(fields.body || "").trim();
+	const toJson = String(fields.toJson || "[]");
+	return subject.length > 0 && body.length > 0 && toJson.includes("@");
+}
+
+/**
  * Determines the new status for a draft entity based on whether
  * all required fields are filled. Returns null if the entity is
  * not a draft or shouldn't be auto-published.
@@ -214,6 +227,9 @@ export function getDraftAutoPublishStatus(
 			break;
 		case "event":
 			isReady = isEventReady(fields);
+			break;
+		case "mail":
+			isReady = isMailReady(fields);
 			break;
 		default:
 			return null;

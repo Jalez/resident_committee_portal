@@ -1,14 +1,17 @@
 import type { LinkableItem } from "~/components/link-existing-selector";
 import type { TreasuryRelationItem } from "~/components/relation-actions";
 import type {
+	CommitteeMailMessage,
 	Faq,
 	FundBudget,
 	InventoryItem,
 	Minute,
 	News,
+	Poll,
 	Purchase,
 	Receipt,
 	RelationshipEntityType,
+	SocialLink,
 	Transaction,
 } from "~/db/schema";
 import { ENTITY_REGISTRY } from "./entity-registry";
@@ -24,7 +27,11 @@ export type AnyEntity =
 	| InventoryItem
 	| Minute
 	| News
-	| Faq;
+	| Faq
+	| Poll
+	| SocialLink
+	| CommitteeMailMessage
+	| { id: string; summary: string; title?: string; name?: string; description?: string; status?: string; createdAt?: Date; start?: { dateTime: string; date: string } };
 
 /**
  * Helper to get a consistent display title for any entity
@@ -38,30 +45,38 @@ export function getEntityTitle(
 	switch (type) {
 		case "receipt":
 			return (
-				(entity as Receipt).name ||
-				(entity as Receipt).description ||
+				(entity as any).name ||
+				(entity as any).description ||
 				"Untitled Receipt"
 			);
 		case "transaction":
-			return (entity as Transaction).description;
+			return (entity as any).description;
 		case "reimbursement":
 			return (
-				(entity as Purchase).description ||
-				(entity as Purchase).minutesName ||
+				(entity as any).description ||
+				(entity as any).minutesName ||
 				"Untitled Reimbursement"
 			);
 		case "budget":
-			return (entity as FundBudget).name;
+			return (entity as any).name;
 		case "inventory":
-			return (entity as InventoryItem).name;
+			return (entity as any).name;
 		case "minute":
-			return (entity as Minute).date
-				? `${new Date((entity as Minute).date!).toLocaleDateString()} - ${(entity as Minute).title || "Minutes"}`
-				: (entity as Minute).title || "Draft Minutes";
+			return (entity as any).date
+				? `${new Date((entity as any).date!).toLocaleDateString()} - ${(entity as any).title || "Minutes"}`
+				: (entity as any).title || "Draft Minutes";
 		case "news":
-			return (entity as News).title;
+			return (entity as any).title;
 		case "faq":
-			return (entity as Faq).question;
+			return (entity as any).question;
+		case "poll":
+			return (entity as any).name;
+		case "social":
+			return (entity as any).name;
+		case "mail":
+			return (entity as any).subject;
+		case "event":
+			return (entity as any).summary || (entity as any).title || "Untitled Event";
 		default:
 			return "Unknown Entity";
 	}
@@ -104,13 +119,10 @@ export function entityToRelationItem(
 	// Type-specific descriptions
 	if (type === "transaction") {
 		const t = entity as Transaction;
-		subtitle = `${parseFloat(t.amount).toFixed(2)} € | ${new Date(t.date).toLocaleDateString()}`;
+		subtitle = `${parseFloat(t.amount || "0").toFixed(2)} € | ${new Date(t.date).toLocaleDateString()}`;
 	} else if (type === "reimbursement") {
 		const p = entity as Purchase;
-		subtitle = `${parseFloat(p.amount).toFixed(2)} € | ${p.purchaserName}`;
-	} else if (type === "receipt") {
-		// Receipt might use pathname as ID but let's use the DB ID
-		// URL is handled by detailUrl
+		subtitle = `${parseFloat(p.amount || "0").toFixed(2)} € | ${p.purchaserName}`;
 	}
 
 	// Link to edit page for drafts, detail page otherwise
@@ -149,25 +161,38 @@ export function entityToLinkableItem(
 	let description: string | null = null;
 	let amount: string | undefined;
 	let purchaserName: string | undefined;
-	let createdAt: Date | undefined = entity.createdAt;
+	let createdAt: Date | undefined = (entity as any).createdAt;
 
 	if (type === "transaction") {
 		const t = entity as Transaction;
-		amount = `${parseFloat(t.amount).toFixed(2)} €`;
+		amount = `${parseFloat(t.amount || "0").toFixed(2)} €`;
 		description = t.description;
 		createdAt = t.date;
 	} else if (type === "reimbursement") {
 		const p = entity as Purchase;
-		amount = `${parseFloat(p.amount).toFixed(2)} €`;
+		amount = `${parseFloat(p.amount || "0").toFixed(2)} €`;
 		description = p.description;
 		purchaserName = p.purchaserName;
 	} else if (type === "budget") {
 		const b = entity as FundBudget;
-		amount = `${parseFloat(b.amount).toFixed(2)} €`;
+		amount = `${parseFloat(b.amount || "0").toFixed(2)} €`;
 		description = b.description;
 	} else if (type === "inventory") {
 		const i = entity as InventoryItem;
 		description = i.description;
+	} else if (type === "news") {
+		description = (entity as any).content?.slice(0, 100);
+	} else if (type === "faq") {
+		description = (entity as any).answer?.slice(0, 100);
+	} else if (type === "mail") {
+		const m = entity as any;
+		description = m.bodyText || m.bodyHtml?.replace(/<[^>]+>/g, "").slice(0, 100);
+		purchaserName = m.fromName || m.fromAddress;
+		createdAt = m.date;
+	} else if (type === "event") {
+		const e = entity as any;
+		description = e.description?.slice(0, 100);
+		createdAt = e.start?.dateTime ? new Date(e.start.dateTime) : (e.start?.date ? new Date(e.start.date) : undefined);
 	}
 
 	return {

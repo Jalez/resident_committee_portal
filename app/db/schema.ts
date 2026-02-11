@@ -711,7 +711,8 @@ export type RelationshipEntityType =
 	| "faq"
 	| "poll"
 	| "social"
-	| "event";
+	| "event"
+	| "mail";
 
 export const entityRelationships = pgTable(
 	"entity_relationships",
