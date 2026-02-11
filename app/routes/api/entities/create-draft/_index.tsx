@@ -244,7 +244,7 @@ export async function action({ request }: Route.ActionArgs) {
 			poll: `/polls/${entity.id}/edit`,
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
-			mail: `/mail/compose?draftId=${entity.id}`,
+			mail: `/mail/${entity.id}/edit`,
 		};
 		let redirectUrl = editUrls[type] || "/";
 

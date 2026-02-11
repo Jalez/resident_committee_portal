@@ -170,7 +170,7 @@ export const ENTITY_REGISTRY: Record<RelationshipEntityType, EntityTypeConfig> =
 		pluralKey: "social.header",
 		icon: "share",
 		detailUrl: (_id) => `/social`,
-		editUrl: (id) => `/social?edit=${id}`,
+		editUrl: (id) => `/social/${id}/edit`,
 		statusVariants: GENERIC_VARIANTS,
 		supportsUpload: false,
 		supportsAIDraft: false,
