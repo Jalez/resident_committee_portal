@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "react-router";
+import { Button } from "~/components/ui/button";
 import {
 	Sheet,
 	SheetContent,
@@ -14,9 +15,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { Button } from "~/components/ui/button";
-import { NAV_ITEMS } from "~/lib/nav-config";
 import { useUser } from "~/contexts/user-context";
+import { NAV_ITEMS } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
 
 const SUBNAVBAR_HEIGHT = "h-12";
@@ -46,7 +46,7 @@ function isChildActive(
 	if (childPath === parentPath) {
 		return pathname === childPath;
 	}
-	return pathname === childPath || pathname.startsWith(childPath + "/");
+	return pathname === childPath || pathname.startsWith(`${childPath}/`);
 }
 
 export function Subnavbar() {
@@ -71,20 +71,13 @@ export function Subnavbar() {
 	).sort((a, b) => b.path.length - a.path.length)[0];
 
 	// Filter children by permissions
-	const visibleChildren = section?.children?.filter(
-		(child) => !child.permission || hasPermission(child.permission),
-	) ?? [];
+	const visibleChildren =
+		section?.children?.filter(
+			(child) => !child.permission || hasPermission(child.permission),
+		) ?? [];
 
 	if (!visibleChildren.length) {
-		return (
-			<div
-				className={cn(
-					"shrink-0",
-					SUBNAVBAR_HEIGHT,
-				)}
-				aria-hidden
-			/>
-		);
+		return <div className={cn("shrink-0", SUBNAVBAR_HEIGHT)} aria-hidden />;
 	}
 
 	const activeChild = visibleChildren.find((child) =>
@@ -174,9 +167,7 @@ export function Subnavbar() {
 						className={cn(
 							"flex items-center gap-2 px-2 py-2 xl:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0",
 							"hover:bg-primary/10 hover:text-primary",
-							active
-								? "bg-primary/10 text-primary"
-								: "text-muted-foreground",
+							active ? "bg-primary/10 text-primary" : "text-muted-foreground",
 						)}
 					>
 						<span className="material-symbols-outlined text-xl shrink-0">
@@ -188,9 +179,7 @@ export function Subnavbar() {
 				return (
 					<Tooltip key={child.path}>
 						<TooltipTrigger asChild>{link}</TooltipTrigger>
-						<TooltipContent side="bottom">
-							{t(child.i18nKey)}
-						</TooltipContent>
+						<TooltipContent side="bottom">{t(child.i18nKey)}</TooltipContent>
 					</Tooltip>
 				);
 			})}

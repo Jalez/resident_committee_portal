@@ -4,7 +4,12 @@ import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface ViewScopeDisclaimerProps {
 	canReadAll: boolean;
-	itemType: "receipts" | "transactions" | "reimbursements" | "budgets" | "breakdown";
+	itemType:
+		| "receipts"
+		| "transactions"
+		| "reimbursements"
+		| "budgets"
+		| "breakdown";
 }
 
 export function ViewScopeDisclaimer({

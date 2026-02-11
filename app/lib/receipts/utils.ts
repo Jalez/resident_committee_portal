@@ -20,8 +20,8 @@ export function buildReceiptFilename(
 ): string {
 	const dateStamp = date.toISOString().split("T")[0];
 	const ext = originalName.split(".").pop() || "pdf";
-	const safeDescription = sanitizeReceiptDescription(description || "kuitti") ||
-		"kuitti";
+	const safeDescription =
+		sanitizeReceiptDescription(description || "kuitti") || "kuitti";
 	return `${dateStamp}_kuitti_${safeDescription}.${ext}`;
 }
 

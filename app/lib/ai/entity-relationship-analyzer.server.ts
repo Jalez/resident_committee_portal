@@ -1,10 +1,10 @@
 /**
  * Entity Relationship Analyzer
- * 
+ *
  * Analyzes source entities to suggest related entities that should be created.
  * Based on the AI Relationship Design: AI enriches the RelationshipContext,
  * which then propagates to create draft entities.
- * 
+ *
  * Design Philosophy:
  * - Context-Centric: Entities talk to the Context, not each other
  * - Determinism First: Prefer deterministic mappings over AI guesses
@@ -66,7 +66,7 @@ export interface EntityAnalyzer<T = unknown> {
  * Get the appropriate analyzer for an entity type
  */
 export function getAnalyzerForType(
-	entityType: RelationshipEntityType
+	entityType: RelationshipEntityType,
 ): EntityAnalyzer | null {
 	switch (entityType) {
 		case "receipt":
@@ -88,8 +88,8 @@ export function getAnalyzerForType(
 	}
 }
 
+import { minuteAnalyzer } from "./analyzers/minute-analyzer.server";
 // Import individual analyzers
 import { receiptAnalyzer } from "./analyzers/receipt-analyzer.server";
 import { reimbursementAnalyzer } from "./analyzers/reimbursement-analyzer.server";
 import { transactionAnalyzer } from "./analyzers/transaction-analyzer.server";
-import { minuteAnalyzer } from "./analyzers/minute-analyzer.server";

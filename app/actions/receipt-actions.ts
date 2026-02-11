@@ -1,10 +1,13 @@
 import { z } from "zod";
 import { getDatabase, type NewReceiptContent, type Receipt } from "~/db";
-import { RECEIPT_ALLOWED_MIME_TYPES, RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
+import type { AuthenticatedUser } from "~/lib/auth.server";
+import {
+	RECEIPT_ALLOWED_MIME_TYPES,
+	RECEIPT_ALLOWED_TYPES,
+} from "~/lib/constants";
 import { getReceiptStorage } from "~/lib/receipts";
 import { buildReceiptPath } from "~/lib/receipts/utils";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
-import type { AuthenticatedUser } from "~/lib/auth.server";
 
 const updateReceiptSchema = z.object({
 	name: z.string().optional(),
@@ -23,14 +26,14 @@ export async function validateReceiptUpdate(formData: FormData) {
 
 type FileUploadResult =
 	| {
-		nextUrl: string | null;
-		nextPathname: string | null;
-		nextName: string | null;
-	}
+			nextUrl: string | null;
+			nextPathname: string | null;
+			nextName: string | null;
+	  }
 	| {
-		error: "invalid_file_type";
-		allowedTypes: string;
-	};
+			error: "invalid_file_type";
+			allowedTypes: string;
+	  };
 
 export async function handleFileUpload(
 	formData: FormData,
@@ -54,7 +57,11 @@ export async function handleFileUpload(
 		nextPathname = tempPathname;
 	} else if (file) {
 		const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`;
-		if (!RECEIPT_ALLOWED_TYPES.includes(fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number])) {
+		if (
+			!RECEIPT_ALLOWED_TYPES.includes(
+				fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number],
+			)
+		) {
 			return {
 				error: "invalid_file_type",
 				allowedTypes: RECEIPT_ALLOWED_TYPES.join(", "),
@@ -172,10 +179,10 @@ export async function saveReceiptOCRContent(
 export async function deleteReceipt(receiptId: string) {
 	const db = getDatabase();
 	//Get entity relationships
-	const relationships = await db.getEntityRelationships("receipt", receiptId);
+	const _relationships = await db.getEntityRelationships("receipt", receiptId);
 
 	//Delete file from storage
-	const storage = getReceiptStorage();
+	const _storage = getReceiptStorage();
 
 	await db.deleteReceipt(receiptId);
 }

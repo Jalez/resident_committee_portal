@@ -1,12 +1,12 @@
 /**
  * Server-side utilities for loading relationship data for entities.
- * 
+ *
  * Queries the universal entity_relationships table and fetches related entities,
  * providing data ready for the RelationshipPicker component.
  */
 
-import type { RelationshipEntityType } from "~/db/schema";
 import type { getDatabase } from "~/db";
+import type { RelationshipEntityType } from "~/db/schema";
 
 interface RelationshipData<T = unknown> {
 	linked: T[];
@@ -15,13 +15,13 @@ interface RelationshipData<T = unknown> {
 
 /**
  * Load relationships for an entity across multiple relationship types.
- * 
+ *
  * For each relationBType requested, this function:
  * 1. Queries entity_relationships to find linked entities
  * 2. Fetches full entity data for linked items
  * 3. Fetches available entities that could be linked
  * 4. Returns grouped data ready for RelationshipPicker
- * 
+ *
  * @param db - Database adapter
  * @param entityType - Type of the source entity
  * @param entityId - ID of the source entity
@@ -37,7 +37,10 @@ export async function loadRelationshipsForEntity(
 	const result: Record<string, RelationshipData> = {};
 
 	// Fetch all relationships once (they don't change per type)
-	const allRelationships = await db.getEntityRelationships(entityType, entityId);
+	const allRelationships = await db.getEntityRelationships(
+		entityType,
+		entityId,
+	);
 
 	// Load relationships for each type
 	for (const relationBType of relationBTypes) {
@@ -58,7 +61,11 @@ export async function loadRelationshipsForEntity(
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
 		// Fetch available entities (all non-archived entities of this type)
-		const available = await fetchAvailableEntities(db, relationBType, linkedIds);
+		const available = await fetchAvailableEntities(
+			db,
+			relationBType,
+			linkedIds,
+		);
 
 		result[relationBType] = { linked, available };
 	}
@@ -87,7 +94,10 @@ async function fetchEntitiesByType(
 				entities.push(entity);
 			}
 		} catch (error) {
-			console.error(`[LoadRelationships] Failed to fetch ${entityType} ${id}:`, error);
+			console.error(
+				`[LoadRelationships] Failed to fetch ${entityType} ${id}:`,
+				error,
+			);
 		}
 	}
 

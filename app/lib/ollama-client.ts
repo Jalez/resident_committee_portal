@@ -121,16 +121,18 @@ ${text}
 Translation:`;
 
 	const result = await generateOllamaCompletion(baseUrl, model, prompt);
-	
+
 	// Clean up common artifacts from model outputs
 	let cleaned = result.trim();
-	
+
 	// Remove surrounding quotes if present
-	if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
-		(cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+	if (
+		(cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+		(cleaned.startsWith("'") && cleaned.endsWith("'"))
+	) {
 		cleaned = cleaned.slice(1, -1);
 	}
-	
+
 	return cleaned;
 }
 

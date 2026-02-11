@@ -1,554 +1,554 @@
 {
-  "common": {
-    "total": "Total",
-    "entity_types": {
-      "receipt": "Recibo",
-      "transaction": "Transacción",
-      "reimbursement": "Reembolso",
-      "budget": "Presupuesto",
-      "inventory": "Artículo de Inventario",
-      "minute": "Acta",
-      "news": "Noticias",
-      "faq": "Preguntas Frecuentes"
-    },
-    "fields": {
-      "created_by": "Creado por",
-      "search": "Buscar"
-    },
-    "actions": {
-      "update": "Actualizar"
-    },
-    "filters": {
-      "all": "Todas las categorías"
-    },
-    "no_results": "Sin resultados"
-  },
-  "app": {
-    "title": "Comité de Inquilinos",
-    "setup_required": "Configuración Requerida",
-    "setup_message": "Parece que la aplicación aún no está configurada. Por favor, verifique sus variables de entorno.",
-    "copy_env": "O copie .env.template a .env y configure sus ajustes."
-  },
-  "nav": {
-    "menu": "Menú",
-    "profile": "Perfil",
-    "edit_profile": "Editar perfil",
-    "messages": "Mensajes",
-    "log_out": "Cerrar sesión",
-    "users": "Usuarios",
-    "roles": "Roles",
-    "get_involved": "Involúcrate",
-    "events": "Eventos",
-    "treasury": "Tesorería",
-    "minutes": "Actas",
-    "news": "Noticias",
-    "faq": "FAQ",
-    "inventory": "Inventario",
-    "social": "Social",
-    "polls": "Encuestas",
-    "committee": "Comité",
-    "login": "Iniciar sesión",
-    "submissions": "Envíos",
-    "sidebar_collapse": "Contraer barra lateral",
-    "sidebar_expand": "Expandir barra lateral",
-    "admin": "Admin"
-  },
-  "receipts": {
-    "select_receipts": "Seleccionar recibos",
-    "selected": "Recibos seleccionados",
-    "add_more": "Agregar más recibos",
-    "search_placeholder": "Buscar recibos...",
-    "refresh": "Actualizar recibos",
-    "upload_new": "Subir nuevo recibo",
-    "upload_unavailable": "La carga no está disponible",
-    "upload_failed": "La carga falló. Inténtalo de nuevo.",
-    "invalid_type": "Tipo de archivo no válido. Permitidos: {{types}}",
-    "uploading": "Subiendo...",
-    "upload_notice": "Los archivos grandes pueden tardar un poco.",
-    "no_receipts": "No hay recibos para el año {{year}}",
-    "done": "Hecho",
-    "open": "Abrir",
-    "delete": "Eliminar",
-    "select_existing_or_upload": "Selecciona recibos existentes o sube uno nuevo.",
-    "allowed": "Permitidos",
-    "selected_count": "seleccionados"
-  },
-  "lang": {
-    "label": "Idioma"
-  },
-  "search_menu": {
-    "title": "Search",
-    "filter": "Filter",
-    "search": "Search",
-    "clear": "Clear",
-    "select_placeholder": "Select..."
-  },
-  "mail": {
-    "inbox": "Bandeja de entrada",
-    "sent": "Enviados",
-    "compose": "Redactar",
-    "drafts": "Borradores",
-    "draft_saved_at": "Borrador guardado a las {{time}}",
-    "send_tooltip": "Enviar",
-    "no_drafts": "Sin borradores",
-    "no_subject": "(Sin asunto)",
-    "refresh": "Actualizar",
-    "refreshed": "{{count}} nuevos mensajes obtenidos",
-    "no_messages": "Sin mensajes",
-    "from": "De",
-    "to": "Para",
-    "cc": "Copia",
-    "date": "Fecha",
-    "delete": "Eliminar",
-    "delete_confirm": "¿Está seguro de que desea eliminar este mensaje?",
-    "delete_draft_confirm": "¿Está seguro de que desea eliminar este borrador?",
-    "delete_success": "Eliminado correctamente",
-    "delete_error": "Error al eliminar",
-    "select": "Seleccionar",
-    "delete_draft": "Eliminar borrador",
-    "reply": "Responder",
-    "reply_all": "Responder a todos",
-    "forward": "Reenviar",
-    "forwarded_message": "Mensaje reenviado",
-    "messages_in_thread": "{{count}} mensajes",
-    "compose_new": "Nuevo mensaje",
-    "compose_reply": "Responder",
-    "compose_reply_all": "Responder a todos",
-    "compose_forward": "Reenviar",
-    "quoted_reply_header": "El {{date}}, {{name}} <{{email}}> escribió:"
-  },
-  "home": {
-    "header": "Involúcrate",
-    "contact": {
-      "title": "Contáctenos"
-    },
-    "options": {
-      "committee": {
-        "title": "Únete al Comité",
-        "description": "Completa el formulario para unirte al comité."
-      },
-      "events": {
-        "title": "Sugerir un Evento",
-        "description": "Sugerir un evento al comité."
-      },
-      "purchases": {
-        "title": "Solicitar una Compra",
-        "description": "Solicitar una compra al comité."
-      },
-      "questions": {
-        "title": "Hacer una Pregunta",
-        "description": "Hacer una pregunta al comité."
-      }
-    }
-  },
-  "email": {
-    "reimbursement": {
-      "subject": "Solicitud de Reembolso",
-      "title": "Solicitud de Reembolso",
-      "success": {
-        "transaction_created": "Transacción creada",
-        "reimbursement_requested": "Solicitud de reembolso enviada"
-      },
-      "item": "Artículo",
-      "amount": "Importe",
-      "purchaser": "Comprador",
-      "bank_account": "Cuenta Bancaria",
-      "minutes": "Acta",
-      "receipts": "Recibos",
-      "notes": "Notas",
-      "attached": "adjunto",
-      "not_specified": "No especificado",
-      "reply_instruction": "Responda a este correo para aprobar o rechazar la solicitud."
-    },
-    "reimbursement_status": {
-      "approved": {},
-      "declined": {},
-      "status": "Estado",
-      "view_details": "Ver detalles"
-    }
-  },
-  "profile": {
-    "title": "Perfil",
-    "update_success": "¡Perfil actualizado!",
-    "email_label": "Correo electrónico",
-    "email_help": "El correo electrónico no se puede cambiar",
-    "name_label": "Nombre",
-    "apartment_label": "Número de apartamento",
-    "optional": "opcional",
-    "apartment_placeholder": "ej. A 101",
-    "apartment_help": "Se utiliza para validar votos",
-    "role_label": "Rol",
-    "member_since_label": "Miembro desde",
-    "description_label": "Descripción",
-    "description_placeholder": "Cuéntanos sobre ti...",
-    "picture_label": "Foto de perfil",
-    "picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión",
-    "picture_too_large": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
-    "picture_too_large_dimensions": "Las dimensiones de la imagen son demasiado grandes. El tamaño máximo es {{maxDimension}}x{{maxDimension}}px."
-  },
-  "avatars": {
-    "delete": "Eliminar"
-  },
-  "admin": {
-    "storage": {
-      "receipts": "Recibos",
-      "avatars": "Avatares",
-      "receipts.title": "Galería de Recibos",
-      "receipts.description": "Todos los archivos de recibos. Los recibos vinculados están adjuntos a una solicitud de reembolso y no se pueden eliminar.",
-      "receipts.empty": "Sin recibos",
-      "receipts.delete_confirm": "¿Estás seguro de que quieres eliminar este recibo?",
-      "receipts.delete_success": "Recibo eliminado",
-      "receipts.delete_error": "Error al eliminar",
-      "receipts.open_pdf": "Abrir PDF",
-      "receipts.linked": "Vinculado",
-      "receipts.unlinked": "No vinculado",
-      "receipts.reimbursement_request": "Solicitud de Reembolso",
-      "avatars.title": "Avatares",
-      "avatars.description": "Todas las imágenes de avatar de usuario almacenadas en el sistema.",
-      "avatars.empty": "Sin avatares",
-      "avatars.delete": "Eliminar",
-      "avatars.delete_confirm": "¿Estás seguro de que quieres eliminar este avatar?",
-      "avatars.delete_success": "Avatar eliminado",
-      "avatars.delete_error": "Error al eliminar"
-    }
-  },
-  "messages": {
-    "title": "Mensajes",
-    "empty": "Aún no hay mensajes nuevos",
-    "mark_as_read": "Marcar como leído",
-    "mark_all_read": "Marcar todos como leídos",
-    "marked_as_read": "Mensaje marcado como leído",
-    "view_purchase": "Ver solicitud de reembolso",
-    "reimbursement_approved": {},
-    "reimbursement_declined": {},
-    "news_published": {},
-    "ai_news_translation_failed": {},
-    "ai_faq_translation_failed": {},
-    "view_news": "Ver noticia",
-    "unknown_item": "Artículo desconocido",
-    "see_all": "Ver todos los mensajes",
-    "select_all": "Seleccionar todo",
-    "selected_count": "{{count}} seleccionados",
-    "mark_selected_read": "Marcar seleccionados como leídos",
-    "mark_selected_unread": "Marcar seleccionados como no leídos",
-    "clear_selection": "Limpiar selección"
-  },
-  "news": {
-    "title": "Noticias",
-    "add": "Añadir noticia",
-    "edit": "Editar",
-    "delete": "Eliminar",
-    "empty": "Aún no hay noticias.",
-    "no_results": "No hay resultados para su búsqueda.",
-    "search_placeholder": "Buscar noticias...",
-    "confirm_delete": "¿Está seguro de que desea eliminar esta noticia?",
-    "new_title": "Nueva noticia",
-    "edit_title": "Editar noticia",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "form": {
-      "title": "Título",
-      "title_placeholder": "Título de la noticia",
-      "summary": "Resumen",
-      "summary_placeholder": "Resumen corto (opcional)",
-      "content": "Contenido",
-      "content_placeholder": "Contenido de la noticia",
-      "default_language": "Idioma predeterminado ({{language}})",
-      "secondary_language": "Idioma secundario ({{language}})"
-    },
-    "translate_with_ai": "Traducir con IA:",
-    "translating": "Traduciendo...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "committee": {
-    "title": "Comité",
-    "members": "Miembros",
-    "no_members": "No se encontraron miembros del comité",
-    "no_description": "Sin descripción"
-  },
-  "faq": {
-    "title": "FAQ",
-    "add": "Añadir pregunta",
-    "edit": "Editar",
-    "delete": "Eliminar",
-    "empty": "Aún no hay preguntas.",
-    "no_results": "No hay resultados para su búsqueda.",
-    "search_placeholder": "Buscar FAQ...",
-    "confirm_delete": "¿Está seguro de que desea eliminar esta pregunta?",
-    "new_title": "Nueva pregunta",
-    "edit_title": "Editar pregunta",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "form": {
-      "question": "Pregunta",
-      "question_placeholder": "Introduzca la pregunta",
-      "answer": "Respuesta",
-      "answer_placeholder": "Introduzca la respuesta",
-      "sort_order": "Orden",
-      "default_language": "Idioma predeterminado ({{language}})",
-      "secondary_language": "Idioma secundario ({{language}})"
-    },
-    "translate_with_ai": "Traducir con IA:",
-    "translating": "Traduciendo...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "settings": {
-    "receipt_ocr_title": "OCR de recibos",
-    "receipt_ocr_description": "Configura los ajustes de IA para el análisis automático de recibos.",
-    "receipt_ocr_requires_api_key": "El análisis OCR requiere una clave API de OpenRouter en Ajustes generales.",
-    "ai_model": "Modelo de IA",
-    "select_model": "Seleccionar un modelo...",
-    "receipt_ai_model_help": "Selecciona un modelo capaz (p. ej., Gemini Flash 1.5, GPT-4o-mini) para mejores resultados.",
-    "analytics": {
-      "title": "Ajustes de análisis"
-    },
-    "roles": {
-      "title": "Gestión de roles",
-      "create_new_title": "Crear nuevo rol",
-      "color_label": "Color",
-      "system": "Rol del sistema",
-      "delete_title": "Eliminar rol",
-      "delete_confirm": "¿Está seguro de que desea eliminar el rol \"{{name}}\"? Esta acción no se puede deshacer.",
-      "permissions_header": "Permisos",
-      "select_role_msg": "Seleccione un rol de la izquierda para editar permisos",
-      "select_role": "Seleccionar rol",
-      "select_role_placeholder": "Elegir un rol...",
-      "search_placeholder": "Buscar permisos...",
-      "category": "Categoría",
-      "permission_name": "Nombre del permiso",
-      "description": "Descripción",
-      "show_only_assigned": "Mostrar solo permisos asignados"
-    },
-    "common": {
-      "save": "Guardar",
-      "saving": "Guardando...",
-      "free": "Gratis"
-    },
-    "news": {
-      "title": "Ajustes de noticias",
-      "ai_model_title": "Modelo de IA para noticias",
-      "ai_model_desc": "Seleccione el modelo de IA para traducir noticias entre idioma primario y secundario.",
-      "select_model": "Seleccionar modelo",
-      "select_model_placeholder": "Seleccione un modelo...",
-      "showing_models": "Mostrando {{count}} de {{total}} modelos",
-      "save": "Guardar ajustes"
-    },
-    "faqs": {
-      "title": "Ajustes de FAQ",
-      "ai_model_title": "Modelo de IA para FAQ",
-      "ai_model_desc": "Seleccione el modelo de IA para traducir entradas FAQ entre idioma primario y secundario.",
-      "select_model": "Seleccionar modelo",
-      "select_model_placeholder": "Seleccione un modelo...",
-      "showing_models": "Mostrando {{count}} de {{total}} modelos",
-      "save": "Guardar ajustes"
-    },
-    "users": {
-      "roles_placeholder": "Escriba el nombre del rol y pulse Tab para añadir",
-      "no_roles_match": "No hay roles coincidentes"
-    }
-  },
-  "treasury": {
-    "overview": "Resumen",
-    "title": "Tesorería {{year}}",
-    "select_year": "Seleccionar año...",
-    "view_breakdown": "Ver desglose",
-    "auto_linked_from": "Vinculado automáticamente desde {{type}}: {{name}}",
-    "balance": "Saldo",
-    "income": "Ingresos",
-    "unbudgeted_transactions": "Transacciones no presupuestadas",
-    "budgeted_transactions": "Transacciones presupuestadas",
-    "budget_costs": "Costos del presupuesto",
-    "available": "Disponible",
-    "transactions_count": "{{count}} transacciones",
-    "no_transactions": "No hay transacciones",
-    "no_transactions_desc": "Aún no se han registrado transacciones para {{year}}.",
-    "actions": {
-      "breakdown": "Desglose",
-      "transactions": "Transacciones",
-      "receipts": "Recibos",
-      "reimbursements": "Solicitudes de reembolso",
-      "budgets": "Presupuestos"
-    },
-    "transactions": {
-      "title": "Transacciones",
-      "type": "Tipo"
-    }
-  },
-  "permissions": {
-    "users": {
-      "read": "Ver lista de usuarios",
-      "write": "Crear y actualizar usuarios",
-      "delete": "Eliminar usuarios",
-      "manage_roles": "Asignar roles a usuarios"
-    },
-    "inventory": {
-      "read": "Ver elementos de inventario",
-      "write": "Crear y editar elementos de inventario",
-      "delete": "Eliminar elementos de inventario",
-      "export": "Exportar inventario a CSV",
-      "import": "Importar inventario desde archivo"
-    },
-    "treasury": {
-      "read": "Ver resumen de tesorería",
-      "export": "Exportar datos de tesorería a CSV",
-      "import": "Importar datos de tesorería desde archivo",
-      "breakdown": {
-        "read": "Ver desglose de tesorería"
-      },
-      "transactions": {
-        "read": "Ver lista de transacciones",
-        "write": "Crear transacciones",
-        "write-self": "Crear propias transacciones",
-        "update": "Editar transacciones",
-        "delete": "Eliminar transacciones",
-        "update-self": "Editar propias transacciones",
-        "delete-self": "Eliminar propias transacciones",
-        "read-self": "Ver propias transacciones"
-      },
-      "reimbursements": {
-        "read": "Ver solicitudes de reembolso",
-        "write": "Crear solicitudes de reembolso",
-        "write-self": "Crear propias solicitudes de reembolso",
-        "update": "Actualizar y aprobar/rechazar reembolsos",
-        "delete": "Eliminar solicitudes de reembolso",
-        "update-self": "Editar propias solicitudes de reembolso",
-        "delete-self": "Eliminar propias solicitudes de reembolso",
-        "read-self": "Ver propias solicitudes de reembolso"
-      },
-      "budgets": {
-        "read": "Ver presupuestos",
-        "read-self": "Ver propios presupuestos",
-        "write": "Crear presupuestos",
-        "write-self": "Crear propios presupuestos",
-        "update": "Editar presupuestos",
-        "delete": "Eliminar presupuestos",
-        "update-self": "Editar propios presupuestos",
-        "delete-self": "Eliminar propios presupuestos"
-      },
-      "receipts": {
-        "read": "Ver recibos",
-        "read-self": "Ver propios recibos",
-        "write": "Crear recibos",
-        "write-self": "Crear propios recibos",
-        "update": "Editar recibos",
-        "delete": "Eliminar recibos",
-        "update-self": "Editar propios recibos",
-        "delete-self": "Eliminar propios recibos"
-      },
-      "view_scope": {
-        "all": "Estás viendo todos los {{itemType}}",
-        "own_only": "Estás viendo solo tus propios {{itemType}}",
-        "item_types": {
-          "transactions": "transacciones",
-          "reimbursements": "solicitudes de reembolso",
-          "budgets": "presupuestos",
-          "receipts": "recibos"
-        }
-      }
-    },
-    "purchases": {
-      "read": "Ver todas las solicitudes de compra",
-      "manage": "Actualizar estado de compra",
-      "delete": "Eliminar solicitudes de compra"
-    },
-    "submissions": {
-      "read": "Ver envíos de formularios de contacto",
-      "write": "Actualizar estado de envío",
-      "delete": "Eliminar envíos"
-    },
-    "social": {
-      "read": "Ver enlaces sociales",
-      "write": "Crear y editar enlaces sociales",
-      "delete": "Eliminar enlaces sociales"
-    },
-    "minutes": {
-      "read": "Ver y descargar actas",
-      "guide": "Ver guía de convenciones de nomenclatura"
-    },
-    "events": {
-      "read": "Ver eventos del calendario"
-    },
-    "forms": {
-      "read": "Ver respuestas de formularios y análisis",
-      "export": "Exportar datos de formularios a CSV"
-    },
-    "profile": {
-      "read": {
-        "own": "Ver propio perfil"
-      },
-      "write": {
-        "own": "Editar propio perfil"
-      }
-    },
-    "roles": {
-      "read": "Ver roles y permisos",
-      "write": "Crear y editar roles",
-      "delete": "Eliminar roles"
-    },
-    "news": {
-      "read": "Ver noticias",
-      "write": "Crear noticias",
-      "update": "Editar noticias",
-      "delete": "Eliminar noticias"
-    },
-    "faq": {
-      "read": "Ver FAQ",
-      "write": "Crear entradas FAQ",
-      "update": "Editar entradas FAQ",
-      "delete": "Eliminar entradas FAQ"
-    },
-    "settings": {
-      "general": "Acceso a configuración general",
-      "users": "Acceso a configuración de gestión de usuarios",
-      "roles": "Acceso a configuración de gestión de roles",
-      "reimbursements": "Acceso a configuración de reembolsos (IA, palabras clave)",
-      "analytics": "Acceso a configuración de análisis (modelos de IA)",
-      "news": "Acceso a configuración de noticias (modelo de traducción IA)",
-      "faqs": "Acceso a configuración de FAQ (modelo de traducción IA)"
-    },
-    "committee": {
-      "email": "Enviar correo electrónico a miembros del rol",
-      "read": "Ver miembros del comité"
-    },
-    "categories": {},
-    "admin": {
-      "storage": {
-        "read": "Ver administración de almacenamiento",
-        "write": "Gestionar administración de almacenamiento"
-      }
-    }
-  },
-  "receipts": {
-    "process_receipt": "Procesar recibo",
-    "processed": "Procesado",
-    "processing": "Procesando...",
-    "auto_filled_from_receipt": "Autocompletado desde recibo: {{name}}",
-    "create_reimbursement": "Crear reembolso",
-    "analyze_with_ai": "Analizar con IA (OCR)",
-    "analyzing": "Analizando recibo...",
-    "analysis_complete": "Recibo analizado exitosamente",
-    "analysis_failed": "Error al analizar recibo"
-  },
-  "inventory": {
-    "created_items": "Artículos de inventario creados",
-    "location_missing": "Ubicación necesaria",
-    "incomplete_items": "Artículos incompletos",
-    "complete_item": "Marcar como completo",
-    "location_tbd": "Ubicación pendiente"
-  },
-  "relationships": {
-    "ai": {
-      "analyze": "Analizar con IA",
-      "analyzing": "Analizando...",
-      "success": "{{count}} borradores creados",
-      "error": "Error en el análisis"
-    },
-    "draft": {
-      "badge": "Borrador",
-      "cleanup": "Limpiar borradores",
-      "cleanup_success": "{{count}} borradores eliminados"
-    }
-  }
+	"common": {
+		"total": "Total",
+		"entity_types": {
+			"receipt": "Recibo",
+			"transaction": "Transacción",
+			"reimbursement": "Reembolso",
+			"budget": "Presupuesto",
+			"inventory": "Artículo de Inventario",
+			"minute": "Acta",
+			"news": "Noticias",
+			"faq": "Preguntas Frecuentes"
+		},
+		"fields": {
+			"created_by": "Creado por",
+			"search": "Buscar"
+		},
+		"actions": {
+			"update": "Actualizar"
+		},
+		"filters": {
+			"all": "Todas las categorías"
+		},
+		"no_results": "Sin resultados"
+	},
+	"app": {
+		"title": "Comité de Inquilinos",
+		"setup_required": "Configuración Requerida",
+		"setup_message": "Parece que la aplicación aún no está configurada. Por favor, verifique sus variables de entorno.",
+		"copy_env": "O copie .env.template a .env y configure sus ajustes."
+	},
+	"nav": {
+		"menu": "Menú",
+		"profile": "Perfil",
+		"edit_profile": "Editar perfil",
+		"messages": "Mensajes",
+		"log_out": "Cerrar sesión",
+		"users": "Usuarios",
+		"roles": "Roles",
+		"get_involved": "Involúcrate",
+		"events": "Eventos",
+		"treasury": "Tesorería",
+		"minutes": "Actas",
+		"news": "Noticias",
+		"faq": "FAQ",
+		"inventory": "Inventario",
+		"social": "Social",
+		"polls": "Encuestas",
+		"committee": "Comité",
+		"login": "Iniciar sesión",
+		"submissions": "Envíos",
+		"sidebar_collapse": "Contraer barra lateral",
+		"sidebar_expand": "Expandir barra lateral",
+		"admin": "Admin"
+	},
+	"receipts": {
+		"select_receipts": "Seleccionar recibos",
+		"selected": "Recibos seleccionados",
+		"add_more": "Agregar más recibos",
+		"search_placeholder": "Buscar recibos...",
+		"refresh": "Actualizar recibos",
+		"upload_new": "Subir nuevo recibo",
+		"upload_unavailable": "La carga no está disponible",
+		"upload_failed": "La carga falló. Inténtalo de nuevo.",
+		"invalid_type": "Tipo de archivo no válido. Permitidos: {{types}}",
+		"uploading": "Subiendo...",
+		"upload_notice": "Los archivos grandes pueden tardar un poco.",
+		"no_receipts": "No hay recibos para el año {{year}}",
+		"done": "Hecho",
+		"open": "Abrir",
+		"delete": "Eliminar",
+		"select_existing_or_upload": "Selecciona recibos existentes o sube uno nuevo.",
+		"allowed": "Permitidos",
+		"selected_count": "seleccionados"
+	},
+	"lang": {
+		"label": "Idioma"
+	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
+	"mail": {
+		"inbox": "Bandeja de entrada",
+		"sent": "Enviados",
+		"compose": "Redactar",
+		"drafts": "Borradores",
+		"draft_saved_at": "Borrador guardado a las {{time}}",
+		"send_tooltip": "Enviar",
+		"no_drafts": "Sin borradores",
+		"no_subject": "(Sin asunto)",
+		"refresh": "Actualizar",
+		"refreshed": "{{count}} nuevos mensajes obtenidos",
+		"no_messages": "Sin mensajes",
+		"from": "De",
+		"to": "Para",
+		"cc": "Copia",
+		"date": "Fecha",
+		"delete": "Eliminar",
+		"delete_confirm": "¿Está seguro de que desea eliminar este mensaje?",
+		"delete_draft_confirm": "¿Está seguro de que desea eliminar este borrador?",
+		"delete_success": "Eliminado correctamente",
+		"delete_error": "Error al eliminar",
+		"select": "Seleccionar",
+		"delete_draft": "Eliminar borrador",
+		"reply": "Responder",
+		"reply_all": "Responder a todos",
+		"forward": "Reenviar",
+		"forwarded_message": "Mensaje reenviado",
+		"messages_in_thread": "{{count}} mensajes",
+		"compose_new": "Nuevo mensaje",
+		"compose_reply": "Responder",
+		"compose_reply_all": "Responder a todos",
+		"compose_forward": "Reenviar",
+		"quoted_reply_header": "El {{date}}, {{name}} <{{email}}> escribió:"
+	},
+	"home": {
+		"header": "Involúcrate",
+		"contact": {
+			"title": "Contáctenos"
+		},
+		"options": {
+			"committee": {
+				"title": "Únete al Comité",
+				"description": "Completa el formulario para unirte al comité."
+			},
+			"events": {
+				"title": "Sugerir un Evento",
+				"description": "Sugerir un evento al comité."
+			},
+			"purchases": {
+				"title": "Solicitar una Compra",
+				"description": "Solicitar una compra al comité."
+			},
+			"questions": {
+				"title": "Hacer una Pregunta",
+				"description": "Hacer una pregunta al comité."
+			}
+		}
+	},
+	"email": {
+		"reimbursement": {
+			"subject": "Solicitud de Reembolso",
+			"title": "Solicitud de Reembolso",
+			"success": {
+				"transaction_created": "Transacción creada",
+				"reimbursement_requested": "Solicitud de reembolso enviada"
+			},
+			"item": "Artículo",
+			"amount": "Importe",
+			"purchaser": "Comprador",
+			"bank_account": "Cuenta Bancaria",
+			"minutes": "Acta",
+			"receipts": "Recibos",
+			"notes": "Notas",
+			"attached": "adjunto",
+			"not_specified": "No especificado",
+			"reply_instruction": "Responda a este correo para aprobar o rechazar la solicitud."
+		},
+		"reimbursement_status": {
+			"approved": {},
+			"declined": {},
+			"status": "Estado",
+			"view_details": "Ver detalles"
+		}
+	},
+	"profile": {
+		"title": "Perfil",
+		"update_success": "¡Perfil actualizado!",
+		"email_label": "Correo electrónico",
+		"email_help": "El correo electrónico no se puede cambiar",
+		"name_label": "Nombre",
+		"apartment_label": "Número de apartamento",
+		"optional": "opcional",
+		"apartment_placeholder": "ej. A 101",
+		"apartment_help": "Se utiliza para validar votos",
+		"role_label": "Rol",
+		"member_since_label": "Miembro desde",
+		"description_label": "Descripción",
+		"description_placeholder": "Cuéntanos sobre ti...",
+		"picture_label": "Foto de perfil",
+		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión",
+		"picture_too_large": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Las dimensiones de la imagen son demasiado grandes. El tamaño máximo es {{maxDimension}}x{{maxDimension}}px."
+	},
+	"avatars": {
+		"delete": "Eliminar"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Recibos",
+			"avatars": "Avatares",
+			"receipts.title": "Galería de Recibos",
+			"receipts.description": "Todos los archivos de recibos. Los recibos vinculados están adjuntos a una solicitud de reembolso y no se pueden eliminar.",
+			"receipts.empty": "Sin recibos",
+			"receipts.delete_confirm": "¿Estás seguro de que quieres eliminar este recibo?",
+			"receipts.delete_success": "Recibo eliminado",
+			"receipts.delete_error": "Error al eliminar",
+			"receipts.open_pdf": "Abrir PDF",
+			"receipts.linked": "Vinculado",
+			"receipts.unlinked": "No vinculado",
+			"receipts.reimbursement_request": "Solicitud de Reembolso",
+			"avatars.title": "Avatares",
+			"avatars.description": "Todas las imágenes de avatar de usuario almacenadas en el sistema.",
+			"avatars.empty": "Sin avatares",
+			"avatars.delete": "Eliminar",
+			"avatars.delete_confirm": "¿Estás seguro de que quieres eliminar este avatar?",
+			"avatars.delete_success": "Avatar eliminado",
+			"avatars.delete_error": "Error al eliminar"
+		}
+	},
+	"messages": {
+		"title": "Mensajes",
+		"empty": "Aún no hay mensajes nuevos",
+		"mark_as_read": "Marcar como leído",
+		"mark_all_read": "Marcar todos como leídos",
+		"marked_as_read": "Mensaje marcado como leído",
+		"view_purchase": "Ver solicitud de reembolso",
+		"reimbursement_approved": {},
+		"reimbursement_declined": {},
+		"news_published": {},
+		"ai_news_translation_failed": {},
+		"ai_faq_translation_failed": {},
+		"view_news": "Ver noticia",
+		"unknown_item": "Artículo desconocido",
+		"see_all": "Ver todos los mensajes",
+		"select_all": "Seleccionar todo",
+		"selected_count": "{{count}} seleccionados",
+		"mark_selected_read": "Marcar seleccionados como leídos",
+		"mark_selected_unread": "Marcar seleccionados como no leídos",
+		"clear_selection": "Limpiar selección"
+	},
+	"news": {
+		"title": "Noticias",
+		"add": "Añadir noticia",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"empty": "Aún no hay noticias.",
+		"no_results": "No hay resultados para su búsqueda.",
+		"search_placeholder": "Buscar noticias...",
+		"confirm_delete": "¿Está seguro de que desea eliminar esta noticia?",
+		"new_title": "Nueva noticia",
+		"edit_title": "Editar noticia",
+		"save": "Guardar",
+		"cancel": "Cancelar",
+		"form": {
+			"title": "Título",
+			"title_placeholder": "Título de la noticia",
+			"summary": "Resumen",
+			"summary_placeholder": "Resumen corto (opcional)",
+			"content": "Contenido",
+			"content_placeholder": "Contenido de la noticia",
+			"default_language": "Idioma predeterminado ({{language}})",
+			"secondary_language": "Idioma secundario ({{language}})"
+		},
+		"translate_with_ai": "Traducir con IA:",
+		"translating": "Traduciendo...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"committee": {
+		"title": "Comité",
+		"members": "Miembros",
+		"no_members": "No se encontraron miembros del comité",
+		"no_description": "Sin descripción"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Añadir pregunta",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"empty": "Aún no hay preguntas.",
+		"no_results": "No hay resultados para su búsqueda.",
+		"search_placeholder": "Buscar FAQ...",
+		"confirm_delete": "¿Está seguro de que desea eliminar esta pregunta?",
+		"new_title": "Nueva pregunta",
+		"edit_title": "Editar pregunta",
+		"save": "Guardar",
+		"cancel": "Cancelar",
+		"form": {
+			"question": "Pregunta",
+			"question_placeholder": "Introduzca la pregunta",
+			"answer": "Respuesta",
+			"answer_placeholder": "Introduzca la respuesta",
+			"sort_order": "Orden",
+			"default_language": "Idioma predeterminado ({{language}})",
+			"secondary_language": "Idioma secundario ({{language}})"
+		},
+		"translate_with_ai": "Traducir con IA:",
+		"translating": "Traduciendo...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"settings": {
+		"receipt_ocr_title": "OCR de recibos",
+		"receipt_ocr_description": "Configura los ajustes de IA para el análisis automático de recibos.",
+		"receipt_ocr_requires_api_key": "El análisis OCR requiere una clave API de OpenRouter en Ajustes generales.",
+		"ai_model": "Modelo de IA",
+		"select_model": "Seleccionar un modelo...",
+		"receipt_ai_model_help": "Selecciona un modelo capaz (p. ej., Gemini Flash 1.5, GPT-4o-mini) para mejores resultados.",
+		"analytics": {
+			"title": "Ajustes de análisis"
+		},
+		"roles": {
+			"title": "Gestión de roles",
+			"create_new_title": "Crear nuevo rol",
+			"color_label": "Color",
+			"system": "Rol del sistema",
+			"delete_title": "Eliminar rol",
+			"delete_confirm": "¿Está seguro de que desea eliminar el rol \"{{name}}\"? Esta acción no se puede deshacer.",
+			"permissions_header": "Permisos",
+			"select_role_msg": "Seleccione un rol de la izquierda para editar permisos",
+			"select_role": "Seleccionar rol",
+			"select_role_placeholder": "Elegir un rol...",
+			"search_placeholder": "Buscar permisos...",
+			"category": "Categoría",
+			"permission_name": "Nombre del permiso",
+			"description": "Descripción",
+			"show_only_assigned": "Mostrar solo permisos asignados"
+		},
+		"common": {
+			"save": "Guardar",
+			"saving": "Guardando...",
+			"free": "Gratis"
+		},
+		"news": {
+			"title": "Ajustes de noticias",
+			"ai_model_title": "Modelo de IA para noticias",
+			"ai_model_desc": "Seleccione el modelo de IA para traducir noticias entre idioma primario y secundario.",
+			"select_model": "Seleccionar modelo",
+			"select_model_placeholder": "Seleccione un modelo...",
+			"showing_models": "Mostrando {{count}} de {{total}} modelos",
+			"save": "Guardar ajustes"
+		},
+		"faqs": {
+			"title": "Ajustes de FAQ",
+			"ai_model_title": "Modelo de IA para FAQ",
+			"ai_model_desc": "Seleccione el modelo de IA para traducir entradas FAQ entre idioma primario y secundario.",
+			"select_model": "Seleccionar modelo",
+			"select_model_placeholder": "Seleccione un modelo...",
+			"showing_models": "Mostrando {{count}} de {{total}} modelos",
+			"save": "Guardar ajustes"
+		},
+		"users": {
+			"roles_placeholder": "Escriba el nombre del rol y pulse Tab para añadir",
+			"no_roles_match": "No hay roles coincidentes"
+		}
+	},
+	"treasury": {
+		"overview": "Resumen",
+		"title": "Tesorería {{year}}",
+		"select_year": "Seleccionar año...",
+		"view_breakdown": "Ver desglose",
+		"auto_linked_from": "Vinculado automáticamente desde {{type}}: {{name}}",
+		"balance": "Saldo",
+		"income": "Ingresos",
+		"unbudgeted_transactions": "Transacciones no presupuestadas",
+		"budgeted_transactions": "Transacciones presupuestadas",
+		"budget_costs": "Costos del presupuesto",
+		"available": "Disponible",
+		"transactions_count": "{{count}} transacciones",
+		"no_transactions": "No hay transacciones",
+		"no_transactions_desc": "Aún no se han registrado transacciones para {{year}}.",
+		"actions": {
+			"breakdown": "Desglose",
+			"transactions": "Transacciones",
+			"receipts": "Recibos",
+			"reimbursements": "Solicitudes de reembolso",
+			"budgets": "Presupuestos"
+		},
+		"transactions": {
+			"title": "Transacciones",
+			"type": "Tipo"
+		}
+	},
+	"permissions": {
+		"users": {
+			"read": "Ver lista de usuarios",
+			"write": "Crear y actualizar usuarios",
+			"delete": "Eliminar usuarios",
+			"manage_roles": "Asignar roles a usuarios"
+		},
+		"inventory": {
+			"read": "Ver elementos de inventario",
+			"write": "Crear y editar elementos de inventario",
+			"delete": "Eliminar elementos de inventario",
+			"export": "Exportar inventario a CSV",
+			"import": "Importar inventario desde archivo"
+		},
+		"treasury": {
+			"read": "Ver resumen de tesorería",
+			"export": "Exportar datos de tesorería a CSV",
+			"import": "Importar datos de tesorería desde archivo",
+			"breakdown": {
+				"read": "Ver desglose de tesorería"
+			},
+			"transactions": {
+				"read": "Ver lista de transacciones",
+				"write": "Crear transacciones",
+				"write-self": "Crear propias transacciones",
+				"update": "Editar transacciones",
+				"delete": "Eliminar transacciones",
+				"update-self": "Editar propias transacciones",
+				"delete-self": "Eliminar propias transacciones",
+				"read-self": "Ver propias transacciones"
+			},
+			"reimbursements": {
+				"read": "Ver solicitudes de reembolso",
+				"write": "Crear solicitudes de reembolso",
+				"write-self": "Crear propias solicitudes de reembolso",
+				"update": "Actualizar y aprobar/rechazar reembolsos",
+				"delete": "Eliminar solicitudes de reembolso",
+				"update-self": "Editar propias solicitudes de reembolso",
+				"delete-self": "Eliminar propias solicitudes de reembolso",
+				"read-self": "Ver propias solicitudes de reembolso"
+			},
+			"budgets": {
+				"read": "Ver presupuestos",
+				"read-self": "Ver propios presupuestos",
+				"write": "Crear presupuestos",
+				"write-self": "Crear propios presupuestos",
+				"update": "Editar presupuestos",
+				"delete": "Eliminar presupuestos",
+				"update-self": "Editar propios presupuestos",
+				"delete-self": "Eliminar propios presupuestos"
+			},
+			"receipts": {
+				"read": "Ver recibos",
+				"read-self": "Ver propios recibos",
+				"write": "Crear recibos",
+				"write-self": "Crear propios recibos",
+				"update": "Editar recibos",
+				"delete": "Eliminar recibos",
+				"update-self": "Editar propios recibos",
+				"delete-self": "Eliminar propios recibos"
+			},
+			"view_scope": {
+				"all": "Estás viendo todos los {{itemType}}",
+				"own_only": "Estás viendo solo tus propios {{itemType}}",
+				"item_types": {
+					"transactions": "transacciones",
+					"reimbursements": "solicitudes de reembolso",
+					"budgets": "presupuestos",
+					"receipts": "recibos"
+				}
+			}
+		},
+		"purchases": {
+			"read": "Ver todas las solicitudes de compra",
+			"manage": "Actualizar estado de compra",
+			"delete": "Eliminar solicitudes de compra"
+		},
+		"submissions": {
+			"read": "Ver envíos de formularios de contacto",
+			"write": "Actualizar estado de envío",
+			"delete": "Eliminar envíos"
+		},
+		"social": {
+			"read": "Ver enlaces sociales",
+			"write": "Crear y editar enlaces sociales",
+			"delete": "Eliminar enlaces sociales"
+		},
+		"minutes": {
+			"read": "Ver y descargar actas",
+			"guide": "Ver guía de convenciones de nomenclatura"
+		},
+		"events": {
+			"read": "Ver eventos del calendario"
+		},
+		"forms": {
+			"read": "Ver respuestas de formularios y análisis",
+			"export": "Exportar datos de formularios a CSV"
+		},
+		"profile": {
+			"read": {
+				"own": "Ver propio perfil"
+			},
+			"write": {
+				"own": "Editar propio perfil"
+			}
+		},
+		"roles": {
+			"read": "Ver roles y permisos",
+			"write": "Crear y editar roles",
+			"delete": "Eliminar roles"
+		},
+		"news": {
+			"read": "Ver noticias",
+			"write": "Crear noticias",
+			"update": "Editar noticias",
+			"delete": "Eliminar noticias"
+		},
+		"faq": {
+			"read": "Ver FAQ",
+			"write": "Crear entradas FAQ",
+			"update": "Editar entradas FAQ",
+			"delete": "Eliminar entradas FAQ"
+		},
+		"settings": {
+			"general": "Acceso a configuración general",
+			"users": "Acceso a configuración de gestión de usuarios",
+			"roles": "Acceso a configuración de gestión de roles",
+			"reimbursements": "Acceso a configuración de reembolsos (IA, palabras clave)",
+			"analytics": "Acceso a configuración de análisis (modelos de IA)",
+			"news": "Acceso a configuración de noticias (modelo de traducción IA)",
+			"faqs": "Acceso a configuración de FAQ (modelo de traducción IA)"
+		},
+		"committee": {
+			"email": "Enviar correo electrónico a miembros del rol",
+			"read": "Ver miembros del comité"
+		},
+		"categories": {},
+		"admin": {
+			"storage": {
+				"read": "Ver administración de almacenamiento",
+				"write": "Gestionar administración de almacenamiento"
+			}
+		}
+	},
+	"receipts": {
+		"process_receipt": "Procesar recibo",
+		"processed": "Procesado",
+		"processing": "Procesando...",
+		"auto_filled_from_receipt": "Autocompletado desde recibo: {{name}}",
+		"create_reimbursement": "Crear reembolso",
+		"analyze_with_ai": "Analizar con IA (OCR)",
+		"analyzing": "Analizando recibo...",
+		"analysis_complete": "Recibo analizado exitosamente",
+		"analysis_failed": "Error al analizar recibo"
+	},
+	"inventory": {
+		"created_items": "Artículos de inventario creados",
+		"location_missing": "Ubicación necesaria",
+		"incomplete_items": "Artículos incompletos",
+		"complete_item": "Marcar como completo",
+		"location_tbd": "Ubicación pendiente"
+	},
+	"relationships": {
+		"ai": {
+			"analyze": "Analizar con IA",
+			"analyzing": "Analizando...",
+			"success": "{{count}} borradores creados",
+			"error": "Error en el análisis"
+		},
+		"draft": {
+			"badge": "Borrador",
+			"cleanup": "Limpiar borradores",
+			"cleanup_success": "{{count}} borradores eliminados"
+		}
+	}
 }

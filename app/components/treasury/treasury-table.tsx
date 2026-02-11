@@ -1,4 +1,8 @@
 import {
+	TableTotalsRow,
+	type TableTotalsRowProps,
+} from "~/components/treasury/table-totals-row";
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -6,10 +10,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/components/ui/table";
-import {
-	TableTotalsRow,
-	type TableTotalsRowProps,
-} from "~/components/treasury/table-totals-row";
 import { cn } from "~/lib/utils";
 
 /** Shared cell style constants for consistent styling across treasury tables */
@@ -145,18 +145,11 @@ export function TreasuryTable<T>({
 								);
 							})}
 							{hasActions && (
-								<TableCell>
-									{renderActions!(row, index)}
-								</TableCell>
+								<TableCell>{renderActions?.(row, index)}</TableCell>
 							)}
 						</TableRow>
 					))}
-					{totals && (
-						<TableTotalsRow
-							{...totals}
-							rowCount={rowCount}
-						/>
-					)}
+					{totals && <TableTotalsRow {...totals} rowCount={rowCount} />}
 				</TableBody>
 			</Table>
 		</div>

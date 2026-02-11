@@ -54,7 +54,7 @@ export function TableTotalsRow({
 	// If columns is an array of individual values (for multiple summable columns)
 	// Otherwise, it's a single total value
 	const isMultipleColumns = columns.length > 1;
-	
+
 	if (isMultipleColumns) {
 		// Multiple columns: sum each column separately
 		const columnTotals = columns.map((col) => {
@@ -63,12 +63,16 @@ export function TableTotalsRow({
 			}
 			return col.value;
 		});
-		
+
 		// Split columns into first set and last column if there's a middle gap
 		const hasMiddleGap = middleColSpan > 0 && columnTotals.length > 1;
-		const firstColumns = hasMiddleGap ? columnTotals.slice(0, -1) : columnTotals;
-		const lastColumn = hasMiddleGap ? columnTotals[columnTotals.length - 1] : null;
-		
+		const firstColumns = hasMiddleGap
+			? columnTotals.slice(0, -1)
+			: columnTotals;
+		const lastColumn = hasMiddleGap
+			? columnTotals[columnTotals.length - 1]
+			: null;
+
 		return (
 			<TableRow className="bg-gray-50 dark:bg-gray-900/50 border-t-2 border-gray-200 dark:border-gray-700">
 				<TableCell colSpan={labelColSpan} className="font-bold">
@@ -77,17 +81,12 @@ export function TableTotalsRow({
 				{firstColumns.map((total, index) => {
 					const cellKey = `total-col-${index}`;
 					return (
-						<TableCell
-							key={cellKey}
-							className="font-bold"
-						>
+						<TableCell key={cellKey} className="font-bold">
 							{formatCurrency(total)}
 						</TableCell>
 					);
 				})}
-				{middleColSpan > 0 && (
-					<TableCell colSpan={middleColSpan}></TableCell>
-				)}
+				{middleColSpan > 0 && <TableCell colSpan={middleColSpan}></TableCell>}
 				{lastColumn !== null && (
 					<TableCell className="text-right font-bold">
 						{formatCurrency(lastColumn)}
@@ -99,10 +98,10 @@ export function TableTotalsRow({
 			</TableRow>
 		);
 	}
-	
+
 	// Single column: sum all values
 	const total = totals;
-	
+
 	return (
 		<TableRow className="bg-gray-50 dark:bg-gray-900/50 border-t-2 border-gray-200 dark:border-gray-700">
 			<TableCell colSpan={labelColSpan} className="font-bold">
@@ -111,9 +110,7 @@ export function TableTotalsRow({
 			<TableCell className="text-right font-bold">
 				{formatCurrency(total)}
 			</TableCell>
-			{trailingColSpan > 0 && (
-				<TableCell colSpan={trailingColSpan}></TableCell>
-			)}
+			{trailingColSpan > 0 && <TableCell colSpan={trailingColSpan}></TableCell>}
 		</TableRow>
 	);
 }

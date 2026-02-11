@@ -158,7 +158,9 @@ export function LanguageSwitcher({
 						compact && className,
 					)}
 				>
-					<span className="material-symbols-outlined text-2xl shrink-0">translate</span>
+					<span className="material-symbols-outlined text-2xl shrink-0">
+						translate
+					</span>
 					{!compact && (
 						<>
 							<span className="text-sm font-bold">{t("lang.label")}</span>

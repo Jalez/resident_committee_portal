@@ -84,7 +84,7 @@ export function TranslateFieldButton({
 			targetInput.value = translated;
 			// Dispatch input event to trigger React state updates
 			targetInput.dispatchEvent(new Event("input", { bubbles: true }));
-			
+
 			toast.success(t("local_ai.translate.success"));
 		} catch (error) {
 			console.error("Translation failed:", error);

@@ -1,12 +1,12 @@
 import { copy, del, head, list, put } from "@vercel/blob";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 import type {
+	FileMetadata,
 	ReceiptStorageAdapter,
 	ReceiptsByYear,
+	RenameResult,
 	UploadOptions,
 	UploadResult,
-	RenameResult,
-	FileMetadata,
 } from "../types";
 
 type ListedBlob = {
@@ -93,9 +93,7 @@ function groupReceiptsByYear(blobs: ListedBlob[]): ReceiptsByYear[] {
 	);
 
 	for (const yearEntry of sorted) {
-		yearEntry.files.sort(
-			(a, b) => b.createdTime.localeCompare(a.createdTime),
-		);
+		yearEntry.files.sort((a, b) => b.createdTime.localeCompare(a.createdTime));
 	}
 
 	return sorted;

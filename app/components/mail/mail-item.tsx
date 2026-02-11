@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Link } from "react-router";
-import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -51,7 +51,9 @@ export function MailItem({
 	const { t } = useTranslation();
 	const [deleteOpen, setDeleteOpen] = useState(false);
 
-	const avatarLetter = (primaryText || secondaryText || "?").slice(0, 1).toUpperCase();
+	const avatarLetter = (primaryText || secondaryText || "?")
+		.slice(0, 1)
+		.toUpperCase();
 
 	const handleDeleteClick = (e: React.MouseEvent) => {
 		e.preventDefault();

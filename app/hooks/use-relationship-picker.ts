@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { RelationshipEntityType } from "~/db/schema";
 
 /**
@@ -52,37 +52,54 @@ export function useRelationshipPicker({
 		(relationBType: RelationshipEntityType, relationBId: string): boolean => {
 			// Check if it's in initial relationships
 			const initiallyLinked = initialRelationships.some(
-				(rel) => rel.relationBType === relationBType && rel.relationBId === relationBId
+				(rel) =>
+					rel.relationBType === relationBType &&
+					rel.relationBId === relationBId,
 			);
 
 			// Check if it's pending unlink
 			const isPendingUnlink = pendingUnlinks.some(
-				(unlink) => unlink.relationBType === relationBType && unlink.relationBId === relationBId
+				(unlink) =>
+					unlink.relationBType === relationBType &&
+					unlink.relationBId === relationBId,
 			);
 
 			// Check if it's pending link
 			const isPendingLink = pendingLinks.some(
-				(link) => link.relationBType === relationBType && link.relationBId === relationBId
+				(link) =>
+					link.relationBType === relationBType &&
+					link.relationBId === relationBId,
 			);
 
 			return (initiallyLinked && !isPendingUnlink) || isPendingLink;
 		},
-		[initialRelationships, pendingLinks, pendingUnlinks]
+		[initialRelationships, pendingLinks, pendingUnlinks],
 	);
 
 	/**
 	 * Add a new relationship link
 	 */
 	const handleLink = useCallback(
-		(relationBType: RelationshipEntityType, relationBId: string, metadata?: Record<string, unknown>) => {
+		(
+			relationBType: RelationshipEntityType,
+			relationBId: string,
+			metadata?: Record<string, unknown>,
+		) => {
 			// Remove from pending unlinks if it exists
 			setPendingUnlinks((prev) =>
-				prev.filter((u) => !(u.relationBType === relationBType && u.relationBId === relationBId))
+				prev.filter(
+					(u) =>
+						!(
+							u.relationBType === relationBType && u.relationBId === relationBId
+						),
+				),
 			);
 
 			// Check if it's already in initial relationships
 			const alreadyLinked = initialRelationships.some(
-				(rel) => rel.relationBType === relationBType && rel.relationBId === relationBId
+				(rel) =>
+					rel.relationBType === relationBType &&
+					rel.relationBId === relationBId,
 			);
 
 			// Only add to pending links if not already linked
@@ -90,7 +107,9 @@ export function useRelationshipPicker({
 				setPendingLinks((prev) => {
 					// Avoid duplicates
 					const exists = prev.some(
-						(l) => l.relationBType === relationBType && l.relationBId === relationBId
+						(l) =>
+							l.relationBType === relationBType &&
+							l.relationBId === relationBId,
 					);
 					if (exists) return prev;
 
@@ -98,7 +117,7 @@ export function useRelationshipPicker({
 				});
 			}
 		},
-		[initialRelationships]
+		[initialRelationships],
 	);
 
 	/**
@@ -108,12 +127,19 @@ export function useRelationshipPicker({
 		(relationBType: RelationshipEntityType, relationBId: string) => {
 			// Remove from pending links if it exists
 			setPendingLinks((prev) =>
-				prev.filter((l) => !(l.relationBType === relationBType && l.relationBId === relationBId))
+				prev.filter(
+					(l) =>
+						!(
+							l.relationBType === relationBType && l.relationBId === relationBId
+						),
+				),
 			);
 
 			// Check if it's in initial relationships
 			const initiallyLinked = initialRelationships.some(
-				(rel) => rel.relationBType === relationBType && rel.relationBId === relationBId
+				(rel) =>
+					rel.relationBType === relationBType &&
+					rel.relationBId === relationBId,
 			);
 
 			// Only add to pending unlinks if it was initially linked
@@ -121,7 +147,9 @@ export function useRelationshipPicker({
 				setPendingUnlinks((prev) => {
 					// Avoid duplicates
 					const exists = prev.some(
-						(u) => u.relationBType === relationBType && u.relationBId === relationBId
+						(u) =>
+							u.relationBType === relationBType &&
+							u.relationBId === relationBId,
 					);
 					if (exists) return prev;
 
@@ -129,7 +157,7 @@ export function useRelationshipPicker({
 				});
 			}
 		},
-		[initialRelationships]
+		[initialRelationships],
 	);
 
 	/**
@@ -153,7 +181,8 @@ export function useRelationshipPicker({
 	/**
 	 * Check if there are any pending changes
 	 */
-	const hasPendingChanges = pendingLinks.length > 0 || pendingUnlinks.length > 0;
+	const hasPendingChanges =
+		pendingLinks.length > 0 || pendingUnlinks.length > 0;
 
 	return {
 		pendingLinks,

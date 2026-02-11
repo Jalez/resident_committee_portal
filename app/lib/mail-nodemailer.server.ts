@@ -7,8 +7,8 @@
  *      COMMITTEE_FROM_EMAIL, COMMITTEE_FROM_NAME (optional)
  */
 
-import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import nodemailer from "nodemailer";
 
 interface CommitteeMailConfig {
 	host: string;
@@ -29,7 +29,8 @@ const config: CommitteeMailConfig = {
 	user: process.env.SMTP_USER || "",
 	pass: process.env.SMTP_PASS || "",
 	fromEmail: process.env.COMMITTEE_FROM_EMAIL || "",
-	fromName: process.env.COMMITTEE_FROM_NAME || process.env.SITE_NAME || "Committee",
+	fromName:
+		process.env.COMMITTEE_FROM_NAME || process.env.SITE_NAME || "Committee",
 };
 
 let transporter: Transporter | null = null;
@@ -131,7 +132,7 @@ export async function sendCommitteeEmail({
 						content: attachment.content,
 						encoding: "base64",
 						contentType: attachment.contentType,
-				  }))
+					}))
 				: undefined,
 			...(inReplyTo && { inReplyTo }),
 			...(references?.length && { references: references.join(" ") }),

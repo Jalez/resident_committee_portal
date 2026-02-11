@@ -1,15 +1,15 @@
 /**
  * Draft Lifecycle Management Utilities
- * 
+ *
  * Handles automatic cleanup of orphaned draft entities when relationships
  * are removed. Ensures that draft entities without any relationships are
  * automatically deleted along with their associated files.
  */
 
-import type { RelationshipEntityType } from "~/db/schema";
 import type { getDatabase } from "~/db";
-import { getReceiptStorage } from "~/lib/receipts";
+import type { RelationshipEntityType } from "~/db/schema";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";
+import { getReceiptStorage } from "~/lib/receipts";
 
 /**
  * Check if an entity is a draft that has become orphaned after unlinking.
@@ -33,7 +33,9 @@ export async function cleanupOrphanedDraft(
 			return false; // Still has relationships, don't delete
 		}
 
-		console.log(`[DraftLifecycle] Deleting orphaned ${entityType} draft: ${entityId}`);
+		console.log(
+			`[DraftLifecycle] Deleting orphaned ${entityType} draft: ${entityId}`,
+		);
 
 		// 3. Delete associated files first
 		await deleteAssociatedFiles(db, entityType, entityId);
@@ -42,12 +44,17 @@ export async function cleanupOrphanedDraft(
 		const deleted = await deleteEntity(db, entityType, entityId);
 
 		if (deleted) {
-			console.log(`[DraftLifecycle] Successfully deleted orphaned ${entityType}: ${entityId}`);
+			console.log(
+				`[DraftLifecycle] Successfully deleted orphaned ${entityType}: ${entityId}`,
+			);
 		}
 
 		return deleted;
 	} catch (error) {
-		console.error(`[DraftLifecycle] Failed to cleanup orphaned ${entityType} ${entityId}:`, error);
+		console.error(
+			`[DraftLifecycle] Failed to cleanup orphaned ${entityType} ${entityId}:`,
+			error,
+		);
 		return false;
 	}
 }
@@ -105,7 +112,9 @@ async function deleteAssociatedFiles(
 			try {
 				const storage = getReceiptStorage();
 				await storage.deleteFile(receipt.pathname);
-				console.log(`[DraftLifecycle] Deleted receipt file: ${receipt.pathname}`);
+				console.log(
+					`[DraftLifecycle] Deleted receipt file: ${receipt.pathname}`,
+				);
 			} catch (error) {
 				console.error(`[DraftLifecycle] Failed to delete receipt file:`, error);
 			}

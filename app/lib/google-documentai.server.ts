@@ -16,7 +16,7 @@ function getClient(): DocumentProcessorServiceClient {
 		const location = process.env.DOCUMENT_AI_LOCATION || "us";
 
 		const credentials = getGoogleCloudCredentials();
-		const projectId = credentials.projectId;
+		const _projectId = credentials.projectId;
 
 		// Map locations to their regional endpoints
 		const endpointMap: Record<string, string> = {
@@ -28,7 +28,9 @@ function getClient(): DocumentProcessorServiceClient {
 		const apiEndpoint = endpoint || "documentai.googleapis.com";
 
 		if (endpoint) {
-			console.log(`[Document AI] Client configured for ${location} region: ${apiEndpoint}`);
+			console.log(
+				`[Document AI] Client configured for ${location} region: ${apiEndpoint}`,
+			);
 		}
 
 		client = new DocumentProcessorServiceClient({
@@ -43,9 +45,15 @@ function getClient(): DocumentProcessorServiceClient {
 /**
  * Extract text from PDF using Document AI
  */
-export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string | null> {
+export async function extractTextFromPDF(
+	pdfBuffer: Buffer,
+): Promise<string | null> {
 	try {
-		console.log("[Document AI] Processing PDF, size:", pdfBuffer.length, "bytes");
+		console.log(
+			"[Document AI] Processing PDF, size:",
+			pdfBuffer.length,
+			"bytes",
+		);
 
 		const docAIClient = getClient();
 		const credentials = getGoogleCloudCredentials();
@@ -55,7 +63,7 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string | nu
 
 		if (!processorId) {
 			console.error(
-				"[Document AI] Configuration incomplete. Please set DOCUMENT_AI_PROCESSOR_ID in .env"
+				"[Document AI] Configuration incomplete. Please set DOCUMENT_AI_PROCESSOR_ID in .env",
 			);
 			return null;
 		}
@@ -98,9 +106,15 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string | nu
  * Extract text from image using Document AI
  * Alternative to Vision API for images
  */
-export async function extractTextFromImage(imageBuffer: Buffer): Promise<string | null> {
+export async function extractTextFromImage(
+	imageBuffer: Buffer,
+): Promise<string | null> {
 	try {
-		console.log("[Document AI] Processing image, size:", imageBuffer.length, "bytes");
+		console.log(
+			"[Document AI] Processing image, size:",
+			imageBuffer.length,
+			"bytes",
+		);
 
 		const docAIClient = getClient();
 		const credentials = getGoogleCloudCredentials();
@@ -110,7 +124,7 @@ export async function extractTextFromImage(imageBuffer: Buffer): Promise<string 
 
 		if (!processorId) {
 			console.error(
-				"[Document AI] Configuration incomplete. Please set DOCUMENT_AI_PROCESSOR_ID in .env"
+				"[Document AI] Configuration incomplete. Please set DOCUMENT_AI_PROCESSOR_ID in .env",
 			);
 			return null;
 		}

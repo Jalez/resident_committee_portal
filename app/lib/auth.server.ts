@@ -194,7 +194,8 @@ export async function getAuthenticatedUser(
 
 	const permissions = await db.getUserPermissions(dbUser.id);
 	const roleIds = await db.getUserRoleIds(dbUser.id);
-	const firstRole = roleIds.length > 0 ? await db.getRoleById(roleIds[0]) : null;
+	const firstRole =
+		roleIds.length > 0 ? await db.getRoleById(roleIds[0]) : null;
 
 	return {
 		...session,
@@ -299,9 +300,7 @@ export function canEditSelf(
 		// Items without createdBy (existing records) cannot be edited with self permissions
 		return false;
 	}
-	return (
-		hasPermission(user, selfPermission) && itemCreatedBy === user.userId
-	);
+	return hasPermission(user, selfPermission) && itemCreatedBy === user.userId;
 }
 
 /**
@@ -317,9 +316,7 @@ export function canDeleteSelf(
 		// Items without createdBy (existing records) cannot be deleted with self permissions
 		return false;
 	}
-	return (
-		hasPermission(user, selfPermission) && itemCreatedBy === user.userId
-	);
+	return hasPermission(user, selfPermission) && itemCreatedBy === user.userId;
 }
 
 /**
@@ -466,5 +463,3 @@ export async function getUserInfo(
 		return null;
 	}
 }
-
-

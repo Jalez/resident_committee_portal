@@ -211,25 +211,32 @@ export function getEnvStatus(): EnvStatus {
 				},
 				{
 					name: "BLOB_READ_WRITE_TOKEN",
-					description: "Vercel Blob read/write token (required if provider is 'vercel-blob')",
-					descriptionFi: "Vercel Blob luku-/kirjoitustunnus (tarvitaan jos palvelu on 'vercel-blob')",
+					description:
+						"Vercel Blob read/write token (required if provider is 'vercel-blob')",
+					descriptionFi:
+						"Vercel Blob luku-/kirjoitustunnus (tarvitaan jos palvelu on 'vercel-blob')",
 					required: false,
 					isSet: isSet("BLOB_READ_WRITE_TOKEN"),
 					helpLink: "https://vercel.com/docs/storage/vercel-blob",
-					helpText: "Create a read/write token in your Vercel project settings.",
+					helpText:
+						"Create a read/write token in your Vercel project settings.",
 				},
 				{
 					name: "RECEIPT_STORAGE_DIR",
-					description: "Filesystem storage directory (required if provider is 'filesystem')",
-					descriptionFi: "Tiedostojärjestelmän tallennushakemisto (tarvitaan jos palvelu on 'filesystem')",
+					description:
+						"Filesystem storage directory (required if provider is 'filesystem')",
+					descriptionFi:
+						"Tiedostojärjestelmän tallennushakemisto (tarvitaan jos palvelu on 'filesystem')",
 					required: false,
 					isSet: isSet("RECEIPT_STORAGE_DIR"),
 					helpText: "Default: public/receipts (relative to project root)",
 				},
 				{
 					name: "RECEIPT_STORAGE_BASE_URL",
-					description: "Base URL for filesystem storage (optional, for 'filesystem' provider)",
-					descriptionFi: "Perus-URL tiedostojärjestelmätallennukselle (valinnainen, 'filesystem'-palvelulle)",
+					description:
+						"Base URL for filesystem storage (optional, for 'filesystem' provider)",
+					descriptionFi:
+						"Perus-URL tiedostojärjestelmätallennukselle (valinnainen, 'filesystem'-palvelulle)",
 					required: false,
 					isSet: isSet("RECEIPT_STORAGE_BASE_URL"),
 					helpText: "Default: Uses APP_URL or VERCEL_URL",

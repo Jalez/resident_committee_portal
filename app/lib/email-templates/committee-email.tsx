@@ -5,10 +5,10 @@ import {
 	Hr,
 	Html,
 	Preview,
+	render,
 	Section,
 	Text,
 } from "@react-email/components";
-import { render } from "@react-email/components";
 
 interface CommitteeEmailProps {
 	bodyHtml: string;
@@ -51,8 +51,9 @@ export function CommitteeEmail({
 						<>
 							<Hr style={hrStyle} />
 							<Text style={quotedHeaderStyle}>
-								On {quotedReply.date}, {quotedReply.fromName || quotedReply.fromEmail}{" "}
-								&lt;{quotedReply.fromEmail}&gt; wrote:
+								On {quotedReply.date},{" "}
+								{quotedReply.fromName || quotedReply.fromEmail} &lt;
+								{quotedReply.fromEmail}&gt; wrote:
 							</Text>
 							<Section style={quotedBodyStyle}>
 								<div

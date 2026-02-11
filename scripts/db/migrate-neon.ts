@@ -32,12 +32,7 @@ async function main() {
 
 		// roles.permissions
 		if (
-			await ensureColumn(
-				sql,
-				"roles",
-				"permissions",
-				"\"permissions\" text[]",
-			)
+			await ensureColumn(sql, "roles", "permissions", '"permissions" text[]')
 		) {
 			changed++;
 		}
@@ -46,10 +41,10 @@ async function main() {
 			set permissions = coalesce(permissions, '{}')
 		`;
 		await sql.unsafe(
-			"alter table \"roles\" alter column \"permissions\" set default '{}'",
+			'alter table "roles" alter column "permissions" set default \'{}\'',
 		);
 		await sql.unsafe(
-			"alter table \"roles\" alter column \"permissions\" set not null",
+			'alter table "roles" alter column "permissions" set not null',
 		);
 
 		// users languages
@@ -58,7 +53,7 @@ async function main() {
 				sql,
 				"users",
 				"primary_language",
-				"\"primary_language\" text",
+				'"primary_language" text',
 			)
 		) {
 			changed++;
@@ -68,7 +63,7 @@ async function main() {
 				sql,
 				"users",
 				"secondary_language",
-				"\"secondary_language\" text",
+				'"secondary_language" text',
 			)
 		) {
 			changed++;
@@ -87,7 +82,7 @@ async function main() {
 				sql,
 				"inventory_items",
 				"manual_count",
-				"\"manual_count\" integer",
+				'"manual_count" integer',
 			)
 		) {
 			changed++;
@@ -97,19 +92,12 @@ async function main() {
 				sql,
 				"inventory_items",
 				"show_in_info_reel",
-				"\"show_in_info_reel\" boolean",
+				'"show_in_info_reel" boolean',
 			)
 		) {
 			changed++;
 		}
-		if (
-			await ensureColumn(
-				sql,
-				"inventory_items",
-				"status",
-				"\"status\" text",
-			)
-		) {
+		if (await ensureColumn(sql, "inventory_items", "status", '"status" text')) {
 			changed++;
 		}
 		if (
@@ -117,7 +105,7 @@ async function main() {
 				sql,
 				"inventory_items",
 				"removed_at",
-				"\"removed_at\" timestamp",
+				'"removed_at" timestamp',
 			)
 		) {
 			changed++;
@@ -127,7 +115,7 @@ async function main() {
 				sql,
 				"inventory_items",
 				"removal_reason",
-				"\"removal_reason\" text",
+				'"removal_reason" text',
 			)
 		) {
 			changed++;
@@ -137,7 +125,7 @@ async function main() {
 				sql,
 				"inventory_items",
 				"removal_notes",
-				"\"removal_notes\" text",
+				'"removal_notes" text',
 			)
 		) {
 			changed++;
@@ -148,24 +136,14 @@ async function main() {
 				show_in_info_reel = coalesce(show_in_info_reel, false),
 				status = coalesce(nullif(status, ''), 'active')
 		`;
-		await ensureDefaultAndNotNull(
-			sql,
-			"inventory_items",
-			"manual_count",
-			"0",
-		);
+		await ensureDefaultAndNotNull(sql, "inventory_items", "manual_count", "0");
 		await ensureDefaultAndNotNull(
 			sql,
 			"inventory_items",
 			"show_in_info_reel",
 			"false",
 		);
-		await ensureDefaultAndNotNull(
-			sql,
-			"inventory_items",
-			"status",
-			"'active'",
-		);
+		await ensureDefaultAndNotNull(sql, "inventory_items", "status", "'active'");
 
 		// purchases email tracking
 		if (
@@ -173,7 +151,7 @@ async function main() {
 				sql,
 				"purchases",
 				"email_message_id",
-				"\"email_message_id\" text",
+				'"email_message_id" text',
 			)
 		) {
 			changed++;
@@ -183,7 +161,7 @@ async function main() {
 				sql,
 				"purchases",
 				"email_reply_received",
-				"\"email_reply_received\" boolean",
+				'"email_reply_received" boolean',
 			)
 		) {
 			changed++;
@@ -193,7 +171,7 @@ async function main() {
 				sql,
 				"purchases",
 				"email_reply_content",
-				"\"email_reply_content\" text",
+				'"email_reply_content" text',
 			)
 		) {
 			changed++;

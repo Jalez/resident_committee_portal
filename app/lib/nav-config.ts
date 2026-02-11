@@ -34,12 +34,41 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.treasury",
 		permission: "treasury:read",
 		children: [
-			{ path: "/treasury", icon: "account_balance", i18nKey: "treasury.overview" },
-			{ path: "/treasury/breakdown", icon: "pie_chart", i18nKey: "treasury.actions.breakdown", permission: "treasury:breakdown:read" },
-			{ path: "/treasury/transactions", icon: "list_alt", i18nKey: "treasury.actions.transactions", permission: "treasury:transactions:read" },
-			{ path: "/treasury/receipts", icon: "receipt_long", i18nKey: "treasury.actions.receipts", permission: "treasury:receipts:read" },
-			{ path: "/treasury/reimbursements", icon: "request_quote", i18nKey: "treasury.actions.reimbursements", permission: "treasury:reimbursements:read" },
-			{ path: "/treasury/budgets", icon: "bookmark", i18nKey: "treasury.actions.budgets", permission: "treasury:budgets:read" },
+			{
+				path: "/treasury",
+				icon: "account_balance",
+				i18nKey: "treasury.overview",
+			},
+			{
+				path: "/treasury/breakdown",
+				icon: "pie_chart",
+				i18nKey: "treasury.actions.breakdown",
+				permission: "treasury:breakdown:read",
+			},
+			{
+				path: "/treasury/transactions",
+				icon: "list_alt",
+				i18nKey: "treasury.actions.transactions",
+				permission: "treasury:transactions:read",
+			},
+			{
+				path: "/treasury/receipts",
+				icon: "receipt_long",
+				i18nKey: "treasury.actions.receipts",
+				permission: "treasury:receipts:read",
+			},
+			{
+				path: "/treasury/reimbursements",
+				icon: "request_quote",
+				i18nKey: "treasury.actions.reimbursements",
+				permission: "treasury:reimbursements:read",
+			},
+			{
+				path: "/treasury/budgets",
+				icon: "bookmark",
+				i18nKey: "treasury.actions.budgets",
+				permission: "treasury:budgets:read",
+			},
 		],
 	},
 	{
@@ -80,7 +109,12 @@ export const NAV_ITEMS: NavItem[] = [
 		permission: "polls:read",
 		children: [
 			{ path: "/polls", icon: "ballot", i18nKey: "polls.title" },
-			{ path: "/polls/analytics", icon: "analytics", i18nKey: "polls.analytics", permission: "forms:read" },
+			{
+				path: "/polls/analytics",
+				icon: "analytics",
+				i18nKey: "polls.analytics",
+				permission: "forms:read",
+			},
 		],
 	},
 	// Committee - requires committee:read permission
@@ -124,9 +158,24 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.admin",
 		permission: "admin:storage:read",
 		children: [
-			{ path: "/admin/storage/minutes", icon: "description", i18nKey: "admin.storage.minutes", permission: "admin:storage:read" },
-			{ path: "/admin/storage/receipts", icon: "receipt_long", i18nKey: "admin.storage.receipts", permission: "admin:storage:read" },
-			{ path: "/admin/storage/avatars", icon: "account_circle", i18nKey: "admin.storage.avatars", permission: "admin:storage:read" },
+			{
+				path: "/admin/storage/minutes",
+				icon: "description",
+				i18nKey: "admin.storage.minutes",
+				permission: "admin:storage:read",
+			},
+			{
+				path: "/admin/storage/receipts",
+				icon: "receipt_long",
+				i18nKey: "admin.storage.receipts",
+				permission: "admin:storage:read",
+			},
+			{
+				path: "/admin/storage/avatars",
+				icon: "account_circle",
+				i18nKey: "admin.storage.avatars",
+				permission: "admin:storage:read",
+			},
 		],
 	},
 ];

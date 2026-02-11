@@ -44,9 +44,7 @@ export function buildQuotedReplyHtml(
 	bodyHtml: string,
 ): string {
 	const d =
-		typeof originalDate === "string"
-			? new Date(originalDate)
-			: originalDate;
+		typeof originalDate === "string" ? new Date(originalDate) : originalDate;
 	const dateStr = d.toLocaleString("en-US", {
 		weekday: "short",
 		year: "numeric",
@@ -64,4 +62,4 @@ export function buildQuotedReplyHtml(
 }
 
 // Re-export client-safe utilities for convenience in server code
-export { addReplyPrefix, addForwardPrefix } from "./mail-utils";
+export { addForwardPrefix, addReplyPrefix } from "./mail-utils";

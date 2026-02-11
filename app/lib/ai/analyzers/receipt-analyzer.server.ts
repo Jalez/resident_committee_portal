@@ -1,23 +1,27 @@
 /**
  * Receipt Analyzer
  * Priority Level 1 (Highest) - Physical proof of purchase
- * 
+ *
  * Analyzes receipts to suggest:
  * 1. Transaction (with AI-enriched category)
  * 2. Inventory items (for durable goods from line items)
  * 3. Reimbursement request (if no existing reimbursement)
- * 
+ *
  * AI Enrichment:
  * - Suggests category based on store name and items
  * - Flags line items as "inventory-candidate" for durable goods
  */
 
-import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { Receipt, ReceiptContent } from "~/db/schema";
-import type { EntityAnalyzer, AnalysisResult, EntitySuggestion } from "../entity-relationship-analyzer.server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
+import type { DatabaseAdapter } from "~/db/adapters/types";
+import type { Receipt, ReceiptContent } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import type {
+	AnalysisResult,
+	EntityAnalyzer,
+	EntitySuggestion,
+} from "../entity-relationship-analyzer.server";
 
 interface ReceiptAnalysis {
 	category: string;
@@ -33,7 +37,10 @@ interface ReceiptAnalysis {
 }
 
 class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
-	async analyze(receipt: Receipt, db: DatabaseAdapter): Promise<AnalysisResult> {
+	async analyze(
+		receipt: Receipt,
+		db: DatabaseAdapter,
+	): Promise<AnalysisResult> {
 		const suggestions: EntitySuggestion[] = [];
 		const errors: string[] = [];
 
@@ -43,16 +50,24 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 			if (!content) {
 				return {
 					suggestions: [],
-					errors: ["No receipt content found (OCR may not have been processed)"],
+					errors: [
+						"No receipt content found (OCR may not have been processed)",
+					],
 				};
 			}
 
 			// Parse line items from JSON
-			let items: Array<{ name?: string; description?: string; quantity?: number; price?: number; total?: number }> = [];
+			let items: Array<{
+				name?: string;
+				description?: string;
+				quantity?: number;
+				price?: number;
+				total?: number;
+			}> = [];
 			if (content.items) {
 				try {
 					items = JSON.parse(content.items);
-				} catch (e) {
+				} catch (_e) {
 					errors.push("Failed to parse receipt items");
 				}
 			}
@@ -68,20 +83,33 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 
 			// 1. Suggest Transaction
 			// Check if transaction already exists
-			const existingRelationships = await db.getEntityRelationships("receipt", receipt.id);
-			const hasTransaction = existingRelationships.some(rel => rel.relationBType === "transaction");
+			const existingRelationships = await db.getEntityRelationships(
+				"receipt",
+				receipt.id,
+			);
+			const hasTransaction = existingRelationships.some(
+				(rel) => rel.relationBType === "transaction",
+			);
 
 			if (!hasTransaction) {
 				suggestions.push({
 					entityType: "transaction",
-					name: aiAnalysis.transactionDescription || content.storeName || "Transaction",
+					name:
+						aiAnalysis.transactionDescription ||
+						content.storeName ||
+						"Transaction",
 					data: {
 						amount: content.totalAmount || "0",
 						date: content.purchaseDate || new Date(),
-						description: aiAnalysis.transactionDescription || content.storeName || "Transaction from receipt",
+						description:
+							aiAnalysis.transactionDescription ||
+							content.storeName ||
+							"Transaction from receipt",
 						category: aiAnalysis.category,
 						type: "expense",
-						year: content.purchaseDate ? new Date(content.purchaseDate).getFullYear() : new Date().getFullYear(),
+						year: content.purchaseDate
+							? new Date(content.purchaseDate).getFullYear()
+							: new Date().getFullYear(),
 						status: "draft",
 					},
 					confidence: 0.95,
@@ -90,11 +118,15 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 			}
 
 			// 2. Suggest Inventory Items (for flagged line items)
-			const inventoryCandidates = aiAnalysis.lineItems.filter(item => item.isInventoryCandidate);
+			const inventoryCandidates = aiAnalysis.lineItems.filter(
+				(item) => item.isInventoryCandidate,
+			);
 			for (const candidate of inventoryCandidates) {
 				// Find the corresponding item data
-				const itemData = items.find(i => 
-					(i.name || i.description || "").toLowerCase().includes(candidate.name.toLowerCase())
+				const itemData = items.find((i) =>
+					(i.name || i.description || "")
+						.toLowerCase()
+						.includes(candidate.name.toLowerCase()),
 				);
 
 				suggestions.push({
@@ -102,7 +134,8 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 					name: candidate.name,
 					data: {
 						name: candidate.name,
-						value: itemData?.total?.toString() || itemData?.price?.toString() || "0",
+						value:
+							itemData?.total?.toString() || itemData?.price?.toString() || "0",
 						purchasedAt: content.purchaseDate || new Date(),
 						description: `From ${content.storeName || "receipt"}`,
 						location: candidate.suggestedLocation || "storage",
@@ -117,14 +150,18 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 			}
 
 			// 3. Suggest Reimbursement (if no existing reimbursement)
-			const hasReimbursement = existingRelationships.some(rel => rel.relationBType === "reimbursement");
+			const hasReimbursement = existingRelationships.some(
+				(rel) => rel.relationBType === "reimbursement",
+			);
 			if (!hasReimbursement && aiAnalysis.shouldCreateReimbursement) {
 				suggestions.push({
 					entityType: "reimbursement",
 					name: `Reimbursement for ${content.storeName || "purchase"}`,
 					data: {
 						amount: content.totalAmount || "0",
-						year: content.purchaseDate ? new Date(content.purchaseDate).getFullYear() : new Date().getFullYear(),
+						year: content.purchaseDate
+							? new Date(content.purchaseDate).getFullYear()
+							: new Date().getFullYear(),
 						purchaserName: "Unknown", // Would ideally get from current user
 						bankAccount: "",
 						minutesId: "draft",
@@ -156,11 +193,19 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 
 	private async analyzeWithAI(
 		content: ReceiptContent,
-		items: Array<{ name?: string; description?: string; quantity?: number; price?: number; total?: number }>,
-		db: DatabaseAdapter
+		items: Array<{
+			name?: string;
+			description?: string;
+			quantity?: number;
+			price?: number;
+			total?: number;
+		}>,
+		db: DatabaseAdapter,
 	): Promise<ReceiptAnalysis | null> {
 		try {
-			const apiKeySetting = await db.getAppSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+			const apiKeySetting = await db.getAppSetting(
+				SETTINGS_KEYS.OPENROUTER_API_KEY,
+			);
 			if (!apiKeySetting?.value) {
 				console.warn("[ReceiptAnalyzer] OpenRouter API key not configured");
 				return null;
@@ -170,7 +215,7 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 
 			// Build prompt
 			const itemsList = items
-				.map(item => {
+				.map((item) => {
 					const name = item.name || item.description || "Unknown";
 					const price = item.total || item.price || 0;
 					return `- ${name} (€${price})`;

@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Form, useFetcher, useNavigate, useNavigation } from "react-router";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { useTranslation } from "react-i18next";
+import { Form, useFetcher, useNavigate, useNavigation } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
@@ -54,8 +60,7 @@ export function TreasuryFormActions({
 	const deleteFetcher = useFetcher();
 	const isSubmitting =
 		isSubmittingProp ??
-		(navigation.state === "submitting" ||
-			deleteFetcher.state === "submitting");
+		(navigation.state === "submitting" || deleteFetcher.state === "submitting");
 
 	const handleCancel = useCallback(() => {
 		if (onCancel) {
@@ -77,7 +82,7 @@ export function TreasuryFormActions({
 		}
 	}, [deleteFetcher.state, deleteFetcher.data, handleCancel]);
 
-	const doDelete = () => {
+	const _doDelete = () => {
 		if (deleteAction) {
 			deleteFetcher.submit(null, {
 				method: deleteMethod || "DELETE",
@@ -130,7 +135,9 @@ export function TreasuryFormActions({
 						className="hidden"
 						ref={deleteFormRef}
 					>
-						{!deleteAction && <input type="hidden" name="_action" value="delete" />}
+						{!deleteAction && (
+							<input type="hidden" name="_action" value="delete" />
+						)}
 					</Form>
 					<Button
 						type="button"
@@ -148,8 +155,7 @@ export function TreasuryFormActions({
 						onOpenChange={setShowDeleteConfirm}
 						title={deleteTitle || t("common.actions.delete")}
 						description={
-							deleteDescription ||
-							t("common.confirm.delete_description")
+							deleteDescription || t("common.confirm.delete_description")
 						}
 						confirmLabel={t("common.actions.delete")}
 						cancelLabel={t("common.actions.cancel")}

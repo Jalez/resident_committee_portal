@@ -60,23 +60,24 @@ export function RecipientField({
 	const { t } = useTranslation();
 
 	const getSuggestions = useMemo(
-		() => (query: string): SuggestionItem[] => {
-			const q = query.trim();
-			const roleItems = filterRoles(roles, q).map((r) => ({
-				type: "role" as const,
-				roleId: r.id,
-				label: r.name,
-			}));
-			const personItems = filterPeople(recipientCandidates, q).map((p) => ({
-				type: "person" as const,
-				user: p,
-			}));
-			const emailItem: SuggestionItem[] =
-				q && looksLikeEmail(q)
-					? [{ type: "email", email: q.toLowerCase().trim() }]
-					: [];
-			return [...roleItems, ...personItems, ...emailItem];
-		},
+		() =>
+			(query: string): SuggestionItem[] => {
+				const q = query.trim();
+				const roleItems = filterRoles(roles, q).map((r) => ({
+					type: "role" as const,
+					roleId: r.id,
+					label: r.name,
+				}));
+				const personItems = filterPeople(recipientCandidates, q).map((p) => ({
+					type: "person" as const,
+					user: p,
+				}));
+				const emailItem: SuggestionItem[] =
+					q && looksLikeEmail(q)
+						? [{ type: "email", email: q.toLowerCase().trim() }]
+						: [];
+				return [...roleItems, ...personItems, ...emailItem];
+			},
 		[roles, recipientCandidates],
 	);
 

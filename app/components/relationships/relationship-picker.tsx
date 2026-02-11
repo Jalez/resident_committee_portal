@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
-import type { RelationshipEntityType } from "~/db/schema";
-import { ENTITY_REGISTRY } from "~/lib/entity-registry";
-import { entityToRelationItem, entityToLinkableItem, type AnyEntity } from "~/lib/entity-converters";
 import { RelationActions } from "~/components/relation-actions";
+import type { RelationshipEntityType } from "~/db/schema";
+import {
+	type AnyEntity,
+	entityToLinkableItem,
+	entityToRelationItem,
+} from "~/lib/entity-converters";
+import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { EntityType } from "~/lib/linking/relationship-context";
 
 /**
@@ -61,9 +65,16 @@ export interface RelationshipPickerProps {
 	/** Current path for navigation stack */
 	currentPath?: string;
 	/** Handler when a relationship is linked */
-	onLink?: (relationBType: RelationshipEntityType, relationBId: string, metadata?: Record<string, unknown>) => void;
+	onLink?: (
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+		metadata?: Record<string, unknown>,
+	) => void;
 	/** Handler when a relationship is unlinked */
-	onUnlink?: (relationBType: RelationshipEntityType, relationBId: string) => void;
+	onUnlink?: (
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	) => void;
 	/** Prefix for storage keys (for persisting picker state) */
 	storageKeyPrefix?: string;
 	/** Custom className */
@@ -122,8 +133,15 @@ function RelationshipSectionComponent({
 	relationAName?: string;
 	mode?: "view" | "edit";
 	currentPath?: string;
-	onLink?: (relationBType: RelationshipEntityType, relationBId: string, metadata?: Record<string, unknown>) => void;
-	onUnlink?: (relationBType: RelationshipEntityType, relationBId: string) => void;
+	onLink?: (
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+		metadata?: Record<string, unknown>,
+	) => void;
+	onUnlink?: (
+		relationBType: RelationshipEntityType,
+		relationBId: string,
+	) => void;
 	storageKeyPrefix: string;
 	sourceEntityType: EntityType;
 }) {
@@ -144,8 +162,11 @@ function RelationshipSectionComponent({
 
 	// Handle successful draft creation
 	useEffect(() => {
-		if (fetcher.data?.success && fetcher.data.entity
-			&& processedDraftRef.current !== fetcher.data.entity.id) {
+		if (
+			fetcher.data?.success &&
+			fetcher.data.entity &&
+			processedDraftRef.current !== fetcher.data.entity.id
+		) {
 			const entity = fetcher.data.entity;
 			processedDraftRef.current = entity.id;
 
@@ -158,7 +179,7 @@ function RelationshipSectionComponent({
 				updatedAt: new Date(),
 			} as AnyEntity;
 
-			setLocalDrafts(prev => [...prev, draftEntity]);
+			setLocalDrafts((prev) => [...prev, draftEntity]);
 			onLinkRef.current?.(section.relationBType, entity.id);
 		}
 	}, [fetcher.data, section.relationBType]);
@@ -166,20 +187,26 @@ function RelationshipSectionComponent({
 	// Handle successful import
 	useEffect(() => {
 		if (importFetcher.data?.success && importFetcher.data.entities) {
-			const key = importFetcher.data.entities.map(e => e.id).sort().join(",");
+			const key = importFetcher.data.entities
+				.map((e) => e.id)
+				.sort()
+				.join(",");
 			if (processedImportRef.current === key) return;
 			processedImportRef.current = key;
 
-			const newEntities = importFetcher.data.entities.map(entity => ({
-				id: entity.id,
-				name: entity.name,
-				status: entity.status,
-				description: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			} as AnyEntity));
+			const newEntities = importFetcher.data.entities.map(
+				(entity) =>
+					({
+						id: entity.id,
+						name: entity.name,
+						status: entity.status,
+						description: null,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					}) as AnyEntity,
+			);
 
-			setLocalDrafts(prev => [...prev, ...newEntities]);
+			setLocalDrafts((prev) => [...prev, ...newEntities]);
 			for (const entity of importFetcher.data.entities) {
 				onLinkRef.current?.(section.relationBType, entity.id);
 			}
@@ -193,14 +220,16 @@ function RelationshipSectionComponent({
 	const allLinkedEntities = [...section.linkedEntities, ...localDrafts];
 
 	// Filter out removed items for immediate UI feedback
-	const visibleEntities = allLinkedEntities.filter(entity => !removedIds.has(entity.id));
+	const visibleEntities = allLinkedEntities.filter(
+		(entity) => !removedIds.has(entity.id),
+	);
 
 	const items = visibleEntities.map((entity) =>
-		entityToRelationItem(section.relationBType, entity, currentPath)
+		entityToRelationItem(section.relationBType, entity, currentPath),
 	);
 
 	const linkableItems = section.availableEntities.map((entity) =>
-		entityToLinkableItem(section.relationBType, entity)
+		entityToLinkableItem(section.relationBType, entity),
 	);
 
 	// Handler for creating new entities via draft system
@@ -220,7 +249,10 @@ function RelationshipSectionComponent({
 	};
 
 	// Handler for importing from a source entity
-	const handleImport = (sourceType: RelationshipEntityType, sourceId: string) => {
+	const handleImport = (
+		sourceType: RelationshipEntityType,
+		sourceId: string,
+	) => {
 		const formData = new FormData();
 		formData.append("targetType", section.relationBType);
 		formData.append("sourceType", sourceType);
@@ -241,32 +273,39 @@ function RelationshipSectionComponent({
 			label: source.label,
 			icon: source.icon,
 			onClick: () => handleImport(source.sourceType, sourceId),
-		}))
+		})),
 	);
 
-	const isCreating = fetcher.state !== "idle";
-	const isImporting = importFetcher.state !== "idle";
+	const _isCreating = fetcher.state !== "idle";
+	const _isImporting = importFetcher.state !== "idle";
 
 	// Handler for removing/unlinking entities
 	const handleRemove = (id: string) => {
-		console.log('[RelationshipPicker] handleRemove called with id:', id);
-		console.log('[RelationshipPicker] Current localDrafts:', localDrafts);
-		console.log('[RelationshipPicker] section.relationBType:', section.relationBType);
+		console.log("[RelationshipPicker] handleRemove called with id:", id);
+		console.log("[RelationshipPicker] Current localDrafts:", localDrafts);
+		console.log(
+			"[RelationshipPicker] section.relationBType:",
+			section.relationBType,
+		);
 
 		// Add to removed IDs for immediate UI feedback
-		setRemovedIds(prev => new Set([...prev, id]));
+		setRemovedIds((prev) => new Set([...prev, id]));
 
 		// Remove from local drafts if it exists
-		const isLocalDraft = localDrafts.some(draft => draft.id === id);
-		console.log('[RelationshipPicker] Is local draft?', isLocalDraft);
+		const isLocalDraft = localDrafts.some((draft) => draft.id === id);
+		console.log("[RelationshipPicker] Is local draft?", isLocalDraft);
 
-		setLocalDrafts(prev => {
-			const filtered = prev.filter(draft => draft.id !== id);
-			console.log('[RelationshipPicker] Filtered localDrafts:', filtered);
+		setLocalDrafts((prev) => {
+			const filtered = prev.filter((draft) => draft.id !== id);
+			console.log("[RelationshipPicker] Filtered localDrafts:", filtered);
 			return filtered;
 		});
 		console.log("Removing", id);
-		console.log('[RelationshipPicker] Calling onUnlink with:', section.relationBType, id);
+		console.log(
+			"[RelationshipPicker] Calling onUnlink with:",
+			section.relationBType,
+			id,
+		);
 		onUnlink?.(section.relationBType, id);
 	};
 
@@ -285,7 +324,9 @@ function RelationshipSectionComponent({
 			sourceEntityId={relationAId}
 			sourceEntityName={relationAName}
 			onAdd={config.supportsDraft ? handleAdd : undefined}
-			addLabel={config.supportsDraft ? t("common.actions.create_new") : undefined}
+			addLabel={
+				config.supportsDraft ? t("common.actions.create_new") : undefined
+			}
 			importSources={importActions.length > 0 ? importActions : undefined}
 			withSeparator
 		/>

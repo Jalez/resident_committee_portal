@@ -7,8 +7,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useFetcher, useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useFetcher, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import type { InventoryItem } from "~/db";
 import {

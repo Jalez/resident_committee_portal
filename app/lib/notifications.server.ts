@@ -4,9 +4,9 @@
 
 import type { DatabaseAdapter, News, Purchase } from "~/db";
 import {
-	sendReimbursementStatusEmail,
 	bilingualText,
 	primaryText,
+	sendReimbursementStatusEmail,
 } from "./email.server";
 import { getSystemLanguageDefaults } from "./settings.server";
 
@@ -46,7 +46,10 @@ export async function createReimbursementStatusNotification(
 	}
 
 	// Determine message type and status key
-	const messageType = newStatus === "approved" ? "reimbursement_approved" : "reimbursement_declined";
+	const messageType =
+		newStatus === "approved"
+			? "reimbursement_approved"
+			: "reimbursement_declined";
 	const statusKey = newStatus === "approved" ? "approved" : "declined";
 
 	// Get bilingual text using user's language preferences
@@ -56,7 +59,10 @@ export async function createReimbursementStatusNotification(
 	// Create message title and content
 	const title = t(`messages.reimbursement_${statusKey}.title`);
 	const content = t(`messages.reimbursement_${statusKey}.content`)
-		.replace("{description}", purchase.description || t("messages.unknown_item"))
+		.replace(
+			"{description}",
+			purchase.description || t("messages.unknown_item"),
+		)
 		.replace("{amount}", purchase.amount);
 
 	// Create in-app message
@@ -131,7 +137,9 @@ export async function createNewsPublishedNotifications(
 		// Use only primary language: route name as title, news headline in user's language as content
 		const title = primaryText(user.primaryLanguage, "nav.news");
 		const content =
-			systemLanguages.secondary && user.primaryLanguage === systemLanguages.secondary && news.titleSecondary
+			systemLanguages.secondary &&
+			user.primaryLanguage === systemLanguages.secondary &&
+			news.titleSecondary
 				? news.titleSecondary
 				: news.title;
 		try {

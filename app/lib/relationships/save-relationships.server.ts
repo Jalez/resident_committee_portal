@@ -1,6 +1,6 @@
 /**
  * Server-side utilities for saving relationship changes from forms.
- * 
+ *
  * Handles:
  * - Creating new relationships
  * - Deleting relationships
@@ -8,8 +8,8 @@
  * - Write-through to legacy FKs (for backward compatibility)
  */
 
-import type { RelationshipEntityType } from "~/db/schema";
 import type { getDatabase } from "~/db";
+import type { RelationshipEntityType } from "~/db/schema";
 import { cleanupOrphanedDraft } from "./draft-lifecycle.server";
 
 interface RelationshipLink {
@@ -31,10 +31,10 @@ interface SaveRelationshipChangesResult {
 
 /**
  * Save relationship changes from form data.
- * 
+ *
  * Reads _relationship_links and _relationship_unlinks from form data,
  * applies changes to the database, and cleans up orphaned drafts.
- * 
+ *
  * @param db - Database adapter
  * @param relationAType - Type of the source entity
  * @param relationId - ID of the source entity
@@ -67,7 +67,8 @@ export async function saveRelationshipChanges(
 		: [];
 
 	// 1. Process unlinks first (with orphan cleanup)
-	const orphanCandidates: Array<{ type: RelationshipEntityType; id: string }> = [];
+	const orphanCandidates: Array<{ type: RelationshipEntityType; id: string }> =
+		[];
 
 	for (const unlink of unlinks) {
 		try {
@@ -100,7 +101,11 @@ export async function saveRelationshipChanges(
 
 	// 2. Cleanup orphaned drafts
 	for (const candidate of orphanCandidates) {
-		const deleted = await cleanupOrphanedDraft(db, candidate.type, candidate.id);
+		const deleted = await cleanupOrphanedDraft(
+			db,
+			candidate.type,
+			candidate.id,
+		);
 		if (deleted) {
 			result.orphansDeleted++;
 		}
@@ -189,7 +194,10 @@ export async function deleteAllRelationships(
 				}
 			}
 		} catch (error) {
-			console.error(`[SaveRelationships] Failed to delete relationship:`, error);
+			console.error(
+				`[SaveRelationships] Failed to delete relationship:`,
+				error,
+			);
 		}
 	}
 

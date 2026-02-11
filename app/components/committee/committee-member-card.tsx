@@ -21,7 +21,6 @@ type Props = {
 };
 
 export function CommitteeMemberCard({ member, noDescriptionLabel }: Props) {
-
 	return (
 		<div className="p-6 flex flex-col">
 			{/* Profile Picture and Name */}

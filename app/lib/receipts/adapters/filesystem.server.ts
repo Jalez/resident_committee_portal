@@ -1,15 +1,23 @@
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync, copyFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { join, dirname } from "node:path";
 import { randomBytes } from "node:crypto";
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	statSync,
+	unlinkSync,
+	writeFileSync,
+} from "node:fs";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 import type {
+	FileMetadata,
 	ReceiptStorageAdapter,
 	ReceiptsByYear,
+	RenameResult,
 	UploadOptions,
 	UploadResult,
-	RenameResult,
-	FileMetadata,
 } from "../types";
 
 function getBaseUrl(): string {
@@ -26,7 +34,9 @@ function getBaseUrl(): string {
 }
 
 function getStorageDir(): string {
-	return process.env.RECEIPT_STORAGE_DIR || join(process.cwd(), "public", "receipts");
+	return (
+		process.env.RECEIPT_STORAGE_DIR || join(process.cwd(), "public", "receipts")
+	);
 }
 
 function ensureDirectoryExists(filePath: string): void {
@@ -56,11 +66,15 @@ function pathnameToUrl(pathname: string): string {
 function pathnameToFilePath(pathname: string): string {
 	const storageDir = getStorageDir();
 	const prefix = getReceiptsPrefix();
-	const relativePath = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : pathname;
+	const relativePath = pathname.startsWith(prefix)
+		? pathname.slice(prefix.length)
+		: pathname;
 	return join(storageDir, relativePath);
 }
 
-function groupReceiptsByYear(files: Array<{ pathname: string; url: string; mtime: Date }>): ReceiptsByYear[] {
+function groupReceiptsByYear(
+	files: Array<{ pathname: string; url: string; mtime: Date }>,
+): ReceiptsByYear[] {
 	const results = new Map<string, ReceiptsByYear>();
 	const prefix = getReceiptsPrefix();
 
@@ -113,15 +127,17 @@ function groupReceiptsByYear(files: Array<{ pathname: string; url: string; mtime
 	);
 
 	for (const yearEntry of sorted) {
-		yearEntry.files.sort(
-			(a, b) => b.createdTime.localeCompare(a.createdTime),
-		);
+		yearEntry.files.sort((a, b) => b.createdTime.localeCompare(a.createdTime));
 	}
 
 	return sorted;
 }
 
-function getAllReceiptFiles(): Array<{ pathname: string; url: string; mtime: Date }> {
+function getAllReceiptFiles(): Array<{
+	pathname: string;
+	url: string;
+	mtime: Date;
+}> {
 	const storageDir = getStorageDir();
 	const prefix = getReceiptsPrefix();
 	const files: Array<{ pathname: string; url: string; mtime: Date }> = [];
@@ -135,7 +151,9 @@ function getAllReceiptFiles(): Array<{ pathname: string; url: string; mtime: Dat
 
 		for (const entry of entries) {
 			const fullPath = join(dir, entry.name);
-			const relative = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+			const relative = relativePath
+				? `${relativePath}/${entry.name}`
+				: entry.name;
 
 			if (entry.isDirectory()) {
 				walkDir(fullPath, relative);
@@ -179,7 +197,10 @@ export class FilesystemReceiptStorage implements ReceiptStorageAdapter {
 			const buffer = await readFile(filePath);
 			return buffer.toString("base64");
 		} catch (error) {
-			console.error("[FilesystemReceiptStorage] getReceiptContentBase64 error:", error);
+			console.error(
+				"[FilesystemReceiptStorage] getReceiptContentBase64 error:",
+				error,
+			);
 			return null;
 		}
 	}

@@ -48,7 +48,10 @@ export function UsersTable({ users, roles }: UsersTableProps) {
 					<tbody className="divide-y divide-gray-100 dark:divide-gray-700">
 						{users.length === 0 ? (
 							<tr>
-								<td colSpan={4} className="px-4 py-12 text-center text-gray-500">
+								<td
+									colSpan={4}
+									className="px-4 py-12 text-center text-gray-500"
+								>
 									{t("settings.users.no_users") || "No users found"}
 								</td>
 							</tr>

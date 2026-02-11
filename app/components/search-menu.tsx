@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -106,13 +106,15 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 					className={cn(
 						"group inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
 						className,
-					)}	
+					)}
 				>
 					<span className="material-symbols-outlined text-xl">
 						{hasActiveFilters ? "filter_alt" : "search"}
 					</span>
 					<span className="text-sm font-bold hidden sm:inline">
-						{hasActiveFilters ? t("search_menu.filter") : t("search_menu.search")}
+						{hasActiveFilters
+							? t("search_menu.filter")
+							: t("search_menu.search")}
 					</span>
 				</Button>
 			</PopoverTrigger>
@@ -144,7 +146,9 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 								>
 									<SelectTrigger>
 										<SelectValue
-											placeholder={field.placeholder || t("search_menu.select_placeholder")}
+											placeholder={
+												field.placeholder || t("search_menu.select_placeholder")
+											}
 										/>
 									</SelectTrigger>
 									<SelectContent>

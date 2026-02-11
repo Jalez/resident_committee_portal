@@ -1,22 +1,26 @@
 /**
  * Reimbursement Analyzer
  * Priority Level 2 (Medium) - User intent
- * 
+ *
  * Analyzes reimbursement requests to suggest:
  * 1. Transaction (if not exists and amount/description are meaningful)
  * 2. Budget linkage (match description to budget keywords)
- * 
+ *
  * AI Enrichment:
  * - Suggests category based on description
  * - Suggests budget match
  */
 
-import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { Purchase } from "~/db/schema";
-import type { EntityAnalyzer, AnalysisResult, EntitySuggestion } from "../entity-relationship-analyzer.server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
+import type { DatabaseAdapter } from "~/db/adapters/types";
+import type { Purchase } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import type {
+	AnalysisResult,
+	EntityAnalyzer,
+	EntitySuggestion,
+} from "../entity-relationship-analyzer.server";
 
 interface ReimbursementAnalysis {
 	category: string;
@@ -28,15 +32,25 @@ interface ReimbursementAnalysis {
 }
 
 class ReimbursementAnalyzer implements EntityAnalyzer<Purchase> {
-	async analyze(reimbursement: Purchase, db: DatabaseAdapter): Promise<AnalysisResult> {
+	async analyze(
+		reimbursement: Purchase,
+		db: DatabaseAdapter,
+	): Promise<AnalysisResult> {
 		const suggestions: EntitySuggestion[] = [];
 		const errors: string[] = [];
 
 		try {
 			// Check for existing relationships
-			const existingRelationships = await db.getEntityRelationships("reimbursement", reimbursement.id);
-			const hasTransaction = existingRelationships.some(rel => rel.relationBType === "transaction");
-			const hasReceipt = existingRelationships.some(rel => rel.relationBType === "receipt");
+			const existingRelationships = await db.getEntityRelationships(
+				"reimbursement",
+				reimbursement.id,
+			);
+			const hasTransaction = existingRelationships.some(
+				(rel) => rel.relationBType === "transaction",
+			);
+			const hasReceipt = existingRelationships.some(
+				(rel) => rel.relationBType === "receipt",
+			);
 
 			// Get available budgets for matching
 			const year = reimbursement.year || new Date().getFullYear();
@@ -47,20 +61,25 @@ class ReimbursementAnalyzer implements EntityAnalyzer<Purchase> {
 
 			// 1. Suggest Transaction (if no receipt and no existing transaction)
 			// Rationale: If there's a receipt, the transaction should come from there (higher priority)
-			if (!hasReceipt && !hasTransaction && aiAnalysis?.shouldCreateTransaction) {
+			if (
+				!hasReceipt &&
+				!hasTransaction &&
+				aiAnalysis?.shouldCreateTransaction
+			) {
 				suggestions.push({
 					entityType: "transaction",
 					name: reimbursement.description || "Transaction",
 					data: {
 						amount: reimbursement.amount,
 						date: new Date(), // Reimbursements typically don't have purchase date stored
-						description: reimbursement.description || "Reimbursement transaction",
+						description:
+							reimbursement.description || "Reimbursement transaction",
 						category: aiAnalysis.category,
 						type: "expense",
 						year: reimbursement.year,
 						status: "draft",
 					},
-					confidence: 0.70,
+					confidence: 0.7,
 					reasoning: `Transaction for reimbursement "${reimbursement.description}". Category: ${aiAnalysis.category}`,
 				});
 			}
@@ -75,7 +94,9 @@ class ReimbursementAnalyzer implements EntityAnalyzer<Purchase> {
 				suggestions,
 				enrichment: {
 					category: aiAnalysis?.category,
-					tags: aiAnalysis?.suggestedBudgetId ? [`budget:${aiAnalysis.suggestedBudgetId}`] : [],
+					tags: aiAnalysis?.suggestedBudgetId
+						? [`budget:${aiAnalysis.suggestedBudgetId}`]
+						: [],
 				},
 				errors: errors.length > 0 ? errors : undefined,
 			};
@@ -90,13 +111,17 @@ class ReimbursementAnalyzer implements EntityAnalyzer<Purchase> {
 
 	private async analyzeWithAI(
 		reimbursement: Purchase,
-		budgets: Array<{ id: string; name: string; description: string | null; }>,
-		db: DatabaseAdapter
+		budgets: Array<{ id: string; name: string; description: string | null }>,
+		db: DatabaseAdapter,
 	): Promise<ReimbursementAnalysis | null> {
 		try {
-			const apiKeySetting = await db.getAppSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+			const apiKeySetting = await db.getAppSetting(
+				SETTINGS_KEYS.OPENROUTER_API_KEY,
+			);
 			if (!apiKeySetting?.value) {
-				console.warn("[ReimbursementAnalyzer] OpenRouter API key not configured");
+				console.warn(
+					"[ReimbursementAnalyzer] OpenRouter API key not configured",
+				);
 				return null;
 			}
 
@@ -104,7 +129,10 @@ class ReimbursementAnalyzer implements EntityAnalyzer<Purchase> {
 
 			// Build budget list for matching
 			const budgetList = budgets
-				.map(b => `- "${b.name}" (ID: ${b.id})${b.description ? ` - ${b.description}` : ""}`)
+				.map(
+					(b) =>
+						`- "${b.name}" (ID: ${b.id})${b.description ? ` - ${b.description}` : ""}`,
+				)
 				.join("\n");
 
 			const prompt = `Analyze this reimbursement request:

@@ -6,21 +6,21 @@
 //TODO: REFORMAT TO THE NEW VERSION
 
 export type EntityType =
-  | "receipt"
-  | "transaction"
-  | "reimbursement"
-  | "purchase" // alias for reimbursement
-  | "budget"
-  | "inventory"
-  | "minute";
+	| "receipt"
+	| "transaction"
+	| "reimbursement"
+	| "purchase" // alias for reimbursement
+	| "budget"
+	| "inventory"
+	| "minute";
 
 export interface SourceContext {
-  /** Type of the source entity */
-  type: EntityType;
-  /** ID of the source entity */
-  id: string;
-  /** Optional: Name/title for display */
-  name?: string;
+	/** Type of the source entity */
+	type: EntityType;
+	/** ID of the source entity */
+	id: string;
+	/** Optional: Name/title for display */
+	name?: string;
 }
 
 /**
@@ -28,55 +28,54 @@ export interface SourceContext {
  * Format: "type:id:name" (name is optional and URL-encoded)
  */
 export function encodeRelationshipContext(context: SourceContext): string {
-  const parts = [context.type, context.id];
-  if (context.name) {
-    parts.push(encodeURIComponent(context.name));
-  }
-  return parts.join(":");
+	const parts = [context.type, context.id];
+	if (context.name) {
+		parts.push(encodeURIComponent(context.name));
+	}
+	return parts.join(":");
 }
 
 /**
  * Parse source context from URL parameter
  */
 export function decodeRelationshipContext(
-  param: string | null
+	param: string | null,
 ): SourceContext | null {
-  if (!param) return null;
+	if (!param) return null;
 
-  const parts = param.split(":");
-  if (parts.length < 2) return null;
+	const parts = param.split(":");
+	if (parts.length < 2) return null;
 
-  return {
-    type: parts[0] as EntityType,
-    id: parts[1],
-    name: parts[2] ? decodeURIComponent(parts[2]) : undefined,
-  };
+	return {
+		type: parts[0] as EntityType,
+		id: parts[1],
+		name: parts[2] ? decodeURIComponent(parts[2]) : undefined,
+	};
 }
-
 
 /**
  * Get source context from URL, supporting both new and legacy formats
  */
 export function getRelationshipContextFromUrl(url: URL): SourceContext | null {
-  // Try new format first
-  const newFormat = decodeRelationshipContext(url.searchParams.get("source"));
-  if (newFormat) return newFormat;
+	// Try new format first
+	const newFormat = decodeRelationshipContext(url.searchParams.get("source"));
+	if (newFormat) return newFormat;
 
-  // Fallback to legacy formats
-  const legacyReceipt = url.searchParams.get("sourceReceiptId");
-  if (legacyReceipt) {
-    return { type: "receipt", id: legacyReceipt };
-  }
+	// Fallback to legacy formats
+	const legacyReceipt = url.searchParams.get("sourceReceiptId");
+	if (legacyReceipt) {
+		return { type: "receipt", id: legacyReceipt };
+	}
 
-  const legacyTransaction = url.searchParams.get("sourceTransactionId");
-  if (legacyTransaction) {
-    return { type: "transaction", id: legacyTransaction };
-  }
+	const legacyTransaction = url.searchParams.get("sourceTransactionId");
+	if (legacyTransaction) {
+		return { type: "transaction", id: legacyTransaction };
+	}
 
-  const legacyPurchase = url.searchParams.get("sourcePurchaseId");
-  if (legacyPurchase) {
-    return { type: "reimbursement", id: legacyPurchase };
-  }
+	const legacyPurchase = url.searchParams.get("sourcePurchaseId");
+	if (legacyPurchase) {
+		return { type: "reimbursement", id: legacyPurchase };
+	}
 
-  return null;
+	return null;
 }

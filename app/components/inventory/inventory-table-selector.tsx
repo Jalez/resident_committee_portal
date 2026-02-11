@@ -85,7 +85,13 @@ export function InventoryTableSelector({
 
 	// Handler for creating new item
 	const handleCreateItem = async () => {
-		if (!newItem.name.trim() || !newItem.location.trim() || !onAddItem || hasSavedRef.current) return;
+		if (
+			!newItem.name.trim() ||
+			!newItem.location.trim() ||
+			!onAddItem ||
+			hasSavedRef.current
+		)
+			return;
 
 		hasSavedRef.current = true;
 		setIsAdding(true);
@@ -128,7 +134,7 @@ export function InventoryTableSelector({
 
 	// Handler for blur on add row - save if clicking outside and required fields are filled
 	const handleAddRowBlur = useCallback(
-		(e: React.FocusEvent) => {
+		(_e: React.FocusEvent) => {
 			// Use setTimeout to allow the new focus target to be set
 			setTimeout(async () => {
 				// Prevent duplicate saves
@@ -143,8 +149,9 @@ export function InventoryTableSelector({
 
 				// Check if focus is in a popover (SmartCombobox dropdown)
 				const isInPopover =
-					(activeElement as Element)?.closest("[data-radix-popper-content-wrapper]") ||
-					(activeElement as Element)?.closest('[role="listbox"]');
+					(activeElement as Element)?.closest(
+						"[data-radix-popper-content-wrapper]",
+					) || (activeElement as Element)?.closest('[role="listbox"]');
 
 				// If focus moved outside the row (and not in a popover) and required fields are filled, save
 				const currentItem = newItemRef.current;

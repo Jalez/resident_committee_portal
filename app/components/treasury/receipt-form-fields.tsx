@@ -1,12 +1,12 @@
 import { useTranslation } from "react-i18next";
+import { ParsedReceiptDisplay } from "~/components/treasury/parsed-receipt-display";
+import { ReceiptContentsDisplay } from "~/components/treasury/receipt-contents-display";
+import { TreasuryField } from "~/components/treasury/treasury-detail-components";
+import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { FileUpload } from "~/components/ui/file-upload";
-import { Button } from "~/components/ui/button";
-import { TreasuryField } from "~/components/treasury/treasury-detail-components";
-import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
 import type { ReceiptContent } from "~/db";
-import { ReceiptContentsDisplay } from "~/components/treasury/receipt-contents-display";
-import { ParsedReceiptDisplay } from "~/components/treasury/parsed-receipt-display";
+import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
 
 interface ReceiptFormFieldsProps {
 	// File upload props
@@ -112,11 +112,7 @@ export function ReceiptFormFields({
 					>
 						<div className="flex items-center gap-2">
 							<Button asChild variant="outline" size="sm">
-								<a
-									href={tempUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-								>
+								<a href={tempUrl} target="_blank" rel="noopener noreferrer">
 									<span className="material-symbols-outlined text-base">
 										open_in_new
 									</span>
@@ -131,7 +127,11 @@ export function ReceiptFormFields({
 				)}
 
 				{/* File upload */}
-				<div className={(isAnalyzing || isUploading) ? "opacity-50 pointer-events-none" : ""}>
+				<div
+					className={
+						isAnalyzing || isUploading ? "opacity-50 pointer-events-none" : ""
+					}
+				>
 					<FileUpload
 						name="file"
 						id="file"
@@ -144,7 +144,10 @@ export function ReceiptFormFields({
 						}
 						helperText={
 							tempUrl && !existingReceiptUrl
-								? t("treasury.receipts.optional_replace", "Optional: upload a different file")
+								? t(
+										"treasury.receipts.optional_replace",
+										"Optional: upload a different file",
+									)
 								: `${t("treasury.receipts.allowed_types")}: ${RECEIPT_ALLOWED_TYPES.join(", ")}`
 						}
 						onFileChange={onFileChange}
@@ -171,7 +174,10 @@ export function ReceiptFormFields({
 							{t("treasury.receipts.analyzing", "Analyzing receipt...")}
 						</div>
 						<p className="text-xs text-blue-500 dark:text-blue-400">
-							{t("treasury.receipts.analysis_note", "This may take up to 60 seconds for large files or when using free AI models.")}
+							{t(
+								"treasury.receipts.analysis_note",
+								"This may take up to 60 seconds for large files or when using free AI models.",
+							)}
 						</p>
 					</div>
 				)}
@@ -204,7 +210,10 @@ export function ReceiptFormFields({
 						<h3 className="text-lg font-medium">
 							{ocrData
 								? t("treasury.receipts.parsed_content", "Parsed Content")
-								: t("treasury.receipts.extract_content", "Extract Receipt Content")}
+								: t(
+										"treasury.receipts.extract_content",
+										"Extract Receipt Content",
+									)}
 						</h3>
 						{onReanalyze && (
 							<Button
@@ -232,7 +241,10 @@ export function ReceiptFormFields({
 					) : (
 						<div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
 							<p className="text-sm text-muted-foreground">
-								{t("treasury.receipts.no_extraction_yet", "File uploaded. Click 'Try Extracting' to extract text from the receipt.")}
+								{t(
+									"treasury.receipts.no_extraction_yet",
+									"File uploaded. Click 'Try Extracting' to extract text from the receipt.",
+								)}
 							</p>
 						</div>
 					)}

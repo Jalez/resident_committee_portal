@@ -27,7 +27,9 @@ export function isImapConfigured(): boolean {
 	return !!(config.host && config.user);
 }
 
-function addressesToJson(arr: { address?: string; name?: string }[] | undefined): string {
+function addressesToJson(
+	arr: { address?: string; name?: string }[] | undefined,
+): string {
 	if (!arr || arr.length === 0) return "[]";
 	return JSON.stringify(
 		arr.map((a) => ({ email: a.address || "", name: a.name || undefined })),
@@ -35,7 +37,10 @@ function addressesToJson(arr: { address?: string; name?: string }[] | undefined)
 }
 
 function stripHtml(html: string): string {
-	return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+	return html
+		.replace(/<[^>]+>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
 }
 
 function findReimbursementPurchaseId({
@@ -109,13 +114,21 @@ async function applyReimbursementReply(
 
 	if (decision === "approved" || decision === "rejected") {
 		// Find linked transaction via entity relationships
-		const relationships = await db.getEntityRelationships("reimbursement", purchaseId);
-		const transactionId = relationships
-			.find(r => r.relationBType === "transaction" || r.relationAType === "transaction")
-			?.relationBType === "transaction" 
-				? relationships.find(r => r.relationBType === "transaction")?.relationBId
-				: relationships.find(r => r.relationAType === "transaction")?.relationId;
-		
+		const relationships = await db.getEntityRelationships(
+			"reimbursement",
+			purchaseId,
+		);
+		const transactionId =
+			relationships.find(
+				(r) =>
+					r.relationBType === "transaction" ||
+					r.relationAType === "transaction",
+			)?.relationBType === "transaction"
+				? relationships.find((r) => r.relationBType === "transaction")
+						?.relationBId
+				: relationships.find((r) => r.relationAType === "transaction")
+						?.relationId;
+
 		if (transactionId) {
 			const linkedTransaction = await db.getTransactionById(transactionId);
 			if (linkedTransaction) {
@@ -157,10 +170,10 @@ export async function fetchInboxMessages(
 		let stored = 0;
 		try {
 			const mailbox = client.mailbox;
-		const exists =
-			mailbox && typeof mailbox === "object" && "exists" in mailbox
-				? (mailbox.exists as number)
-				: 0;
+			const exists =
+				mailbox && typeof mailbox === "object" && "exists" in mailbox
+					? (mailbox.exists as number)
+					: 0;
 			if (exists === 0) {
 				return { count: 0 };
 			}
@@ -172,7 +185,10 @@ export async function fetchInboxMessages(
 			})) {
 				const envelope = msg.envelope;
 				const messageId = envelope?.messageId?.trim() || null;
-				if (messageId && (await db.committeeMailMessageExistsByMessageId(messageId))) {
+				if (
+					messageId &&
+					(await db.committeeMailMessageExistsByMessageId(messageId))
+				) {
 					continue;
 				}
 				let bodyHtml = "";

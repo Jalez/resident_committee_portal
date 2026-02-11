@@ -38,7 +38,9 @@ const ReimbursementTemplateContext =
 
 export function ReimbursementTemplateProvider({
 	children,
-}: { children: ReactNode }) {
+}: {
+	children: ReactNode;
+}) {
 	const [template, setTemplateState] = useState<ReimbursementTemplate | null>(
 		null,
 	);

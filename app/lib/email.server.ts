@@ -9,19 +9,19 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getReceiptContentBase64 } from "./receipts";
+import { getDatabase } from "~/db";
+import type { DatabaseAdapter } from "~/db/adapters/types";
 import { getFileAsBase64 } from "./google.server";
-import { getSystemLanguageDefaults } from "./settings.server";
 import {
+	type CommitteeMailAttachment,
 	isCommitteeMailConfigured,
 	sendCommitteeEmail,
-	type CommitteeMailAttachment,
 } from "./mail-nodemailer.server";
 import { computeThreadId } from "./mail-threading.server";
-import type { DatabaseAdapter } from "~/db/adapters/types";
-import { getDatabase } from "~/db";
-import { SETTINGS_KEYS } from "./openrouter.server";
 import { getMinuteStorage } from "./minutes/storage.server";
+import { SETTINGS_KEYS } from "./openrouter.server";
+import { getReceiptContentBase64 } from "./receipts";
+import { getSystemLanguageDefaults } from "./settings.server";
 
 interface ReimbursementEmailConfig {
 	recipientEmail: string;
@@ -61,8 +61,10 @@ function loadTranslations(lang: string): Record<string, unknown> {
 		const content = readFileSync(filePath, "utf-8");
 		translationCache[lang] = JSON.parse(content);
 		return translationCache[lang];
-	} catch (error) {
-		console.warn(`[loadTranslations] Failed to load ${lang}, falling back to fi`);
+	} catch (_error) {
+		console.warn(
+			`[loadTranslations] Failed to load ${lang}, falling back to fi`,
+		);
 		if (lang !== "fi") {
 			return loadTranslations("fi");
 		}
@@ -73,7 +75,10 @@ function loadTranslations(lang: string): Record<string, unknown> {
 /**
  * Get a nested translation value
  */
-function getTranslation(translations: Record<string, unknown>, key: string): string {
+function getTranslation(
+	translations: Record<string, unknown>,
+	key: string,
+): string {
 	const keys = key.split(".");
 	let value: unknown = translations;
 	for (const k of keys) {
@@ -158,9 +163,7 @@ export function buildReimbursementSubject(
 /**
  * Extract purchase ID from a tagged subject.
  */
-export function extractPurchaseIdFromSubject(
-	subject: string,
-): string | null {
+export function extractPurchaseIdFromSubject(subject: string): string | null {
 	const match = subject.match(REIMBURSEMENT_SUBJECT_REGEX);
 	return match ? match[1] : null;
 }
@@ -168,9 +171,7 @@ export function extractPurchaseIdFromSubject(
 /**
  * Extract purchase ID from any reimbursement marker inside text content.
  */
-export function extractPurchaseIdFromContent(
-	content: string,
-): string | null {
+export function extractPurchaseIdFromContent(content: string): string | null {
 	const match = content.match(
 		/\bReimbursement\s+ID\s*[:#]?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i,
 	);
@@ -275,8 +276,7 @@ export async function sendReimbursementEmail(
 		console.error("[sendReimbursementEmail] Committee mail not configured");
 		return {
 			success: false,
-			error:
-				"Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
+			error: "Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
 		};
 	}
 
@@ -299,11 +299,11 @@ export async function sendReimbursementEmail(
                 <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;"><strong>${t("email.reimbursement.receipts")}:</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">
                     ${data.receiptLinks
-					.map(
-						(r) =>
-							`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
-					)
-					.join("")}
+											.map(
+												(r) =>
+													`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
+											)
+											.join("")}
                 </td>
                </tr>`
 				: "";
@@ -366,9 +366,7 @@ export async function sendReimbursementEmail(
 		if (db) {
 			const fromEmail = process.env.COMMITTEE_FROM_EMAIL || "";
 			const fromName =
-				process.env.COMMITTEE_FROM_NAME ||
-				process.env.SITE_NAME ||
-				"Committee";
+				process.env.COMMITTEE_FROM_NAME || process.env.SITE_NAME || "Committee";
 			const toJson = JSON.stringify([{ email: recipientEmail }]);
 			const threadId = computeThreadId(result.messageId || null, null, null);
 			await db.insertCommitteeMailMessage({
@@ -433,11 +431,12 @@ export async function sendReimbursementStatusEmail(
 	}
 
 	if (!isCommitteeMailConfigured()) {
-		console.error("[sendReimbursementStatusEmail] Committee mail not configured");
+		console.error(
+			"[sendReimbursementStatusEmail] Committee mail not configured",
+		);
 		return {
 			success: false,
-			error:
-				"Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
+			error: "Committee mail is not configured (SMTP / COMMITTEE_FROM_EMAIL)",
 		};
 	}
 
@@ -445,7 +444,8 @@ export async function sendReimbursementStatusEmail(
 	const recipientEmail = isDev && testEmail ? testEmail : userEmail;
 
 	// Helper to get bilingual text using user's language preferences
-	const t = (key: string) => bilingualText(userPrimaryLanguage, userSecondaryLanguage, key);
+	const t = (key: string) =>
+		bilingualText(userPrimaryLanguage, userSecondaryLanguage, key);
 
 	try {
 		const statusKey = status === "approved" ? "approved" : "declined";
@@ -560,19 +560,24 @@ export async function buildMinutesAttachment(
 
 	// Try to find in DB first (UUID)
 	// UUID regex check? Or just try fetch
-	const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(minutesId);
+	const isUuid =
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+			minutesId,
+		);
 
 	if (isUuid) {
 		try {
 			const db = getDatabase();
 			const minute = await db.getMinuteById(minutesId);
-			if (minute && minute.fileUrl && minute.fileKey) {
+			if (minute?.fileUrl && minute.fileKey) {
 				const storage = getMinuteStorage();
 				const content = await storage.getMinuteContentBase64(minute.fileUrl);
 				if (content) {
 					// Determine mime type from extension or minute data?
 					const filename = minute.fileKey.split("/").pop() || "minute.pdf";
-					const type = filename.endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+					const type = filename.endsWith(".pdf")
+						? "application/pdf"
+						: "application/octet-stream";
 					return {
 						name: filename,
 						type,
@@ -581,7 +586,10 @@ export async function buildMinutesAttachment(
 				}
 			}
 		} catch (e) {
-			console.error("[buildMinutesAttachment] DB fetch failed, falling back to Google", e);
+			console.error(
+				"[buildMinutesAttachment] DB fetch failed, falling back to Google",
+				e,
+			);
 		}
 	}
 

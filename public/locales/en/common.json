@@ -1,1291 +1,1291 @@
 {
-  "common": {
-    "date": "Date",
-    "time": "Time",
-    "entity_types": {
-      "receipt": "Receipt",
-      "transaction": "Transaction",
-      "reimbursement": "Reimbursement",
-      "budget": "Budget",
-      "inventory": "Inventory Item",
-      "minute": "Minute",
-      "news": "News",
-      "faq": "FAQ"
-    },
-    "actions": {
-      "save": "Save",
-      "cancel": "Cancel",
-      "delete": "Delete",
-      "edit": "Edit",
-      "add": "Add",
-      "create": "Create",
-      "update": "Update",
-      "remove": "Remove",
-      "search": "Search",
-      "view": "View",
-      "confirm": "Confirm",
-      "sort": "Sort",
-      "back": "Back",
-      "all": "All",
-      "loading": "Loading...",
-      "link_existing": "Link Existing",
-      "create_new": "Create New"
-    },
-    "filters": {
-      "all": "All Categories"
-    },
-    "no_results": "No results",
-    "total": "Total",
-    "fields": {
-      "name": "Name",
-      "description": "Description",
-      "amount": "Amount",
-      "price": "Price",
-      "free": "Free",
-      "date": "Date",
-      "status": "Status",
-      "type": "Type",
-      "title": "Title",
-      "search": "Search",
-      "year": "Year",
-      "category": "Category",
-      "created_by": "Created By",
-      "location": "Location",
-      "quantity": "Quantity",
-      "value": "Value",
-      "url": "URL",
-      "icon": "Icon",
-      "color": "Color",
-      "order": "Order",
-      "active": "Active",
-      "all_day": "All Day",
-      "start_date": "Start Date",
-      "end_date": "End Date",
-      "start_time": "Start Time",
-      "end_time": "End Time",
-      "primary": "Primary",
-      "hidden": "Hidden",
-      "none": "None"
-    },
-    "file_upload": {
-      "drag_drop": "Drag and drop a file here, or click to select",
-      "drop_file": "Drop file here"
-    },
-    "placeholders": {
-      "search": "Search...",
-      "select": "Select...",
-      "title": "Enter title...",
-      "description": "Enter description..."
-    },
-    "sections": {
-      "basic_info": "Basic Info",
-      "date_time": "Date & Time",
-      "attendees": "Attendees"
-    },
-    "status": {
-      "error": "Error",
-      "saved": "Saved",
-      "saving": "Saving..."
-    }
-  },
-  "app": {
-    "title": "Tenant Committee",
-    "setup_required": "Setup Required",
-    "setup_message": "It looks like the app isn't configured yet. Please check your environment variables.",
-    "error_details": "Error details",
-    "open_setup": "Open Setup Guide",
-    "copy_env": "Or copy .env.template to .env and configure your settings."
-  },
-  "nav": {
-    "menu": "Menu",
-    "navigation": "Navigation",
-    "settings": "Settings",
-    "profile": "Profile",
-    "edit_profile": "Edit profile",
-    "messages": "Messages",
-    "log_out": "Log out",
-    "users": "Users",
-    "roles": "Roles",
-    "reimbursements": "Reimbursements",
-    "get_involved": "Get Involved",
-    "events": "Events",
-    "treasury": "Treasury",
-    "minutes": "Minutes",
-    "news": "News",
-    "faq": "FAQ",
-    "inventory": "Inventory",
-    "social": "Social",
-    "analytics": "Analytics",
-    "polls": "Polls",
-    "committee": "Committee",
-    "login": "Login",
-    "submissions": "Submissions",
-    "committee_mail": "Email",
-    "sidebar_collapse": "Collapse sidebar",
-    "sidebar_expand": "Expand sidebar",
-    "admin": "Admin"
-  },
-  "receipts": {
-    "select_receipts": "Select Receipts",
-    "selected": "Selected Receipts",
-    "add_more": "Add More Receipts",
-    "search_placeholder": "Search receipts...",
-    "refresh": "Refresh receipts",
-    "upload_new": "Upload New Receipt",
-    "upload_unavailable": "Upload is not available",
-    "upload_failed": "Upload failed. Try again.",
-    "invalid_type": "Invalid file type. Allowed: {{types}}",
-    "uploading": "Uploading...",
-    "upload_notice": "Large files can take a while to upload.",
-    "no_receipts": "No receipts for year {{year}}",
-    "done": "Done",
-    "open": "Open",
-    "delete": "Remove",
-    "select_existing_or_upload": "Select existing receipts or upload a new one.",
-    "allowed": "Allowed",
-    "selected_count": "selected",
-    "analyze_with_ai": "Analyze with AI (OCR)"
-  },
-  "lang": {
-    "label": "Language"
-  },
-  "search_menu": {
-    "title": "Search",
-    "filter": "Filter",
-    "search": "Search",
-    "clear": "Clear",
-    "select_placeholder": "Select..."
-  },
-  "home": {
-    "header": "Get Involved",
-    "contact": {
-      "title": "Contact Us"
-    },
-    "options": {
-      "committee": {
-        "title": "Join the Committee",
-        "description": "Fill in the form to join the committee."
-      },
-      "events": {
-        "title": "Suggest an Event",
-        "description": "Suggest an event to the committee."
-      },
-      "purchases": {
-        "title": "Request a Purchase",
-        "description": "Suggest a purchase to the committee."
-      },
-      "questions": {
-        "title": "Ask a Question",
-        "description": "Ask a question from the committee."
-      }
-    }
-  },
-  "treasury": {
-    "overview": "Overview",
-    "title": "Treasury {{year}}",
-    "select_year": "Select year...",
-    "view_breakdown": "See Breakdown",
-    "auto_linked_from": "Auto-linked from {{type}}: {{name}}",
-    "balance": "Balance",
-    "income": "Income",
-    "unbudgeted_transactions": "Unbudgeted Transactions",
-    "budgeted_transactions": "Budgeted Transactions",
-    "budget_costs": "Budget Costs",
-    "available": "Available",
-    "transactions_count": "{{count}} transactions",
-    "no_transactions": "No transactions",
-    "no_transactions_desc": "No transactions recorded for {{year}} yet.",
-    "receipts": {
-      "title": "Receipts",
-      "new": "New receipt",
-      "view": "View",
-      "reimbursement_request": "Reimbursement Request",
-      "no_receipts": "No receipts for this year",
-      "upload_error": "Upload failed",
-      "delete": "Delete receipt",
-      "delete_confirm": "Are you sure you want to delete this receipt?",
-      "file": "File",
-      "allowed_types": "Allowed file types",
-      "name_placeholder": "Receipt name (optional)",
-      "description_placeholder": "Describe the receipt if needed",
-      "invalid_file_type": "Invalid file type. Allowed types: {{types}}",
-      "form": {
-        "create": "Create receipt"
-      },
-      "success": {
-        "receipt_created": "Receipt created"
-      },
-      "gallery": {},
-      "ai_analysis": "AI Analysis",
-      "no_analysis_yet": "No AI analysis performed yet for this receipt.",
-      "analyze_now": "Analyze with AI",
-      "ai_results": "AI Results",
-      "store": "Store",
-      "date": "Date",
-      "total": "Total Amount",
-      "extracted_items": "Extracted Items",
-      "quantity": "Qty",
-      "price": "Price",
-      "raw_text": "Raw Text",
-      "re_analyze": "Re-analyze",
-      "process_receipt": "Process Receipt",
-      "processed": "Processed",
-      "processing": "Processing...",
-      "auto_filled_from_receipt": "Auto-filled from receipt: {{name}}",
-      "create_reimbursement": "Create Reimbursement",
-      "analyze_with_ai": "Analyze with AI (OCR)",
-      "analyzing": "Analyzing receipt...",
-      "analysis_note": "This may take up to 60 seconds for large files or when using free AI models.",
-      "analysis_complete": "Receipt analyzed successfully",
-      "analysis_failed": "Failed to analyze receipt",
-      "analysis_timeout": "Analysis timed out. The file may be too large or the server is slow.",
-      "uploading": "Uploading file...",
-      "upload_complete": "File uploaded successfully",
-      "upload_failed": "Failed to upload file",
-      "upload_timeout": "Upload timed out. The file may be too large.",
-      "receipt_file": "Receipt File",
-      "replace_file": "Replace receipt file",
-      "parsed_content": "Parsed Content",
-      "edit": "Edit Receipt",
-      "extract_text": "Extract Text",
-      "process_text": "Process Raw Text",
-      "extract_content": "Extract Receipt Content",
-      "try_extract": "Try Extracting",
-      "no_extraction_yet": "File uploaded. Click 'Try Extracting' to extract text from the receipt.",
-      "uploaded_file": "Uploaded File",
-      "view_file": "View File",
-      "file_ready": "File uploaded and ready",
-      "optional_replace": "Optional: upload a different file",
-      "no_ai_parsing": "AI parsing is not configured. Only raw text extraction is available. Configure OpenRouter API key in settings to enable structured data extraction.",
-      "link_existing": "Link Receipt",
-      "select_placeholder": "Select receipt...",
-      "no_link": "Don't link",
-      "upload_new": "Upload New Receipt"
-    },
-    "actions": {
-      "breakdown": "Breakdown",
-      "transactions": "Transactions",
-      "receipts": "Receipts",
-      "reimbursements": "Reimbursement Requests",
-      "budgets": "Budgets"
-    },
-    "new": {
-      "header": "New Transaction",
-      "details_header": "Transaction Details",
-      "inventory_title": "Add to Inventory",
-      "inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
-      "inventory_empty": "No items selected.",
-      "items_selected": "{{count}} items selected",
-      "total": "Total",
-      "select_items": "Select Items",
-      "or": "or",
-      "submit": "Add",
-      "link_budget": "Link to Budget",
-      "link_budget_help": "Optional: Use funds from an existing budget.",
-      "no_budget": "Don't use budget",
-      "budget_note": "The expense amount will be deducted from the selected budget.",
-      "add_item": "Add Item"
-    },
-    "success": {
-      "transaction_created": "Transaction created",
-      "reimbursement_requested": "Reimbursement request sent",
-      "transaction_deleted": "Transaction deleted"
-    },
-    "form": {
-      "amount": "Amount €",
-      "description": "Description",
-      "description_placeholder": "E.g. Coffee service, Meeting snacks",
-      "date": "Date",
-      "year": "Year"
-    },
-    "placeholders": {},
-    "types": {
-      "income": "Income",
-      "expense": "Expense"
-    },
-    "categories": {
-      "inventory": "Inventory",
-      "snacks": "Snacks",
-      "event": "Event",
-      "other": "Other",
-      "grant": "Grant",
-      "sales": "Sales",
-      "event_income": "Event Income",
-      "membership": "Membership Fees"
-    },
-    "transactions": {
-      "title": "Transactions",
-      "new": "New Transaction",
-      "all": "All",
-      "type": "Type",
-      "status": "Status",
-      "locked_by_reimbursement": "Locked (reimbursement sent)",
-      "link_existing": "Link Transaction",
-      "create": "Create transaction",
-      "linked": "Linked Transactions",
-      "select_placeholder": "Select transaction...",
-      "no_link": "Don't link to existing transaction"
-    },
-    "reimbursements": {
-      "link_to_reimbursement": "Link to reimbursement request",
-      "title": "Reimbursement Requests",
-      "new": "New",
-      "status": "Status",
-      "purchaser": "Purchaser",
-      "receipts": "Receipts",
-      "view_receipt": "View receipt",
-      "transaction": "Transaction",
-      "view_transaction": "View Transaction",
-      "email_sent": "Email Sent",
-      "locked_sent": "Locked (sent)",
-      "reply_received": "Reply Received",
-      "delete_confirm": "Are you sure you want to delete this reimbursement?",
-      "use_as_template": "Use as template",
-      "linked_transactions": "Linked Transactions",
-      "statuses": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "reimbursed": "Paid",
-        "rejected": "Rejected"
-      },
-      "view": {
-        "title": "View Reimbursement"
-      },
-      "edit": {
-        "title": "Edit Reimbursement",
-        "reimbursement_details": "Reimbursement Details"
-      },
-      "link_existing": "Link Reimbursement",
-      "select_placeholder": "Select reimbursement...",
-      "no_link": "Don't link"
-    },
-    "new_reimbursement": {
-      "title": "New Reimbursement",
-      "description": "Description",
-      "description_placeholder": "E.g. Coffee for meeting",
-      "amount": "Amount €",
-      "purchaser_name": "Purchaser Name",
-      "purchaser_placeholder": "First and last name",
-      "bank_account": "Bank Account",
-      "minutes_help": "For purchases over 100€, minutes are required before payment.",
-      "notes": "Additional Notes",
-      "notes_placeholder": "Free-form message...",
-      "receipt_uploaded": "Receipt uploaded",
-      "error": "Error",
-      "email_warning": "⚠️ Email sending is not configured. Request will be saved but email won't be sent.",
-      "link_existing_transaction": "Link Transaction",
-      "select_transaction_placeholder": "Select transaction...",
-      "linked_transaction_info": "This reimbursement will be linked to the selected transaction. The transaction details will be used.",
-      "reimbursement_details": "Reimbursement Details",
-      "transaction_section_title": "Transaction"
-    },
-    "breakdown": {
-      "title": "Treasury Breakdown",
-      "no_transactions": "No transactions for this year",
-      "date": "Date",
-      "description": "Description",
-      "category": "Category",
-      "status": "Status",
-      "reimbursement_status": "Reimbursement Status",
-      "amount": "Amount",
-      "export": "Export CSV",
-      "import": "Import CSV",
-      "import_success": "Imported {{count}} transactions",
-      "import_error": "Import failed",
-      "statuses": {
-        "complete": "Complete",
-        "pending": "Pending",
-        "paused": "Paused",
-        "declined": "Declined"
-      },
-      "view": {
-        "title": "View Transaction"
-      },
-      "edit": {
-        "title": "Edit Transaction",
-        "delete_title": "Delete transaction?",
-        "delete_confirm": "Are you sure you want to delete this transaction? This action cannot be undone.",
-        "delete_blocked": "Deletion blocked",
-        "linked_reimbursement": "Linked Reimbursement",
-        "purchaser": "Purchaser",
-        "iban": "IBAN",
-        "minutes": "Minutes",
-        "email": "Email",
-        "email_sent": "Sent",
-        "email_not_sent": "Not sent",
-        "items_linked_success": "Items linked",
-        "delete_error_linked": "Cannot delete transaction because it has linked active inventory items: {{names}}. Remove or mark items as Legacy first.",
-        "reimbursement_statuses": {},
-        "statuses": {}
-      }
-    },
-    "budgets": {
-      "title": "Budgets",
-      "new": "New Budget",
-      "name": "Budget Name",
-      "name_placeholder": "E.g. Guitar purchase",
-      "description": "Description",
-      "description_placeholder": "Additional details about the budget",
-      "amount": "Budget",
-      "used": "Used",
-      "reserved": "Reserved",
-      "remaining": "Remaining",
-      "status": "Status",
-      "created_by": "Created By",
-      "year": "Year",
-      "statuses": {
-        "open": "Open",
-        "closed": "Closed"
-      },
-      "actions": {
-        "edit": "Edit",
-        "delete": "Delete",
-        "close": "Close Budget",
-        "reopen": "Reopen Budget"
-      },
-      "close_confirm": "Closing this budget will return {{amount}} to available funds. Continue?",
-      "reopen_confirm": "Reopen this budget?",
-      "delete_confirm": "Delete this budget? This action cannot be undone.",
-      "cannot_reduce": "Cannot reduce amount below used amount ({{used}})",
-      "insufficient_funds": "Insufficient available funds. Available: {{available}}",
-      "linked_transactions": "Linked Transactions",
-      "no_budgets": "No budgets",
-      "no_budgets_desc": "No budgets for {{year}} yet.",
-      "available_funds": "Available Funds",
-      "success": {
-        "created": "Budget created",
-        "updated": "Budget updated",
-        "deleted": "Budget deleted",
-        "closed": "Budget closed",
-        "reopened": "Budget reopened"
-      },
-      "error": {
-        "delete_failed": "Failed to delete budget",
-        "has_transactions": "Cannot delete budget with linked transactions"
-      },
-      "form": {
-        "create": "Create Budget"
-      },
-      "view": {
-        "title": "View Budget"
-      },
-      "edit": {
-        "title": "Edit Budget"
-      }
-    }
-  },
-  "inventory": {
-    "link_inventory_item": "Link Inventory Item",
-    "title": "Inventory",
-    "unit": "pcs",
-    "search": {
-      "name_label": "Name",
-      "name_placeholder": "Search by name...",
-      "location_label": "Location",
-      "location_all": "All locations",
-      "category_label": "Category",
-      "category_all": "All categories",
-      "columns": "Columns",
-      "filters": "Filters"
-    },
-    "columns": {
-      "status": "Status",
-      "name": "Name",
-      "location": "Location",
-      "category": "Category",
-      "description": "Description",
-      "updated": "Updated",
-      "unit_value": "Unit",
-      "quantity": "Qty",
-      "total_value": "Total",
-      "transactions": "Transactions",
-      "info_reel": "Info Reel"
-    },
-    "actions": {
-      "menu": "Actions",
-      "add": "Add",
-      "close": "Close",
-      "export": "Export CSV",
-      "export_short": "Export",
-      "import": "Import CSV",
-      "import_short": "Import",
-      "selected": "Selected",
-      "report": "Report",
-      "treasury": "Treasury",
-      "add_to_new": "Add to New",
-      "add_to_existing": "Add to Existing",
-      "no_transaction": "No Transaction",
-      "remove": "Remove",
-      "unlink": "Unlink",
-      "remove_marker": "Remove marker"
-    },
-    "badge_unknown_title": "Unaccounted quantity – click for options",
-    "badge_connect_existing": "Connect to existing transaction",
-    "badge_create_new_transaction": "Create new transaction",
-    "badge_linked_to_transaction": "Linked to transaction",
-    "inline_edit_saved": "Saved",
-    "messages": {
-      "importing": "Importing file...",
-      "import_success": "Imported {{count}} rows",
-      "import_error": "Error: {{error}}"
-    },
-    "add_row": {
-      "name_placeholder": "Name...",
-      "location_placeholder": "Location...",
-      "category_placeholder": "Category...",
-      "description_placeholder": "Description...",
-      "search_placeholder": "Search...",
-      "new_text": "New",
-      "required_field": "Required field"
-    },
-    "form": {
-      "title_new": "New Item",
-      "title_edit": "Edit Item",
-      "details_header": "Item Details",
-      "name_placeholder": "Select or type name...",
-      "name_search_placeholder": "Search item...",
-      "name_empty": "Not found.",
-      "location_placeholder": "Select or type...",
-      "location_search_placeholder": "Search location...",
-      "location_empty": "Not in list.",
-      "category_placeholder": "Select or type...",
-      "category_search_placeholder": "Search category...",
-      "description_placeholder": "Item details",
-      "value_placeholder": "0.00",
-      "purchased_at_label": "Purchase Date",
-      "show_in_info_reel": "Show in Info Reel",
-      "example": "E.g. {{example}}"
-    },
-    "new": {},
-    "modals": {
-      "report_title": "Report an issue",
-      "selected_items": "Selected items:",
-      "describe_issue": "Describe the issue or what should be changed...",
-      "cancel": "Cancel",
-      "send": "Send",
-      "confirm_unlink_title": "Unlink Item?",
-      "confirm_unlink_desc": "This will unlink the item from the selected transaction.",
-      "confirm_unlink_details": "Item: {{name}} ({{count}} pcs)\nTransaction: {{description}} ({{date}})",
-      "unlink": "Unlink",
-      "confirm_delete_many_title": "Delete items?",
-      "confirm_delete_many_desc": "Are you sure you want to permanently delete {{count}} item(s)?",
-      "quantity_selection": {
-        "title_no_txn": "Mark No Transaction",
-        "title_existing": "Add to Existing",
-        "title_txn": "Add to Transaction",
-        "desc_no_txn": "Select how many of each item to mark as having no transaction.",
-        "desc_existing": "Select how many of each item to add to an existing transaction.",
-        "desc_txn": "Select how many of each item to add to the transaction.",
-        "available": "Available",
-        "continue": "Continue",
-        "confirm": "Confirm"
-      },
-      "remove": {
-        "title": "Remove Inventory Item",
-        "current_quantity": "Current quantity",
-        "linked_transactions": "Linked Transactions",
-        "linked_desc": "Select from which transaction(s) to remove and how many.",
-        "expense": "Expense",
-        "income": "Income",
-        "linked": "Linked",
-        "no_linked_txns": "No transactions linked to this item.",
-        "no_linked_desc": "You can remove it directly or mark it as a legacy item.",
-        "reason": "Reason",
-        "notes_optional": "Notes (optional)",
-        "notes_placeholder": "Add notes if necessary...",
-        "removing": "Removing",
-        "item_will_be_removed": "Item will be marked as removed",
-        "remove_count": "Remove {{count}} pcs",
-        "remove_item": "Remove Item",
-        "reasons": {
-          "broken": "Broken",
-          "used_up": "Used up",
-          "lost": "Lost",
-          "sold": "Sold",
-          "other": "Other"
-        }
-      },
-      "transaction_selector": {
-        "title": "Select Transaction",
-        "desc": "Select a transaction to add the selected items to."
-      }
-    },
-    "info_reel": {
-      "no_items": "No items to display"
-    },
-    "status": {
-      "removed": "Removed"
-    },
-    "created_items": "Created Inventory Items",
-    "location_missing": "Location needed",
-    "incomplete_items": "Items Needing Completion",
-    "complete_item": "Mark Complete",
-    "location_tbd": "Location TBD"
-  },
-  "minutes": {
-    "title": "Minutes",
-    "all_minutes": "All Minutes",
-    "archive": "Archive",
-    "no_results": "No results",
-    "no_minutes": "No minutes",
-    "no_minutes_yet": "No minutes yet",
-    "this_year": "This Year",
-    "search": {
-      "name_label": "Name",
-      "name_placeholder": "Search by name...",
-      "year_label": "Year",
-      "year_placeholder": "Select year..."
-    },
-    "naming_guide": {
-      "title": "Naming Minutes",
-      "use_format": "Use format",
-      "example": "Ex: 2026-01-05_Board_Meeting_1.pdf - Files are ordered newest first."
-    },
-    "link_existing": "Link Minutes",
-    "select_placeholder": "Select minutes...",
-    "no_link": "Don't link"
-  },
-  "profile": {
-    "title": "Profile",
-    "update_success": "Profile updated!",
-    "email_label": "Email",
-    "email_help": "Email cannot be changed",
-    "name_label": "Name",
-    "apartment_label": "Apartment Number",
-    "optional": "optional",
-    "apartment_placeholder": "e.g. A 101",
-    "apartment_help": "Used for validating votes",
-    "role_label": "Role",
-    "member_since_label": "Member since",
-    "description_label": "Description",
-    "description_placeholder": "Tell us about yourself...",
-    "picture_label": "Profile Picture",
-    "picture_help": "Profile picture is automatically updated from your Google account when you log in. You can upload your own picture below.",
-    "upload_picture": "Upload new picture",
-    "use_google_picture": "Use Google picture again",
-    "use_google_picture_success": "Profile picture cleared. It will update from Google on next login.",
-    "picture_invalid_type": "Invalid file type. Use JPG, PNG or WebP.",
-    "picture_too_large": "File is too large. Maximum size is {{maxSize}}MB.",
-    "picture_too_large_dimensions": "Image dimensions are too large. Maximum size is {{maxDimension}}x{{maxDimension}}px.",
-    "picture_updated": "Profile picture updated.",
-    "picture_upload_error": "Failed to update profile picture.",
-    "local_ai": {
-      "title": "Local AI Models",
-      "description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
-      "enable_label": "Enable local AI models",
-      "enable_help": "Allow pages to use your local Ollama instance for translations.",
-      "url_label": "Ollama URL",
-      "url_help": "The URL where Ollama is running. Default: http://localhost:11434",
-      "test_connection": "Test Connection",
-      "connection_success": "Connection successful! Found {{count}} models.",
-      "connection_failed": "Connection failed. Make sure Ollama is running and CORS is enabled.",
-      "connection_error": "Connection error",
-      "cors_title": "Browser access (CORS)",
-      "cors_help": "For browser access, start Ollama with: OLLAMA_ORIGINS=* ollama serve"
-    }
-  },
-  "avatars": {
-    "delete": "Delete"
-  },
-  "admin": {
-    "storage": {
-      "minutes": "Minutes",
-      "minutes.title": "Minutes Gallery",
-      "minutes.description": "Manage uploaded minute files. Linked files correspond to existing minute entries.",
-      "minutes.empty": "No minutes found",
-      "minutes.delete_confirm": "Are you sure you want to delete this file? This cannot be undone.",
-      "receipts": "Receipts",
-      "avatars": "Avatars",
-      "receipts.title": "Receipt Gallery",
-      "receipts.description": "All receipts. Linked receipts are attached to a reimbursement request and cannot be deleted.",
-      "receipts.empty": "No receipts",
-      "receipts.delete_confirm": "Are you sure you want to delete this receipt?",
-      "receipts.delete_success": "Receipt deleted",
-      "receipts.delete_error": "Delete failed",
-      "receipts.open_pdf": "Open PDF",
-      "receipts.linked": "Linked",
-      "receipts.unlinked": "Unlinked",
-      "receipts.reimbursement_request": "Reimbursement Request",
-      "avatars.title": "Avatars",
-      "avatars.description": "All user avatar images stored in the system.",
-      "avatars.empty": "No avatars",
-      "avatars.delete": "Delete",
-      "avatars.delete_confirm": "Are you sure you want to delete this avatar?",
-      "avatars.delete_success": "Avatar deleted",
-      "avatars.delete_error": "Delete failed"
-    }
-  },
-  "settings": {
-    "general": {
-      "title": "General",
-      "languages_title": "Default Languages",
-      "languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
-      "primary_language": "Primary Language",
-      "secondary_language": "Secondary Language"
-    },
-    "reimbursements": {
-      "title": "Reimbursement Settings",
-      "recipient_email_title": "Recipient Email",
-      "recipient_email_desc": "Set the email address that receives reimbursement requests.",
-      "recipient_email_label": "Recipient Email",
-      "recipient_email_placeholder": "treasury@example.com",
-      "recipient_email_fallback": "Using environment default: {{email}}",
-      "ai_parsing_title": "AI Parsing",
-      "ai_parsing_desc": "Enable AI-assisted parsing for more accurate reply interpretation",
-      "enable_ai": "Enable AI Parsing",
-      "select_model": "Select a model...",
-      "showing_models": "Showing {{count}} of {{total}} models",
-      "keywords_title": "Keywords",
-      "keywords_desc": "Custom keywords for detecting approval or rejection in emails",
-      "default_approval": "Default Approval Keywords",
-      "additional_approval": "Additional Approval Keywords",
-      "approval_placeholder": "paid, done, accepted (comma-separated)",
-      "default_rejection": "Default Rejection Keywords",
-      "additional_rejection": "Additional Rejection Keywords"
-    },
-    "analytics": {
-      "title": "Analytics Settings"
-    },
-    "news": {
-      "title": "News Settings",
-      "ai_model_title": "AI News Model",
-      "ai_model_desc": "Select the AI model used for translating news between primary and secondary languages.",
-      "select_model": "Select model",
-      "select_model_placeholder": "Select a model...",
-      "showing_models": "Showing {{count}} of {{total}} models"
-    },
-    "faqs": {
-      "title": "FAQ Settings",
-      "ai_model_title": "AI FAQ Model",
-      "ai_model_desc": "Select the AI model used for translating FAQ entries between primary and secondary languages.",
-      "select_model": "Select model",
-      "select_model_placeholder": "Select a model...",
-      "showing_models": "Showing {{count}} of {{total}} models"
-    },
-    "roles": {
-      "title": "Role Management",
-      "create_new_title": "Create New Role",
-      "color_label": "Color",
-      "system": "System Role",
-      "delete_title": "Delete Role",
-      "delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
-      "permissions_header": "Permissions",
-      "select_role_msg": "Select a role from the left to edit permissions",
-      "select_role": "Select Role",
-      "select_role_placeholder": "Choose a role...",
-      "search_placeholder": "Search permissions...",
-      "category": "Category",
-      "permission_name": "Permission Name",
-      "description": "Description",
-      "show_only_assigned": "Show only assigned permissions"
-    },
-    "users": {
-      "title": "User Management",
-      "headers": {
-        "name": "Name",
-        "email": "Email",
-        "roles": "Roles",
-        "joined": "Joined"
-      },
-      "no_users": "No users yet",
-      "roles_placeholder": "Type role name and press Tab to add",
-      "no_roles_match": "No matching roles",
-      "super_admin": "Super Admin",
-      "role_updated": "Role updated",
-      "cannot_change_super_admin": "Cannot change Super Admin role",
-      "update_failed": "Failed to update role"
-    }
-  },
-  "local_ai": {
-    "model_selector": {
-      "label": "Local Model",
-      "loading": "Loading...",
-      "no_models": "No models found",
-      "connection_failed": "Connection failed",
-      "select_model": "Select model",
-      "disabled": "Disabled",
-      "model_count": "{{count}} models"
-    },
-    "translate": {
-      "button_tooltip": "{{source}} → {{target}} (Translate)",
-      "input_not_found": "Source or target field not found",
-      "empty_source": "Source field is empty",
-      "success": "Translation complete",
-      "failed": "Translation failed: {{error}}"
-    }
-  },
-  "committee": {
-    "title": "Committee",
-    "members": "Members",
-    "no_members": "No committee members found",
-    "no_description": "No description",
-    "mail": {
-      "title": "Committee Email",
-      "not_configured": "Email is not configured. Set SMTP and COMMITTEE_FROM_EMAIL environment variables.",
-      "to": "To",
-      "cc": "CC",
-      "bcc": "BCC",
-      "add_email": "Add email",
-      "type_to_add": "Type a name or role and press Tab to add",
-      "no_suggestions": "No suggestions",
-      "role": "Role",
-      "subject": "Subject",
-      "subject_placeholder": "Email subject",
-      "body": "Message",
-      "body_placeholder": "Write your message..."
-    }
-  },
-  "mail": {
-    "inbox": "Inbox",
-    "sent": "Sent",
-    "compose": "Compose",
-    "drafts": "Drafts",
-    "draft_saved_at": "Draft saved at {{time}}",
-    "send_tooltip": "Send",
-    "no_drafts": "No drafts",
-    "no_subject": "(No subject)",
-    "refresh": "Refresh",
-    "refreshed": "{{count}} new messages fetched",
-    "no_messages": "No messages",
-    "from": "From",
-    "to": "To",
-    "cc": "CC",
-    "date": "Date",
-    "delete": "Delete",
-    "delete_draft": "Delete draft",
-    "delete_confirm": "Are you sure you want to delete this message?",
-    "delete_draft_confirm": "Are you sure you want to delete this draft?",
-    "delete_success": "Deleted successfully",
-    "delete_error": "Delete failed",
-    "select": "Select",
-    "reply": "Reply",
-    "reply_all": "Reply All",
-    "forward": "Forward",
-    "forwarded_message": "Forwarded message",
-    "messages_in_thread": "{{count}} messages",
-    "compose_new": "New Message",
-    "compose_reply": "Reply",
-    "compose_reply_all": "Reply All",
-    "compose_forward": "Forward",
-    "quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:"
-  },
-  "contact": {
-    "header": "Contact Us",
-    "select_topic": "Select Topic",
-    "select_topic_prompt": "Select a topic to begin",
-    "types": {
-      "committee": {},
-      "events": {},
-      "purchases": {},
-      "questions": {}
-    },
-    "form": {
-      "name": "Name",
-      "email": "Email",
-      "apartment": "Apartment",
-      "apartment_placeholder": "e.g. A 123",
-      "update_apartment_profile": "Update apartment number in my profile",
-      "message": "Message",
-      "send": "Send"
-    },
-    "success": {
-      "title": "Message Sent!",
-      "message": "Thank you for contacting us! We will respond as soon as possible.",
-      "back_home": "Back to Home"
-    }
-  },
-  "social": {
-    "header": "Social Media",
-    "delete_confirm": "Delete?",
-    "no_channels": "No social channels",
-    "add_first": "Add first",
-    "set_primary": "Set as primary",
-    "clear_primary": "Remove primary",
-    "new": {
-      "header": "New Social Channel",
-      "hidden_desc": "Hidden channels only visible to staff",
-      "sort_desc": "Lower numbers appear first",
-      "primary_desc": "Primary channel will be highlighted."
-    },
-    "colors": {},
-    "icons": {}
-  },
-  "submissions": {
-    "title": "Submissions",
-    "no_submissions": "No submissions yet",
-    "delete_confirm": "Are you sure you want to delete this submission?",
-    "apartment": "Apartment",
-    "table": {
-      "time": "Time",
-      "type": "Type",
-      "sender": "Sender",
-      "message": "Message",
-      "status": "Status"
-    }
-  },
-  "events": {
-    "title": "Events",
-    "upcoming": "Upcoming",
-    "no_upcoming": "No upcoming events",
-    "no_results": "No results",
-    "open_calendar": "Open Calendar",
-    "add_event": "Add Event",
-    "new": {
-      "header": "New Event",
-      "recurrence": "Recurrence",
-      "reminders": "Reminders",
-      "success": "Event created successfully!",
-      "error": "Failed to create event"
-    },
-    "form": {
-      "location_placeholder": "Event location (optional)",
-      "frequency": "Frequency",
-      "interval": "Interval",
-      "recurrence_end": "Recurrence ends",
-      "end_never": "Never",
-      "end_after": "After",
-      "occurrences": "occurrences",
-      "end_on": "On date",
-      "add_reminder": "Add reminder",
-      "no_reminders": "No reminders set",
-      "attendees_placeholder": "Email addresses (comma separated)",
-      "attendees_help": "Enter attendee email addresses separated by commas"
-    },
-    "frequency": {
-      "daily": "Daily",
-      "weekly": "Weekly",
-      "monthly": "Monthly",
-      "yearly": "Yearly"
-    },
-    "reminder": {
-      "popup": "Popup",
-      "email": "Email"
-    },
-    "edit": {
-      "header": "Edit Event",
-      "success": "Event updated!",
-      "error": "Failed to update event"
-    },
-    "delete": {
-      "success": "Event deleted!",
-      "error": "Failed to delete event"
-    }
-  },
-  "news": {
-    "title": "News",
-    "add": "Add news",
-    "edit": "Edit",
-    "delete": "Delete",
-    "empty": "No news yet.",
-    "no_results": "No results for your search.",
-    "search_placeholder": "Search news...",
-    "confirm_delete": "Are you sure you want to delete this news item?",
-    "new_title": "News",
-    "edit_title": "Edit news",
-    "save": "Save",
-    "cancel": "Cancel",
-    "form": {
-      "title": "Title",
-      "title_placeholder": "News title",
-      "summary": "Summary",
-      "summary_placeholder": "Short summary (optional)",
-      "content": "Content",
-      "content_placeholder": "News content",
-      "default_language": "Default language ({{language}})",
-      "secondary_language": "Secondary language ({{language}})"
-    },
-    "translate_with_ai": "Translate with AI:",
-    "translating": "Translating...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "faq": {
-    "title": "FAQ",
-    "add": "Add question",
-    "edit": "Edit",
-    "delete": "Delete",
-    "empty": "No questions yet.",
-    "no_results": "No results for your search.",
-    "search_placeholder": "Search FAQ...",
-    "confirm_delete": "Are you sure you want to delete this question?",
-    "new_title": "New question",
-    "edit_title": "Edit question",
-    "save": "Save",
-    "cancel": "Cancel",
-    "form": {
-      "question": "Question",
-      "question_placeholder": "Enter question",
-      "answer": "Answer",
-      "answer_placeholder": "Enter answer",
-      "sort_order": "Sort order",
-      "default_language": "Default language ({{language}})",
-      "secondary_language": "Secondary language ({{language}})"
-    },
-    "translate_with_ai": "Translate with AI:",
-    "translating": "Translating...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "polls": {
-    "title": "Polls",
-    "description": "View and manage polls",
-    "active": "Active",
-    "closed": "Closed",
-    "no_active_polls": "No active polls at the moment",
-    "time_remaining": "{{time}} left",
-    "ends_today": "Ends today",
-    "ends_tomorrow": "Ends tomorrow",
-    "status_closed": "Closed",
-    "fill_poll": "Fill out poll",
-    "view_results": "View Results",
-    "add_poll": "Add Poll",
-    "analytics": "Analytics",
-    "analytics_description": "View and analyze poll responses",
-    "no_sheets_found": "No Analytics Sheets Found",
-    "no_sheets_found_description": "Create an 'analytics' folder in your year folder and add Google Sheets. Share with service account.",
-    "select_sheet": "Select a Sheet",
-    "select_sheet_description": "Choose a sheet from the dropdown above to view its data.",
-    "new": {
-      "title": "Add Poll",
-      "choose_type": "Choose Poll Type",
-      "type_managed": "Create New Google Form",
-      "type_managed_desc": "Create a form via Google Forms API. The service account owns it, you become an editor.",
-      "type_linked": "Link Existing Google Form",
-      "type_linked_desc": "Connect a Google Form you've already created. Share it with the service account.",
-      "type_external": "External Poll Link",
-      "type_external_desc": "Link to any external poll (non-Google), like SurveyMonkey, Typeform, etc.",
-      "linked_info": "Link a Google Form you already own. Remember to share it with the service account.",
-      "external_info": "Link to any poll, survey, or form URL.",
-      "name": "Poll Name",
-      "name_placeholder": "E.g. Event feedback",
-      "description": "Description",
-      "description_placeholder": "What is this poll about?",
-      "url": "Poll URL",
-      "url_placeholder": "https://forms.google.com/...",
-      "url_help": "Link where users can fill out the poll",
-      "google_form_url": "Google Form URL",
-      "deadline": "Deadline",
-      "deadline_help": "When should the poll close? (optional)",
-      "analytics_sheet": "Link to Analytics Sheet",
-      "analytics_sheet_help": "Optional: Select a sheet to view responses in analytics",
-      "no_sheet": "Don't link to a sheet",
-      "submit": "Add Poll",
-      "create_form": "Create Form",
-      "creating": "Creating form..."
-    },
-    "instructions": {},
-    "success": {}
-  },
-  "email": {
-    "reimbursement": {
-      "subject": "Reimbursement Request",
-      "title": "Reimbursement Request",
-      "item": "Item",
-      "amount": "Amount",
-      "purchaser": "Purchaser",
-      "bank_account": "Bank Account",
-      "minutes": "Minutes",
-      "receipts": "Receipts",
-      "notes": "Notes",
-      "attached": "attached",
-      "not_specified": "Not specified",
-      "reply_instruction": "Reply to this email to approve or reject the request."
-    },
-    "reimbursement_status": {
-      "approved": {},
-      "declined": {},
-      "status": "Status",
-      "view_details": "View Details"
-    }
-  },
-  "messages": {
-    "title": "Messages",
-    "empty": "No new messages yet",
-    "mark_as_read": "Mark as read",
-    "mark_all_read": "Mark all as read",
-    "marked_as_read": "Message marked as read",
-    "view_purchase": "View Purchase",
-    "reimbursement_approved": {},
-    "reimbursement_declined": {},
-    "news_published": {},
-    "ai_news_translation_failed": {},
-    "ai_faq_translation_failed": {},
-    "view_news": "View news",
-    "unknown_item": "Unknown item",
-    "see_all": "See all messages",
-    "select_all": "Select all",
-    "selected_count": "{{count}} selected",
-    "mark_selected_read": "Mark selected as read",
-    "mark_selected_unread": "Mark selected as unread",
-    "clear_selection": "Clear selection"
-  },
-  "permissions": {
-    "users": {
-      "read": "View user list",
-      "write": "Create and update users",
-      "delete": "Delete users",
-      "manage_roles": "Assign roles to users"
-    },
-    "inventory": {
-      "read": "View inventory items",
-      "write": "Create and edit inventory items",
-      "delete": "Delete inventory items",
-      "export": "Export inventory to CSV",
-      "import": "Import inventory from file"
-    },
-    "treasury": {
-      "read": "View treasury overview",
-      "export": "Export treasury data to CSV",
-      "import": "Import treasury data from file",
-      "breakdown": {
-        "read": "View treasury breakdown"
-      },
-      "transactions": {
-        "read": "View transaction list",
-        "write": "Create transactions",
-        "write-self": "Create own transactions",
-        "update": "Edit transactions",
-        "delete": "Delete transactions",
-        "update-self": "Edit own transactions",
-        "delete-self": "Delete own transactions",
-        "read-self": "View own transactions"
-      },
-      "reimbursements": {
-        "read": "View reimbursement requests",
-        "write": "Create reimbursement requests",
-        "write-self": "Create own reimbursement requests",
-        "update": "Update and approve/reject reimbursements",
-        "delete": "Delete reimbursement requests",
-        "update-self": "Edit own reimbursement requests",
-        "delete-self": "Delete own reimbursement requests",
-        "read-self": "View own reimbursement requests"
-      },
-      "budgets": {
-        "read": "View budgets",
-        "read-self": "View own budgets",
-        "write": "Create budgets",
-        "write-self": "Create own budgets",
-        "update": "Edit budgets",
-        "delete": "Delete budgets",
-        "update-self": "Edit own budgets",
-        "delete-self": "Delete own budgets"
-      },
-      "receipts": {
-        "read": "View receipts",
-        "read-self": "View own receipts",
-        "write": "Create receipts",
-        "write-self": "Create own receipts",
-        "update": "Edit receipts",
-        "delete": "Delete receipts",
-        "update-self": "Edit own receipts",
-        "delete-self": "Delete own receipts"
-      },
-      "view_scope": {
-        "all": "You are viewing all {{itemType}}",
-        "own_only": "You are viewing only your own {{itemType}}",
-        "item_types": {
-          "transactions": "transactions",
-          "reimbursements": "reimbursement requests",
-          "budgets": "budgets",
-          "receipts": "receipts"
-        }
-      }
-    },
-    "purchases": {
-      "read": "View all purchase requests",
-      "manage": "Update purchase status",
-      "delete": "Delete purchase requests"
-    },
-    "submissions": {
-      "read": "View contact form submissions",
-      "write": "Update submission status",
-      "delete": "Delete submissions"
-    },
-    "social": {
-      "read": "View social links",
-      "write": "Create and edit social links",
-      "delete": "Delete social links"
-    },
-    "minutes": {
-      "read": "View and download minutes",
-      "guide": "View naming convention guide"
-    },
-    "events": {
-      "read": "View calendar events",
-      "write": "Create calendar events",
-      "update": "Edit calendar events",
-      "delete": "Delete calendar events"
-    },
-    "news": {
-      "read": "View news",
-      "write": "Create news",
-      "update": "Edit news",
-      "delete": "Delete news"
-    },
-    "faq": {
-      "read": "View FAQ",
-      "write": "Create FAQ entries",
-      "update": "Edit FAQ entries",
-      "delete": "Delete FAQ entries"
-    },
-    "forms": {
-      "read": "View form responses and analytics",
-      "export": "Export form data to CSV"
-    },
-    "polls": {
-      "read": "View polls",
-      "write": "Create and manage own polls",
-      "delete": "Delete any poll"
-    },
-    "profile": {
-      "read": {
-        "own": "View own profile"
-      },
-      "write": {
-        "own": "Edit own profile"
-      }
-    },
-    "avatars": {
-      "read": "View avatar blob list",
-      "delete": "Delete avatar blobs"
-    },
-    "admin": {
-      "storage": {
-        "read": "View storage admin",
-        "write": "Manage storage admin"
-      }
-    },
-    "roles": {
-      "read": "View roles and permissions",
-      "write": "Create and edit roles",
-      "delete": "Delete roles"
-    },
-    "settings": {
-      "general": "Access general settings",
-      "users": "Access user management settings",
-      "roles": "Access role management settings",
-      "reimbursements": "Access reimbursement settings (AI, keywords)",
-      "analytics": "Access analytics settings (AI models)",
-      "news": "Access news settings (AI translation model)",
-      "faqs": "Access FAQ settings (AI translation model)"
-    },
-    "committee": {
-      "email": "Send email to role members",
-      "read": "View committee members"
-    },
-    "categories": {}
-  },
-  "relationships": {
-    "ai": {
-      "analyze": "Analyze with AI",
-      "analyzing": "Analyzing...",
-      "success": "Created {{count}} draft items",
-      "error": "Analysis failed"
-    },
-    "draft": {
-      "badge": "Draft",
-      "cleanup": "Clean Up Drafts",
-      "cleanup_success": "Deleted {{count}} drafts"
-    }
-  }
+	"common": {
+		"date": "Date",
+		"time": "Time",
+		"entity_types": {
+			"receipt": "Receipt",
+			"transaction": "Transaction",
+			"reimbursement": "Reimbursement",
+			"budget": "Budget",
+			"inventory": "Inventory Item",
+			"minute": "Minute",
+			"news": "News",
+			"faq": "FAQ"
+		},
+		"actions": {
+			"save": "Save",
+			"cancel": "Cancel",
+			"delete": "Delete",
+			"edit": "Edit",
+			"add": "Add",
+			"create": "Create",
+			"update": "Update",
+			"remove": "Remove",
+			"search": "Search",
+			"view": "View",
+			"confirm": "Confirm",
+			"sort": "Sort",
+			"back": "Back",
+			"all": "All",
+			"loading": "Loading...",
+			"link_existing": "Link Existing",
+			"create_new": "Create New"
+		},
+		"filters": {
+			"all": "All Categories"
+		},
+		"no_results": "No results",
+		"total": "Total",
+		"fields": {
+			"name": "Name",
+			"description": "Description",
+			"amount": "Amount",
+			"price": "Price",
+			"free": "Free",
+			"date": "Date",
+			"status": "Status",
+			"type": "Type",
+			"title": "Title",
+			"search": "Search",
+			"year": "Year",
+			"category": "Category",
+			"created_by": "Created By",
+			"location": "Location",
+			"quantity": "Quantity",
+			"value": "Value",
+			"url": "URL",
+			"icon": "Icon",
+			"color": "Color",
+			"order": "Order",
+			"active": "Active",
+			"all_day": "All Day",
+			"start_date": "Start Date",
+			"end_date": "End Date",
+			"start_time": "Start Time",
+			"end_time": "End Time",
+			"primary": "Primary",
+			"hidden": "Hidden",
+			"none": "None"
+		},
+		"file_upload": {
+			"drag_drop": "Drag and drop a file here, or click to select",
+			"drop_file": "Drop file here"
+		},
+		"placeholders": {
+			"search": "Search...",
+			"select": "Select...",
+			"title": "Enter title...",
+			"description": "Enter description..."
+		},
+		"sections": {
+			"basic_info": "Basic Info",
+			"date_time": "Date & Time",
+			"attendees": "Attendees"
+		},
+		"status": {
+			"error": "Error",
+			"saved": "Saved",
+			"saving": "Saving..."
+		}
+	},
+	"app": {
+		"title": "Tenant Committee",
+		"setup_required": "Setup Required",
+		"setup_message": "It looks like the app isn't configured yet. Please check your environment variables.",
+		"error_details": "Error details",
+		"open_setup": "Open Setup Guide",
+		"copy_env": "Or copy .env.template to .env and configure your settings."
+	},
+	"nav": {
+		"menu": "Menu",
+		"navigation": "Navigation",
+		"settings": "Settings",
+		"profile": "Profile",
+		"edit_profile": "Edit profile",
+		"messages": "Messages",
+		"log_out": "Log out",
+		"users": "Users",
+		"roles": "Roles",
+		"reimbursements": "Reimbursements",
+		"get_involved": "Get Involved",
+		"events": "Events",
+		"treasury": "Treasury",
+		"minutes": "Minutes",
+		"news": "News",
+		"faq": "FAQ",
+		"inventory": "Inventory",
+		"social": "Social",
+		"analytics": "Analytics",
+		"polls": "Polls",
+		"committee": "Committee",
+		"login": "Login",
+		"submissions": "Submissions",
+		"committee_mail": "Email",
+		"sidebar_collapse": "Collapse sidebar",
+		"sidebar_expand": "Expand sidebar",
+		"admin": "Admin"
+	},
+	"receipts": {
+		"select_receipts": "Select Receipts",
+		"selected": "Selected Receipts",
+		"add_more": "Add More Receipts",
+		"search_placeholder": "Search receipts...",
+		"refresh": "Refresh receipts",
+		"upload_new": "Upload New Receipt",
+		"upload_unavailable": "Upload is not available",
+		"upload_failed": "Upload failed. Try again.",
+		"invalid_type": "Invalid file type. Allowed: {{types}}",
+		"uploading": "Uploading...",
+		"upload_notice": "Large files can take a while to upload.",
+		"no_receipts": "No receipts for year {{year}}",
+		"done": "Done",
+		"open": "Open",
+		"delete": "Remove",
+		"select_existing_or_upload": "Select existing receipts or upload a new one.",
+		"allowed": "Allowed",
+		"selected_count": "selected",
+		"analyze_with_ai": "Analyze with AI (OCR)"
+	},
+	"lang": {
+		"label": "Language"
+	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
+	"home": {
+		"header": "Get Involved",
+		"contact": {
+			"title": "Contact Us"
+		},
+		"options": {
+			"committee": {
+				"title": "Join the Committee",
+				"description": "Fill in the form to join the committee."
+			},
+			"events": {
+				"title": "Suggest an Event",
+				"description": "Suggest an event to the committee."
+			},
+			"purchases": {
+				"title": "Request a Purchase",
+				"description": "Suggest a purchase to the committee."
+			},
+			"questions": {
+				"title": "Ask a Question",
+				"description": "Ask a question from the committee."
+			}
+		}
+	},
+	"treasury": {
+		"overview": "Overview",
+		"title": "Treasury {{year}}",
+		"select_year": "Select year...",
+		"view_breakdown": "See Breakdown",
+		"auto_linked_from": "Auto-linked from {{type}}: {{name}}",
+		"balance": "Balance",
+		"income": "Income",
+		"unbudgeted_transactions": "Unbudgeted Transactions",
+		"budgeted_transactions": "Budgeted Transactions",
+		"budget_costs": "Budget Costs",
+		"available": "Available",
+		"transactions_count": "{{count}} transactions",
+		"no_transactions": "No transactions",
+		"no_transactions_desc": "No transactions recorded for {{year}} yet.",
+		"receipts": {
+			"title": "Receipts",
+			"new": "New receipt",
+			"view": "View",
+			"reimbursement_request": "Reimbursement Request",
+			"no_receipts": "No receipts for this year",
+			"upload_error": "Upload failed",
+			"delete": "Delete receipt",
+			"delete_confirm": "Are you sure you want to delete this receipt?",
+			"file": "File",
+			"allowed_types": "Allowed file types",
+			"name_placeholder": "Receipt name (optional)",
+			"description_placeholder": "Describe the receipt if needed",
+			"invalid_file_type": "Invalid file type. Allowed types: {{types}}",
+			"form": {
+				"create": "Create receipt"
+			},
+			"success": {
+				"receipt_created": "Receipt created"
+			},
+			"gallery": {},
+			"ai_analysis": "AI Analysis",
+			"no_analysis_yet": "No AI analysis performed yet for this receipt.",
+			"analyze_now": "Analyze with AI",
+			"ai_results": "AI Results",
+			"store": "Store",
+			"date": "Date",
+			"total": "Total Amount",
+			"extracted_items": "Extracted Items",
+			"quantity": "Qty",
+			"price": "Price",
+			"raw_text": "Raw Text",
+			"re_analyze": "Re-analyze",
+			"process_receipt": "Process Receipt",
+			"processed": "Processed",
+			"processing": "Processing...",
+			"auto_filled_from_receipt": "Auto-filled from receipt: {{name}}",
+			"create_reimbursement": "Create Reimbursement",
+			"analyze_with_ai": "Analyze with AI (OCR)",
+			"analyzing": "Analyzing receipt...",
+			"analysis_note": "This may take up to 60 seconds for large files or when using free AI models.",
+			"analysis_complete": "Receipt analyzed successfully",
+			"analysis_failed": "Failed to analyze receipt",
+			"analysis_timeout": "Analysis timed out. The file may be too large or the server is slow.",
+			"uploading": "Uploading file...",
+			"upload_complete": "File uploaded successfully",
+			"upload_failed": "Failed to upload file",
+			"upload_timeout": "Upload timed out. The file may be too large.",
+			"receipt_file": "Receipt File",
+			"replace_file": "Replace receipt file",
+			"parsed_content": "Parsed Content",
+			"edit": "Edit Receipt",
+			"extract_text": "Extract Text",
+			"process_text": "Process Raw Text",
+			"extract_content": "Extract Receipt Content",
+			"try_extract": "Try Extracting",
+			"no_extraction_yet": "File uploaded. Click 'Try Extracting' to extract text from the receipt.",
+			"uploaded_file": "Uploaded File",
+			"view_file": "View File",
+			"file_ready": "File uploaded and ready",
+			"optional_replace": "Optional: upload a different file",
+			"no_ai_parsing": "AI parsing is not configured. Only raw text extraction is available. Configure OpenRouter API key in settings to enable structured data extraction.",
+			"link_existing": "Link Receipt",
+			"select_placeholder": "Select receipt...",
+			"no_link": "Don't link",
+			"upload_new": "Upload New Receipt"
+		},
+		"actions": {
+			"breakdown": "Breakdown",
+			"transactions": "Transactions",
+			"receipts": "Receipts",
+			"reimbursements": "Reimbursement Requests",
+			"budgets": "Budgets"
+		},
+		"new": {
+			"header": "New Transaction",
+			"details_header": "Transaction Details",
+			"inventory_title": "Add to Inventory",
+			"inventory_desc": "Select from list or add new. Selected items will be added to the new transaction.",
+			"inventory_empty": "No items selected.",
+			"items_selected": "{{count}} items selected",
+			"total": "Total",
+			"select_items": "Select Items",
+			"or": "or",
+			"submit": "Add",
+			"link_budget": "Link to Budget",
+			"link_budget_help": "Optional: Use funds from an existing budget.",
+			"no_budget": "Don't use budget",
+			"budget_note": "The expense amount will be deducted from the selected budget.",
+			"add_item": "Add Item"
+		},
+		"success": {
+			"transaction_created": "Transaction created",
+			"reimbursement_requested": "Reimbursement request sent",
+			"transaction_deleted": "Transaction deleted"
+		},
+		"form": {
+			"amount": "Amount €",
+			"description": "Description",
+			"description_placeholder": "E.g. Coffee service, Meeting snacks",
+			"date": "Date",
+			"year": "Year"
+		},
+		"placeholders": {},
+		"types": {
+			"income": "Income",
+			"expense": "Expense"
+		},
+		"categories": {
+			"inventory": "Inventory",
+			"snacks": "Snacks",
+			"event": "Event",
+			"other": "Other",
+			"grant": "Grant",
+			"sales": "Sales",
+			"event_income": "Event Income",
+			"membership": "Membership Fees"
+		},
+		"transactions": {
+			"title": "Transactions",
+			"new": "New Transaction",
+			"all": "All",
+			"type": "Type",
+			"status": "Status",
+			"locked_by_reimbursement": "Locked (reimbursement sent)",
+			"link_existing": "Link Transaction",
+			"create": "Create transaction",
+			"linked": "Linked Transactions",
+			"select_placeholder": "Select transaction...",
+			"no_link": "Don't link to existing transaction"
+		},
+		"reimbursements": {
+			"link_to_reimbursement": "Link to reimbursement request",
+			"title": "Reimbursement Requests",
+			"new": "New",
+			"status": "Status",
+			"purchaser": "Purchaser",
+			"receipts": "Receipts",
+			"view_receipt": "View receipt",
+			"transaction": "Transaction",
+			"view_transaction": "View Transaction",
+			"email_sent": "Email Sent",
+			"locked_sent": "Locked (sent)",
+			"reply_received": "Reply Received",
+			"delete_confirm": "Are you sure you want to delete this reimbursement?",
+			"use_as_template": "Use as template",
+			"linked_transactions": "Linked Transactions",
+			"statuses": {
+				"pending": "Pending",
+				"approved": "Approved",
+				"reimbursed": "Paid",
+				"rejected": "Rejected"
+			},
+			"view": {
+				"title": "View Reimbursement"
+			},
+			"edit": {
+				"title": "Edit Reimbursement",
+				"reimbursement_details": "Reimbursement Details"
+			},
+			"link_existing": "Link Reimbursement",
+			"select_placeholder": "Select reimbursement...",
+			"no_link": "Don't link"
+		},
+		"new_reimbursement": {
+			"title": "New Reimbursement",
+			"description": "Description",
+			"description_placeholder": "E.g. Coffee for meeting",
+			"amount": "Amount €",
+			"purchaser_name": "Purchaser Name",
+			"purchaser_placeholder": "First and last name",
+			"bank_account": "Bank Account",
+			"minutes_help": "For purchases over 100€, minutes are required before payment.",
+			"notes": "Additional Notes",
+			"notes_placeholder": "Free-form message...",
+			"receipt_uploaded": "Receipt uploaded",
+			"error": "Error",
+			"email_warning": "⚠️ Email sending is not configured. Request will be saved but email won't be sent.",
+			"link_existing_transaction": "Link Transaction",
+			"select_transaction_placeholder": "Select transaction...",
+			"linked_transaction_info": "This reimbursement will be linked to the selected transaction. The transaction details will be used.",
+			"reimbursement_details": "Reimbursement Details",
+			"transaction_section_title": "Transaction"
+		},
+		"breakdown": {
+			"title": "Treasury Breakdown",
+			"no_transactions": "No transactions for this year",
+			"date": "Date",
+			"description": "Description",
+			"category": "Category",
+			"status": "Status",
+			"reimbursement_status": "Reimbursement Status",
+			"amount": "Amount",
+			"export": "Export CSV",
+			"import": "Import CSV",
+			"import_success": "Imported {{count}} transactions",
+			"import_error": "Import failed",
+			"statuses": {
+				"complete": "Complete",
+				"pending": "Pending",
+				"paused": "Paused",
+				"declined": "Declined"
+			},
+			"view": {
+				"title": "View Transaction"
+			},
+			"edit": {
+				"title": "Edit Transaction",
+				"delete_title": "Delete transaction?",
+				"delete_confirm": "Are you sure you want to delete this transaction? This action cannot be undone.",
+				"delete_blocked": "Deletion blocked",
+				"linked_reimbursement": "Linked Reimbursement",
+				"purchaser": "Purchaser",
+				"iban": "IBAN",
+				"minutes": "Minutes",
+				"email": "Email",
+				"email_sent": "Sent",
+				"email_not_sent": "Not sent",
+				"items_linked_success": "Items linked",
+				"delete_error_linked": "Cannot delete transaction because it has linked active inventory items: {{names}}. Remove or mark items as Legacy first.",
+				"reimbursement_statuses": {},
+				"statuses": {}
+			}
+		},
+		"budgets": {
+			"title": "Budgets",
+			"new": "New Budget",
+			"name": "Budget Name",
+			"name_placeholder": "E.g. Guitar purchase",
+			"description": "Description",
+			"description_placeholder": "Additional details about the budget",
+			"amount": "Budget",
+			"used": "Used",
+			"reserved": "Reserved",
+			"remaining": "Remaining",
+			"status": "Status",
+			"created_by": "Created By",
+			"year": "Year",
+			"statuses": {
+				"open": "Open",
+				"closed": "Closed"
+			},
+			"actions": {
+				"edit": "Edit",
+				"delete": "Delete",
+				"close": "Close Budget",
+				"reopen": "Reopen Budget"
+			},
+			"close_confirm": "Closing this budget will return {{amount}} to available funds. Continue?",
+			"reopen_confirm": "Reopen this budget?",
+			"delete_confirm": "Delete this budget? This action cannot be undone.",
+			"cannot_reduce": "Cannot reduce amount below used amount ({{used}})",
+			"insufficient_funds": "Insufficient available funds. Available: {{available}}",
+			"linked_transactions": "Linked Transactions",
+			"no_budgets": "No budgets",
+			"no_budgets_desc": "No budgets for {{year}} yet.",
+			"available_funds": "Available Funds",
+			"success": {
+				"created": "Budget created",
+				"updated": "Budget updated",
+				"deleted": "Budget deleted",
+				"closed": "Budget closed",
+				"reopened": "Budget reopened"
+			},
+			"error": {
+				"delete_failed": "Failed to delete budget",
+				"has_transactions": "Cannot delete budget with linked transactions"
+			},
+			"form": {
+				"create": "Create Budget"
+			},
+			"view": {
+				"title": "View Budget"
+			},
+			"edit": {
+				"title": "Edit Budget"
+			}
+		}
+	},
+	"inventory": {
+		"link_inventory_item": "Link Inventory Item",
+		"title": "Inventory",
+		"unit": "pcs",
+		"search": {
+			"name_label": "Name",
+			"name_placeholder": "Search by name...",
+			"location_label": "Location",
+			"location_all": "All locations",
+			"category_label": "Category",
+			"category_all": "All categories",
+			"columns": "Columns",
+			"filters": "Filters"
+		},
+		"columns": {
+			"status": "Status",
+			"name": "Name",
+			"location": "Location",
+			"category": "Category",
+			"description": "Description",
+			"updated": "Updated",
+			"unit_value": "Unit",
+			"quantity": "Qty",
+			"total_value": "Total",
+			"transactions": "Transactions",
+			"info_reel": "Info Reel"
+		},
+		"actions": {
+			"menu": "Actions",
+			"add": "Add",
+			"close": "Close",
+			"export": "Export CSV",
+			"export_short": "Export",
+			"import": "Import CSV",
+			"import_short": "Import",
+			"selected": "Selected",
+			"report": "Report",
+			"treasury": "Treasury",
+			"add_to_new": "Add to New",
+			"add_to_existing": "Add to Existing",
+			"no_transaction": "No Transaction",
+			"remove": "Remove",
+			"unlink": "Unlink",
+			"remove_marker": "Remove marker"
+		},
+		"badge_unknown_title": "Unaccounted quantity – click for options",
+		"badge_connect_existing": "Connect to existing transaction",
+		"badge_create_new_transaction": "Create new transaction",
+		"badge_linked_to_transaction": "Linked to transaction",
+		"inline_edit_saved": "Saved",
+		"messages": {
+			"importing": "Importing file...",
+			"import_success": "Imported {{count}} rows",
+			"import_error": "Error: {{error}}"
+		},
+		"add_row": {
+			"name_placeholder": "Name...",
+			"location_placeholder": "Location...",
+			"category_placeholder": "Category...",
+			"description_placeholder": "Description...",
+			"search_placeholder": "Search...",
+			"new_text": "New",
+			"required_field": "Required field"
+		},
+		"form": {
+			"title_new": "New Item",
+			"title_edit": "Edit Item",
+			"details_header": "Item Details",
+			"name_placeholder": "Select or type name...",
+			"name_search_placeholder": "Search item...",
+			"name_empty": "Not found.",
+			"location_placeholder": "Select or type...",
+			"location_search_placeholder": "Search location...",
+			"location_empty": "Not in list.",
+			"category_placeholder": "Select or type...",
+			"category_search_placeholder": "Search category...",
+			"description_placeholder": "Item details",
+			"value_placeholder": "0.00",
+			"purchased_at_label": "Purchase Date",
+			"show_in_info_reel": "Show in Info Reel",
+			"example": "E.g. {{example}}"
+		},
+		"new": {},
+		"modals": {
+			"report_title": "Report an issue",
+			"selected_items": "Selected items:",
+			"describe_issue": "Describe the issue or what should be changed...",
+			"cancel": "Cancel",
+			"send": "Send",
+			"confirm_unlink_title": "Unlink Item?",
+			"confirm_unlink_desc": "This will unlink the item from the selected transaction.",
+			"confirm_unlink_details": "Item: {{name}} ({{count}} pcs)\nTransaction: {{description}} ({{date}})",
+			"unlink": "Unlink",
+			"confirm_delete_many_title": "Delete items?",
+			"confirm_delete_many_desc": "Are you sure you want to permanently delete {{count}} item(s)?",
+			"quantity_selection": {
+				"title_no_txn": "Mark No Transaction",
+				"title_existing": "Add to Existing",
+				"title_txn": "Add to Transaction",
+				"desc_no_txn": "Select how many of each item to mark as having no transaction.",
+				"desc_existing": "Select how many of each item to add to an existing transaction.",
+				"desc_txn": "Select how many of each item to add to the transaction.",
+				"available": "Available",
+				"continue": "Continue",
+				"confirm": "Confirm"
+			},
+			"remove": {
+				"title": "Remove Inventory Item",
+				"current_quantity": "Current quantity",
+				"linked_transactions": "Linked Transactions",
+				"linked_desc": "Select from which transaction(s) to remove and how many.",
+				"expense": "Expense",
+				"income": "Income",
+				"linked": "Linked",
+				"no_linked_txns": "No transactions linked to this item.",
+				"no_linked_desc": "You can remove it directly or mark it as a legacy item.",
+				"reason": "Reason",
+				"notes_optional": "Notes (optional)",
+				"notes_placeholder": "Add notes if necessary...",
+				"removing": "Removing",
+				"item_will_be_removed": "Item will be marked as removed",
+				"remove_count": "Remove {{count}} pcs",
+				"remove_item": "Remove Item",
+				"reasons": {
+					"broken": "Broken",
+					"used_up": "Used up",
+					"lost": "Lost",
+					"sold": "Sold",
+					"other": "Other"
+				}
+			},
+			"transaction_selector": {
+				"title": "Select Transaction",
+				"desc": "Select a transaction to add the selected items to."
+			}
+		},
+		"info_reel": {
+			"no_items": "No items to display"
+		},
+		"status": {
+			"removed": "Removed"
+		},
+		"created_items": "Created Inventory Items",
+		"location_missing": "Location needed",
+		"incomplete_items": "Items Needing Completion",
+		"complete_item": "Mark Complete",
+		"location_tbd": "Location TBD"
+	},
+	"minutes": {
+		"title": "Minutes",
+		"all_minutes": "All Minutes",
+		"archive": "Archive",
+		"no_results": "No results",
+		"no_minutes": "No minutes",
+		"no_minutes_yet": "No minutes yet",
+		"this_year": "This Year",
+		"search": {
+			"name_label": "Name",
+			"name_placeholder": "Search by name...",
+			"year_label": "Year",
+			"year_placeholder": "Select year..."
+		},
+		"naming_guide": {
+			"title": "Naming Minutes",
+			"use_format": "Use format",
+			"example": "Ex: 2026-01-05_Board_Meeting_1.pdf - Files are ordered newest first."
+		},
+		"link_existing": "Link Minutes",
+		"select_placeholder": "Select minutes...",
+		"no_link": "Don't link"
+	},
+	"profile": {
+		"title": "Profile",
+		"update_success": "Profile updated!",
+		"email_label": "Email",
+		"email_help": "Email cannot be changed",
+		"name_label": "Name",
+		"apartment_label": "Apartment Number",
+		"optional": "optional",
+		"apartment_placeholder": "e.g. A 101",
+		"apartment_help": "Used for validating votes",
+		"role_label": "Role",
+		"member_since_label": "Member since",
+		"description_label": "Description",
+		"description_placeholder": "Tell us about yourself...",
+		"picture_label": "Profile Picture",
+		"picture_help": "Profile picture is automatically updated from your Google account when you log in. You can upload your own picture below.",
+		"upload_picture": "Upload new picture",
+		"use_google_picture": "Use Google picture again",
+		"use_google_picture_success": "Profile picture cleared. It will update from Google on next login.",
+		"picture_invalid_type": "Invalid file type. Use JPG, PNG or WebP.",
+		"picture_too_large": "File is too large. Maximum size is {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Image dimensions are too large. Maximum size is {{maxDimension}}x{{maxDimension}}px.",
+		"picture_updated": "Profile picture updated.",
+		"picture_upload_error": "Failed to update profile picture.",
+		"local_ai": {
+			"title": "Local AI Models",
+			"description": "Use your own locally-running AI models for translations instead of server-side AI. Requires Ollama running on your computer.",
+			"enable_label": "Enable local AI models",
+			"enable_help": "Allow pages to use your local Ollama instance for translations.",
+			"url_label": "Ollama URL",
+			"url_help": "The URL where Ollama is running. Default: http://localhost:11434",
+			"test_connection": "Test Connection",
+			"connection_success": "Connection successful! Found {{count}} models.",
+			"connection_failed": "Connection failed. Make sure Ollama is running and CORS is enabled.",
+			"connection_error": "Connection error",
+			"cors_title": "Browser access (CORS)",
+			"cors_help": "For browser access, start Ollama with: OLLAMA_ORIGINS=* ollama serve"
+		}
+	},
+	"avatars": {
+		"delete": "Delete"
+	},
+	"admin": {
+		"storage": {
+			"minutes": "Minutes",
+			"minutes.title": "Minutes Gallery",
+			"minutes.description": "Manage uploaded minute files. Linked files correspond to existing minute entries.",
+			"minutes.empty": "No minutes found",
+			"minutes.delete_confirm": "Are you sure you want to delete this file? This cannot be undone.",
+			"receipts": "Receipts",
+			"avatars": "Avatars",
+			"receipts.title": "Receipt Gallery",
+			"receipts.description": "All receipts. Linked receipts are attached to a reimbursement request and cannot be deleted.",
+			"receipts.empty": "No receipts",
+			"receipts.delete_confirm": "Are you sure you want to delete this receipt?",
+			"receipts.delete_success": "Receipt deleted",
+			"receipts.delete_error": "Delete failed",
+			"receipts.open_pdf": "Open PDF",
+			"receipts.linked": "Linked",
+			"receipts.unlinked": "Unlinked",
+			"receipts.reimbursement_request": "Reimbursement Request",
+			"avatars.title": "Avatars",
+			"avatars.description": "All user avatar images stored in the system.",
+			"avatars.empty": "No avatars",
+			"avatars.delete": "Delete",
+			"avatars.delete_confirm": "Are you sure you want to delete this avatar?",
+			"avatars.delete_success": "Avatar deleted",
+			"avatars.delete_error": "Delete failed"
+		}
+	},
+	"settings": {
+		"general": {
+			"title": "General",
+			"languages_title": "Default Languages",
+			"languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
+			"primary_language": "Primary Language",
+			"secondary_language": "Secondary Language"
+		},
+		"reimbursements": {
+			"title": "Reimbursement Settings",
+			"recipient_email_title": "Recipient Email",
+			"recipient_email_desc": "Set the email address that receives reimbursement requests.",
+			"recipient_email_label": "Recipient Email",
+			"recipient_email_placeholder": "treasury@example.com",
+			"recipient_email_fallback": "Using environment default: {{email}}",
+			"ai_parsing_title": "AI Parsing",
+			"ai_parsing_desc": "Enable AI-assisted parsing for more accurate reply interpretation",
+			"enable_ai": "Enable AI Parsing",
+			"select_model": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models",
+			"keywords_title": "Keywords",
+			"keywords_desc": "Custom keywords for detecting approval or rejection in emails",
+			"default_approval": "Default Approval Keywords",
+			"additional_approval": "Additional Approval Keywords",
+			"approval_placeholder": "paid, done, accepted (comma-separated)",
+			"default_rejection": "Default Rejection Keywords",
+			"additional_rejection": "Additional Rejection Keywords"
+		},
+		"analytics": {
+			"title": "Analytics Settings"
+		},
+		"news": {
+			"title": "News Settings",
+			"ai_model_title": "AI News Model",
+			"ai_model_desc": "Select the AI model used for translating news between primary and secondary languages.",
+			"select_model": "Select model",
+			"select_model_placeholder": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models"
+		},
+		"faqs": {
+			"title": "FAQ Settings",
+			"ai_model_title": "AI FAQ Model",
+			"ai_model_desc": "Select the AI model used for translating FAQ entries between primary and secondary languages.",
+			"select_model": "Select model",
+			"select_model_placeholder": "Select a model...",
+			"showing_models": "Showing {{count}} of {{total}} models"
+		},
+		"roles": {
+			"title": "Role Management",
+			"create_new_title": "Create New Role",
+			"color_label": "Color",
+			"system": "System Role",
+			"delete_title": "Delete Role",
+			"delete_confirm": "Are you sure you want to delete the role \"{{name}}\"? This action cannot be undone.",
+			"permissions_header": "Permissions",
+			"select_role_msg": "Select a role from the left to edit permissions",
+			"select_role": "Select Role",
+			"select_role_placeholder": "Choose a role...",
+			"search_placeholder": "Search permissions...",
+			"category": "Category",
+			"permission_name": "Permission Name",
+			"description": "Description",
+			"show_only_assigned": "Show only assigned permissions"
+		},
+		"users": {
+			"title": "User Management",
+			"headers": {
+				"name": "Name",
+				"email": "Email",
+				"roles": "Roles",
+				"joined": "Joined"
+			},
+			"no_users": "No users yet",
+			"roles_placeholder": "Type role name and press Tab to add",
+			"no_roles_match": "No matching roles",
+			"super_admin": "Super Admin",
+			"role_updated": "Role updated",
+			"cannot_change_super_admin": "Cannot change Super Admin role",
+			"update_failed": "Failed to update role"
+		}
+	},
+	"local_ai": {
+		"model_selector": {
+			"label": "Local Model",
+			"loading": "Loading...",
+			"no_models": "No models found",
+			"connection_failed": "Connection failed",
+			"select_model": "Select model",
+			"disabled": "Disabled",
+			"model_count": "{{count}} models"
+		},
+		"translate": {
+			"button_tooltip": "{{source}} → {{target}} (Translate)",
+			"input_not_found": "Source or target field not found",
+			"empty_source": "Source field is empty",
+			"success": "Translation complete",
+			"failed": "Translation failed: {{error}}"
+		}
+	},
+	"committee": {
+		"title": "Committee",
+		"members": "Members",
+		"no_members": "No committee members found",
+		"no_description": "No description",
+		"mail": {
+			"title": "Committee Email",
+			"not_configured": "Email is not configured. Set SMTP and COMMITTEE_FROM_EMAIL environment variables.",
+			"to": "To",
+			"cc": "CC",
+			"bcc": "BCC",
+			"add_email": "Add email",
+			"type_to_add": "Type a name or role and press Tab to add",
+			"no_suggestions": "No suggestions",
+			"role": "Role",
+			"subject": "Subject",
+			"subject_placeholder": "Email subject",
+			"body": "Message",
+			"body_placeholder": "Write your message..."
+		}
+	},
+	"mail": {
+		"inbox": "Inbox",
+		"sent": "Sent",
+		"compose": "Compose",
+		"drafts": "Drafts",
+		"draft_saved_at": "Draft saved at {{time}}",
+		"send_tooltip": "Send",
+		"no_drafts": "No drafts",
+		"no_subject": "(No subject)",
+		"refresh": "Refresh",
+		"refreshed": "{{count}} new messages fetched",
+		"no_messages": "No messages",
+		"from": "From",
+		"to": "To",
+		"cc": "CC",
+		"date": "Date",
+		"delete": "Delete",
+		"delete_draft": "Delete draft",
+		"delete_confirm": "Are you sure you want to delete this message?",
+		"delete_draft_confirm": "Are you sure you want to delete this draft?",
+		"delete_success": "Deleted successfully",
+		"delete_error": "Delete failed",
+		"select": "Select",
+		"reply": "Reply",
+		"reply_all": "Reply All",
+		"forward": "Forward",
+		"forwarded_message": "Forwarded message",
+		"messages_in_thread": "{{count}} messages",
+		"compose_new": "New Message",
+		"compose_reply": "Reply",
+		"compose_reply_all": "Reply All",
+		"compose_forward": "Forward",
+		"quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:"
+	},
+	"contact": {
+		"header": "Contact Us",
+		"select_topic": "Select Topic",
+		"select_topic_prompt": "Select a topic to begin",
+		"types": {
+			"committee": {},
+			"events": {},
+			"purchases": {},
+			"questions": {}
+		},
+		"form": {
+			"name": "Name",
+			"email": "Email",
+			"apartment": "Apartment",
+			"apartment_placeholder": "e.g. A 123",
+			"update_apartment_profile": "Update apartment number in my profile",
+			"message": "Message",
+			"send": "Send"
+		},
+		"success": {
+			"title": "Message Sent!",
+			"message": "Thank you for contacting us! We will respond as soon as possible.",
+			"back_home": "Back to Home"
+		}
+	},
+	"social": {
+		"header": "Social Media",
+		"delete_confirm": "Delete?",
+		"no_channels": "No social channels",
+		"add_first": "Add first",
+		"set_primary": "Set as primary",
+		"clear_primary": "Remove primary",
+		"new": {
+			"header": "New Social Channel",
+			"hidden_desc": "Hidden channels only visible to staff",
+			"sort_desc": "Lower numbers appear first",
+			"primary_desc": "Primary channel will be highlighted."
+		},
+		"colors": {},
+		"icons": {}
+	},
+	"submissions": {
+		"title": "Submissions",
+		"no_submissions": "No submissions yet",
+		"delete_confirm": "Are you sure you want to delete this submission?",
+		"apartment": "Apartment",
+		"table": {
+			"time": "Time",
+			"type": "Type",
+			"sender": "Sender",
+			"message": "Message",
+			"status": "Status"
+		}
+	},
+	"events": {
+		"title": "Events",
+		"upcoming": "Upcoming",
+		"no_upcoming": "No upcoming events",
+		"no_results": "No results",
+		"open_calendar": "Open Calendar",
+		"add_event": "Add Event",
+		"new": {
+			"header": "New Event",
+			"recurrence": "Recurrence",
+			"reminders": "Reminders",
+			"success": "Event created successfully!",
+			"error": "Failed to create event"
+		},
+		"form": {
+			"location_placeholder": "Event location (optional)",
+			"frequency": "Frequency",
+			"interval": "Interval",
+			"recurrence_end": "Recurrence ends",
+			"end_never": "Never",
+			"end_after": "After",
+			"occurrences": "occurrences",
+			"end_on": "On date",
+			"add_reminder": "Add reminder",
+			"no_reminders": "No reminders set",
+			"attendees_placeholder": "Email addresses (comma separated)",
+			"attendees_help": "Enter attendee email addresses separated by commas"
+		},
+		"frequency": {
+			"daily": "Daily",
+			"weekly": "Weekly",
+			"monthly": "Monthly",
+			"yearly": "Yearly"
+		},
+		"reminder": {
+			"popup": "Popup",
+			"email": "Email"
+		},
+		"edit": {
+			"header": "Edit Event",
+			"success": "Event updated!",
+			"error": "Failed to update event"
+		},
+		"delete": {
+			"success": "Event deleted!",
+			"error": "Failed to delete event"
+		}
+	},
+	"news": {
+		"title": "News",
+		"add": "Add news",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No news yet.",
+		"no_results": "No results for your search.",
+		"search_placeholder": "Search news...",
+		"confirm_delete": "Are you sure you want to delete this news item?",
+		"new_title": "News",
+		"edit_title": "Edit news",
+		"save": "Save",
+		"cancel": "Cancel",
+		"form": {
+			"title": "Title",
+			"title_placeholder": "News title",
+			"summary": "Summary",
+			"summary_placeholder": "Short summary (optional)",
+			"content": "Content",
+			"content_placeholder": "News content",
+			"default_language": "Default language ({{language}})",
+			"secondary_language": "Secondary language ({{language}})"
+		},
+		"translate_with_ai": "Translate with AI:",
+		"translating": "Translating...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Add question",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No questions yet.",
+		"no_results": "No results for your search.",
+		"search_placeholder": "Search FAQ...",
+		"confirm_delete": "Are you sure you want to delete this question?",
+		"new_title": "New question",
+		"edit_title": "Edit question",
+		"save": "Save",
+		"cancel": "Cancel",
+		"form": {
+			"question": "Question",
+			"question_placeholder": "Enter question",
+			"answer": "Answer",
+			"answer_placeholder": "Enter answer",
+			"sort_order": "Sort order",
+			"default_language": "Default language ({{language}})",
+			"secondary_language": "Secondary language ({{language}})"
+		},
+		"translate_with_ai": "Translate with AI:",
+		"translating": "Translating...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"polls": {
+		"title": "Polls",
+		"description": "View and manage polls",
+		"active": "Active",
+		"closed": "Closed",
+		"no_active_polls": "No active polls at the moment",
+		"time_remaining": "{{time}} left",
+		"ends_today": "Ends today",
+		"ends_tomorrow": "Ends tomorrow",
+		"status_closed": "Closed",
+		"fill_poll": "Fill out poll",
+		"view_results": "View Results",
+		"add_poll": "Add Poll",
+		"analytics": "Analytics",
+		"analytics_description": "View and analyze poll responses",
+		"no_sheets_found": "No Analytics Sheets Found",
+		"no_sheets_found_description": "Create an 'analytics' folder in your year folder and add Google Sheets. Share with service account.",
+		"select_sheet": "Select a Sheet",
+		"select_sheet_description": "Choose a sheet from the dropdown above to view its data.",
+		"new": {
+			"title": "Add Poll",
+			"choose_type": "Choose Poll Type",
+			"type_managed": "Create New Google Form",
+			"type_managed_desc": "Create a form via Google Forms API. The service account owns it, you become an editor.",
+			"type_linked": "Link Existing Google Form",
+			"type_linked_desc": "Connect a Google Form you've already created. Share it with the service account.",
+			"type_external": "External Poll Link",
+			"type_external_desc": "Link to any external poll (non-Google), like SurveyMonkey, Typeform, etc.",
+			"linked_info": "Link a Google Form you already own. Remember to share it with the service account.",
+			"external_info": "Link to any poll, survey, or form URL.",
+			"name": "Poll Name",
+			"name_placeholder": "E.g. Event feedback",
+			"description": "Description",
+			"description_placeholder": "What is this poll about?",
+			"url": "Poll URL",
+			"url_placeholder": "https://forms.google.com/...",
+			"url_help": "Link where users can fill out the poll",
+			"google_form_url": "Google Form URL",
+			"deadline": "Deadline",
+			"deadline_help": "When should the poll close? (optional)",
+			"analytics_sheet": "Link to Analytics Sheet",
+			"analytics_sheet_help": "Optional: Select a sheet to view responses in analytics",
+			"no_sheet": "Don't link to a sheet",
+			"submit": "Add Poll",
+			"create_form": "Create Form",
+			"creating": "Creating form..."
+		},
+		"instructions": {},
+		"success": {}
+	},
+	"email": {
+		"reimbursement": {
+			"subject": "Reimbursement Request",
+			"title": "Reimbursement Request",
+			"item": "Item",
+			"amount": "Amount",
+			"purchaser": "Purchaser",
+			"bank_account": "Bank Account",
+			"minutes": "Minutes",
+			"receipts": "Receipts",
+			"notes": "Notes",
+			"attached": "attached",
+			"not_specified": "Not specified",
+			"reply_instruction": "Reply to this email to approve or reject the request."
+		},
+		"reimbursement_status": {
+			"approved": {},
+			"declined": {},
+			"status": "Status",
+			"view_details": "View Details"
+		}
+	},
+	"messages": {
+		"title": "Messages",
+		"empty": "No new messages yet",
+		"mark_as_read": "Mark as read",
+		"mark_all_read": "Mark all as read",
+		"marked_as_read": "Message marked as read",
+		"view_purchase": "View Purchase",
+		"reimbursement_approved": {},
+		"reimbursement_declined": {},
+		"news_published": {},
+		"ai_news_translation_failed": {},
+		"ai_faq_translation_failed": {},
+		"view_news": "View news",
+		"unknown_item": "Unknown item",
+		"see_all": "See all messages",
+		"select_all": "Select all",
+		"selected_count": "{{count}} selected",
+		"mark_selected_read": "Mark selected as read",
+		"mark_selected_unread": "Mark selected as unread",
+		"clear_selection": "Clear selection"
+	},
+	"permissions": {
+		"users": {
+			"read": "View user list",
+			"write": "Create and update users",
+			"delete": "Delete users",
+			"manage_roles": "Assign roles to users"
+		},
+		"inventory": {
+			"read": "View inventory items",
+			"write": "Create and edit inventory items",
+			"delete": "Delete inventory items",
+			"export": "Export inventory to CSV",
+			"import": "Import inventory from file"
+		},
+		"treasury": {
+			"read": "View treasury overview",
+			"export": "Export treasury data to CSV",
+			"import": "Import treasury data from file",
+			"breakdown": {
+				"read": "View treasury breakdown"
+			},
+			"transactions": {
+				"read": "View transaction list",
+				"write": "Create transactions",
+				"write-self": "Create own transactions",
+				"update": "Edit transactions",
+				"delete": "Delete transactions",
+				"update-self": "Edit own transactions",
+				"delete-self": "Delete own transactions",
+				"read-self": "View own transactions"
+			},
+			"reimbursements": {
+				"read": "View reimbursement requests",
+				"write": "Create reimbursement requests",
+				"write-self": "Create own reimbursement requests",
+				"update": "Update and approve/reject reimbursements",
+				"delete": "Delete reimbursement requests",
+				"update-self": "Edit own reimbursement requests",
+				"delete-self": "Delete own reimbursement requests",
+				"read-self": "View own reimbursement requests"
+			},
+			"budgets": {
+				"read": "View budgets",
+				"read-self": "View own budgets",
+				"write": "Create budgets",
+				"write-self": "Create own budgets",
+				"update": "Edit budgets",
+				"delete": "Delete budgets",
+				"update-self": "Edit own budgets",
+				"delete-self": "Delete own budgets"
+			},
+			"receipts": {
+				"read": "View receipts",
+				"read-self": "View own receipts",
+				"write": "Create receipts",
+				"write-self": "Create own receipts",
+				"update": "Edit receipts",
+				"delete": "Delete receipts",
+				"update-self": "Edit own receipts",
+				"delete-self": "Delete own receipts"
+			},
+			"view_scope": {
+				"all": "You are viewing all {{itemType}}",
+				"own_only": "You are viewing only your own {{itemType}}",
+				"item_types": {
+					"transactions": "transactions",
+					"reimbursements": "reimbursement requests",
+					"budgets": "budgets",
+					"receipts": "receipts"
+				}
+			}
+		},
+		"purchases": {
+			"read": "View all purchase requests",
+			"manage": "Update purchase status",
+			"delete": "Delete purchase requests"
+		},
+		"submissions": {
+			"read": "View contact form submissions",
+			"write": "Update submission status",
+			"delete": "Delete submissions"
+		},
+		"social": {
+			"read": "View social links",
+			"write": "Create and edit social links",
+			"delete": "Delete social links"
+		},
+		"minutes": {
+			"read": "View and download minutes",
+			"guide": "View naming convention guide"
+		},
+		"events": {
+			"read": "View calendar events",
+			"write": "Create calendar events",
+			"update": "Edit calendar events",
+			"delete": "Delete calendar events"
+		},
+		"news": {
+			"read": "View news",
+			"write": "Create news",
+			"update": "Edit news",
+			"delete": "Delete news"
+		},
+		"faq": {
+			"read": "View FAQ",
+			"write": "Create FAQ entries",
+			"update": "Edit FAQ entries",
+			"delete": "Delete FAQ entries"
+		},
+		"forms": {
+			"read": "View form responses and analytics",
+			"export": "Export form data to CSV"
+		},
+		"polls": {
+			"read": "View polls",
+			"write": "Create and manage own polls",
+			"delete": "Delete any poll"
+		},
+		"profile": {
+			"read": {
+				"own": "View own profile"
+			},
+			"write": {
+				"own": "Edit own profile"
+			}
+		},
+		"avatars": {
+			"read": "View avatar blob list",
+			"delete": "Delete avatar blobs"
+		},
+		"admin": {
+			"storage": {
+				"read": "View storage admin",
+				"write": "Manage storage admin"
+			}
+		},
+		"roles": {
+			"read": "View roles and permissions",
+			"write": "Create and edit roles",
+			"delete": "Delete roles"
+		},
+		"settings": {
+			"general": "Access general settings",
+			"users": "Access user management settings",
+			"roles": "Access role management settings",
+			"reimbursements": "Access reimbursement settings (AI, keywords)",
+			"analytics": "Access analytics settings (AI models)",
+			"news": "Access news settings (AI translation model)",
+			"faqs": "Access FAQ settings (AI translation model)"
+		},
+		"committee": {
+			"email": "Send email to role members",
+			"read": "View committee members"
+		},
+		"categories": {}
+	},
+	"relationships": {
+		"ai": {
+			"analyze": "Analyze with AI",
+			"analyzing": "Analyzing...",
+			"success": "Created {{count}} draft items",
+			"error": "Analysis failed"
+		},
+		"draft": {
+			"badge": "Draft",
+			"cleanup": "Clean Up Drafts",
+			"cleanup_success": "Deleted {{count}} drafts"
+		}
+	}
 }

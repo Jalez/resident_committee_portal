@@ -1,22 +1,26 @@
 /**
  * Minute Analyzer
  * Content Source - Analyzes meeting minutes
- * 
+ *
  * Analyzes meeting minutes to suggest:
  * 1. News articles (for noteworthy decisions/announcements)
  * 2. FAQ entries (for common questions answered in meeting)
- * 
+ *
  * AI Enrichment:
  * - Extracts newsworthy content
  * - Identifies FAQ-worthy Q&A
  */
 
-import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { Minute } from "~/db/schema";
-import type { EntityAnalyzer, AnalysisResult, EntitySuggestion } from "../entity-relationship-analyzer.server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
+import type { DatabaseAdapter } from "~/db/adapters/types";
+import type { Minute } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import type {
+	AnalysisResult,
+	EntityAnalyzer,
+	EntitySuggestion,
+} from "../entity-relationship-analyzer.server";
 
 interface MinuteAnalysis {
 	newsItems: Array<{
@@ -43,7 +47,7 @@ class MinuteAnalyzer implements EntityAnalyzer<Minute> {
 			// Minutes have fileUrl/fileKey, but for simplicity, let's use description
 			// In a real implementation, you'd fetch and parse the file content
 			const content = minute.description || minute.title || "";
-			
+
 			if (!content || content.length < 50) {
 				return {
 					suggestions: [],
@@ -113,10 +117,12 @@ class MinuteAnalyzer implements EntityAnalyzer<Minute> {
 	private async analyzeWithAI(
 		minute: Minute,
 		content: string,
-		db: DatabaseAdapter
+		db: DatabaseAdapter,
 	): Promise<MinuteAnalysis | null> {
 		try {
-			const apiKeySetting = await db.getAppSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+			const apiKeySetting = await db.getAppSetting(
+				SETTINGS_KEYS.OPENROUTER_API_KEY,
+			);
 			if (!apiKeySetting?.value) {
 				console.warn("[MinuteAnalyzer] OpenRouter API key not configured");
 				return null;

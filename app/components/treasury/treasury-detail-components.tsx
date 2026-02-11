@@ -68,7 +68,9 @@ type TreasuryFieldEditProps = TreasuryFieldBaseProps & {
 	step?: string;
 };
 
-export type TreasuryFieldProps = TreasuryFieldViewProps | TreasuryFieldEditProps;
+export type TreasuryFieldProps =
+	| TreasuryFieldViewProps
+	| TreasuryFieldEditProps;
 
 export function TreasuryField(props: TreasuryFieldProps) {
 	const { label, className, valueClassName } = props;

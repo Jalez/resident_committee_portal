@@ -30,19 +30,19 @@ export function RolePicker({
 	const { t } = useTranslation();
 
 	const selectedItems = useMemo(
-		() =>
-			availableRoles.filter((r) => selectedRoleIds.includes(r.id)),
+		() => availableRoles.filter((r) => selectedRoleIds.includes(r.id)),
 		[availableRoles, selectedRoleIds],
 	);
 
 	const getSuggestions = useMemo(
-		() => (query: string): RoleOption[] => {
-			const lower = query.trim().toLowerCase();
-			if (!lower) return availableRoles;
-			return availableRoles.filter((r) =>
-				r.name.toLowerCase().includes(lower),
-			);
-		},
+		() =>
+			(query: string): RoleOption[] => {
+				const lower = query.trim().toLowerCase();
+				if (!lower) return availableRoles;
+				return availableRoles.filter((r) =>
+					r.name.toLowerCase().includes(lower),
+				);
+			},
 		[availableRoles],
 	);
 
@@ -71,10 +71,7 @@ export function RolePicker({
 			getSuggestionKey={(r) => r.id}
 			renderItem={(r) => r.name}
 			getBadgeClassName={(r) =>
-				cn(
-					"border-transparent text-white",
-					r.color ?? "bg-gray-500",
-				)
+				cn("border-transparent text-white", r.color ?? "bg-gray-500")
 			}
 			renderSuggestion={(r) => r.name}
 			label={label}

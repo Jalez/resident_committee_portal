@@ -20,14 +20,20 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 
 	// Get linked purchase via entity relationships (if any)
 	let purchase = null;
-	const relationships = await db.getEntityRelationships("transaction", transaction.id);
+	const relationships = await db.getEntityRelationships(
+		"transaction",
+		transaction.id,
+	);
 	const purchaseRel = relationships.find(
-		r => r.relationBType === "reimbursement" || r.relationAType === "reimbursement"
+		(r) =>
+			r.relationBType === "reimbursement" ||
+			r.relationAType === "reimbursement",
 	);
 	if (purchaseRel) {
-		const purchaseId = purchaseRel.relationBType === "reimbursement" 
-			? purchaseRel.relationBId 
-			: purchaseRel.relationId;
+		const purchaseId =
+			purchaseRel.relationBType === "reimbursement"
+				? purchaseRel.relationBId
+				: purchaseRel.relationId;
 		purchase = await db.getPurchaseById(purchaseId);
 	}
 
@@ -42,12 +48,13 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 		category: string | null;
 		availableQuantity: number;
 	}> = [];
-	
+
 	const inventoryRels = relationships.filter(
-		r => r.relationBType === "inventory" || r.relationAType === "inventory"
+		(r) => r.relationBType === "inventory" || r.relationAType === "inventory",
 	);
 	for (const rel of inventoryRels) {
-		const itemId = rel.relationBType === "inventory" ? rel.relationBId : rel.relationId;
+		const itemId =
+			rel.relationBType === "inventory" ? rel.relationBId : rel.relationId;
 		const item = await db.getInventoryItemById(itemId);
 		if (item) {
 			linkedItems.push({
@@ -66,9 +73,7 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 
 	const allInventoryItems = await db.getInventoryItems();
 	const uniqueLocations = [
-		...new Set(
-			allInventoryItems.map((item) => item.location).filter(Boolean),
-		),
+		...new Set(allInventoryItems.map((item) => item.location).filter(Boolean)),
 	].sort();
 	const uniqueCategories = [
 		...new Set(
@@ -84,7 +89,8 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 	for (const p of allPurchases) {
 		const prels = await db.getEntityRelationships("reimbursement", p.id);
 		const hasTransaction = prels.some(
-			r => r.relationBType === "transaction" || r.relationAType === "transaction"
+			(r) =>
+				r.relationBType === "transaction" || r.relationAType === "transaction",
 		);
 		if (!hasTransaction) {
 			unlinkedPurchases.push(p);
@@ -98,14 +104,18 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 	// Budget handling via entity relationships
 	const budgetYear = transaction.year;
 	const openBudgets = await db.getOpenFundBudgetsByYear(budgetYear);
-	
+
 	// Find linked budget via relationships
 	const budgetRel = relationships.find(
-		r => r.relationBType === "budget" || r.relationAType === "budget"
+		(r) => r.relationBType === "budget" || r.relationAType === "budget",
 	);
-	let budgetLink: { budget: typeof openBudgets[0]; amount: string } | null = null;
+	let budgetLink: { budget: (typeof openBudgets)[0]; amount: string } | null =
+		null;
 	if (budgetRel) {
-		const budgetId = budgetRel.relationBType === "budget" ? budgetRel.relationBId : budgetRel.relationId;
+		const budgetId =
+			budgetRel.relationBType === "budget"
+				? budgetRel.relationBId
+				: budgetRel.relationId;
 		const budget = await db.getFundBudgetById(budgetId);
 		if (budget) {
 			budgetLink = { budget, amount: "0" }; // Amount would need to be stored in relationship metadata
@@ -127,17 +137,14 @@ export async function loadTransactionEditData({ request, params }: LoaderArgs) {
 	}>;
 	for (const budget of openBudgets) {
 		const usedAmount = await db.getBudgetUsedAmount(budget.id);
-		const remainingAmount =
-			Number.parseFloat(budget.amount) - usedAmount;
+		const remainingAmount = Number.parseFloat(budget.amount) - usedAmount;
 		enrichedBudgets.push({ ...budget, usedAmount, remainingAmount });
 	}
 	if (
 		budgetLink &&
-		!enrichedBudgets.find((b) => b.id === budgetLink!.budget.id)
+		!enrichedBudgets.find((b) => b.id === budgetLink?.budget.id)
 	) {
-		const usedAmount = await db.getBudgetUsedAmount(
-			budgetLink.budget.id,
-		);
+		const usedAmount = await db.getBudgetUsedAmount(budgetLink.budget.id);
 		const remainingAmount =
 			Number.parseFloat(budgetLink.budget.amount) - usedAmount;
 		enrichedBudgets.unshift({

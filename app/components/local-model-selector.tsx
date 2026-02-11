@@ -28,7 +28,9 @@ export function LocalModelSelector({
 	const [selectedModel, setSelectedModel] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "error">("connecting");
+	const [connectionStatus, setConnectionStatus] = useState<
+		"connecting" | "connected" | "error"
+	>("connecting");
 
 	// Don't render if user hasn't enabled local AI
 	if (!user?.localOllamaEnabled) {
@@ -62,7 +64,9 @@ export function LocalModelSelector({
 				}
 			} catch (err) {
 				setError(
-					err instanceof Error ? err.message : t("profile.local_ai.connection_error"),
+					err instanceof Error
+						? err.message
+						: t("profile.local_ai.connection_error"),
 				);
 				setConnectionStatus("error");
 				onModelChange?.(null);
@@ -136,11 +140,15 @@ export function LocalModelSelector({
 					onValueChange={handleModelChange}
 				>
 					<SelectTrigger className="w-[200px] bg-white dark:bg-gray-800">
-						<SelectValue placeholder={t("local_ai.model_selector.select_model")} />
+						<SelectValue
+							placeholder={t("local_ai.model_selector.select_model")}
+						/>
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="none">
-							<span className="text-gray-500">{t("local_ai.model_selector.disabled")}</span>
+							<span className="text-gray-500">
+								{t("local_ai.model_selector.disabled")}
+							</span>
 						</SelectItem>
 						{models.map((model) => (
 							<SelectItem key={model.name} value={model.name}>

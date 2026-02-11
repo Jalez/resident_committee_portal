@@ -1,6 +1,4 @@
 import { useTranslation } from "react-i18next";
-import type { Purchase } from "~/db";
-import { maskBankAccount } from "~/lib/mask-bank-account";
 import {
 	Card,
 	CardContent,
@@ -8,6 +6,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import type { Purchase } from "~/db";
+import { maskBankAccount } from "~/lib/mask-bank-account";
 
 interface LinkedTransactionInfoProps {
 	/** Description value */

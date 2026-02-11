@@ -13,14 +13,20 @@ interface PageHeaderProps {
  * Reusable page header component with consistent styling.
  * Used for page titles across the application.
  */
-export function PageHeader({ title, actions, className = "" }: PageHeaderProps) {
+export function PageHeader({
+	title,
+	actions,
+	className = "",
+}: PageHeaderProps) {
 	return (
 		<div className={`mb-8 ${className}`}>
 			<div className="flex items-center justify-between gap-4">
 				<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
 					{title}
 				</h1>
-				{actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+				{actions && (
+					<div className="flex items-center gap-2 shrink-0">{actions}</div>
+				)}
 			</div>
 		</div>
 	);

@@ -63,7 +63,11 @@ export async function ensureForeignKey(
 		onUpdate?: string;
 	},
 ): Promise<boolean> {
-	const exists = await hasConstraint(sql, options.table, options.constraintName);
+	const exists = await hasConstraint(
+		sql,
+		options.table,
+		options.constraintName,
+	);
 	if (exists) return false;
 
 	const onDelete = options.onDelete ? ` on delete ${options.onDelete}` : "";

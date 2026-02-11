@@ -2,13 +2,15 @@
  * Central export point for relationship management components
  */
 
-export { RelationshipPicker } from "./relationship-picker";
-export type { RelationshipPickerProps, RelationshipSection } from "./relationship-picker";
-
-export { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 export type {
-	UseRelationshipPickerOptions,
+	InitialRelationship,
 	PendingLink,
 	PendingUnlink,
-	InitialRelationship,
+	UseRelationshipPickerOptions,
 } from "~/hooks/use-relationship-picker";
+export { useRelationshipPicker } from "~/hooks/use-relationship-picker";
+export type {
+	RelationshipPickerProps,
+	RelationshipSection,
+} from "./relationship-picker";
+export { RelationshipPicker } from "./relationship-picker";

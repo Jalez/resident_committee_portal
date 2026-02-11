@@ -1,5 +1,5 @@
-import type { NewInventoryItem } from "~/db/schema";
 import { getDatabase } from "~/db";
+import type { NewInventoryItem } from "~/db/schema";
 
 export async function handleCreateItem(formData: FormData) {
 	const db = getDatabase();

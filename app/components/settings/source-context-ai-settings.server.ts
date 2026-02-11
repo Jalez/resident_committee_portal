@@ -1,15 +1,20 @@
-import { redirect } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { getDatabase } from "~/db";
 import { requirePermission } from "~/lib/auth.server";
 import { getAvailableModels, SETTINGS_KEYS } from "~/lib/openrouter.server";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-	await requirePermission(request, "settings:relationship-context", getDatabase);
+	await requirePermission(
+		request,
+		"settings:relationship-context",
+		getDatabase,
+	);
 	const db = getDatabase();
 
 	// Get OpenRouter API key
-	const apiKeySetting = await db.getAppSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+	const apiKeySetting = await db.getAppSetting(
+		SETTINGS_KEYS.OPENROUTER_API_KEY,
+	);
 	const apiKey = apiKeySetting?.value || "";
 
 	// Get current model setting
@@ -38,7 +43,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	await requirePermission(request, "settings:relationship-context", getDatabase);
+	await requirePermission(
+		request,
+		"settings:relationship-context",
+		getDatabase,
+	);
 	const db = getDatabase();
 
 	const formData = await request.formData();

@@ -27,12 +27,11 @@ interface NavigationStackContextType {
 	clear: () => void;
 }
 
-const NavigationStackContext =
-	createContext<NavigationStackContextType | null>(null);
+const NavigationStackContext = createContext<NavigationStackContextType | null>(
+	null,
+);
 
-export function NavigationStackProvider({
-	children,
-}: { children: ReactNode }) {
+export function NavigationStackProvider({ children }: { children: ReactNode }) {
 	const [stack, setStack] = useState<string[]>([]);
 	const [isHydrated, setIsHydrated] = useState(false);
 

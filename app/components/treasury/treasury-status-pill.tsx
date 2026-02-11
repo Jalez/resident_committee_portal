@@ -22,12 +22,11 @@ export function TreasuryStatusPill({
 	children,
 	className,
 }: TreasuryStatusPillProps) {
-	const colorClasses = variantMap[value] ?? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+	const colorClasses =
+		variantMap[value] ??
+		"bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 	return (
-		<span
-			className={cn(BASE_CLASSES, colorClasses, className)}
-			title={label}
-		>
+		<span className={cn(BASE_CLASSES, colorClasses, className)} title={label}>
 			{children ?? label}
 		</span>
 	);

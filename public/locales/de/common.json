@@ -1,554 +1,554 @@
 {
-  "common": {
-    "total": "Gesamt",
-    "entity_types": {
-      "receipt": "Quittung",
-      "transaction": "Transaktion",
-      "reimbursement": "Erstattung",
-      "budget": "Budget",
-      "inventory": "Lagerartikel",
-      "minute": "Protokoll",
-      "news": "Nachrichten",
-      "faq": "FAQ"
-    },
-    "fields": {
-      "created_by": "Erstellt von",
-      "search": "Suchen"
-    },
-    "actions": {
-      "update": "Aktualisieren"
-    },
-    "filters": {
-      "all": "Alle Kategorien"
-    },
-    "no_results": "Keine Ergebnisse"
-  },
-  "app": {
-    "title": "Mieterausschuss",
-    "setup_required": "Einrichtung erforderlich",
-    "setup_message": "Die App scheint noch nicht konfiguriert zu sein. Bitte überprüfen Sie Ihre Umgebungsvariablen.",
-    "copy_env": "Oder kopieren Sie .env.template nach .env und konfigurieren Sie Ihre Einstellungen."
-  },
-  "nav": {
-    "menu": "Menü",
-    "profile": "Profil",
-    "edit_profile": "Profil bearbeiten",
-    "messages": "Nachrichten",
-    "log_out": "Abmelden",
-    "users": "Benutzer",
-    "roles": "Rollen",
-    "get_involved": "Mitmachen",
-    "events": "Veranstaltungen",
-    "treasury": "Kasse",
-    "minutes": "Protokolle",
-    "news": "Nachrichten",
-    "faq": "FAQ",
-    "inventory": "Inventar",
-    "social": "Sozial",
-    "polls": "Umfragen",
-    "committee": "Ausschuss",
-    "login": "Anmelden",
-    "submissions": "Einreichungen",
-    "sidebar_collapse": "Seitenleiste einklappen",
-    "sidebar_expand": "Seitenleiste erweitern",
-    "admin": "Admin"
-  },
-  "receipts": {
-    "select_receipts": "Quittungen auswählen",
-    "selected": "Ausgewählte Quittungen",
-    "add_more": "Weitere Quittungen hinzufügen",
-    "search_placeholder": "Quittungen suchen...",
-    "refresh": "Quittungen aktualisieren",
-    "upload_new": "Neue Quittung hochladen",
-    "upload_unavailable": "Upload ist nicht verfügbar",
-    "upload_failed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
-    "invalid_type": "Ungültiger Dateityp. Erlaubt: {{types}}",
-    "uploading": "Wird hochgeladen...",
-    "upload_notice": "Große Dateien können etwas länger dauern.",
-    "no_receipts": "Keine Quittungen für das Jahr {{year}}",
-    "done": "Fertig",
-    "open": "Öffnen",
-    "delete": "Entfernen",
-    "select_existing_or_upload": "Vorhandene Quittungen auswählen oder eine neue hochladen.",
-    "allowed": "Erlaubt",
-    "selected_count": "ausgewählt",
-    "process_receipt": "Quittung verarbeiten",
-    "processed": "Verarbeitet",
-    "processing": "Wird verarbeitet...",
-    "auto_filled_from_receipt": "Automatisch ausgefüllt von Quittung: {{name}}",
-    "create_reimbursement": "Erstattung erstellen",
-    "analyze_with_ai": "Mit KI analysieren (OCR)",
-    "analyzing": "Quittung wird analysiert...",
-    "analysis_complete": "Quittung erfolgreich analysiert",
-    "analysis_failed": "Analyse der Quittung fehlgeschlagen"
-  },
-  "lang": {
-    "label": "Sprache"
-  },
-  "search_menu": {
-    "title": "Search",
-    "filter": "Filter",
-    "search": "Search",
-    "clear": "Clear",
-    "select_placeholder": "Select..."
-  },
-  "mail": {
-    "inbox": "Posteingang",
-    "sent": "Gesendet",
-    "compose": "Verfassen",
-    "drafts": "Entwürfe",
-    "draft_saved_at": "Entwurf gespeichert um {{time}}",
-    "send_tooltip": "Senden",
-    "no_drafts": "Keine Entwürfe",
-    "no_subject": "(Kein Betreff)",
-    "refresh": "Aktualisieren",
-    "refreshed": "{{count}} neue Nachrichten abgerufen",
-    "no_messages": "Keine Nachrichten",
-    "from": "Von",
-    "to": "An",
-    "cc": "Kopie",
-    "date": "Datum",
-    "delete": "Löschen",
-    "delete_confirm": "Möchten Sie diese Nachricht wirklich löschen?",
-    "delete_draft_confirm": "Möchten Sie diesen Entwurf wirklich löschen?",
-    "delete_success": "Erfolgreich gelöscht",
-    "delete_error": "Löschen fehlgeschlagen",
-    "select": "Auswählen",
-    "delete_draft": "Entwurf löschen",
-    "reply": "Antworten",
-    "reply_all": "Allen antworten",
-    "forward": "Weiterleiten",
-    "forwarded_message": "Weitergeleitete Nachricht",
-    "messages_in_thread": "{{count}} Nachrichten",
-    "compose_new": "Neue Nachricht",
-    "compose_reply": "Antworten",
-    "compose_reply_all": "Allen antworten",
-    "compose_forward": "Weiterleiten",
-    "quoted_reply_header": "Am {{date}} schrieb {{name}} <{{email}}>:"
-  },
-  "home": {
-    "header": "Mitmachen",
-    "contact": {
-      "title": "Kontaktieren Sie uns"
-    },
-    "options": {
-      "committee": {},
-      "events": {},
-      "purchases": {},
-      "questions": {}
-    }
-  },
-  "profile": {
-    "title": "Profil",
-    "update_success": "Profil aktualisiert!",
-    "email_label": "E-Mail",
-    "success": {
-      "transaction_created": "Transaktion erstellt",
-      "reimbursement_requested": "Erstattungsanfrage gesendet"
-    },
-    "email_help": "E-Mail kann nicht geändert werden",
-    "name_label": "Name",
-    "apartment_label": "Wohnungsnummer",
-    "optional": "optional",
-    "apartment_placeholder": "z.B. A 101",
-    "apartment_help": "Wird zur Validierung von Stimmen verwendet",
-    "role_label": "Rolle",
-    "member_since_label": "Mitglied seit",
-    "description_label": "Beschreibung",
-    "description_placeholder": "Erzählen Sie uns von sich...",
-    "picture_label": "Profilbild",
-    "picture_help": "Profilbild wird automatisch von Ihrem Google-Konto aktualisiert, wenn Sie sich anmelden",
-    "picture_too_large": "Datei ist zu groß. Maximale Größe ist {{maxSize}}MB.",
-    "picture_too_large_dimensions": "Bildabmessungen sind zu groß. Maximale Größe ist {{maxDimension}}x{{maxDimension}}px.",
-    "save_changes": "Änderungen speichern"
-  },
-  "avatars": {
-    "delete": "Löschen"
-  },
-  "admin": {
-    "storage": {
-      "receipts": "Quittungen",
-      "avatars": "Avatare",
-      "receipts.title": "Quittungsgalerie",
-      "receipts.description": "Alle Quittungsdateien. Verknüpfte Quittungen sind an einen Erstattungsantrag angehängt und können nicht gelöscht werden.",
-      "receipts.empty": "Keine Quittungen",
-      "receipts.delete_confirm": "Sind Sie sicher, dass Sie diese Quittung löschen möchten?",
-      "receipts.delete_success": "Quittung gelöscht",
-      "receipts.delete_error": "Löschen fehlgeschlagen",
-      "receipts.open_pdf": "PDF öffnen",
-      "receipts.linked": "Verknüpft",
-      "receipts.unlinked": "Nicht verknüpft",
-      "receipts.reimbursement_request": "Erstattungsantrag",
-      "avatars.title": "Avatare",
-      "avatars.description": "Alle im System gespeicherten Benutzer-Avatar-Bilder.",
-      "avatars.empty": "Keine Avatare",
-      "avatars.delete": "Löschen",
-      "avatars.delete_confirm": "Möchten Sie diesen Avatar wirklich löschen?",
-      "avatars.delete_success": "Avatar gelöscht",
-      "avatars.delete_error": "Löschen fehlgeschlagen"
-    }
-  },
-  "settings": {
-    "receipt_ocr_title": "Beleg-OCR",
-    "receipt_ocr_description": "Konfigurieren Sie KI-Einstellungen für die automatische Belegerkennung.",
-    "receipt_ocr_requires_api_key": "OCR-Auswertung erfordert einen OpenRouter API-Schlüssel in den Allgemeinen Einstellungen.",
-    "ai_model": "KI-Modell",
-    "select_model": "Modell auswählen...",
-    "receipt_ai_model_help": "Wählen Sie ein leistungsfähiges Modell (z. B. Gemini Flash 1.5, GPT-4o-mini) für beste Ergebnisse.",
-    "general": {
-      "title": "Allgemein",
-      "languages_title": "Standardsprachen",
-      "languages_desc": "Legen Sie die Standardsprachen für neue Benutzer und Gäste fest. Diese können von Benutzern in ihrem Profil überschrieben werden.",
-      "primary_language": "Hauptsprache",
-      "secondary_language": "Zweitsprache"
-    },
-    "analytics": {
-      "title": "Analytik-Einstellungen"
-    },
-    "roles": {
-      "title": "Rollenverwaltung",
-      "create_new_title": "Neue Rolle erstellen",
-      "color_label": "Farbe",
-      "system": "Systemrolle",
-      "delete_title": "Rolle löschen",
-      "delete_confirm": "Möchten Sie die Rolle \"{{name}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-      "permissions_header": "Berechtigungen",
-      "select_role_msg": "Wählen Sie eine Rolle links aus, um Berechtigungen zu bearbeiten",
-      "select_role": "Rolle auswählen",
-      "select_role_placeholder": "Rolle wählen...",
-      "search_placeholder": "Berechtigungen suchen...",
-      "category": "Kategorie",
-      "permission_name": "Berechtigungsname",
-      "description": "Beschreibung",
-      "show_only_assigned": "Nur zugewiesene Berechtigungen anzeigen"
-    },
-    "common": {
-      "save": "Speichern",
-      "saving": "Speichern...",
-      "delete": "Löschen",
-      "cancel": "Abbrechen",
-      "create": "Erstellen",
-      "new": "Neu",
-      "edit": "Bearbeiten",
-      "free": "Frei",
-      "none": "Keine"
-    },
-    "news": {
-      "title": "Nachrichteneinstellungen",
-      "ai_model_title": "KI-Nachrichtenmodell",
-      "ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von Nachrichten zwischen Primär- und Sekundärsprache.",
-      "select_model": "Modell auswählen",
-      "select_model_placeholder": "Modell auswählen...",
-      "showing_models": "{{count}} von {{total}} Modellen",
-      "save": "Einstellungen speichern"
-    },
-    "faqs": {
-      "title": "FAQ-Einstellungen",
-      "ai_model_title": "KI-FAQ-Modell",
-      "ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von FAQ-Einträgen zwischen Primär- und Sekundärsprache.",
-      "select_model": "Modell auswählen",
-      "select_model_placeholder": "Modell auswählen...",
-      "showing_models": "{{count}} von {{total}} Modellen",
-      "save": "Einstellungen speichern"
-    },
-    "users": {
-      "roles_placeholder": "Rollenname eingeben und Tab drücken",
-      "no_roles_match": "Keine passenden Rollen"
-    }
-  },
-  "email": {
-    "reimbursement": {
-      "subject": "Erstattungsantrag",
-      "title": "Erstattungsantrag",
-      "item": "Artikel",
-      "amount": "Betrag",
-      "purchaser": "Käufer",
-      "bank_account": "Bankkonto",
-      "minutes": "Protokoll",
-      "receipts": "Quittungen",
-      "notes": "Notizen",
-      "attached": "angehängt",
-      "not_specified": "Nicht angegeben",
-      "reply_instruction": "Antworten Sie auf diese E-Mail, um den Antrag zu genehmigen oder abzulehnen."
-    },
-    "reimbursement_status": {
-      "approved": {},
-      "declined": {},
-      "status": "Status",
-      "view_details": "Details anzeigen"
-    }
-  },
-  "messages": {
-    "title": "Nachrichten",
-    "empty": "Noch keine neuen Nachrichten",
-    "mark_as_read": "Als gelesen markieren",
-    "mark_all_read": "Alle als gelesen markieren",
-    "marked_as_read": "Nachricht als gelesen markiert",
-    "view_purchase": "Erstattungsantrag anzeigen",
-    "reimbursement_approved": {},
-    "reimbursement_declined": {},
-    "news_published": {},
-    "ai_news_translation_failed": {},
-    "ai_faq_translation_failed": {},
-    "view_news": "Nachricht anzeigen",
-    "unknown_item": "Unbekannter Artikel",
-    "see_all": "Alle Nachrichten anzeigen",
-    "select_all": "Alle auswählen",
-    "selected_count": "{{count}} ausgewählt",
-    "mark_selected_read": "Ausgewählte als gelesen markieren",
-    "mark_selected_unread": "Ausgewählte als ungelesen markieren",
-    "clear_selection": "Auswahl löschen"
-  },
-  "news": {
-    "title": "Nachrichten",
-    "add": "Nachricht hinzufügen",
-    "edit": "Bearbeiten",
-    "delete": "Löschen",
-    "empty": "Noch keine Nachrichten.",
-    "no_results": "Keine Ergebnisse für Ihre Suche.",
-    "search_placeholder": "Nachrichten suchen...",
-    "confirm_delete": "Möchten Sie diese Nachricht wirklich löschen?",
-    "new_title": "Neue Nachricht",
-    "edit_title": "Nachricht bearbeiten",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "form": {
-      "title": "Titel",
-      "title_placeholder": "Nachrichtentitel",
-      "summary": "Zusammenfassung",
-      "summary_placeholder": "Kurze Zusammenfassung (optional)",
-      "content": "Inhalt",
-      "content_placeholder": "Nachrichteninhalt",
-      "default_language": "Standardsprache ({{language}})",
-      "secondary_language": "Zweitsprache ({{language}})"
-    },
-    "translate_with_ai": "Mit KI übersetzen:",
-    "translating": "Übersetzen...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "committee": {
-    "title": "Ausschuss",
-    "members": "Mitglieder",
-    "no_members": "Keine Ausschussmitglieder gefunden",
-    "no_description": "Keine Beschreibung"
-  },
-  "faq": {
-    "title": "FAQ",
-    "add": "Frage hinzufügen",
-    "edit": "Bearbeiten",
-    "delete": "Löschen",
-    "empty": "Noch keine Fragen.",
-    "no_results": "Keine Ergebnisse für Ihre Suche.",
-    "search_placeholder": "FAQ durchsuchen...",
-    "confirm_delete": "Möchten Sie diese Frage wirklich löschen?",
-    "new_title": "Neue Frage",
-    "edit_title": "Frage bearbeiten",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "form": {
-      "question": "Frage",
-      "question_placeholder": "Frage eingeben",
-      "answer": "Antwort",
-      "answer_placeholder": "Antwort eingeben",
-      "sort_order": "Sortierreihenfolge",
-      "default_language": "Standardsprache ({{language}})",
-      "secondary_language": "Zweitsprache ({{language}})"
-    },
-    "translate_with_ai": "Mit KI übersetzen:",
-    "translating": "Übersetzen...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "treasury": {
-    "overview": "Übersicht",
-    "title": "Kasse {{year}}",
-    "select_year": "Jahr auswählen...",
-    "view_breakdown": "Aufschlüsselung anzeigen",
-    "auto_linked_from": "Automatisch verknüpft von {{type}}: {{name}}",
-    "balance": "Saldo",
-    "income": "Einnahmen",
-    "unbudgeted_transactions": "Nicht budgetierte Transaktionen",
-    "budgeted_transactions": "Budgetierte Transaktionen",
-    "budget_costs": "Budgetkosten",
-    "available": "Verfügbar",
-    "transactions_count": "{{count}} Transaktionen",
-    "no_transactions": "Keine Transaktionen",
-    "no_transactions_desc": "Für {{year}} wurden noch keine Transaktionen erfasst.",
-    "actions": {
-      "breakdown": "Aufschlüsselung",
-      "transactions": "Transaktionen",
-      "receipts": "Quittungen",
-      "reimbursements": "Erstattungsanträge",
-      "budgets": "Budgets"
-    },
-    "transactions": {
-      "title": "Transaktionen",
-      "type": "Typ"
-    }
-  },
-  "permissions": {
-    "users": {
-      "read": "Benutzerliste anzeigen",
-      "write": "Benutzer erstellen und aktualisieren",
-      "delete": "Benutzer löschen",
-      "manage_roles": "Rollen Benutzern zuweisen"
-    },
-    "inventory": {
-      "read": "Inventargegenstände anzeigen",
-      "write": "Inventargegenstände erstellen und bearbeiten",
-      "delete": "Inventargegenstände löschen",
-      "export": "Inventar nach CSV exportieren",
-      "import": "Inventar aus Datei importieren"
-    },
-    "treasury": {
-      "read": "Kassenübersicht anzeigen",
-      "export": "Kassendaten nach CSV exportieren",
-      "import": "Kassendaten aus Datei importieren",
-      "breakdown": {
-        "read": "Kassenaufschlüsselung anzeigen"
-      },
-      "transactions": {
-        "read": "Transaktionsliste anzeigen",
-        "write": "Transaktionen erstellen",
-        "write-self": "Eigene Transaktionen erstellen",
-        "update": "Transaktionen bearbeiten",
-        "delete": "Transaktionen löschen",
-        "update-self": "Eigene Transaktionen bearbeiten",
-        "delete-self": "Eigene Transaktionen löschen",
-        "read-self": "Eigene Transaktionen anzeigen"
-      },
-      "reimbursements": {
-        "read": "Erstattungsanträge anzeigen",
-        "write": "Erstattungsanträge erstellen",
-        "write-self": "Eigene Erstattungsanträge erstellen",
-        "update": "Erstattungen aktualisieren und genehmigen/ablehnen",
-        "delete": "Erstattungsanträge löschen",
-        "update-self": "Eigene Erstattungsanträge bearbeiten",
-        "delete-self": "Eigene Erstattungsanträge löschen",
-        "read-self": "Eigene Erstattungsanträge anzeigen"
-      },
-      "budgets": {
-        "read": "Budget anzeigen",
-        "read-self": "Eigene Budget anzeigen",
-        "write": "Budget erstellen",
-        "write-self": "Eigene Budget erstellen",
-        "update": "Budget bearbeiten",
-        "delete": "Budget löschen",
-        "update-self": "Eigene Budget bearbeiten",
-        "delete-self": "Eigene Budget löschen"
-      },
-      "receipts": {
-        "read": "Quittungen anzeigen",
-        "read-self": "Eigene Quittungen anzeigen",
-        "write": "Quittungen erstellen",
-        "write-self": "Eigene Quittungen erstellen",
-        "update": "Quittungen bearbeiten",
-        "delete": "Quittungen löschen",
-        "update-self": "Eigene Quittungen bearbeiten",
-        "delete-self": "Eigene Quittungen löschen"
-      },
-      "view_scope": {
-        "all": "Sie sehen alle {{itemType}}",
-        "own_only": "Sie sehen nur Ihre eigenen {{itemType}}",
-        "item_types": {
-          "transactions": "Transaktionen",
-          "reimbursements": "Erstattungsanträge",
-          "budgets": "Budgets",
-          "receipts": "Quittungen"
-        }
-      }
-    },
-    "purchases": {
-      "read": "Alle Kaufanfragen anzeigen",
-      "manage": "Kaufstatus aktualisieren",
-      "delete": "Kaufanfragen löschen"
-    },
-    "submissions": {
-      "read": "Kontaktformularübermittlungen anzeigen",
-      "write": "Übermittlungsstatus aktualisieren",
-      "delete": "Übermittlungen löschen"
-    },
-    "social": {
-      "read": "Soziale Links anzeigen",
-      "write": "Soziale Links erstellen und bearbeiten",
-      "delete": "Soziale Links löschen"
-    },
-    "minutes": {
-      "read": "Protokolle anzeigen und herunterladen",
-      "guide": "Namenskonventionsleitfaden anzeigen"
-    },
-    "events": {
-      "read": "Kalenderereignisse anzeigen"
-    },
-    "forms": {
-      "read": "Formularantworten und Analysen anzeigen",
-      "export": "Formulardaten nach CSV exportieren"
-    },
-    "profile": {
-      "read": {
-        "own": "Eigenes Profil anzeigen"
-      },
-      "write": {
-        "own": "Eigenes Profil bearbeiten"
-      }
-    },
-    "roles": {
-      "read": "Rollen und Berechtigungen anzeigen",
-      "write": "Rollen erstellen und bearbeiten",
-      "delete": "Rollen löschen"
-    },
-    "news": {
-      "read": "Nachrichten anzeigen",
-      "write": "Nachrichten erstellen",
-      "update": "Nachrichten bearbeiten",
-      "delete": "Nachrichten löschen"
-    },
-    "faq": {
-      "read": "FAQ anzeigen",
-      "write": "FAQ-Einträge erstellen",
-      "update": "FAQ-Einträge bearbeiten",
-      "delete": "FAQ-Einträge löschen"
-    },
-    "settings": {
-      "general": "Zugriff auf allgemeine Einstellungen",
-      "users": "Zugriff auf Benutzerverwaltungseinstellungen",
-      "roles": "Zugriff auf Rollenverwaltungseinstellungen",
-      "reimbursements": "Zugriff auf Erstattungseinstellungen (KI, Schlüsselwörter)",
-      "analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)",
-      "news": "Zugriff auf Nachrichteneinstellungen (KI-Übersetzungsmodell)",
-      "faqs": "Zugriff auf FAQ-Einstellungen (KI-Übersetzungsmodell)"
-    },
-    "committee": {
-      "email": "E-Mail an Rollenmitglieder senden",
-      "read": "Ausschussmitglieder anzeigen"
-    },
-    "categories": {},
-    "admin": {
-      "storage": {
-        "read": "Speicher-Admin anzeigen",
-        "write": "Speicher-Admin verwalten"
-      }
-    }
-  },
-  "inventory": {
-    "created_items": "Erstellte Inventargegenstände",
-    "location_missing": "Standort erforderlich",
-    "incomplete_items": "Unvollständige Gegenstände",
-    "complete_item": "Als vollständig markieren",
-    "location_tbd": "Standort ausstehend"
-  },
-  "relationships": {
-    "ai": {
-      "analyze": "Mit KI analysieren",
-      "analyzing": "Analysieren...",
-      "success": "{{count}} Entwürfe erstellt",
-      "error": "Analyse fehlgeschlagen"
-    },
-    "draft": {
-      "badge": "Entwurf",
-      "cleanup": "Entwürfe bereinigen",
-      "cleanup_success": "{{count}} Entwürfe gelöscht"
-    }
-  }
+	"common": {
+		"total": "Gesamt",
+		"entity_types": {
+			"receipt": "Quittung",
+			"transaction": "Transaktion",
+			"reimbursement": "Erstattung",
+			"budget": "Budget",
+			"inventory": "Lagerartikel",
+			"minute": "Protokoll",
+			"news": "Nachrichten",
+			"faq": "FAQ"
+		},
+		"fields": {
+			"created_by": "Erstellt von",
+			"search": "Suchen"
+		},
+		"actions": {
+			"update": "Aktualisieren"
+		},
+		"filters": {
+			"all": "Alle Kategorien"
+		},
+		"no_results": "Keine Ergebnisse"
+	},
+	"app": {
+		"title": "Mieterausschuss",
+		"setup_required": "Einrichtung erforderlich",
+		"setup_message": "Die App scheint noch nicht konfiguriert zu sein. Bitte überprüfen Sie Ihre Umgebungsvariablen.",
+		"copy_env": "Oder kopieren Sie .env.template nach .env und konfigurieren Sie Ihre Einstellungen."
+	},
+	"nav": {
+		"menu": "Menü",
+		"profile": "Profil",
+		"edit_profile": "Profil bearbeiten",
+		"messages": "Nachrichten",
+		"log_out": "Abmelden",
+		"users": "Benutzer",
+		"roles": "Rollen",
+		"get_involved": "Mitmachen",
+		"events": "Veranstaltungen",
+		"treasury": "Kasse",
+		"minutes": "Protokolle",
+		"news": "Nachrichten",
+		"faq": "FAQ",
+		"inventory": "Inventar",
+		"social": "Sozial",
+		"polls": "Umfragen",
+		"committee": "Ausschuss",
+		"login": "Anmelden",
+		"submissions": "Einreichungen",
+		"sidebar_collapse": "Seitenleiste einklappen",
+		"sidebar_expand": "Seitenleiste erweitern",
+		"admin": "Admin"
+	},
+	"receipts": {
+		"select_receipts": "Quittungen auswählen",
+		"selected": "Ausgewählte Quittungen",
+		"add_more": "Weitere Quittungen hinzufügen",
+		"search_placeholder": "Quittungen suchen...",
+		"refresh": "Quittungen aktualisieren",
+		"upload_new": "Neue Quittung hochladen",
+		"upload_unavailable": "Upload ist nicht verfügbar",
+		"upload_failed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+		"invalid_type": "Ungültiger Dateityp. Erlaubt: {{types}}",
+		"uploading": "Wird hochgeladen...",
+		"upload_notice": "Große Dateien können etwas länger dauern.",
+		"no_receipts": "Keine Quittungen für das Jahr {{year}}",
+		"done": "Fertig",
+		"open": "Öffnen",
+		"delete": "Entfernen",
+		"select_existing_or_upload": "Vorhandene Quittungen auswählen oder eine neue hochladen.",
+		"allowed": "Erlaubt",
+		"selected_count": "ausgewählt",
+		"process_receipt": "Quittung verarbeiten",
+		"processed": "Verarbeitet",
+		"processing": "Wird verarbeitet...",
+		"auto_filled_from_receipt": "Automatisch ausgefüllt von Quittung: {{name}}",
+		"create_reimbursement": "Erstattung erstellen",
+		"analyze_with_ai": "Mit KI analysieren (OCR)",
+		"analyzing": "Quittung wird analysiert...",
+		"analysis_complete": "Quittung erfolgreich analysiert",
+		"analysis_failed": "Analyse der Quittung fehlgeschlagen"
+	},
+	"lang": {
+		"label": "Sprache"
+	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
+	"mail": {
+		"inbox": "Posteingang",
+		"sent": "Gesendet",
+		"compose": "Verfassen",
+		"drafts": "Entwürfe",
+		"draft_saved_at": "Entwurf gespeichert um {{time}}",
+		"send_tooltip": "Senden",
+		"no_drafts": "Keine Entwürfe",
+		"no_subject": "(Kein Betreff)",
+		"refresh": "Aktualisieren",
+		"refreshed": "{{count}} neue Nachrichten abgerufen",
+		"no_messages": "Keine Nachrichten",
+		"from": "Von",
+		"to": "An",
+		"cc": "Kopie",
+		"date": "Datum",
+		"delete": "Löschen",
+		"delete_confirm": "Möchten Sie diese Nachricht wirklich löschen?",
+		"delete_draft_confirm": "Möchten Sie diesen Entwurf wirklich löschen?",
+		"delete_success": "Erfolgreich gelöscht",
+		"delete_error": "Löschen fehlgeschlagen",
+		"select": "Auswählen",
+		"delete_draft": "Entwurf löschen",
+		"reply": "Antworten",
+		"reply_all": "Allen antworten",
+		"forward": "Weiterleiten",
+		"forwarded_message": "Weitergeleitete Nachricht",
+		"messages_in_thread": "{{count}} Nachrichten",
+		"compose_new": "Neue Nachricht",
+		"compose_reply": "Antworten",
+		"compose_reply_all": "Allen antworten",
+		"compose_forward": "Weiterleiten",
+		"quoted_reply_header": "Am {{date}} schrieb {{name}} <{{email}}>:"
+	},
+	"home": {
+		"header": "Mitmachen",
+		"contact": {
+			"title": "Kontaktieren Sie uns"
+		},
+		"options": {
+			"committee": {},
+			"events": {},
+			"purchases": {},
+			"questions": {}
+		}
+	},
+	"profile": {
+		"title": "Profil",
+		"update_success": "Profil aktualisiert!",
+		"email_label": "E-Mail",
+		"success": {
+			"transaction_created": "Transaktion erstellt",
+			"reimbursement_requested": "Erstattungsanfrage gesendet"
+		},
+		"email_help": "E-Mail kann nicht geändert werden",
+		"name_label": "Name",
+		"apartment_label": "Wohnungsnummer",
+		"optional": "optional",
+		"apartment_placeholder": "z.B. A 101",
+		"apartment_help": "Wird zur Validierung von Stimmen verwendet",
+		"role_label": "Rolle",
+		"member_since_label": "Mitglied seit",
+		"description_label": "Beschreibung",
+		"description_placeholder": "Erzählen Sie uns von sich...",
+		"picture_label": "Profilbild",
+		"picture_help": "Profilbild wird automatisch von Ihrem Google-Konto aktualisiert, wenn Sie sich anmelden",
+		"picture_too_large": "Datei ist zu groß. Maximale Größe ist {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Bildabmessungen sind zu groß. Maximale Größe ist {{maxDimension}}x{{maxDimension}}px.",
+		"save_changes": "Änderungen speichern"
+	},
+	"avatars": {
+		"delete": "Löschen"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Quittungen",
+			"avatars": "Avatare",
+			"receipts.title": "Quittungsgalerie",
+			"receipts.description": "Alle Quittungsdateien. Verknüpfte Quittungen sind an einen Erstattungsantrag angehängt und können nicht gelöscht werden.",
+			"receipts.empty": "Keine Quittungen",
+			"receipts.delete_confirm": "Sind Sie sicher, dass Sie diese Quittung löschen möchten?",
+			"receipts.delete_success": "Quittung gelöscht",
+			"receipts.delete_error": "Löschen fehlgeschlagen",
+			"receipts.open_pdf": "PDF öffnen",
+			"receipts.linked": "Verknüpft",
+			"receipts.unlinked": "Nicht verknüpft",
+			"receipts.reimbursement_request": "Erstattungsantrag",
+			"avatars.title": "Avatare",
+			"avatars.description": "Alle im System gespeicherten Benutzer-Avatar-Bilder.",
+			"avatars.empty": "Keine Avatare",
+			"avatars.delete": "Löschen",
+			"avatars.delete_confirm": "Möchten Sie diesen Avatar wirklich löschen?",
+			"avatars.delete_success": "Avatar gelöscht",
+			"avatars.delete_error": "Löschen fehlgeschlagen"
+		}
+	},
+	"settings": {
+		"receipt_ocr_title": "Beleg-OCR",
+		"receipt_ocr_description": "Konfigurieren Sie KI-Einstellungen für die automatische Belegerkennung.",
+		"receipt_ocr_requires_api_key": "OCR-Auswertung erfordert einen OpenRouter API-Schlüssel in den Allgemeinen Einstellungen.",
+		"ai_model": "KI-Modell",
+		"select_model": "Modell auswählen...",
+		"receipt_ai_model_help": "Wählen Sie ein leistungsfähiges Modell (z. B. Gemini Flash 1.5, GPT-4o-mini) für beste Ergebnisse.",
+		"general": {
+			"title": "Allgemein",
+			"languages_title": "Standardsprachen",
+			"languages_desc": "Legen Sie die Standardsprachen für neue Benutzer und Gäste fest. Diese können von Benutzern in ihrem Profil überschrieben werden.",
+			"primary_language": "Hauptsprache",
+			"secondary_language": "Zweitsprache"
+		},
+		"analytics": {
+			"title": "Analytik-Einstellungen"
+		},
+		"roles": {
+			"title": "Rollenverwaltung",
+			"create_new_title": "Neue Rolle erstellen",
+			"color_label": "Farbe",
+			"system": "Systemrolle",
+			"delete_title": "Rolle löschen",
+			"delete_confirm": "Möchten Sie die Rolle \"{{name}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+			"permissions_header": "Berechtigungen",
+			"select_role_msg": "Wählen Sie eine Rolle links aus, um Berechtigungen zu bearbeiten",
+			"select_role": "Rolle auswählen",
+			"select_role_placeholder": "Rolle wählen...",
+			"search_placeholder": "Berechtigungen suchen...",
+			"category": "Kategorie",
+			"permission_name": "Berechtigungsname",
+			"description": "Beschreibung",
+			"show_only_assigned": "Nur zugewiesene Berechtigungen anzeigen"
+		},
+		"common": {
+			"save": "Speichern",
+			"saving": "Speichern...",
+			"delete": "Löschen",
+			"cancel": "Abbrechen",
+			"create": "Erstellen",
+			"new": "Neu",
+			"edit": "Bearbeiten",
+			"free": "Frei",
+			"none": "Keine"
+		},
+		"news": {
+			"title": "Nachrichteneinstellungen",
+			"ai_model_title": "KI-Nachrichtenmodell",
+			"ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von Nachrichten zwischen Primär- und Sekundärsprache.",
+			"select_model": "Modell auswählen",
+			"select_model_placeholder": "Modell auswählen...",
+			"showing_models": "{{count}} von {{total}} Modellen",
+			"save": "Einstellungen speichern"
+		},
+		"faqs": {
+			"title": "FAQ-Einstellungen",
+			"ai_model_title": "KI-FAQ-Modell",
+			"ai_model_desc": "Wählen Sie das KI-Modell für die Übersetzung von FAQ-Einträgen zwischen Primär- und Sekundärsprache.",
+			"select_model": "Modell auswählen",
+			"select_model_placeholder": "Modell auswählen...",
+			"showing_models": "{{count}} von {{total}} Modellen",
+			"save": "Einstellungen speichern"
+		},
+		"users": {
+			"roles_placeholder": "Rollenname eingeben und Tab drücken",
+			"no_roles_match": "Keine passenden Rollen"
+		}
+	},
+	"email": {
+		"reimbursement": {
+			"subject": "Erstattungsantrag",
+			"title": "Erstattungsantrag",
+			"item": "Artikel",
+			"amount": "Betrag",
+			"purchaser": "Käufer",
+			"bank_account": "Bankkonto",
+			"minutes": "Protokoll",
+			"receipts": "Quittungen",
+			"notes": "Notizen",
+			"attached": "angehängt",
+			"not_specified": "Nicht angegeben",
+			"reply_instruction": "Antworten Sie auf diese E-Mail, um den Antrag zu genehmigen oder abzulehnen."
+		},
+		"reimbursement_status": {
+			"approved": {},
+			"declined": {},
+			"status": "Status",
+			"view_details": "Details anzeigen"
+		}
+	},
+	"messages": {
+		"title": "Nachrichten",
+		"empty": "Noch keine neuen Nachrichten",
+		"mark_as_read": "Als gelesen markieren",
+		"mark_all_read": "Alle als gelesen markieren",
+		"marked_as_read": "Nachricht als gelesen markiert",
+		"view_purchase": "Erstattungsantrag anzeigen",
+		"reimbursement_approved": {},
+		"reimbursement_declined": {},
+		"news_published": {},
+		"ai_news_translation_failed": {},
+		"ai_faq_translation_failed": {},
+		"view_news": "Nachricht anzeigen",
+		"unknown_item": "Unbekannter Artikel",
+		"see_all": "Alle Nachrichten anzeigen",
+		"select_all": "Alle auswählen",
+		"selected_count": "{{count}} ausgewählt",
+		"mark_selected_read": "Ausgewählte als gelesen markieren",
+		"mark_selected_unread": "Ausgewählte als ungelesen markieren",
+		"clear_selection": "Auswahl löschen"
+	},
+	"news": {
+		"title": "Nachrichten",
+		"add": "Nachricht hinzufügen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"empty": "Noch keine Nachrichten.",
+		"no_results": "Keine Ergebnisse für Ihre Suche.",
+		"search_placeholder": "Nachrichten suchen...",
+		"confirm_delete": "Möchten Sie diese Nachricht wirklich löschen?",
+		"new_title": "Neue Nachricht",
+		"edit_title": "Nachricht bearbeiten",
+		"save": "Speichern",
+		"cancel": "Abbrechen",
+		"form": {
+			"title": "Titel",
+			"title_placeholder": "Nachrichtentitel",
+			"summary": "Zusammenfassung",
+			"summary_placeholder": "Kurze Zusammenfassung (optional)",
+			"content": "Inhalt",
+			"content_placeholder": "Nachrichteninhalt",
+			"default_language": "Standardsprache ({{language}})",
+			"secondary_language": "Zweitsprache ({{language}})"
+		},
+		"translate_with_ai": "Mit KI übersetzen:",
+		"translating": "Übersetzen...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"committee": {
+		"title": "Ausschuss",
+		"members": "Mitglieder",
+		"no_members": "Keine Ausschussmitglieder gefunden",
+		"no_description": "Keine Beschreibung"
+	},
+	"faq": {
+		"title": "FAQ",
+		"add": "Frage hinzufügen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"empty": "Noch keine Fragen.",
+		"no_results": "Keine Ergebnisse für Ihre Suche.",
+		"search_placeholder": "FAQ durchsuchen...",
+		"confirm_delete": "Möchten Sie diese Frage wirklich löschen?",
+		"new_title": "Neue Frage",
+		"edit_title": "Frage bearbeiten",
+		"save": "Speichern",
+		"cancel": "Abbrechen",
+		"form": {
+			"question": "Frage",
+			"question_placeholder": "Frage eingeben",
+			"answer": "Antwort",
+			"answer_placeholder": "Antwort eingeben",
+			"sort_order": "Sortierreihenfolge",
+			"default_language": "Standardsprache ({{language}})",
+			"secondary_language": "Zweitsprache ({{language}})"
+		},
+		"translate_with_ai": "Mit KI übersetzen:",
+		"translating": "Übersetzen...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"treasury": {
+		"overview": "Übersicht",
+		"title": "Kasse {{year}}",
+		"select_year": "Jahr auswählen...",
+		"view_breakdown": "Aufschlüsselung anzeigen",
+		"auto_linked_from": "Automatisch verknüpft von {{type}}: {{name}}",
+		"balance": "Saldo",
+		"income": "Einnahmen",
+		"unbudgeted_transactions": "Nicht budgetierte Transaktionen",
+		"budgeted_transactions": "Budgetierte Transaktionen",
+		"budget_costs": "Budgetkosten",
+		"available": "Verfügbar",
+		"transactions_count": "{{count}} Transaktionen",
+		"no_transactions": "Keine Transaktionen",
+		"no_transactions_desc": "Für {{year}} wurden noch keine Transaktionen erfasst.",
+		"actions": {
+			"breakdown": "Aufschlüsselung",
+			"transactions": "Transaktionen",
+			"receipts": "Quittungen",
+			"reimbursements": "Erstattungsanträge",
+			"budgets": "Budgets"
+		},
+		"transactions": {
+			"title": "Transaktionen",
+			"type": "Typ"
+		}
+	},
+	"permissions": {
+		"users": {
+			"read": "Benutzerliste anzeigen",
+			"write": "Benutzer erstellen und aktualisieren",
+			"delete": "Benutzer löschen",
+			"manage_roles": "Rollen Benutzern zuweisen"
+		},
+		"inventory": {
+			"read": "Inventargegenstände anzeigen",
+			"write": "Inventargegenstände erstellen und bearbeiten",
+			"delete": "Inventargegenstände löschen",
+			"export": "Inventar nach CSV exportieren",
+			"import": "Inventar aus Datei importieren"
+		},
+		"treasury": {
+			"read": "Kassenübersicht anzeigen",
+			"export": "Kassendaten nach CSV exportieren",
+			"import": "Kassendaten aus Datei importieren",
+			"breakdown": {
+				"read": "Kassenaufschlüsselung anzeigen"
+			},
+			"transactions": {
+				"read": "Transaktionsliste anzeigen",
+				"write": "Transaktionen erstellen",
+				"write-self": "Eigene Transaktionen erstellen",
+				"update": "Transaktionen bearbeiten",
+				"delete": "Transaktionen löschen",
+				"update-self": "Eigene Transaktionen bearbeiten",
+				"delete-self": "Eigene Transaktionen löschen",
+				"read-self": "Eigene Transaktionen anzeigen"
+			},
+			"reimbursements": {
+				"read": "Erstattungsanträge anzeigen",
+				"write": "Erstattungsanträge erstellen",
+				"write-self": "Eigene Erstattungsanträge erstellen",
+				"update": "Erstattungen aktualisieren und genehmigen/ablehnen",
+				"delete": "Erstattungsanträge löschen",
+				"update-self": "Eigene Erstattungsanträge bearbeiten",
+				"delete-self": "Eigene Erstattungsanträge löschen",
+				"read-self": "Eigene Erstattungsanträge anzeigen"
+			},
+			"budgets": {
+				"read": "Budget anzeigen",
+				"read-self": "Eigene Budget anzeigen",
+				"write": "Budget erstellen",
+				"write-self": "Eigene Budget erstellen",
+				"update": "Budget bearbeiten",
+				"delete": "Budget löschen",
+				"update-self": "Eigene Budget bearbeiten",
+				"delete-self": "Eigene Budget löschen"
+			},
+			"receipts": {
+				"read": "Quittungen anzeigen",
+				"read-self": "Eigene Quittungen anzeigen",
+				"write": "Quittungen erstellen",
+				"write-self": "Eigene Quittungen erstellen",
+				"update": "Quittungen bearbeiten",
+				"delete": "Quittungen löschen",
+				"update-self": "Eigene Quittungen bearbeiten",
+				"delete-self": "Eigene Quittungen löschen"
+			},
+			"view_scope": {
+				"all": "Sie sehen alle {{itemType}}",
+				"own_only": "Sie sehen nur Ihre eigenen {{itemType}}",
+				"item_types": {
+					"transactions": "Transaktionen",
+					"reimbursements": "Erstattungsanträge",
+					"budgets": "Budgets",
+					"receipts": "Quittungen"
+				}
+			}
+		},
+		"purchases": {
+			"read": "Alle Kaufanfragen anzeigen",
+			"manage": "Kaufstatus aktualisieren",
+			"delete": "Kaufanfragen löschen"
+		},
+		"submissions": {
+			"read": "Kontaktformularübermittlungen anzeigen",
+			"write": "Übermittlungsstatus aktualisieren",
+			"delete": "Übermittlungen löschen"
+		},
+		"social": {
+			"read": "Soziale Links anzeigen",
+			"write": "Soziale Links erstellen und bearbeiten",
+			"delete": "Soziale Links löschen"
+		},
+		"minutes": {
+			"read": "Protokolle anzeigen und herunterladen",
+			"guide": "Namenskonventionsleitfaden anzeigen"
+		},
+		"events": {
+			"read": "Kalenderereignisse anzeigen"
+		},
+		"forms": {
+			"read": "Formularantworten und Analysen anzeigen",
+			"export": "Formulardaten nach CSV exportieren"
+		},
+		"profile": {
+			"read": {
+				"own": "Eigenes Profil anzeigen"
+			},
+			"write": {
+				"own": "Eigenes Profil bearbeiten"
+			}
+		},
+		"roles": {
+			"read": "Rollen und Berechtigungen anzeigen",
+			"write": "Rollen erstellen und bearbeiten",
+			"delete": "Rollen löschen"
+		},
+		"news": {
+			"read": "Nachrichten anzeigen",
+			"write": "Nachrichten erstellen",
+			"update": "Nachrichten bearbeiten",
+			"delete": "Nachrichten löschen"
+		},
+		"faq": {
+			"read": "FAQ anzeigen",
+			"write": "FAQ-Einträge erstellen",
+			"update": "FAQ-Einträge bearbeiten",
+			"delete": "FAQ-Einträge löschen"
+		},
+		"settings": {
+			"general": "Zugriff auf allgemeine Einstellungen",
+			"users": "Zugriff auf Benutzerverwaltungseinstellungen",
+			"roles": "Zugriff auf Rollenverwaltungseinstellungen",
+			"reimbursements": "Zugriff auf Erstattungseinstellungen (KI, Schlüsselwörter)",
+			"analytics": "Zugriff auf Analyseseinstellungen (KI-Modelle)",
+			"news": "Zugriff auf Nachrichteneinstellungen (KI-Übersetzungsmodell)",
+			"faqs": "Zugriff auf FAQ-Einstellungen (KI-Übersetzungsmodell)"
+		},
+		"committee": {
+			"email": "E-Mail an Rollenmitglieder senden",
+			"read": "Ausschussmitglieder anzeigen"
+		},
+		"categories": {},
+		"admin": {
+			"storage": {
+				"read": "Speicher-Admin anzeigen",
+				"write": "Speicher-Admin verwalten"
+			}
+		}
+	},
+	"inventory": {
+		"created_items": "Erstellte Inventargegenstände",
+		"location_missing": "Standort erforderlich",
+		"incomplete_items": "Unvollständige Gegenstände",
+		"complete_item": "Als vollständig markieren",
+		"location_tbd": "Standort ausstehend"
+	},
+	"relationships": {
+		"ai": {
+			"analyze": "Mit KI analysieren",
+			"analyzing": "Analysieren...",
+			"success": "{{count}} Entwürfe erstellt",
+			"error": "Analyse fehlgeschlagen"
+		},
+		"draft": {
+			"badge": "Entwurf",
+			"cleanup": "Entwürfe bereinigen",
+			"cleanup_success": "{{count}} Entwürfe gelöscht"
+		}
+	}
 }

@@ -1,969 +1,969 @@
 {
-  "common": {
-    "total": "Totalt",
-    "entity_types": {
-      "receipt": "Kvitto",
-      "transaction": "Transaktion",
-      "reimbursement": "Ersättning",
-      "budget": "Budget",
-      "inventory": "Lagerföremål",
-      "minute": "Protokoll",
-      "news": "Nyheter",
-      "faq": "FAQ"
-    },
-    "fields": {
-      "created_by": "Skapad av",
-      "search": "Sök"
-    },
-    "actions": {
-      "update": "Uppdatera"
-    },
-    "filters": {
-      "all": "Alla kategorier"
-    },
-    "no_results": "Inga resultat"
-  },
-  "app": {
-    "title": "Hyresgästkommitté",
-    "setup_required": "Konfiguration krävs",
-    "setup_message": "Det verkar som att appen inte är konfigurerad än. Kontrollera dina miljövariabler.",
-    "copy_env": "Eller kopiera .env.template till .env och konfigurera dina inställningar."
-  },
-  "nav": {
-    "menu": "Meny",
-    "profile": "Profil",
-    "edit_profile": "Redigera profil",
-    "messages": "Meddelanden",
-    "log_out": "Logga ut",
-    "users": "Användare",
-    "roles": "Roller",
-    "get_involved": "Engagera dig",
-    "events": "Evenemang",
-    "treasury": "Kassa",
-    "minutes": "Protokoll",
-    "news": "Nyheter",
-    "faq": "Vanliga frågor",
-    "inventory": "Inventarier",
-    "social": "Socialt",
-    "polls": "Omröstningar",
-    "committee": "Kommitté",
-    "login": "Logga in",
-    "submissions": "Inskickat",
-    "committee_mail": "E-post",
-    "sidebar_collapse": "Fäll ihop sidofältet",
-    "sidebar_expand": "Expandera sidofältet",
-    "admin": "Admin"
-  },
-  "receipts": {
-    "select_receipts": "Välj kvitton",
-    "selected": "Valda kvitton",
-    "add_more": "Lägg till fler kvitton",
-    "search_placeholder": "Sök kvitton...",
-    "refresh": "Uppdatera kvitton",
-    "upload_new": "Ladda upp nytt kvitto",
-    "upload_unavailable": "Uppladdning ej tillgänglig",
-    "upload_failed": "Uppladdning misslyckades. Försök igen.",
-    "invalid_type": "Ogiltig filtyp. Tillåtna: {{types}}",
-    "uploading": "Laddar upp...",
-    "upload_notice": "Stora filer kan ta en stund att ladda upp.",
-    "no_receipts": "Inga kvitton för år {{year}}",
-    "done": "Klar",
-    "open": "Öppna",
-    "delete": "Ta bort",
-    "select_existing_or_upload": "Välj befintliga kvitton eller ladda upp ett nytt.",
-    "allowed": "Tillåtna",
-    "selected_count": "valda"
-  },
-  "lang": {
-    "label": "Språk"
-  },
-  "search_menu": {
-    "title": "Search",
-    "filter": "Filter",
-    "search": "Search",
-    "clear": "Clear",
-    "select_placeholder": "Select..."
-  },
-  "home": {
-    "header": "Engagera dig",
-    "contact": {
-      "title": "Kontakta oss"
-    },
-    "options": {
-      "committee": {
-        "title": "Gå med i kommittén",
-        "description": "Fyll i formuläret för att gå med i kommittén."
-      },
-      "events": {
-        "title": "Föreslå en händelse",
-        "description": "Föreslå en händelse för kommittén."
-      },
-      "purchases": {
-        "title": "Begär en inköp",
-        "description": "Begär en inköp från kommittén."
-      },
-      "questions": {
-        "title": "Ställ en fråga",
-        "description": "Ställ en fråga till kommittén."
-      }
-    }
-  },
-  "treasury": {
-    "overview": "Översikt",
-    "title": "Kassa {{year}}",
-    "select_year": "Välj år...",
-    "success": {
-      "transaction_created": "Transaktionen skapad",
-      "reimbursement_requested": "Ersättningsbegäran skickad"
-    },
-    "view_breakdown": "Se detaljer",
-    "auto_linked_from": "Automatiskt länkad från {{type}}: {{name}}",
-    "balance": "Saldo",
-    "income": "Inkomster",
-    "unbudgeted_transactions": "Obudgeterade transaktioner",
-    "budgeted_transactions": "Budgeterade transaktioner",
-    "budget_costs": "Budgetkostnader",
-    "available": "Tillgängligt",
-    "transactions_count": "{{count}} transaktioner",
-    "no_transactions": "Inga transaktioner",
-    "no_transactions_desc": "Inga transaktioner registrerade för {{year}} än.",
-    "actions": {
-      "breakdown": "Detaljer",
-      "transactions": "Transaktioner",
-      "receipts": "Kvitton",
-      "reimbursements": "Utlägg",
-      "budgets": "Budgetar"
-    },
-    "new": {
-      "header": "Ny transaktion",
-      "details_header": "Transaktionsdetaljer",
-      "inventory_desc": "Välj från listan eller lägg till ny. Valda artiklar läggs till i den nya transaktionen.",
-      "items_selected": "{{count}} artiklar valda",
-      "total": "Totalt",
-      "select_items": "Välj artiklar",
-      "link_existing_reimbursement": "Länka till befintligt utlägg",
-      "link_existing_help": "Välj en befintlig utläggsförfrågan att länka denna transaktion till.",
-      "select_reimbursement_placeholder": "Välj utlägg...",
-      "no_link": "Länka inte",
-      "or": "eller",
-      "submit": "Lägg till"
-    },
-    "form": {
-      "amount": "Belopp €",
-      "description": "Beskrivning",
-      "description_placeholder": "T.ex. Kaffeservering, Mötesfika",
-      "date": "Datum",
-      "year": "År"
-    },
-    "transactions": {
-      "title": "Transaktioner",
-      "type": "Typ"
-    },
-    "placeholders": {},
-    "types": {
-      "income": "Inkomst",
-      "expense": "Utgift"
-    },
-    "categories": {
-      "inventory": "Inventarier",
-      "snacks": "Fika",
-      "event": "Evenemang",
-      "other": "Annat",
-      "grant": "Bidrag",
-      "sales": "Försäljning",
-      "event_income": "Evenemangsintäkt",
-      "membership": "Medlemsavgifter"
-    },
-    "reimbursements": {
-      "title": "Utlägg",
-      "new": "Ny",
-      "status": "Status",
-      "purchaser": "Inköpare",
-      "transaction": "Transaktion",
-      "view_transaction": "Visa transaktion",
-      "email_sent": "E-post skickad",
-      "reply_received": "Svar mottaget",
-      "delete_confirm": "Är du säker på att du vill ta bort detta utlägg?",
-      "use_as_template": "Använd som mall",
-      "statuses": {
-        "pending": "Väntande",
-        "approved": "Godkänd",
-        "reimbursed": "Utbetald",
-        "rejected": "Avvisad"
-      },
-      "edit": {
-        "title": "Redigera utlägg",
-        "reimbursement_details": "Utläggsdetaljer"
-      }
-    },
-    "new_reimbursement": {
-      "title": "Nytt utlägg",
-      "description": "Beskrivning",
-      "description_placeholder": "T.ex. Kaffe till möte",
-      "amount": "Belopp €",
-      "receipts": "Kvitton",
-      "select_receipt_error": "Välj minst ett kvitto",
-      "purchaser_name": "Inköparens namn",
-      "purchaser_placeholder": "För- och efternamn",
-      "bank_account": "Bankkonto",
-      "minutes": "Relaterat protokoll",
-      "select_minutes": "Välj protokoll...",
-      "minutes_help": "För inköp över 100€ krävs protokoll före utbetalning.",
-      "notes": "Ytterligare anteckningar",
-      "notes_placeholder": "Fritt meddelande...",
-      "receipt_uploaded": "Kvitto uppladdat",
-      "error": "Fel",
-      "email_warning": "⚠️ E-postutskick är inte konfigurerat. Begäran sparas men e-post skickas inte."
-    },
-    "breakdown": {
-      "title": "Kassaöversikt",
-      "no_transactions": "Inga transaktioner för detta år",
-      "date": "Datum",
-      "description": "Beskrivning",
-      "category": "Kategori",
-      "status": "Status",
-      "reimbursement_status": "Ersättningsstatus",
-      "amount": "Belopp",
-      "export": "Exportera CSV",
-      "statuses": {
-        "complete": "Klar",
-        "pending": "Väntande",
-        "paused": "Pausad",
-        "declined": "Avvisad"
-      },
-      "edit": {
-        "title": "Redigera transaktion",
-        "delete_title": "Ta bort transaktion?",
-        "delete_confirm": "Är du säker på att du vill ta bort denna transaktion? Detta kan inte ångras.",
-        "delete_blocked": "Borttagning blockerad",
-        "linked_reimbursement": "Länkat utlägg",
-        "purchaser": "Inköpare",
-        "iban": "IBAN",
-        "minutes": "Protokoll",
-        "email": "E-post",
-        "email_sent": "Skickat",
-        "email_not_sent": "Ej skickat",
-        "items_linked_success": "Artiklar länkade",
-        "delete_error_linked": "Kan inte ta bort transaktion eftersom den har länkade aktiva inventarier: {{names}}. Ta bort eller markera artiklar som gamla först.",
-        "reimbursement_statuses": {},
-        "statuses": {}
-      }
-    }
-  },
-  "inventory": {
-    "title": "Inventarier",
-    "unit": "st",
-    "search": {
-      "name_label": "Namn",
-      "name_placeholder": "Sök på namn...",
-      "location_label": "Plats",
-      "location_all": "Alla platser",
-      "category_label": "Kategori",
-      "category_all": "Alla kategorier",
-      "columns": "Kolumner",
-      "filters": "Filter"
-    },
-    "columns": {
-      "status": "Status",
-      "name": "Namn",
-      "location": "Plats",
-      "category": "Kategori",
-      "description": "Beskrivning",
-      "updated": "Uppdaterad",
-      "unit_value": "Enhetsvärde",
-      "quantity": "Antal",
-      "total_value": "Totalt värde",
-      "transactions": "Transaktioner",
-      "info_reel": "Info Reel"
-    },
-    "actions": {
-      "menu": "Åtgärder",
-      "add": "Lägg till",
-      "close": "Stäng",
-      "export": "Exportera CSV",
-      "export_short": "Exportera",
-      "import": "Importera CSV",
-      "import_short": "Importera",
-      "selected": "Valda",
-      "report": "Rapportera",
-      "treasury": "Kassa",
-      "add_to_new": "Lägg till i ny",
-      "add_to_existing": "Lägg till i befintlig",
-      "no_transaction": "Ingen transaktion",
-      "remove": "Ta bort",
-      "unlink": "Ta bort länk",
-      "remove_marker": "Ta bort markering"
-    },
-    "badge_unknown_title": "Oredovisad mängd – klicka för alternativ",
-    "badge_connect_existing": "Koppla till befintlig transaktion",
-    "badge_create_new_transaction": "Skapa ny transaktion",
-    "badge_linked_to_transaction": "Länkad till transaktion",
-    "inline_edit_saved": "Sparat",
-    "messages": {
-      "importing": "Importerar fil...",
-      "import_success": "Importerade {{count}} rader",
-      "import_error": "Fel: {{error}}"
-    },
-    "add_row": {
-      "name_placeholder": "Namn...",
-      "location_placeholder": "Plats...",
-      "category_placeholder": "Kategori...",
-      "description_placeholder": "Beskrivning...",
-      "search_placeholder": "Sök...",
-      "new_text": "Ny",
-      "required_field": "Obligatoriskt fält"
-    },
-    "form": {
-      "title_new": "Ny artikel",
-      "title_edit": "Redigera artikel",
-      "details_header": "Artikeldetaljer",
-      "name_placeholder": "Välj eller skriv namn...",
-      "name_search_placeholder": "Sök artikel...",
-      "name_empty": "Hittades inte.",
-      "location_placeholder": "Välj eller skriv...",
-      "location_search_placeholder": "Sök plats...",
-      "location_empty": "Finns ej i listan.",
-      "category_placeholder": "Välj eller skriv...",
-      "category_search_placeholder": "Sök kategori...",
-      "description_placeholder": "Artikeldetaljer",
-      "value_placeholder": "0.00",
-      "purchased_at_label": "Inköpsdatum",
-      "show_in_info_reel": "Visa i Info Reel",
-      "example": "T.ex. {{example}}"
-    },
-    "new": {},
-    "modals": {
-      "report_title": "Rapportera ett problem",
-      "selected_items": "Valda artiklar:",
-      "describe_issue": "Beskriv problemet eller vad som bör ändras...",
-      "cancel": "Avbryt",
-      "send": "Skicka",
-      "confirm_unlink_title": "Ta bort länk?",
-      "confirm_unlink_desc": "Detta kommer att ta bort länken mellan artikeln och den valda transaktionen.",
-      "confirm_unlink_details": "Artikel: {{name}} ({{count}} st)\nTransaktion: {{description}} ({{date}})",
-      "unlink": "Ta bort länk",
-      "confirm_delete_many_title": "Ta bort objekt?",
-      "confirm_delete_many_desc": "Är du säker på att du vill ta bort {{count}} objekt permanent?",
-      "quantity_selection": {
-        "title_no_txn": "Markera ingen transaktion",
-        "title_existing": "Lägg till i befintlig",
-        "title_txn": "Lägg till i transaktion",
-        "desc_no_txn": "Välj hur många av varje artikel som ska markeras som utan transaktion.",
-        "desc_existing": "Välj hur många av varje artikel som ska läggas till i en befintlig transaktion.",
-        "desc_txn": "Välj hur många av varje artikel som ska läggas till i transaktionen.",
-        "available": "Tillgängligt",
-        "continue": "Fortsätt",
-        "confirm": "Bekräfta"
-      },
-      "remove": {
-        "title": "Ta bort inventarieartikel",
-        "current_quantity": "Nuvarande antal",
-        "linked_transactions": "Länkade transaktioner",
-        "linked_desc": "Välj från vilken transaktion(er) du vill ta bort och hur många.",
-        "expense": "Utgift",
-        "income": "Inkomst",
-        "linked": "Länkad",
-        "no_linked_txns": "Inga transaktioner länkade till denna artikel.",
-        "no_linked_desc": "Du kan ta bort den direkt eller markera den som en gammal artikel.",
-        "reason": "Anledning",
-        "notes_optional": "Anteckningar (valfritt)",
-        "notes_placeholder": "Lägg till anteckningar vid behov...",
-        "removing": "Tar bort",
-        "item_will_be_removed": "Artikeln kommer att markeras som borttagen",
-        "remove_count": "Ta bort {{count}} st",
-        "remove_item": "Ta bort artikel",
-        "reasons": {
-          "broken": "Trasig",
-          "used_up": "Förbrukad",
-          "lost": "Förlorad",
-          "sold": "Såld",
-          "other": "Annat"
-        }
-      },
-      "transaction_selector": {
-        "title": "Välj transaktion",
-        "desc": "Välj en transaktion att lägga till de valda artiklarna i.",
-        "no_suitable": "Inga lämpliga transaktioner",
-        "select": "Välj"
-      }
-    },
-    "info_reel": {
-      "no_items": "Inga artiklar att visa"
-    },
-    "status": {
-      "removed": "Borttagen"
-    }
-  },
-  "minutes": {
-    "title": "Protokoll",
-    "all_minutes": "Alla protokoll",
-    "archive": "Arkiv",
-    "no_results": "Inga resultat",
-    "no_minutes": "Inga protokoll",
-    "no_minutes_yet": "Inga protokoll än",
-    "this_year": "Detta år",
-    "search": {
-      "name_label": "Namn",
-      "name_placeholder": "Sök på namn...",
-      "year_label": "År",
-      "year_placeholder": "Välj år..."
-    },
-    "naming_guide": {
-      "title": "Namngivning av protokoll",
-      "use_format": "Använd format",
-      "example": "T.ex: 2026-01-05_Styrelsemöte_1.pdf - Filer sorteras automatiskt nyast först."
-    }
-  },
-  "profile": {
-    "title": "Profil",
-    "update_success": "Profil uppdaterad!",
-    "email_label": "E-post",
-    "email_help": "E-post kan inte ändras",
-    "name_label": "Namn",
-    "apartment_label": "Lägenhetsnummer",
-    "optional": "valfritt",
-    "apartment_placeholder": "t.ex. A 101",
-    "apartment_help": "Används för validering av röster",
-    "role_label": "Roll",
-    "member_since_label": "Medlem sedan",
-    "description_label": "Beskrivning",
-    "description_placeholder": "Berätta om dig själv...",
-    "picture_label": "Profilbild",
-    "picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in",
-    "picture_too_large": "Filen är för stor. Maximal storlek är {{maxSize}}MB.",
-    "picture_too_large_dimensions": "Bildens dimensioner är för stora. Maximal storlek är {{maxDimension}}x{{maxDimension}}px.",
-    "save_changes": "Spara ändringar"
-  },
-  "avatars": {
-    "delete": "Ta bort"
-  },
-  "admin": {
-    "storage": {
-      "receipts": "Kvitton",
-      "avatars": "Avatarer",
-      "receipts.title": "Kvittogalleri",
-      "receipts.description": "Alla kvittofiler. Länkade kvitton är bifogade till en ersättningsansökan och kan inte tas bort.",
-      "receipts.empty": "Inga kvitton",
-      "receipts.delete_confirm": "Är du säker på att du vill ta bort detta kvitto?",
-      "receipts.delete_success": "Kvitto borttaget",
-      "receipts.delete_error": "Borttagning misslyckades",
-      "receipts.open_pdf": "Öppna PDF",
-      "receipts.linked": "Länkad",
-      "receipts.unlinked": "Inte länkad",
-      "receipts.reimbursement_request": "Ersättningsansökan",
-      "avatars.title": "Avatarer",
-      "avatars.description": "Alla användaravatar-bilder lagrade i systemet.",
-      "avatars.empty": "Inga avatarer",
-      "avatars.delete": "Ta bort",
-      "avatars.delete_confirm": "Är du säker på att du vill ta bort denna avatar?",
-      "avatars.delete_success": "Avatar borttagen",
-      "avatars.delete_error": "Borttagning misslyckades"
-    }
-  },
-  "settings": {
-    "receipt_ocr_title": "Kvittos OCR",
-    "receipt_ocr_description": "Konfigurera AI-inställningar för automatisk kvittotolkning.",
-    "receipt_ocr_requires_api_key": "OCR-tolkning kräver en OpenRouter API-nyckel i Allmänna inställningar.",
-    "ai_model": "AI-modell",
-    "select_model": "Välj en modell...",
-    "receipt_ai_model_help": "Välj en kapabel modell (t.ex. Gemini Flash 1.5, GPT-4o-mini) för bästa resultat.",
-    "general": {
-      "title": "Allmänt",
-      "languages_title": "Standardspråk",
-      "languages_desc": "Ange standardspråk för nya användare och gäster. Dessa kan åsidosättas av användare i deras profil.",
-      "primary_language": "Primärt språk",
-      "secondary_language": "Sekundärt språk"
-    },
-    "common": {
-      "save": "Spara",
-      "saving": "Sparar...",
-      "delete": "Ta bort",
-      "cancel": "Avbryt",
-      "create": "Skapa",
-      "new": "Ny",
-      "edit": "Redigera",
-      "free": "Gratis",
-      "none": "Ingen"
-    },
-    "reimbursements": {
-      "title": "Utläggsinställningar",
-      "recipient_email_title": "Mottagarens e-post",
-      "recipient_email_desc": "Ange e-postadressen som tar emot utläggsärenden.",
-      "recipient_email_label": "Mottagarens e-post",
-      "recipient_email_placeholder": "kassa@example.com",
-      "recipient_email_fallback": "Använder miljöstandard: {{email}}",
-      "ai_parsing_title": "AI-tolkning",
-      "ai_parsing_desc": "Aktivera AI-assisterad tolkning för mer exakt svarshantering",
-      "enable_ai": "Aktivera AI-tolkning",
-      "select_model": "Välj en modell...",
-      "showing_models": "Visar {{count}} av {{total}} modeller",
-      "save_ai_settings": "Spara AI-inställningar",
-      "keywords_title": "Nyckelord",
-      "keywords_desc": "Anpassade nyckelord för att upptäcka godkännande eller avslag i e-post",
-      "default_approval": "Standard godkännandeord",
-      "additional_approval": "Ytterligare godkännandeord",
-      "approval_placeholder": "betald, klar, accepterad (kommateckenseparerad)",
-      "default_rejection": "Standard avvisningsord",
-      "additional_rejection": "Ytterligare avvisningsord",
-      "save_keywords": "Spara nyckelord"
-    },
-    "analytics": {
-      "title": "Analysinställningar"
-    },
-    "news": {
-      "title": "Nyhetsinställningar",
-      "ai_model_title": "AI-nyhetsmodell",
-      "ai_model_desc": "Välj AI-modell som används för att översätta nyheter mellan primärt och sekundärt språk.",
-      "select_model": "Välj modell",
-      "select_model_placeholder": "Välj en modell...",
-      "showing_models": "Visar {{count}} av {{total}} modeller",
-      "save": "Spara inställningar"
-    },
-    "faqs": {
-      "title": "FAQ-inställningar",
-      "ai_model_title": "AI-FAQ-modell",
-      "ai_model_desc": "Välj AI-modell som används för att översätta FAQ-poster mellan primärt och sekundärt språk.",
-      "select_model": "Välj modell",
-      "select_model_placeholder": "Välj en modell...",
-      "showing_models": "Visar {{count}} av {{total}} modeller",
-      "save": "Spara inställningar"
-    },
-    "roles": {
-      "title": "Rollhantering",
-      "create_new_title": "Skapa ny roll",
-      "color_label": "Färg",
-      "system": "Systemroll",
-      "delete_title": "Ta bort roll",
-      "delete_confirm": "Är du säker på att du vill ta bort rollen \"{{name}}\"? Detta kan inte ångras.",
-      "permissions_header": "Behörigheter",
-      "select_role_msg": "Välj en roll till vänster för att redigera behörigheter",
-      "select_role": "Välj roll",
-      "select_role_placeholder": "Välj en roll...",
-      "search_placeholder": "Sök behörigheter...",
-      "category": "Kategori",
-      "permission_name": "Behörighetsnamn",
-      "description": "Beskrivning",
-      "show_only_assigned": "Visa endast tilldelade behörigheter"
-    },
-    "users": {
-      "title": "Användarhantering",
-      "headers": {
-        "name": "Namn",
-        "email": "E-post",
-        "roles": "Roller",
-        "joined": "Gick med"
-      },
-      "no_users": "Inga användare än",
-      "roles_placeholder": "Skriv rollnamn och tryck Tab för att lägga till",
-      "no_roles_match": "Inga matchande roller",
-      "super_admin": "Superadministratör",
-      "role_updated": "Roll uppdaterad",
-      "cannot_change_super_admin": "Kan inte ändra superadministratörens roll",
-      "update_failed": "Misslyckades att uppdatera roll"
-    }
-  },
-  "committee": {
-    "title": "Kommitté",
-    "members": "Medlemmar",
-    "no_members": "Inga kommittémedlemmar hittades",
-    "no_description": "Ingen beskrivning",
-    "mail": {
-      "title": "E-post",
-      "not_configured": "E-post är inte konfigurerad. Ställ in SMTP och COMMITTEE_FROM_EMAIL.",
-      "to": "Till (To)",
-      "cc": "Kopia (CC)",
-      "bcc": "Dold kopia (BCC)",
-      "add_email": "Lägg till e-post",
-      "type_to_add": "Skriv namn eller roll och tryck Tab för att lägga till",
-      "no_suggestions": "Inga förslag",
-      "role": "Roll",
-      "subject": "Ämne",
-      "subject_placeholder": "E-postens ämne",
-      "body": "Meddelande",
-      "body_placeholder": "Skriv ditt meddelande..."
-    }
-  },
-  "mail": {
-    "inbox": "Inkorg",
-    "sent": "Skickat",
-    "compose": "Nytt meddelande",
-    "drafts": "Utkast",
-    "draft_saved_at": "Utkast sparad {{time}}",
-    "send_tooltip": "Skicka",
-    "no_drafts": "Inga utkast",
-    "no_subject": "(Inget ämne)",
-    "refresh": "Uppdatera",
-    "refreshed": "{{count}} nya meddelanden hämtade",
-    "no_messages": "Inga meddelanden",
-    "from": "Från",
-    "to": "Till",
-    "cc": "Kopia",
-    "date": "Datum",
-    "delete": "Ta bort",
-    "delete_confirm": "Är du säker på att du vill ta bort detta meddelande?",
-    "delete_draft_confirm": "Är du säker på att du vill ta bort detta utkast?",
-    "delete_success": "Borttaget",
-    "delete_error": "Borttagning misslyckades",
-    "select": "Välj",
-    "delete_draft": "Ta bort utkast",
-    "reply": "Svara",
-    "reply_all": "Svara alla",
-    "forward": "Vidarebefordra",
-    "forwarded_message": "Vidarebefordrat meddelande",
-    "messages_in_thread": "{{count}} meddelanden",
-    "compose_new": "Nytt meddelande",
-    "compose_reply": "Svara",
-    "compose_reply_all": "Svara alla",
-    "compose_forward": "Vidarebefordra",
-    "quoted_reply_header": "Den {{date}} skrev {{name}} <{{email}}>:"
-  },
-  "contact": {
-    "header": "Kontakta oss",
-    "select_topic": "Välj ämne",
-    "select_topic_prompt": "Välj ett ämne för att börja",
-    "types": {
-      "committee": {},
-      "events": {},
-      "purchases": {},
-      "questions": {}
-    },
-    "form": {
-      "name": "Namn",
-      "email": "E-post",
-      "apartment": "Lägenhet",
-      "apartment_placeholder": "t.ex. A 123",
-      "update_apartment_profile": "Uppdatera lägenhetsnummer i min profil",
-      "message": "Meddelande",
-      "send": "Skicka"
-    },
-    "success": {
-      "title": "Meddelande skickat!",
-      "message": "Tack för att du kontaktade oss! Vi återkommer så snart som möjligt.",
-      "back_home": "Tillbaka till Start"
-    }
-  },
-  "social": {
-    "header": "Sociala Medier",
-    "add_link": "Lägg till",
-    "hidden": "(dold)",
-    "delete_confirm": "Ta bort?",
-    "no_channels": "Inga sociala kanaler",
-    "add_first": "Lägg till första",
-    "form": {
-      "name": "Namn",
-      "icon": "Ikon",
-      "url": "URL",
-      "color": "Färg",
-      "sort_order": "Ordning",
-      "active": "Aktiv"
-    },
-    "new": {
-      "header": "Ny social kanal",
-      "hidden_desc": "Dolda kanaler är endast synliga för personal",
-      "sort_desc": "Lägre nummer visas först"
-    },
-    "colors": {},
-    "icons": {}
-  },
-  "submissions": {
-    "title": "Inskickat",
-    "no_submissions": "Inget inskickat än",
-    "delete_confirm": "Är du säker på att du vill ta bort detta inskick?",
-    "apartment": "Lägenhet",
-    "table": {
-      "time": "Tid",
-      "type": "Typ",
-      "sender": "Avsändare",
-      "message": "Meddelande",
-      "status": "Status"
-    }
-  },
-  "events": {
-    "title": "Evenemang",
-    "upcoming": "Kommande",
-    "no_upcoming": "Inga kommande evenemang",
-    "no_results": "Inga resultat",
-    "open_calendar": "Öppna kalender",
-    "search": {
-      "label": "Evenemang",
-      "placeholder": "Sök på namn..."
-    }
-  },
-  "news": {
-    "title": "Nyheter",
-    "add": "Lägg till nyhet",
-    "edit": "Redigera",
-    "delete": "Ta bort",
-    "empty": "Inga nyheter än.",
-    "no_results": "Inga resultat för sökningen.",
-    "search_placeholder": "Sök nyheter...",
-    "confirm_delete": "Är du säker på att du vill ta bort denna nyhet?",
-    "new_title": "Ny nyhet",
-    "edit_title": "Redigera nyhet",
-    "save": "Spara",
-    "cancel": "Avbryt",
-    "form": {
-      "title": "Rubrik",
-      "title_placeholder": "Nyhetsrubrik",
-      "summary": "Sammanfattning",
-      "summary_placeholder": "Kort sammanfattning (valfritt)",
-      "content": "Innehåll",
-      "content_placeholder": "Nyhetsinnehåll",
-      "default_language": "Standardspråk ({{language}})",
-      "secondary_language": "Sekundärt språk ({{language}})"
-    },
-    "translate_with_ai": "Översätt med AI:",
-    "translating": "Översätter...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "faq": {
-    "title": "Vanliga frågor",
-    "add": "Lägg till fråga",
-    "edit": "Redigera",
-    "delete": "Ta bort",
-    "empty": "Inga frågor än.",
-    "no_results": "Inga resultat för sökningen.",
-    "search_placeholder": "Sök vanliga frågor...",
-    "confirm_delete": "Är du säker på att du vill ta bort denna fråga?",
-    "new_title": "Ny fråga",
-    "edit_title": "Redigera fråga",
-    "save": "Spara",
-    "cancel": "Avbryt",
-    "form": {
-      "question": "Fråga",
-      "question_placeholder": "Ange fråga",
-      "answer": "Svar",
-      "answer_placeholder": "Ange svar",
-      "sort_order": "Sorteringsordning",
-      "default_language": "Standardspråk ({{language}})",
-      "secondary_language": "Sekundärt språk ({{language}})"
-    },
-    "translate_with_ai": "Översätt med AI:",
-    "translating": "Översätter...",
-    "translate_primary_to_secondary": "{{primary}} → {{secondary}}",
-    "translate_secondary_to_primary": "{{secondary}} → {{primary}}"
-  },
-  "email": {
-    "reimbursement": {
-      "subject": "Ersättningsbegäran",
-      "title": "Ersättningsbegäran",
-      "item": "Vara",
-      "amount": "Belopp",
-      "purchaser": "Köpare",
-      "bank_account": "Bankkonto",
-      "minutes": "Protokoll",
-      "receipts": "Kvitton",
-      "notes": "Anteckningar",
-      "attached": "bifogad",
-      "not_specified": "Ej specificerat",
-      "reply_instruction": "Svara på detta e-postmeddelande för att godkänna eller avvisa begäran."
-    },
-    "reimbursement_status": {
-      "approved": {},
-      "declined": {},
-      "status": "Status",
-      "view_details": "Visa detaljer"
-    }
-  },
-  "messages": {
-    "title": "Meddelanden",
-    "empty": "Inga nya meddelanden ännu",
-    "mark_as_read": "Markera som läst",
-    "mark_all_read": "Markera alla som lästa",
-    "marked_as_read": "Meddelande markerat som läst",
-    "view_purchase": "Visa ersättningsansökan",
-    "reimbursement_approved": {},
-    "reimbursement_declined": {},
-    "news_published": {},
-    "ai_news_translation_failed": {},
-    "ai_faq_translation_failed": {},
-    "view_news": "Visa nyhet",
-    "unknown_item": "Okänt objekt",
-    "see_all": "Visa alla meddelanden",
-    "select_all": "Välj alla",
-    "selected_count": "{{count}} valda",
-    "mark_selected_read": "Markera valda som lästa",
-    "mark_selected_unread": "Markera valda som olästa",
-    "clear_selection": "Rensa val"
-  },
-  "permissions": {
-    "users": {
-      "read": "Visa användarlista",
-      "write": "Skapa och uppdatera användare",
-      "delete": "Ta bort användare",
-      "manage_roles": "Tilldela roller till användare"
-    },
-    "inventory": {
-      "read": "Visa inventarieobjekt",
-      "write": "Skapa och redigera inventarieobjekt",
-      "delete": "Ta bort inventarieobjekt",
-      "export": "Exportera inventarie till CSV",
-      "import": "Importera inventarie från fil"
-    },
-    "treasury": {
-      "read": "Visa kassaöversikt",
-      "export": "Exportera kassadata till CSV",
-      "import": "Importera kassadata från fil",
-      "breakdown": {
-        "read": "Visa kassaavdelning"
-      },
-      "transactions": {
-        "read": "Visa transaktionslista",
-        "write": "Skapa transaktioner",
-        "write-self": "Skapa egna transaktioner",
-        "update": "Redigera transaktioner",
-        "delete": "Ta bort transaktioner",
-        "update-self": "Redigera egna transaktioner",
-        "delete-self": "Ta bort egna transaktioner",
-        "read-self": "Visa egna transaktioner"
-      },
-      "reimbursements": {
-        "read": "Visa ersättningsförfrågningar",
-        "write": "Skapa ersättningsförfrågningar",
-        "write-self": "Skapa egna ersättningsförfrågningar",
-        "update": "Uppdatera och godkänna/avvisa ersättningar",
-        "delete": "Ta bort ersättningsförfrågningar",
-        "update-self": "Redigera egna ersättningsförfrågningar",
-        "delete-self": "Ta bort egna ersättningsförfrågningar",
-        "read-self": "Visa egna ersättningsförfrågningar"
-      },
-      "budgets": {
-        "read": "Visa budgetar",
-        "read-self": "Visa egna budgetar",
-        "write": "Skapa budgetar",
-        "write-self": "Skapa egna budgetar",
-        "update": "Redigera budgetar",
-        "delete": "Ta bort budgetar",
-        "update-self": "Redigera egna budgetar",
-        "delete-self": "Ta bort egna budgetar"
-      },
-      "receipts": {
-        "read": "Visa kvitton",
-        "read-self": "Visa egna kvitton",
-        "write": "Skapa kvitton",
-        "write-self": "Skapa egna kvitton",
-        "update": "Redigera kvitton",
-        "delete": "Ta bort kvitton",
-        "update-self": "Redigera egna kvitton",
-        "delete-self": "Ta bort egna kvitton"
-      },
-      "view_scope": {
-        "all": "Du ser alla {{itemType}}",
-        "own_only": "Du ser endast dina egna {{itemType}}",
-        "item_types": {
-          "transactions": "transaktioner",
-          "reimbursements": "ersättningsförfrågningar",
-          "budgets": "budgetar",
-          "receipts": "kvitton"
-        }
-      }
-    },
-    "purchases": {
-      "read": "Visa alla köpförfrågningar",
-      "manage": "Uppdatera köpstatus",
-      "delete": "Ta bort köpförfrågningar"
-    },
-    "submissions": {
-      "read": "Visa kontaktformulär",
-      "write": "Uppdatera inlämningsstatus",
-      "delete": "Ta bort inlämningar"
-    },
-    "social": {
-      "read": "Visa sociala länkar",
-      "write": "Skapa och redigera sociala länkar",
-      "delete": "Ta bort sociala länkar"
-    },
-    "minutes": {
-      "read": "Visa och ladda ner protokoll",
-      "guide": "Visa namngivningskonventionsguide"
-    },
-    "events": {
-      "read": "Visa kalenderhändelser"
-    },
-    "news": {
-      "read": "Visa nyheter",
-      "write": "Skapa nyheter",
-      "update": "Redigera nyheter",
-      "delete": "Ta bort nyheter"
-    },
-    "faq": {
-      "read": "Visa vanliga frågor",
-      "write": "Skapa FAQ-poster",
-      "update": "Redigera FAQ-poster",
-      "delete": "Ta bort FAQ-poster"
-    },
-    "forms": {
-      "read": "Visa formulärsvar och analys",
-      "export": "Exportera formulärdata till CSV"
-    },
-    "profile": {
-      "read": {
-        "own": "Visa egen profil"
-      },
-      "write": {
-        "own": "Redigera egen profil"
-      }
-    },
-    "avatars": {
-      "read": "Visa avatarlista",
-      "delete": "Ta bort avatarer"
-    },
-    "admin": {
-      "storage": {
-        "read": "Visa lagringsadministration",
-        "write": "Hantera lagringsadministration"
-      }
-    },
-    "roles": {
-      "read": "Visa roller och behörigheter",
-      "write": "Skapa och redigera roller",
-      "delete": "Ta bort roller"
-    },
-    "settings": {
-      "general": "Åtkomst till allmänna inställningar",
-      "users": "Åtkomst till användarhanteringsinställningar",
-      "roles": "Åtkomst till rollhanteringsinställningar",
-      "reimbursements": "Åtkomst till ersättningsinställningar (AI, nyckelord)",
-      "analytics": "Åtkomst till analysinställningar (AI-modeller)",
-      "news": "Åtkomst till nyhetsinställningar (AI-översättningsmodell)",
-      "faqs": "Åtkomst till FAQ-inställningar (AI-översättningsmodell)"
-    },
-    "committee": {
-      "email": "Skicka e-post till rollmedlemmar",
-      "read": "Visa kommittémedlemmar"
-    },
-    "categories": {}
-  },
-  "receipts": {
-    "process_receipt": "Bearbeta kvitto",
-    "processed": "Bearbetad",
-    "processing": "Bearbetar...",
-    "auto_filled_from_receipt": "Automatiskt ifylld från kvitto: {{name}}",
-    "create_reimbursement": "Skapa ersättning",
-    "analyze_with_ai": "Analysera med AI (OCR)",
-    "analyzing": "Analyserar kvitto...",
-    "analysis_complete": "Kvitto analyserat framgångsrikt",
-    "analysis_failed": "Misslyckades att analysera kvitto"
-  },
-  "inventory": {
-    "created_items": "Skapade inventarieobjekt",
-    "location_missing": "Plats behövs",
-    "incomplete_items": "Ofullständiga objekt",
-    "complete_item": "Markera som fullständig",
-    "location_tbd": "Plats väntande"
-  },
-  "relationships": {
-    "ai": {
-      "analyze": "Analysera med AI",
-      "analyzing": "Analyserar...",
-      "success": "{{count}} utkast skapade",
-      "error": "Analys misslyckades"
-    },
-    "draft": {
-      "badge": "Utkast",
-      "cleanup": "Rensa utkast",
-      "cleanup_success": "{{count}} utkast borttagna"
-    }
-  }
+	"common": {
+		"total": "Totalt",
+		"entity_types": {
+			"receipt": "Kvitto",
+			"transaction": "Transaktion",
+			"reimbursement": "Ersättning",
+			"budget": "Budget",
+			"inventory": "Lagerföremål",
+			"minute": "Protokoll",
+			"news": "Nyheter",
+			"faq": "FAQ"
+		},
+		"fields": {
+			"created_by": "Skapad av",
+			"search": "Sök"
+		},
+		"actions": {
+			"update": "Uppdatera"
+		},
+		"filters": {
+			"all": "Alla kategorier"
+		},
+		"no_results": "Inga resultat"
+	},
+	"app": {
+		"title": "Hyresgästkommitté",
+		"setup_required": "Konfiguration krävs",
+		"setup_message": "Det verkar som att appen inte är konfigurerad än. Kontrollera dina miljövariabler.",
+		"copy_env": "Eller kopiera .env.template till .env och konfigurera dina inställningar."
+	},
+	"nav": {
+		"menu": "Meny",
+		"profile": "Profil",
+		"edit_profile": "Redigera profil",
+		"messages": "Meddelanden",
+		"log_out": "Logga ut",
+		"users": "Användare",
+		"roles": "Roller",
+		"get_involved": "Engagera dig",
+		"events": "Evenemang",
+		"treasury": "Kassa",
+		"minutes": "Protokoll",
+		"news": "Nyheter",
+		"faq": "Vanliga frågor",
+		"inventory": "Inventarier",
+		"social": "Socialt",
+		"polls": "Omröstningar",
+		"committee": "Kommitté",
+		"login": "Logga in",
+		"submissions": "Inskickat",
+		"committee_mail": "E-post",
+		"sidebar_collapse": "Fäll ihop sidofältet",
+		"sidebar_expand": "Expandera sidofältet",
+		"admin": "Admin"
+	},
+	"receipts": {
+		"select_receipts": "Välj kvitton",
+		"selected": "Valda kvitton",
+		"add_more": "Lägg till fler kvitton",
+		"search_placeholder": "Sök kvitton...",
+		"refresh": "Uppdatera kvitton",
+		"upload_new": "Ladda upp nytt kvitto",
+		"upload_unavailable": "Uppladdning ej tillgänglig",
+		"upload_failed": "Uppladdning misslyckades. Försök igen.",
+		"invalid_type": "Ogiltig filtyp. Tillåtna: {{types}}",
+		"uploading": "Laddar upp...",
+		"upload_notice": "Stora filer kan ta en stund att ladda upp.",
+		"no_receipts": "Inga kvitton för år {{year}}",
+		"done": "Klar",
+		"open": "Öppna",
+		"delete": "Ta bort",
+		"select_existing_or_upload": "Välj befintliga kvitton eller ladda upp ett nytt.",
+		"allowed": "Tillåtna",
+		"selected_count": "valda"
+	},
+	"lang": {
+		"label": "Språk"
+	},
+	"search_menu": {
+		"title": "Search",
+		"filter": "Filter",
+		"search": "Search",
+		"clear": "Clear",
+		"select_placeholder": "Select..."
+	},
+	"home": {
+		"header": "Engagera dig",
+		"contact": {
+			"title": "Kontakta oss"
+		},
+		"options": {
+			"committee": {
+				"title": "Gå med i kommittén",
+				"description": "Fyll i formuläret för att gå med i kommittén."
+			},
+			"events": {
+				"title": "Föreslå en händelse",
+				"description": "Föreslå en händelse för kommittén."
+			},
+			"purchases": {
+				"title": "Begär en inköp",
+				"description": "Begär en inköp från kommittén."
+			},
+			"questions": {
+				"title": "Ställ en fråga",
+				"description": "Ställ en fråga till kommittén."
+			}
+		}
+	},
+	"treasury": {
+		"overview": "Översikt",
+		"title": "Kassa {{year}}",
+		"select_year": "Välj år...",
+		"success": {
+			"transaction_created": "Transaktionen skapad",
+			"reimbursement_requested": "Ersättningsbegäran skickad"
+		},
+		"view_breakdown": "Se detaljer",
+		"auto_linked_from": "Automatiskt länkad från {{type}}: {{name}}",
+		"balance": "Saldo",
+		"income": "Inkomster",
+		"unbudgeted_transactions": "Obudgeterade transaktioner",
+		"budgeted_transactions": "Budgeterade transaktioner",
+		"budget_costs": "Budgetkostnader",
+		"available": "Tillgängligt",
+		"transactions_count": "{{count}} transaktioner",
+		"no_transactions": "Inga transaktioner",
+		"no_transactions_desc": "Inga transaktioner registrerade för {{year}} än.",
+		"actions": {
+			"breakdown": "Detaljer",
+			"transactions": "Transaktioner",
+			"receipts": "Kvitton",
+			"reimbursements": "Utlägg",
+			"budgets": "Budgetar"
+		},
+		"new": {
+			"header": "Ny transaktion",
+			"details_header": "Transaktionsdetaljer",
+			"inventory_desc": "Välj från listan eller lägg till ny. Valda artiklar läggs till i den nya transaktionen.",
+			"items_selected": "{{count}} artiklar valda",
+			"total": "Totalt",
+			"select_items": "Välj artiklar",
+			"link_existing_reimbursement": "Länka till befintligt utlägg",
+			"link_existing_help": "Välj en befintlig utläggsförfrågan att länka denna transaktion till.",
+			"select_reimbursement_placeholder": "Välj utlägg...",
+			"no_link": "Länka inte",
+			"or": "eller",
+			"submit": "Lägg till"
+		},
+		"form": {
+			"amount": "Belopp €",
+			"description": "Beskrivning",
+			"description_placeholder": "T.ex. Kaffeservering, Mötesfika",
+			"date": "Datum",
+			"year": "År"
+		},
+		"transactions": {
+			"title": "Transaktioner",
+			"type": "Typ"
+		},
+		"placeholders": {},
+		"types": {
+			"income": "Inkomst",
+			"expense": "Utgift"
+		},
+		"categories": {
+			"inventory": "Inventarier",
+			"snacks": "Fika",
+			"event": "Evenemang",
+			"other": "Annat",
+			"grant": "Bidrag",
+			"sales": "Försäljning",
+			"event_income": "Evenemangsintäkt",
+			"membership": "Medlemsavgifter"
+		},
+		"reimbursements": {
+			"title": "Utlägg",
+			"new": "Ny",
+			"status": "Status",
+			"purchaser": "Inköpare",
+			"transaction": "Transaktion",
+			"view_transaction": "Visa transaktion",
+			"email_sent": "E-post skickad",
+			"reply_received": "Svar mottaget",
+			"delete_confirm": "Är du säker på att du vill ta bort detta utlägg?",
+			"use_as_template": "Använd som mall",
+			"statuses": {
+				"pending": "Väntande",
+				"approved": "Godkänd",
+				"reimbursed": "Utbetald",
+				"rejected": "Avvisad"
+			},
+			"edit": {
+				"title": "Redigera utlägg",
+				"reimbursement_details": "Utläggsdetaljer"
+			}
+		},
+		"new_reimbursement": {
+			"title": "Nytt utlägg",
+			"description": "Beskrivning",
+			"description_placeholder": "T.ex. Kaffe till möte",
+			"amount": "Belopp €",
+			"receipts": "Kvitton",
+			"select_receipt_error": "Välj minst ett kvitto",
+			"purchaser_name": "Inköparens namn",
+			"purchaser_placeholder": "För- och efternamn",
+			"bank_account": "Bankkonto",
+			"minutes": "Relaterat protokoll",
+			"select_minutes": "Välj protokoll...",
+			"minutes_help": "För inköp över 100€ krävs protokoll före utbetalning.",
+			"notes": "Ytterligare anteckningar",
+			"notes_placeholder": "Fritt meddelande...",
+			"receipt_uploaded": "Kvitto uppladdat",
+			"error": "Fel",
+			"email_warning": "⚠️ E-postutskick är inte konfigurerat. Begäran sparas men e-post skickas inte."
+		},
+		"breakdown": {
+			"title": "Kassaöversikt",
+			"no_transactions": "Inga transaktioner för detta år",
+			"date": "Datum",
+			"description": "Beskrivning",
+			"category": "Kategori",
+			"status": "Status",
+			"reimbursement_status": "Ersättningsstatus",
+			"amount": "Belopp",
+			"export": "Exportera CSV",
+			"statuses": {
+				"complete": "Klar",
+				"pending": "Väntande",
+				"paused": "Pausad",
+				"declined": "Avvisad"
+			},
+			"edit": {
+				"title": "Redigera transaktion",
+				"delete_title": "Ta bort transaktion?",
+				"delete_confirm": "Är du säker på att du vill ta bort denna transaktion? Detta kan inte ångras.",
+				"delete_blocked": "Borttagning blockerad",
+				"linked_reimbursement": "Länkat utlägg",
+				"purchaser": "Inköpare",
+				"iban": "IBAN",
+				"minutes": "Protokoll",
+				"email": "E-post",
+				"email_sent": "Skickat",
+				"email_not_sent": "Ej skickat",
+				"items_linked_success": "Artiklar länkade",
+				"delete_error_linked": "Kan inte ta bort transaktion eftersom den har länkade aktiva inventarier: {{names}}. Ta bort eller markera artiklar som gamla först.",
+				"reimbursement_statuses": {},
+				"statuses": {}
+			}
+		}
+	},
+	"inventory": {
+		"title": "Inventarier",
+		"unit": "st",
+		"search": {
+			"name_label": "Namn",
+			"name_placeholder": "Sök på namn...",
+			"location_label": "Plats",
+			"location_all": "Alla platser",
+			"category_label": "Kategori",
+			"category_all": "Alla kategorier",
+			"columns": "Kolumner",
+			"filters": "Filter"
+		},
+		"columns": {
+			"status": "Status",
+			"name": "Namn",
+			"location": "Plats",
+			"category": "Kategori",
+			"description": "Beskrivning",
+			"updated": "Uppdaterad",
+			"unit_value": "Enhetsvärde",
+			"quantity": "Antal",
+			"total_value": "Totalt värde",
+			"transactions": "Transaktioner",
+			"info_reel": "Info Reel"
+		},
+		"actions": {
+			"menu": "Åtgärder",
+			"add": "Lägg till",
+			"close": "Stäng",
+			"export": "Exportera CSV",
+			"export_short": "Exportera",
+			"import": "Importera CSV",
+			"import_short": "Importera",
+			"selected": "Valda",
+			"report": "Rapportera",
+			"treasury": "Kassa",
+			"add_to_new": "Lägg till i ny",
+			"add_to_existing": "Lägg till i befintlig",
+			"no_transaction": "Ingen transaktion",
+			"remove": "Ta bort",
+			"unlink": "Ta bort länk",
+			"remove_marker": "Ta bort markering"
+		},
+		"badge_unknown_title": "Oredovisad mängd – klicka för alternativ",
+		"badge_connect_existing": "Koppla till befintlig transaktion",
+		"badge_create_new_transaction": "Skapa ny transaktion",
+		"badge_linked_to_transaction": "Länkad till transaktion",
+		"inline_edit_saved": "Sparat",
+		"messages": {
+			"importing": "Importerar fil...",
+			"import_success": "Importerade {{count}} rader",
+			"import_error": "Fel: {{error}}"
+		},
+		"add_row": {
+			"name_placeholder": "Namn...",
+			"location_placeholder": "Plats...",
+			"category_placeholder": "Kategori...",
+			"description_placeholder": "Beskrivning...",
+			"search_placeholder": "Sök...",
+			"new_text": "Ny",
+			"required_field": "Obligatoriskt fält"
+		},
+		"form": {
+			"title_new": "Ny artikel",
+			"title_edit": "Redigera artikel",
+			"details_header": "Artikeldetaljer",
+			"name_placeholder": "Välj eller skriv namn...",
+			"name_search_placeholder": "Sök artikel...",
+			"name_empty": "Hittades inte.",
+			"location_placeholder": "Välj eller skriv...",
+			"location_search_placeholder": "Sök plats...",
+			"location_empty": "Finns ej i listan.",
+			"category_placeholder": "Välj eller skriv...",
+			"category_search_placeholder": "Sök kategori...",
+			"description_placeholder": "Artikeldetaljer",
+			"value_placeholder": "0.00",
+			"purchased_at_label": "Inköpsdatum",
+			"show_in_info_reel": "Visa i Info Reel",
+			"example": "T.ex. {{example}}"
+		},
+		"new": {},
+		"modals": {
+			"report_title": "Rapportera ett problem",
+			"selected_items": "Valda artiklar:",
+			"describe_issue": "Beskriv problemet eller vad som bör ändras...",
+			"cancel": "Avbryt",
+			"send": "Skicka",
+			"confirm_unlink_title": "Ta bort länk?",
+			"confirm_unlink_desc": "Detta kommer att ta bort länken mellan artikeln och den valda transaktionen.",
+			"confirm_unlink_details": "Artikel: {{name}} ({{count}} st)\nTransaktion: {{description}} ({{date}})",
+			"unlink": "Ta bort länk",
+			"confirm_delete_many_title": "Ta bort objekt?",
+			"confirm_delete_many_desc": "Är du säker på att du vill ta bort {{count}} objekt permanent?",
+			"quantity_selection": {
+				"title_no_txn": "Markera ingen transaktion",
+				"title_existing": "Lägg till i befintlig",
+				"title_txn": "Lägg till i transaktion",
+				"desc_no_txn": "Välj hur många av varje artikel som ska markeras som utan transaktion.",
+				"desc_existing": "Välj hur många av varje artikel som ska läggas till i en befintlig transaktion.",
+				"desc_txn": "Välj hur många av varje artikel som ska läggas till i transaktionen.",
+				"available": "Tillgängligt",
+				"continue": "Fortsätt",
+				"confirm": "Bekräfta"
+			},
+			"remove": {
+				"title": "Ta bort inventarieartikel",
+				"current_quantity": "Nuvarande antal",
+				"linked_transactions": "Länkade transaktioner",
+				"linked_desc": "Välj från vilken transaktion(er) du vill ta bort och hur många.",
+				"expense": "Utgift",
+				"income": "Inkomst",
+				"linked": "Länkad",
+				"no_linked_txns": "Inga transaktioner länkade till denna artikel.",
+				"no_linked_desc": "Du kan ta bort den direkt eller markera den som en gammal artikel.",
+				"reason": "Anledning",
+				"notes_optional": "Anteckningar (valfritt)",
+				"notes_placeholder": "Lägg till anteckningar vid behov...",
+				"removing": "Tar bort",
+				"item_will_be_removed": "Artikeln kommer att markeras som borttagen",
+				"remove_count": "Ta bort {{count}} st",
+				"remove_item": "Ta bort artikel",
+				"reasons": {
+					"broken": "Trasig",
+					"used_up": "Förbrukad",
+					"lost": "Förlorad",
+					"sold": "Såld",
+					"other": "Annat"
+				}
+			},
+			"transaction_selector": {
+				"title": "Välj transaktion",
+				"desc": "Välj en transaktion att lägga till de valda artiklarna i.",
+				"no_suitable": "Inga lämpliga transaktioner",
+				"select": "Välj"
+			}
+		},
+		"info_reel": {
+			"no_items": "Inga artiklar att visa"
+		},
+		"status": {
+			"removed": "Borttagen"
+		}
+	},
+	"minutes": {
+		"title": "Protokoll",
+		"all_minutes": "Alla protokoll",
+		"archive": "Arkiv",
+		"no_results": "Inga resultat",
+		"no_minutes": "Inga protokoll",
+		"no_minutes_yet": "Inga protokoll än",
+		"this_year": "Detta år",
+		"search": {
+			"name_label": "Namn",
+			"name_placeholder": "Sök på namn...",
+			"year_label": "År",
+			"year_placeholder": "Välj år..."
+		},
+		"naming_guide": {
+			"title": "Namngivning av protokoll",
+			"use_format": "Använd format",
+			"example": "T.ex: 2026-01-05_Styrelsemöte_1.pdf - Filer sorteras automatiskt nyast först."
+		}
+	},
+	"profile": {
+		"title": "Profil",
+		"update_success": "Profil uppdaterad!",
+		"email_label": "E-post",
+		"email_help": "E-post kan inte ändras",
+		"name_label": "Namn",
+		"apartment_label": "Lägenhetsnummer",
+		"optional": "valfritt",
+		"apartment_placeholder": "t.ex. A 101",
+		"apartment_help": "Används för validering av röster",
+		"role_label": "Roll",
+		"member_since_label": "Medlem sedan",
+		"description_label": "Beskrivning",
+		"description_placeholder": "Berätta om dig själv...",
+		"picture_label": "Profilbild",
+		"picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in",
+		"picture_too_large": "Filen är för stor. Maximal storlek är {{maxSize}}MB.",
+		"picture_too_large_dimensions": "Bildens dimensioner är för stora. Maximal storlek är {{maxDimension}}x{{maxDimension}}px.",
+		"save_changes": "Spara ändringar"
+	},
+	"avatars": {
+		"delete": "Ta bort"
+	},
+	"admin": {
+		"storage": {
+			"receipts": "Kvitton",
+			"avatars": "Avatarer",
+			"receipts.title": "Kvittogalleri",
+			"receipts.description": "Alla kvittofiler. Länkade kvitton är bifogade till en ersättningsansökan och kan inte tas bort.",
+			"receipts.empty": "Inga kvitton",
+			"receipts.delete_confirm": "Är du säker på att du vill ta bort detta kvitto?",
+			"receipts.delete_success": "Kvitto borttaget",
+			"receipts.delete_error": "Borttagning misslyckades",
+			"receipts.open_pdf": "Öppna PDF",
+			"receipts.linked": "Länkad",
+			"receipts.unlinked": "Inte länkad",
+			"receipts.reimbursement_request": "Ersättningsansökan",
+			"avatars.title": "Avatarer",
+			"avatars.description": "Alla användaravatar-bilder lagrade i systemet.",
+			"avatars.empty": "Inga avatarer",
+			"avatars.delete": "Ta bort",
+			"avatars.delete_confirm": "Är du säker på att du vill ta bort denna avatar?",
+			"avatars.delete_success": "Avatar borttagen",
+			"avatars.delete_error": "Borttagning misslyckades"
+		}
+	},
+	"settings": {
+		"receipt_ocr_title": "Kvittos OCR",
+		"receipt_ocr_description": "Konfigurera AI-inställningar för automatisk kvittotolkning.",
+		"receipt_ocr_requires_api_key": "OCR-tolkning kräver en OpenRouter API-nyckel i Allmänna inställningar.",
+		"ai_model": "AI-modell",
+		"select_model": "Välj en modell...",
+		"receipt_ai_model_help": "Välj en kapabel modell (t.ex. Gemini Flash 1.5, GPT-4o-mini) för bästa resultat.",
+		"general": {
+			"title": "Allmänt",
+			"languages_title": "Standardspråk",
+			"languages_desc": "Ange standardspråk för nya användare och gäster. Dessa kan åsidosättas av användare i deras profil.",
+			"primary_language": "Primärt språk",
+			"secondary_language": "Sekundärt språk"
+		},
+		"common": {
+			"save": "Spara",
+			"saving": "Sparar...",
+			"delete": "Ta bort",
+			"cancel": "Avbryt",
+			"create": "Skapa",
+			"new": "Ny",
+			"edit": "Redigera",
+			"free": "Gratis",
+			"none": "Ingen"
+		},
+		"reimbursements": {
+			"title": "Utläggsinställningar",
+			"recipient_email_title": "Mottagarens e-post",
+			"recipient_email_desc": "Ange e-postadressen som tar emot utläggsärenden.",
+			"recipient_email_label": "Mottagarens e-post",
+			"recipient_email_placeholder": "kassa@example.com",
+			"recipient_email_fallback": "Använder miljöstandard: {{email}}",
+			"ai_parsing_title": "AI-tolkning",
+			"ai_parsing_desc": "Aktivera AI-assisterad tolkning för mer exakt svarshantering",
+			"enable_ai": "Aktivera AI-tolkning",
+			"select_model": "Välj en modell...",
+			"showing_models": "Visar {{count}} av {{total}} modeller",
+			"save_ai_settings": "Spara AI-inställningar",
+			"keywords_title": "Nyckelord",
+			"keywords_desc": "Anpassade nyckelord för att upptäcka godkännande eller avslag i e-post",
+			"default_approval": "Standard godkännandeord",
+			"additional_approval": "Ytterligare godkännandeord",
+			"approval_placeholder": "betald, klar, accepterad (kommateckenseparerad)",
+			"default_rejection": "Standard avvisningsord",
+			"additional_rejection": "Ytterligare avvisningsord",
+			"save_keywords": "Spara nyckelord"
+		},
+		"analytics": {
+			"title": "Analysinställningar"
+		},
+		"news": {
+			"title": "Nyhetsinställningar",
+			"ai_model_title": "AI-nyhetsmodell",
+			"ai_model_desc": "Välj AI-modell som används för att översätta nyheter mellan primärt och sekundärt språk.",
+			"select_model": "Välj modell",
+			"select_model_placeholder": "Välj en modell...",
+			"showing_models": "Visar {{count}} av {{total}} modeller",
+			"save": "Spara inställningar"
+		},
+		"faqs": {
+			"title": "FAQ-inställningar",
+			"ai_model_title": "AI-FAQ-modell",
+			"ai_model_desc": "Välj AI-modell som används för att översätta FAQ-poster mellan primärt och sekundärt språk.",
+			"select_model": "Välj modell",
+			"select_model_placeholder": "Välj en modell...",
+			"showing_models": "Visar {{count}} av {{total}} modeller",
+			"save": "Spara inställningar"
+		},
+		"roles": {
+			"title": "Rollhantering",
+			"create_new_title": "Skapa ny roll",
+			"color_label": "Färg",
+			"system": "Systemroll",
+			"delete_title": "Ta bort roll",
+			"delete_confirm": "Är du säker på att du vill ta bort rollen \"{{name}}\"? Detta kan inte ångras.",
+			"permissions_header": "Behörigheter",
+			"select_role_msg": "Välj en roll till vänster för att redigera behörigheter",
+			"select_role": "Välj roll",
+			"select_role_placeholder": "Välj en roll...",
+			"search_placeholder": "Sök behörigheter...",
+			"category": "Kategori",
+			"permission_name": "Behörighetsnamn",
+			"description": "Beskrivning",
+			"show_only_assigned": "Visa endast tilldelade behörigheter"
+		},
+		"users": {
+			"title": "Användarhantering",
+			"headers": {
+				"name": "Namn",
+				"email": "E-post",
+				"roles": "Roller",
+				"joined": "Gick med"
+			},
+			"no_users": "Inga användare än",
+			"roles_placeholder": "Skriv rollnamn och tryck Tab för att lägga till",
+			"no_roles_match": "Inga matchande roller",
+			"super_admin": "Superadministratör",
+			"role_updated": "Roll uppdaterad",
+			"cannot_change_super_admin": "Kan inte ändra superadministratörens roll",
+			"update_failed": "Misslyckades att uppdatera roll"
+		}
+	},
+	"committee": {
+		"title": "Kommitté",
+		"members": "Medlemmar",
+		"no_members": "Inga kommittémedlemmar hittades",
+		"no_description": "Ingen beskrivning",
+		"mail": {
+			"title": "E-post",
+			"not_configured": "E-post är inte konfigurerad. Ställ in SMTP och COMMITTEE_FROM_EMAIL.",
+			"to": "Till (To)",
+			"cc": "Kopia (CC)",
+			"bcc": "Dold kopia (BCC)",
+			"add_email": "Lägg till e-post",
+			"type_to_add": "Skriv namn eller roll och tryck Tab för att lägga till",
+			"no_suggestions": "Inga förslag",
+			"role": "Roll",
+			"subject": "Ämne",
+			"subject_placeholder": "E-postens ämne",
+			"body": "Meddelande",
+			"body_placeholder": "Skriv ditt meddelande..."
+		}
+	},
+	"mail": {
+		"inbox": "Inkorg",
+		"sent": "Skickat",
+		"compose": "Nytt meddelande",
+		"drafts": "Utkast",
+		"draft_saved_at": "Utkast sparad {{time}}",
+		"send_tooltip": "Skicka",
+		"no_drafts": "Inga utkast",
+		"no_subject": "(Inget ämne)",
+		"refresh": "Uppdatera",
+		"refreshed": "{{count}} nya meddelanden hämtade",
+		"no_messages": "Inga meddelanden",
+		"from": "Från",
+		"to": "Till",
+		"cc": "Kopia",
+		"date": "Datum",
+		"delete": "Ta bort",
+		"delete_confirm": "Är du säker på att du vill ta bort detta meddelande?",
+		"delete_draft_confirm": "Är du säker på att du vill ta bort detta utkast?",
+		"delete_success": "Borttaget",
+		"delete_error": "Borttagning misslyckades",
+		"select": "Välj",
+		"delete_draft": "Ta bort utkast",
+		"reply": "Svara",
+		"reply_all": "Svara alla",
+		"forward": "Vidarebefordra",
+		"forwarded_message": "Vidarebefordrat meddelande",
+		"messages_in_thread": "{{count}} meddelanden",
+		"compose_new": "Nytt meddelande",
+		"compose_reply": "Svara",
+		"compose_reply_all": "Svara alla",
+		"compose_forward": "Vidarebefordra",
+		"quoted_reply_header": "Den {{date}} skrev {{name}} <{{email}}>:"
+	},
+	"contact": {
+		"header": "Kontakta oss",
+		"select_topic": "Välj ämne",
+		"select_topic_prompt": "Välj ett ämne för att börja",
+		"types": {
+			"committee": {},
+			"events": {},
+			"purchases": {},
+			"questions": {}
+		},
+		"form": {
+			"name": "Namn",
+			"email": "E-post",
+			"apartment": "Lägenhet",
+			"apartment_placeholder": "t.ex. A 123",
+			"update_apartment_profile": "Uppdatera lägenhetsnummer i min profil",
+			"message": "Meddelande",
+			"send": "Skicka"
+		},
+		"success": {
+			"title": "Meddelande skickat!",
+			"message": "Tack för att du kontaktade oss! Vi återkommer så snart som möjligt.",
+			"back_home": "Tillbaka till Start"
+		}
+	},
+	"social": {
+		"header": "Sociala Medier",
+		"add_link": "Lägg till",
+		"hidden": "(dold)",
+		"delete_confirm": "Ta bort?",
+		"no_channels": "Inga sociala kanaler",
+		"add_first": "Lägg till första",
+		"form": {
+			"name": "Namn",
+			"icon": "Ikon",
+			"url": "URL",
+			"color": "Färg",
+			"sort_order": "Ordning",
+			"active": "Aktiv"
+		},
+		"new": {
+			"header": "Ny social kanal",
+			"hidden_desc": "Dolda kanaler är endast synliga för personal",
+			"sort_desc": "Lägre nummer visas först"
+		},
+		"colors": {},
+		"icons": {}
+	},
+	"submissions": {
+		"title": "Inskickat",
+		"no_submissions": "Inget inskickat än",
+		"delete_confirm": "Är du säker på att du vill ta bort detta inskick?",
+		"apartment": "Lägenhet",
+		"table": {
+			"time": "Tid",
+			"type": "Typ",
+			"sender": "Avsändare",
+			"message": "Meddelande",
+			"status": "Status"
+		}
+	},
+	"events": {
+		"title": "Evenemang",
+		"upcoming": "Kommande",
+		"no_upcoming": "Inga kommande evenemang",
+		"no_results": "Inga resultat",
+		"open_calendar": "Öppna kalender",
+		"search": {
+			"label": "Evenemang",
+			"placeholder": "Sök på namn..."
+		}
+	},
+	"news": {
+		"title": "Nyheter",
+		"add": "Lägg till nyhet",
+		"edit": "Redigera",
+		"delete": "Ta bort",
+		"empty": "Inga nyheter än.",
+		"no_results": "Inga resultat för sökningen.",
+		"search_placeholder": "Sök nyheter...",
+		"confirm_delete": "Är du säker på att du vill ta bort denna nyhet?",
+		"new_title": "Ny nyhet",
+		"edit_title": "Redigera nyhet",
+		"save": "Spara",
+		"cancel": "Avbryt",
+		"form": {
+			"title": "Rubrik",
+			"title_placeholder": "Nyhetsrubrik",
+			"summary": "Sammanfattning",
+			"summary_placeholder": "Kort sammanfattning (valfritt)",
+			"content": "Innehåll",
+			"content_placeholder": "Nyhetsinnehåll",
+			"default_language": "Standardspråk ({{language}})",
+			"secondary_language": "Sekundärt språk ({{language}})"
+		},
+		"translate_with_ai": "Översätt med AI:",
+		"translating": "Översätter...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"faq": {
+		"title": "Vanliga frågor",
+		"add": "Lägg till fråga",
+		"edit": "Redigera",
+		"delete": "Ta bort",
+		"empty": "Inga frågor än.",
+		"no_results": "Inga resultat för sökningen.",
+		"search_placeholder": "Sök vanliga frågor...",
+		"confirm_delete": "Är du säker på att du vill ta bort denna fråga?",
+		"new_title": "Ny fråga",
+		"edit_title": "Redigera fråga",
+		"save": "Spara",
+		"cancel": "Avbryt",
+		"form": {
+			"question": "Fråga",
+			"question_placeholder": "Ange fråga",
+			"answer": "Svar",
+			"answer_placeholder": "Ange svar",
+			"sort_order": "Sorteringsordning",
+			"default_language": "Standardspråk ({{language}})",
+			"secondary_language": "Sekundärt språk ({{language}})"
+		},
+		"translate_with_ai": "Översätt med AI:",
+		"translating": "Översätter...",
+		"translate_primary_to_secondary": "{{primary}} → {{secondary}}",
+		"translate_secondary_to_primary": "{{secondary}} → {{primary}}"
+	},
+	"email": {
+		"reimbursement": {
+			"subject": "Ersättningsbegäran",
+			"title": "Ersättningsbegäran",
+			"item": "Vara",
+			"amount": "Belopp",
+			"purchaser": "Köpare",
+			"bank_account": "Bankkonto",
+			"minutes": "Protokoll",
+			"receipts": "Kvitton",
+			"notes": "Anteckningar",
+			"attached": "bifogad",
+			"not_specified": "Ej specificerat",
+			"reply_instruction": "Svara på detta e-postmeddelande för att godkänna eller avvisa begäran."
+		},
+		"reimbursement_status": {
+			"approved": {},
+			"declined": {},
+			"status": "Status",
+			"view_details": "Visa detaljer"
+		}
+	},
+	"messages": {
+		"title": "Meddelanden",
+		"empty": "Inga nya meddelanden ännu",
+		"mark_as_read": "Markera som läst",
+		"mark_all_read": "Markera alla som lästa",
+		"marked_as_read": "Meddelande markerat som läst",
+		"view_purchase": "Visa ersättningsansökan",
+		"reimbursement_approved": {},
+		"reimbursement_declined": {},
+		"news_published": {},
+		"ai_news_translation_failed": {},
+		"ai_faq_translation_failed": {},
+		"view_news": "Visa nyhet",
+		"unknown_item": "Okänt objekt",
+		"see_all": "Visa alla meddelanden",
+		"select_all": "Välj alla",
+		"selected_count": "{{count}} valda",
+		"mark_selected_read": "Markera valda som lästa",
+		"mark_selected_unread": "Markera valda som olästa",
+		"clear_selection": "Rensa val"
+	},
+	"permissions": {
+		"users": {
+			"read": "Visa användarlista",
+			"write": "Skapa och uppdatera användare",
+			"delete": "Ta bort användare",
+			"manage_roles": "Tilldela roller till användare"
+		},
+		"inventory": {
+			"read": "Visa inventarieobjekt",
+			"write": "Skapa och redigera inventarieobjekt",
+			"delete": "Ta bort inventarieobjekt",
+			"export": "Exportera inventarie till CSV",
+			"import": "Importera inventarie från fil"
+		},
+		"treasury": {
+			"read": "Visa kassaöversikt",
+			"export": "Exportera kassadata till CSV",
+			"import": "Importera kassadata från fil",
+			"breakdown": {
+				"read": "Visa kassaavdelning"
+			},
+			"transactions": {
+				"read": "Visa transaktionslista",
+				"write": "Skapa transaktioner",
+				"write-self": "Skapa egna transaktioner",
+				"update": "Redigera transaktioner",
+				"delete": "Ta bort transaktioner",
+				"update-self": "Redigera egna transaktioner",
+				"delete-self": "Ta bort egna transaktioner",
+				"read-self": "Visa egna transaktioner"
+			},
+			"reimbursements": {
+				"read": "Visa ersättningsförfrågningar",
+				"write": "Skapa ersättningsförfrågningar",
+				"write-self": "Skapa egna ersättningsförfrågningar",
+				"update": "Uppdatera och godkänna/avvisa ersättningar",
+				"delete": "Ta bort ersättningsförfrågningar",
+				"update-self": "Redigera egna ersättningsförfrågningar",
+				"delete-self": "Ta bort egna ersättningsförfrågningar",
+				"read-self": "Visa egna ersättningsförfrågningar"
+			},
+			"budgets": {
+				"read": "Visa budgetar",
+				"read-self": "Visa egna budgetar",
+				"write": "Skapa budgetar",
+				"write-self": "Skapa egna budgetar",
+				"update": "Redigera budgetar",
+				"delete": "Ta bort budgetar",
+				"update-self": "Redigera egna budgetar",
+				"delete-self": "Ta bort egna budgetar"
+			},
+			"receipts": {
+				"read": "Visa kvitton",
+				"read-self": "Visa egna kvitton",
+				"write": "Skapa kvitton",
+				"write-self": "Skapa egna kvitton",
+				"update": "Redigera kvitton",
+				"delete": "Ta bort kvitton",
+				"update-self": "Redigera egna kvitton",
+				"delete-self": "Ta bort egna kvitton"
+			},
+			"view_scope": {
+				"all": "Du ser alla {{itemType}}",
+				"own_only": "Du ser endast dina egna {{itemType}}",
+				"item_types": {
+					"transactions": "transaktioner",
+					"reimbursements": "ersättningsförfrågningar",
+					"budgets": "budgetar",
+					"receipts": "kvitton"
+				}
+			}
+		},
+		"purchases": {
+			"read": "Visa alla köpförfrågningar",
+			"manage": "Uppdatera köpstatus",
+			"delete": "Ta bort köpförfrågningar"
+		},
+		"submissions": {
+			"read": "Visa kontaktformulär",
+			"write": "Uppdatera inlämningsstatus",
+			"delete": "Ta bort inlämningar"
+		},
+		"social": {
+			"read": "Visa sociala länkar",
+			"write": "Skapa och redigera sociala länkar",
+			"delete": "Ta bort sociala länkar"
+		},
+		"minutes": {
+			"read": "Visa och ladda ner protokoll",
+			"guide": "Visa namngivningskonventionsguide"
+		},
+		"events": {
+			"read": "Visa kalenderhändelser"
+		},
+		"news": {
+			"read": "Visa nyheter",
+			"write": "Skapa nyheter",
+			"update": "Redigera nyheter",
+			"delete": "Ta bort nyheter"
+		},
+		"faq": {
+			"read": "Visa vanliga frågor",
+			"write": "Skapa FAQ-poster",
+			"update": "Redigera FAQ-poster",
+			"delete": "Ta bort FAQ-poster"
+		},
+		"forms": {
+			"read": "Visa formulärsvar och analys",
+			"export": "Exportera formulärdata till CSV"
+		},
+		"profile": {
+			"read": {
+				"own": "Visa egen profil"
+			},
+			"write": {
+				"own": "Redigera egen profil"
+			}
+		},
+		"avatars": {
+			"read": "Visa avatarlista",
+			"delete": "Ta bort avatarer"
+		},
+		"admin": {
+			"storage": {
+				"read": "Visa lagringsadministration",
+				"write": "Hantera lagringsadministration"
+			}
+		},
+		"roles": {
+			"read": "Visa roller och behörigheter",
+			"write": "Skapa och redigera roller",
+			"delete": "Ta bort roller"
+		},
+		"settings": {
+			"general": "Åtkomst till allmänna inställningar",
+			"users": "Åtkomst till användarhanteringsinställningar",
+			"roles": "Åtkomst till rollhanteringsinställningar",
+			"reimbursements": "Åtkomst till ersättningsinställningar (AI, nyckelord)",
+			"analytics": "Åtkomst till analysinställningar (AI-modeller)",
+			"news": "Åtkomst till nyhetsinställningar (AI-översättningsmodell)",
+			"faqs": "Åtkomst till FAQ-inställningar (AI-översättningsmodell)"
+		},
+		"committee": {
+			"email": "Skicka e-post till rollmedlemmar",
+			"read": "Visa kommittémedlemmar"
+		},
+		"categories": {}
+	},
+	"receipts": {
+		"process_receipt": "Bearbeta kvitto",
+		"processed": "Bearbetad",
+		"processing": "Bearbetar...",
+		"auto_filled_from_receipt": "Automatiskt ifylld från kvitto: {{name}}",
+		"create_reimbursement": "Skapa ersättning",
+		"analyze_with_ai": "Analysera med AI (OCR)",
+		"analyzing": "Analyserar kvitto...",
+		"analysis_complete": "Kvitto analyserat framgångsrikt",
+		"analysis_failed": "Misslyckades att analysera kvitto"
+	},
+	"inventory": {
+		"created_items": "Skapade inventarieobjekt",
+		"location_missing": "Plats behövs",
+		"incomplete_items": "Ofullständiga objekt",
+		"complete_item": "Markera som fullständig",
+		"location_tbd": "Plats väntande"
+	},
+	"relationships": {
+		"ai": {
+			"analyze": "Analysera med AI",
+			"analyzing": "Analyserar...",
+			"success": "{{count}} utkast skapade",
+			"error": "Analys misslyckades"
+		},
+		"draft": {
+			"badge": "Utkast",
+			"cleanup": "Rensa utkast",
+			"cleanup_success": "{{count}} utkast borttagna"
+		}
+	}
 }

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
 
 const LINK_CLASS =
 	"inline-flex items-center gap-1 text-sm text-primary hover:underline";
@@ -57,7 +56,11 @@ export function TreasuryActionCell({
 
 	const doDelete = () => {
 		if (!deleteProps) return;
-		console.log("[TreasuryActionCell] Submitting delete action:", deleteProps.action, "method: DELETE");
+		console.log(
+			"[TreasuryActionCell] Submitting delete action:",
+			deleteProps.action,
+			"method: DELETE",
+		);
 		const data = { ...deleteProps.hiddenFields };
 		deleteFetcher.submit(data, {
 			method: "DELETE",

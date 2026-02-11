@@ -1,22 +1,26 @@
 /**
  * Transaction Analyzer
  * Priority Level 3 (Low) - Mechanical proof of payment
- * 
+ *
  * Analyzes transactions to suggest:
  * 1. Budget linkage (match category/description to budgets)
  * 2. Inventory items (if category suggests inventory)
- * 
+ *
  * AI Enrichment:
  * - Suggests budget match
  * - Limited suggestions as transactions are usually linked FROM other entities
  */
 
-import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { Transaction } from "~/db/schema";
-import type { EntityAnalyzer, AnalysisResult, EntitySuggestion } from "../entity-relationship-analyzer.server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
+import type { DatabaseAdapter } from "~/db/adapters/types";
+import type { Transaction } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import type {
+	AnalysisResult,
+	EntityAnalyzer,
+	EntitySuggestion,
+} from "../entity-relationship-analyzer.server";
 
 interface TransactionAnalysis {
 	suggestedBudgetId?: string;
@@ -26,7 +30,10 @@ interface TransactionAnalysis {
 }
 
 class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
-	async analyze(transaction: Transaction, db: DatabaseAdapter): Promise<AnalysisResult> {
+	async analyze(
+		transaction: Transaction,
+		db: DatabaseAdapter,
+	): Promise<AnalysisResult> {
 		const suggestions: EntitySuggestion[] = [];
 		const errors: string[] = [];
 
@@ -41,13 +48,15 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 			// Transactions are typically consumers, not providers
 			// They usually get linked FROM receipts or reimbursements
 			// So we don't suggest creating new entities here
-			
+
 			// Budget linkage suggestion is included in enrichment
 			return {
 				suggestions, // Empty - transactions don't generate other entities
 				enrichment: {
 					category: transaction.category || undefined,
-					tags: aiAnalysis?.suggestedBudgetId ? [`budget:${aiAnalysis.suggestedBudgetId}`] : [],
+					tags: aiAnalysis?.suggestedBudgetId
+						? [`budget:${aiAnalysis.suggestedBudgetId}`]
+						: [],
 				},
 				errors: errors.length > 0 ? errors : undefined,
 			};
@@ -62,11 +71,13 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 
 	private async analyzeWithAI(
 		transaction: Transaction,
-		budgets: Array<{ id: string; name: string; description: string | null; }>,
-		db: DatabaseAdapter
+		budgets: Array<{ id: string; name: string; description: string | null }>,
+		db: DatabaseAdapter,
 	): Promise<TransactionAnalysis | null> {
 		try {
-			const apiKeySetting = await db.getAppSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+			const apiKeySetting = await db.getAppSetting(
+				SETTINGS_KEYS.OPENROUTER_API_KEY,
+			);
 			if (!apiKeySetting?.value) {
 				console.warn("[TransactionAnalyzer] OpenRouter API key not configured");
 				return null;
@@ -76,7 +87,10 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 
 			// Build budget list for matching
 			const budgetList = budgets
-				.map(b => `- "${b.name}" (ID: ${b.id})${b.description ? ` - ${b.description}` : ""}`)
+				.map(
+					(b) =>
+						`- "${b.name}" (ID: ${b.id})${b.description ? ` - ${b.description}` : ""}`,
+				)
 				.join("\n");
 
 			const prompt = `Analyze this transaction for budget matching:

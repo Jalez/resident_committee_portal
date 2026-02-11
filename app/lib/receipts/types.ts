@@ -37,9 +37,7 @@ export interface FileMetadata {
 
 export interface ReceiptStorageAdapter {
 	listReceiptsByYear: () => Promise<ReceiptsByYear[]>;
-	getReceiptContentBase64: (
-		receiptUrl: string,
-	) => Promise<string | null>;
+	getReceiptContentBase64: (receiptUrl: string) => Promise<string | null>;
 	uploadFile: (
 		pathname: string,
 		file: File | Buffer,

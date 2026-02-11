@@ -42,13 +42,16 @@ export function BudgetLinkSection({
 					className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 					value={selectedBudgetId || "none"}
 					onChange={(event) =>
-						onSelectionChange(event.target.value === "none" ? "" : event.target.value)
+						onSelectionChange(
+							event.target.value === "none" ? "" : event.target.value,
+						)
 					}
 				>
 					<option value="none">{t("treasury.new.no_budget")}</option>
 					{openBudgets.map((budget) => (
 						<option key={budget.id} value={budget.id}>
-							{budget.name} - {t("treasury.budgets.remaining")}: {budget.remainingAmount.toFixed(2).replace(".", ",")} €
+							{budget.name} - {t("treasury.budgets.remaining")}:{" "}
+							{budget.remainingAmount.toFixed(2).replace(".", ",")} €
 						</option>
 					))}
 				</select>

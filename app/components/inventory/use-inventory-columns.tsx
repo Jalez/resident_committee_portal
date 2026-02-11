@@ -35,11 +35,23 @@ interface UseInventoryColumnsProps {
 	onSelectTransactionForItem?: (
 		item: InventoryItem,
 		quantity: number,
-		transaction: { id: string; description: string; date: Date; amount: string; category: string | null },
+		transaction: {
+			id: string;
+			description: string;
+			date: Date;
+			amount: string;
+			category: string | null;
+		},
 	) => void;
 	onCreateNewTransaction?: (item: InventoryItem, quantity: number) => void;
 	// Inventory-category transactions for the "connect to existing" submenu
-	inventoryTransactions?: { id: string; description: string; date: Date; amount: string; category: string | null }[];
+	inventoryTransactions?: {
+		id: string;
+		description: string;
+		date: Date;
+		amount: string;
+		category: string | null;
+	}[];
 	// Props for combobox options
 	uniqueLocations: string[];
 	uniqueCategories: string[];
@@ -83,7 +95,9 @@ export function useInventoryColumns({
 	transactionLinksMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
 	const { t, i18n } = useTranslation();
-	const inventoryOnly = inventoryTransactions.filter((tr) => tr.category === "inventory");
+	const inventoryOnly = inventoryTransactions.filter(
+		(tr) => tr.category === "inventory",
+	);
 
 	// Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
 	const columns: ColumnDef<InventoryItem>[] = [];
@@ -206,9 +220,7 @@ export function useInventoryColumns({
 				isStaff && row.original.status === "active" ? (
 					<EditableCell
 						value={String(row.getValue("quantity") ?? "")}
-						onSave={(v) =>
-							onInlineEdit(row.original.id, "quantity", v || "1")
-						}
+						onSave={(v) => onInlineEdit(row.original.id, "quantity", v || "1")}
 						type="number"
 						min="1"
 						className="w-20 text-center"
@@ -360,7 +372,11 @@ export function useInventoryColumns({
 											</span>
 										</button>
 									</DropdownMenuTrigger>
-									<DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()} className="max-h-[min(400px,60vh)] overflow-y-auto">
+									<DropdownMenuContent
+										align="start"
+										onClick={(e) => e.stopPropagation()}
+										className="max-h-[min(400px,60vh)] overflow-y-auto"
+									>
 										{onSelectTransactionForItem && (
 											<DropdownMenuSub>
 												<DropdownMenuSubTrigger
@@ -372,7 +388,9 @@ export function useInventoryColumns({
 												<DropdownMenuSubContent className="max-h-[min(320px,50vh)] overflow-y-auto min-w-[220px]">
 													{inventoryOnly.length === 0 ? (
 														<div className="px-2 py-3 text-sm text-muted-foreground">
-															{t("inventory.modals.transaction_selector.no_suitable")}
+															{t(
+																"inventory.modals.transaction_selector.no_suitable",
+															)}
 														</div>
 													) : (
 														inventoryOnly.map((transaction) => (
@@ -380,7 +398,11 @@ export function useInventoryColumns({
 																key={transaction.id}
 																onClick={(e) => {
 																	e.stopPropagation();
-																	onSelectTransactionForItem(item, unknownQuantity, transaction);
+																	onSelectTransactionForItem(
+																		item,
+																		unknownQuantity,
+																		transaction,
+																	);
 																}}
 																className="flex flex-col items-stretch gap-0.5 py-2"
 															>
@@ -389,10 +411,15 @@ export function useInventoryColumns({
 																</span>
 																<span className="text-xs text-muted-foreground flex justify-between">
 																	<span>
-																		{new Date(transaction.date).toLocaleDateString(i18n.language)}
+																		{new Date(
+																			transaction.date,
+																		).toLocaleDateString(i18n.language)}
 																	</span>
 																	<span className="font-mono">
-																		{parseFloat(transaction.amount).toFixed(2).replace(".", ",")} €
+																		{parseFloat(transaction.amount)
+																			.toFixed(2)
+																			.replace(".", ",")}{" "}
+																		€
 																	</span>
 																</span>
 															</DropdownMenuItem>

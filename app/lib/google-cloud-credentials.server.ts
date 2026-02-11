@@ -10,7 +10,7 @@ export function getGoogleCloudCredentials() {
 
 	if (!serviceAccountEmail || !privateKey) {
 		throw new Error(
-			"GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables are required"
+			"GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables are required",
 		);
 	}
 
@@ -20,7 +20,7 @@ export function getGoogleCloudCredentials() {
 
 	if (!projectId) {
 		throw new Error(
-			"Could not extract project ID from GOOGLE_SERVICE_ACCOUNT_EMAIL. Expected format: name@project-id.iam.gserviceaccount.com"
+			"Could not extract project ID from GOOGLE_SERVICE_ACCOUNT_EMAIL. Expected format: name@project-id.iam.gserviceaccount.com",
 		);
 	}
 

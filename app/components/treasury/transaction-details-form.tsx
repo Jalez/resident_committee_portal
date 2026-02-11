@@ -123,9 +123,7 @@ export function TransactionDetailsForm({
 							disabled={disabled}
 						>
 							<SelectTrigger>
-								<SelectValue
-									placeholder={t("common.placeholders.select")}
-								/>
+								<SelectValue placeholder={t("common.placeholders.select")} />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="income">
@@ -144,7 +142,9 @@ export function TransactionDetailsForm({
 						</Select>
 					</div>
 				)}
-				<div className={`space-y-2 ${!showTypeSelector ? "md:col-span-2" : ""}`}>
+				<div
+					className={`space-y-2 ${!showTypeSelector ? "md:col-span-2" : ""}`}
+				>
 					<Label htmlFor="amount">{t("common.fields.amount")} *</Label>
 					<Input
 						id="amount"
@@ -161,9 +161,7 @@ export function TransactionDetailsForm({
 			</div>
 
 			<div className="space-y-2">
-				<Label htmlFor="description">
-					{t("common.fields.description")} *
-				</Label>
+				<Label htmlFor="description">{t("common.fields.description")} *</Label>
 				<Input
 					id="description"
 					name="description"
@@ -184,9 +182,7 @@ export function TransactionDetailsForm({
 						required
 					>
 						<SelectTrigger>
-							<SelectValue
-								placeholder={t("common.placeholders.select")}
-							/>
+							<SelectValue placeholder={t("common.placeholders.select")} />
 						</SelectTrigger>
 						<SelectContent>
 							{categoryOptions.map((opt) => (
@@ -221,9 +217,7 @@ export function TransactionDetailsForm({
 						disabled={disabled}
 					>
 						<SelectTrigger>
-							<SelectValue
-								placeholder={t("common.placeholders.select")}
-							/>
+							<SelectValue placeholder={t("common.placeholders.select")} />
 						</SelectTrigger>
 						<SelectContent>
 							{yearOptions.map((y) => (

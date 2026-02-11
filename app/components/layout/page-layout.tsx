@@ -23,7 +23,10 @@ export function ContentArea({ children, className }: ContentAreaProps) {
 
 	return (
 		<div
-			className={cn("overflow-y-auto overflow-x-hidden flex-1 w-full", className)}
+			className={cn(
+				"overflow-y-auto overflow-x-hidden flex-1 w-full",
+				className,
+			)}
 			style={{
 				height: isInfoReel ? CONTENT_AREA_HEIGHT : undefined,
 				width: isInfoReel ? CONTENT_AREA_WIDTH : undefined,
@@ -183,7 +186,9 @@ export function SplitLayout({
 					</div>
 				)}
 				{/* Mobile: just show footer if present */}
-				{footer && <div className="md:hidden mb-4 flex justify-end">{footer}</div>}
+				{footer && (
+					<div className="md:hidden mb-4 flex justify-end">{footer}</div>
+				)}
 				{/* If no header but has footer, show footer separately */}
 				{!header && footer && <div className="mb-8">{footer}</div>}
 				{children}

@@ -1,17 +1,21 @@
 import type {
 	AppSetting,
 	CommitteeMailMessage,
-	MailDraft,
+	EntityRelationship,
 	Faq,
 	FundBudget,
 	InventoryItem,
+	MailDraft,
 	Message,
+	Minute,
 	NewCommitteeMailMessage,
-	NewMailDraft,
+	NewEntityRelationship,
 	NewFaq,
 	NewFundBudget,
 	NewInventoryItem,
+	NewMailDraft,
 	NewMessage,
+	NewMinute,
 	NewNews,
 	NewPoll,
 	NewPurchase,
@@ -20,24 +24,20 @@ import type {
 	NewRole,
 	NewSocialLink,
 	NewSubmission,
+	News,
 	NewTransaction,
 	NewUser,
-	News,
 	Poll,
 	Purchase,
 	Receipt,
 	ReceiptContent,
+	RelationshipEntityType,
 	Role,
 	SocialLink,
 	Submission,
 	SubmissionStatus,
 	Transaction,
 	User,
-	Minute,
-	NewMinute,
-	EntityRelationship,
-	NewEntityRelationship,
-	RelationshipEntityType,
 } from "../schema";
 
 /**
@@ -55,9 +55,7 @@ export interface DatabaseAdapter {
 	): Promise<User | null>;
 	deleteUser(id: string): Promise<boolean>;
 	getAllUsers(limit?: number, offset?: number): Promise<User[]>;
-	upsertUser(
-		user: Omit<NewUser, "roleId">,
-	): Promise<User>;
+	upsertUser(user: Omit<NewUser, "roleId">): Promise<User>;
 
 	// ==================== RBAC Methods ====================
 	// Roles
@@ -103,7 +101,6 @@ export interface DatabaseAdapter {
 		notes?: string,
 	): Promise<InventoryItem | null>;
 	markInventoryItemAsLegacy(id: string): Promise<InventoryItem | null>;
-
 
 	// ==================== Purchase Methods ====================
 	getPurchases(): Promise<Purchase[]>;
@@ -164,20 +161,18 @@ export interface DatabaseAdapter {
 	getFaqs(): Promise<Faq[]>;
 	getFaqById(id: string): Promise<Faq | null>;
 	createFaq(item: NewFaq): Promise<Faq>;
-	updateFaq(
-		id: string,
-		data: Partial<Omit<NewFaq, "id">>,
-	): Promise<Faq | null>;
+	updateFaq(id: string, data: Partial<Omit<NewFaq, "id">>): Promise<Faq | null>;
 	deleteFaq(id: string): Promise<boolean>;
 
 	// ==================== Minute Methods ====================
 	getMinutes(year?: number): Promise<Minute[]>;
 	getMinuteById(id: string): Promise<Minute | null>;
 	createMinute(minute: NewMinute): Promise<Minute>;
-	updateMinute(id: string, data: Partial<Omit<NewMinute, "id">>): Promise<Minute | null>;
+	updateMinute(
+		id: string,
+		data: Partial<Omit<NewMinute, "id">>,
+	): Promise<Minute | null>;
 	deleteMinute(id: string): Promise<boolean>;
-
-
 
 	// ==================== App Settings Methods ====================
 	getSetting(key: string): Promise<string | null>;
@@ -198,13 +193,9 @@ export interface DatabaseAdapter {
 		limit?: number,
 		offset?: number,
 	): Promise<CommitteeMailMessage[]>;
-	getCommitteeMailMessageById(
-		id: string,
-	): Promise<CommitteeMailMessage | null>;
+	getCommitteeMailMessageById(id: string): Promise<CommitteeMailMessage | null>;
 	/** Check if a message with this message_id (inbox) already exists */
-	committeeMailMessageExistsByMessageId(
-		messageId: string,
-	): Promise<boolean>;
+	committeeMailMessageExistsByMessageId(messageId: string): Promise<boolean>;
 	deleteCommitteeMailMessage(id: string): Promise<boolean>;
 	/** Get all messages in a thread, sorted chronologically */
 	getCommitteeMailMessagesByThreadId(
@@ -309,9 +300,13 @@ export interface DatabaseAdapter {
 
 	// ==================== Receipt Content Methods (OCR) ====================
 	/** Get OCR/AI content for a receipt */
-	getReceiptContentByReceiptId(receiptId: string): Promise<ReceiptContent | null>;
+	getReceiptContentByReceiptId(
+		receiptId: string,
+	): Promise<ReceiptContent | null>;
 	/** Get OCR/AI content for multiple receipts */
-	getReceiptContentsByReceiptIds(receiptIds: string[]): Promise<ReceiptContent[]>;
+	getReceiptContentsByReceiptIds(
+		receiptIds: string[],
+	): Promise<ReceiptContent[]>;
 	/** Save OCR/AI content */
 	createReceiptContent(content: NewReceiptContent): Promise<ReceiptContent>;
 	/** Update receipt content (for processing status) */

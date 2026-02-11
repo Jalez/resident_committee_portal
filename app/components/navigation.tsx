@@ -1,7 +1,13 @@
 import { XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useFetcher, useRevalidator } from "react-router";
+import {
+	Link,
+	useFetcher,
+	useLocation,
+	useRevalidator,
+	useRouteLoaderData,
+} from "react-router";
 import { LanguageSwitcher } from "~/components/language-switcher";
 import { Button } from "~/components/ui/button";
 import {
@@ -23,7 +29,6 @@ import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
 import { NAV_ITEMS } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
-import { useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "~/root";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
@@ -36,7 +41,12 @@ export function Navigation({ variant }: NavigationProps) {
 	const location = useLocation();
 	const pathname = location.pathname;
 	const { isInfoReel, fillProgress, opacity } = useInfoReel();
-	const { primaryLanguage, secondaryLanguage, supportedLanguages, languageNames } = useLanguage();
+	const {
+		primaryLanguage,
+		secondaryLanguage,
+		supportedLanguages,
+		languageNames,
+	} = useLanguage();
 	const { user, hasPermission, hasAnyPermission } = useUser();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [mobileMessagesOpen, setMobileMessagesOpen] = useState(false);
@@ -54,7 +64,8 @@ export function Navigation({ variant }: NavigationProps) {
 
 	useEffect(() => {
 		try {
-			const isCollapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+			const isCollapsed =
+				localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
 			if (isCollapsed) {
 				setSidebarCollapsedState(true);
 			}
@@ -98,8 +109,6 @@ export function Navigation({ variant }: NavigationProps) {
 		},
 		[revalidator],
 	);
-
-
 
 	// Check if profile menu should be shown (user is logged in, not guest)
 	const showProfileMenu = user && user.userId !== "guest";
@@ -173,8 +182,8 @@ export function Navigation({ variant }: NavigationProps) {
 				style={
 					isAnimating
 						? {
-							color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-						}
+								color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+							}
 						: undefined
 				}
 			>
@@ -222,13 +231,17 @@ export function Navigation({ variant }: NavigationProps) {
 				className={cn(
 					"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
-					isActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
+					isActive
+						? "text-primary bg-primary/10"
+						: "text-gray-500 dark:text-gray-400",
 					!showLabels && "justify-center px-3",
 					destructive &&
-					"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
+						"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
 				)}
 			>
-				<span className="material-symbols-outlined text-2xl shrink-0">{icon}</span>
+				<span className="material-symbols-outlined text-2xl shrink-0">
+					{icon}
+				</span>
 				{showLabels && <span className="text-sm font-bold">{label}</span>}
 			</Link>
 		);
@@ -254,14 +267,18 @@ export function Navigation({ variant }: NavigationProps) {
 			if (childPath === "/mail?compose=new")
 				return pathname === "/mail" && !!searchParams.get("compose");
 			if (childPath === "/mail")
-				return pathname === "/mail" && searchParams.get("direction") !== "sent" && !searchParams.get("compose");
+				return (
+					pathname === "/mail" &&
+					searchParams.get("direction") !== "sent" &&
+					!searchParams.get("compose")
+				);
 			return false;
 		}
 		// Index/overview child (same path as parent): only active on exact match
 		if (childPath === parentPath) {
 			return pathname === childPath;
 		}
-		return pathname === childPath || pathname.startsWith(childPath + "/");
+		return pathname === childPath || pathname.startsWith(`${childPath}/`);
 	};
 
 	// Shared menu content used by both mobile Sheet and desktop sidebar
@@ -295,7 +312,9 @@ export function Navigation({ variant }: NavigationProps) {
 							<Tooltip key={item.path}>
 								<TooltipTrigger asChild>{link}</TooltipTrigger>
 								<TooltipContent side="right">
-									{isInfoReel ? t(item.i18nKey, { lng: primaryLanguage }) : t(item.i18nKey)}
+									{isInfoReel
+										? t(item.i18nKey, { lng: primaryLanguage })
+										: t(item.i18nKey)}
 								</TooltipContent>
 							</Tooltip>
 						);
@@ -314,14 +333,18 @@ export function Navigation({ variant }: NavigationProps) {
 								className={cn(
 									"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
 									"hover:bg-primary/10 hover:text-primary",
-									isParentActive ? "text-primary bg-primary/10" : "text-gray-500 dark:text-gray-400",
+									isParentActive
+										? "text-primary bg-primary/10"
+										: "text-gray-500 dark:text-gray-400",
 								)}
 							>
 								<span className="material-symbols-outlined text-2xl shrink-0">
 									{item.icon}
 								</span>
 								<span className="text-sm font-bold flex-1">
-									{isInfoReel ? t(item.i18nKey, { lng: primaryLanguage }) : t(item.i18nKey)}
+									{isInfoReel
+										? t(item.i18nKey, { lng: primaryLanguage })
+										: t(item.i18nKey)}
 								</span>
 								<span
 									className={cn(
@@ -335,7 +358,10 @@ export function Navigation({ variant }: NavigationProps) {
 							{isOpen && (
 								<div className="pl-4 space-y-0.5 mt-0.5">
 									{item.children
-										.filter((child) => !child.permission || hasPermission(child.permission))
+										.filter(
+											(child) =>
+												!child.permission || hasPermission(child.permission),
+										)
 										.map((child) => (
 											<Link
 												key={child.path}
@@ -352,9 +378,7 @@ export function Navigation({ variant }: NavigationProps) {
 												<span className="material-symbols-outlined text-xl shrink-0">
 													{child.icon}
 												</span>
-												<span className="font-medium">
-													{t(child.i18nKey)}
-												</span>
+												<span className="font-medium">{t(child.i18nKey)}</span>
 											</Link>
 										))}
 								</div>
@@ -379,7 +403,12 @@ export function Navigation({ variant }: NavigationProps) {
 			})}
 
 			{showSettingsMenu && (
-				<div className={cn("mt-4 pt-4 border-t border-border", !showLabels && "mt-2 pt-2")}>
+				<div
+					className={cn(
+						"mt-4 pt-4 border-t border-border",
+						!showLabels && "mt-2 pt-2",
+					)}
+				>
 					{showLabels && (
 						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
 							{t("nav.settings")}
@@ -471,7 +500,12 @@ export function Navigation({ variant }: NavigationProps) {
 			)}
 
 			{showProfileMenu && !isInfoReel && (
-				<div className={cn("mt-4 pt-4 border-t border-border", !showLabels && "mt-2 pt-2")}>
+				<div
+					className={cn(
+						"mt-4 pt-4 border-t border-border",
+						!showLabels && "mt-2 pt-2",
+					)}
+				>
 					{showLabels && (
 						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
 							{t("nav.profile")}
@@ -499,8 +533,12 @@ export function Navigation({ variant }: NavigationProps) {
 											: "text-gray-500 dark:text-gray-400",
 									)}
 								>
-									<span className="material-symbols-outlined text-2xl">mail</span>
-									<span className="text-sm font-bold flex-1">{t("nav.messages")}</span>
+									<span className="material-symbols-outlined text-2xl">
+										mail
+									</span>
+									<span className="text-sm font-bold flex-1">
+										{t("nav.messages")}
+									</span>
 									{unreadMessageCount > 0 && (
 										<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
 											{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
@@ -599,8 +637,12 @@ export function Navigation({ variant }: NavigationProps) {
 										"text-gray-500 dark:text-gray-400",
 									)}
 								>
-									<span className="material-symbols-outlined text-2xl">translate</span>
-									<span className="text-sm font-bold flex-1">{t("lang.label")}</span>
+									<span className="material-symbols-outlined text-2xl">
+										translate
+									</span>
+									<span className="text-sm font-bold flex-1">
+										{t("lang.label")}
+									</span>
 									<span
 										className={cn(
 											"material-symbols-outlined text-lg transition-transform",
@@ -629,7 +671,8 @@ export function Navigation({ variant }: NavigationProps) {
 													}}
 													className={cn(
 														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-														i18n.language === lang && "bg-primary/10 text-primary",
+														i18n.language === lang &&
+															"bg-primary/10 text-primary",
 													)}
 												>
 													<span>{languageNames[lang] || lang}</span>
@@ -658,7 +701,8 @@ export function Navigation({ variant }: NavigationProps) {
 													}}
 													className={cn(
 														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-														secondaryLanguage === lang && "bg-primary/10 text-primary",
+														secondaryLanguage === lang &&
+															"bg-primary/10 text-primary",
 													)}
 												>
 													<span>{languageNames[lang] || lang}</span>
@@ -681,7 +725,8 @@ export function Navigation({ variant }: NavigationProps) {
 												}}
 												className={cn(
 													"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-													secondaryLanguage === "none" && "bg-primary/10 text-primary",
+													secondaryLanguage === "none" &&
+														"bg-primary/10 text-primary",
 												)}
 											>
 												<span>{t("common.fields.none")}</span>

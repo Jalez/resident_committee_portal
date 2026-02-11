@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -8,22 +8,28 @@ import {
 	budgetTransactions,
 	type CommitteeMailMessage,
 	committeeMailMessages,
+	type EntityRelationship,
+	entityRelationships,
 	type Faq,
-	faq,
 	type FundBudget,
+	faq,
 	fundBudgets,
 	type InventoryItem,
 	inventoryItems,
 	type MailDraft,
-	mailDrafts,
 	type Message,
+	type Minute,
+	mailDrafts,
 	messages,
+	minutes,
 	type NewCommitteeMailMessage,
-	type NewMailDraft,
+	type NewEntityRelationship,
 	type NewFaq,
 	type NewFundBudget,
 	type NewInventoryItem,
+	type NewMailDraft,
 	type NewMessage,
+	type NewMinute,
 	type NewNews,
 	type NewPoll,
 	type NewPurchase,
@@ -32,19 +38,20 @@ import {
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
+	type News,
 	type NewTransaction,
 	type NewUser,
-	type News,
 	news,
 	type Poll,
-	polls,
 	type Purchase,
+	polls,
 	purchases,
 	type Receipt,
 	type ReceiptContent,
-	receipts,
-	receiptContents,
+	type RelationshipEntityType,
 	type Role,
+	receiptContents,
+	receipts,
 	roles,
 	type SocialLink,
 	type Submission,
@@ -56,13 +63,6 @@ import {
 	type User,
 	userRoles,
 	users,
-	type Minute,
-	minutes,
-	type NewMinute,
-	type EntityRelationship,
-	entityRelationships,
-	type NewEntityRelationship,
-	type RelationshipEntityType,
 } from "../schema";
 import type { DatabaseAdapter } from "./types";
 
@@ -134,9 +134,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.offset(offset);
 	}
 
-	async upsertUser(
-		user: Omit<NewUser, "roleId">,
-	): Promise<User> {
+	async upsertUser(user: Omit<NewUser, "roleId">): Promise<User> {
 		const existing = await this.findUserByEmail(user.email);
 		if (existing) {
 			const updated = await this.updateUser(existing.id, {
@@ -218,7 +216,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 			// Remove the role and assign Resident role instead
 			for (const user of usersWithRole) {
 				const currentRoleIds = await this.getUserRoleIds(user.id);
-				const newRoleIds = currentRoleIds.filter(rid => rid !== id);
+				const newRoleIds = currentRoleIds.filter((rid) => rid !== id);
 				// If user has no roles left, assign Resident
 				if (newRoleIds.length === 0) {
 					await this.setUserRoles(user.id, [residentRole.id]);
@@ -254,7 +252,8 @@ export class PostgresAdapter implements DatabaseAdapter {
 		if (!user) return null;
 
 		const roleIds = await this.getUserRoleIds(userId);
-		const firstRole = roleIds.length > 0 ? await this.getRoleById(roleIds[0]) : null;
+		const firstRole =
+			roleIds.length > 0 ? await this.getRoleById(roleIds[0]) : null;
 		const permissions = await this.getUserPermissions(userId);
 		return {
 			...user,
@@ -271,9 +270,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return rows.map((r) => r.roleId);
 	}
 
-	async getAllUserRoles(): Promise<
-		{ userId: string; roleId: string }[]
-	> {
+	async getAllUserRoles(): Promise<{ userId: string; roleId: string }[]> {
 		const rows = await this.db
 			.select({
 				userId: userRoles.userId,
@@ -284,9 +281,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async setUserRoles(userId: string, roleIds: string[]): Promise<void> {
-		await this.db
-			.delete(userRoles)
-			.where(eq(userRoles.userId, userId));
+		await this.db.delete(userRoles).where(eq(userRoles.userId, userId));
 
 		// If no roles provided, assign default "Resident" role to prevent users from having no roles
 		let finalRoleIds = roleIds;
@@ -300,19 +295,16 @@ export class PostgresAdapter implements DatabaseAdapter {
 			finalRoleIds = [residentRole.id];
 		}
 
-		await this.db.insert(userRoles).values(
-			finalRoleIds.map((roleId) => ({ userId, roleId })),
-		);
+		await this.db
+			.insert(userRoles)
+			.values(finalRoleIds.map((roleId) => ({ userId, roleId })));
 	}
 
 	async getUsersByRoleId(roleId: string): Promise<User[]> {
 		const rows = await this.db
 			.select({ user: users })
 			.from(users)
-			.innerJoin(
-				userRoles,
-				eq(users.id, userRoles.userId),
-			)
+			.innerJoin(userRoles, eq(users.id, userRoles.userId))
 			.where(eq(userRoles.roleId, roleId));
 		return rows.map((r) => r.user);
 	}
@@ -410,7 +402,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
-// ==================== Purchase Methods ====================
+	// ==================== Purchase Methods ====================
 	async getPurchases(): Promise<Purchase[]> {
 		return this.db.select().from(purchases);
 	}
@@ -432,8 +424,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.from(purchases)
 			.where(eq(purchases.inventoryItemId, inventoryItemId));
 	}
-
-
 
 	async createPurchase(purchase: NewPurchase): Promise<Purchase> {
 		const result = await this.db.insert(purchases).values(purchase).returning();
@@ -555,8 +545,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
-
-
 	async deleteSubmission(id: string): Promise<boolean> {
 		const result = await this.db
 			.delete(submissions)
@@ -674,10 +662,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	// ==================== News Methods ====================
 	async getNews(): Promise<News[]> {
-		return this.db
-			.select()
-			.from(news)
-			.orderBy(desc(news.createdAt));
+		return this.db.select().from(news).orderBy(desc(news.createdAt));
 	}
 
 	async getNewsById(id: string): Promise<News | null> {
@@ -749,10 +734,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deleteFaq(id: string): Promise<boolean> {
-		const result = await this.db
-			.delete(faq)
-			.where(eq(faq.id, id))
-			.returning();
+		const result = await this.db.delete(faq).where(eq(faq.id, id)).returning();
 		return result.length > 0;
 	}
 
@@ -925,10 +907,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	// ==================== Mail Drafts Methods ====================
 	async insertMailDraft(draft: NewMailDraft): Promise<MailDraft> {
-		const result = await this.db
-			.insert(mailDrafts)
-			.values(draft)
-			.returning();
+		const result = await this.db.insert(mailDrafts).values(draft).returning();
 		return result[0];
 	}
 
@@ -970,10 +949,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	// ==================== Message Methods ====================
 	async createMessage(message: NewMessage): Promise<Message> {
-		const result = await this.db
-			.insert(messages)
-			.values(message)
-			.returning();
+		const result = await this.db.insert(messages).values(message).returning();
 		return result[0];
 	}
 
@@ -1062,22 +1038,12 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return this.db
 			.select()
 			.from(fundBudgets)
-			.where(
-				and(
-					eq(fundBudgets.year, year),
-					eq(fundBudgets.status, "open"),
-				),
-			)
+			.where(and(eq(fundBudgets.year, year), eq(fundBudgets.status, "open")))
 			.orderBy(desc(fundBudgets.createdAt));
 	}
 
-	async createFundBudget(
-		budget: NewFundBudget,
-	): Promise<FundBudget> {
-		const result = await this.db
-			.insert(fundBudgets)
-			.values(budget)
-			.returning();
+	async createFundBudget(budget: NewFundBudget): Promise<FundBudget> {
+		const result = await this.db.insert(fundBudgets).values(budget).returning();
 		return result[0];
 	}
 
@@ -1235,7 +1201,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.filter((t) => t.type === "income")
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const expenses = validTransactions
-			.filter((t) => t.type === "expense" && !budgetLinkedTransactionIds.has(t.id))
+			.filter(
+				(t) => t.type === "expense" && !budgetLinkedTransactionIds.has(t.id),
+			)
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const balance = income - expenses;
 
@@ -1336,10 +1304,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	// ==================== Receipt Methods ====================
 	async getReceipts(): Promise<Receipt[]> {
-		return this.db
-			.select()
-			.from(receipts)
-			.orderBy(desc(receipts.createdAt));
+		return this.db.select().from(receipts).orderBy(desc(receipts.createdAt));
 	}
 
 	async getReceiptById(id: string): Promise<Receipt | null> {
@@ -1352,10 +1317,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async createReceipt(receipt: NewReceipt): Promise<Receipt> {
-		const result = await this.db
-			.insert(receipts)
-			.values(receipt)
-			.returning();
+		const result = await this.db.insert(receipts).values(receipt).returning();
 		return result[0];
 	}
 
@@ -1531,37 +1493,37 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 	async getOrphanedDrafts(
 		type: RelationshipEntityType,
-		olderThanMinutes: number,
+		_olderThanMinutes: number,
 	): Promise<string[]> {
 		// Calculate cutoff date
 		// const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
 
 		// Helper to get table and status field based on type
-		let table: any;
+		let _table: any;
 		switch (type) {
 			case "receipt":
-				table = receipts;
+				_table = receipts;
 				break;
 			case "transaction":
-				table = transactions;
+				_table = transactions;
 				break;
 			case "reimbursement":
-				table = purchases;
+				_table = purchases;
 				break;
 			case "minute":
-				table = minutes;
+				_table = minutes;
 				break;
 			case "budget":
-				table = fundBudgets;
+				_table = fundBudgets;
 				break;
 			case "inventory":
-				table = inventoryItems;
+				_table = inventoryItems;
 				break;
 			case "news":
-				table = news; // News doesn't have status yet, assume all are valid? Or drafts not supported?
+				_table = news; // News doesn't have status yet, assume all are valid? Or drafts not supported?
 				return []; // Skip news for now if no draft status
 			case "faq":
-				table = faq; // FAQ doesn't have status
+				_table = faq; // FAQ doesn't have status
 				return [];
 			default:
 				return [];

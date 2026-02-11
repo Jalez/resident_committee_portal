@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Form, useFetcher } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useFetcher } from "react-router";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -9,7 +10,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
-import { toast } from "sonner";
 
 interface DraftCleanupSettingsProps {
 	className?: string;
@@ -101,10 +101,10 @@ export function DraftCleanupSettings({ className }: DraftCleanupSettingsProps) {
 					{isRunning
 						? t("relationships.draft.cleanup_running", {
 								defaultValue: "Cleaning...",
-						  })
+							})
 						: t("relationships.draft.cleanup", {
 								defaultValue: "Clean Up Drafts",
-						  })}
+							})}
 				</Button>
 				<p className="mt-2 text-sm text-muted-foreground">
 					{t("settings.draft_cleanup.warning", {

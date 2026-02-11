@@ -138,7 +138,10 @@ Example response format:
 		});
 
 		// Clean up response to ensure valid JSON
-		const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+		const jsonStr = text
+			.replace(/```json/g, "")
+			.replace(/```/g, "")
+			.trim();
 		const result = JSON.parse(jsonStr);
 
 		if (Array.isArray(result)) {
@@ -150,9 +153,7 @@ Example response format:
 		throw new Error("Invalid AI response format");
 	} catch (error) {
 		console.error("[OpenRouter] AI analysis error:", error);
-		throw error instanceof Error
-			? error
-			: new Error("AI analysis failed");
+		throw error instanceof Error ? error : new Error("AI analysis failed");
 	}
 }
 

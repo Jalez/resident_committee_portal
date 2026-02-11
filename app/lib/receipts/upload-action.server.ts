@@ -1,11 +1,13 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getDatabase } from "~/db";
-import { requireAnyPermission } from "~/lib/auth.server";
-import { RECEIPT_ALLOWED_TYPES, RECEIPT_ALLOWED_MIME_TYPES } from "~/lib/constants";
+import { getAuthenticatedUser, requireAnyPermission } from "~/lib/auth.server";
+import {
+	RECEIPT_ALLOWED_MIME_TYPES,
+	RECEIPT_ALLOWED_TYPES,
+} from "~/lib/constants";
+import { processReceiptOCR } from "~/lib/receipt-ocr.server";
 import { getReceiptStorage } from "~/lib/receipts";
 import { buildReceiptPath, getReceiptsPrefix } from "~/lib/receipts/utils";
-import { processReceiptOCR } from "~/lib/receipt-ocr.server";
-import { getAuthenticatedUser } from "~/lib/auth.server";
 
 function isSafePathname(pathname: string): boolean {
 	const prefix = getReceiptsPrefix();
@@ -25,7 +27,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		await requireAnyPermission(
 			request,
-			["treasury:receipts:write", "treasury:reimbursements:write", "treasury:transactions:write", "inventory:write"],
+			[
+				"treasury:receipts:write",
+				"treasury:reimbursements:write",
+				"treasury:transactions:write",
+				"inventory:write",
+			],
 			getDatabase,
 		);
 
@@ -44,7 +51,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		// Validate file type
 		const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`;
-		if (!RECEIPT_ALLOWED_TYPES.includes(fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number])) {
+		if (
+			!RECEIPT_ALLOWED_TYPES.includes(
+				fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number],
+			)
+		) {
 			return new Response(
 				JSON.stringify({
 					error: `Invalid file type. Allowed types: ${RECEIPT_ALLOWED_TYPES.join(", ")}`,
@@ -71,7 +82,11 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 
 		const uploadYear = year || String(new Date().getFullYear());
-		const pathname = buildReceiptPath(uploadYear, file.name, description || "kuitti");
+		const pathname = buildReceiptPath(
+			uploadYear,
+			file.name,
+			description || "kuitti",
+		);
 
 		if (!isSafePathname(pathname)) {
 			return new Response(JSON.stringify({ error: "Invalid pathname" }), {
@@ -92,7 +107,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		// so we can store the OCR results (receipt_contents table needs a generic receiptId)
 		if (ocrEnabled) {
 			const db = getDatabase();
-			// We need the user ID for 'createdBy'. 
+			// We need the user ID for 'createdBy'.
 			// We already called requirePermission, but didn't get the user object.
 			// Let's fetch it again quickly or rely on the previous check's side effect if we refactored.
 			// Ideally requirePermission returns user, but requireAnyPermission might not?
@@ -112,12 +127,12 @@ export async function action({ request }: ActionFunctionArgs) {
 				});
 				receiptId = receipt.id;
 
-				// Trigger OCR (fire and forget to not block upload response too long? 
+				// Trigger OCR (fire and forget to not block upload response too long?
 				// Or await to ensure it's started? Let's await to catch immediate errors)
 				try {
-					// We don't await the full result processing if it takes too long, 
-					// but processReceiptOCR is async. 
-					// If we want the UI to show "Scanning...", we might want to return 
+					// We don't await the full result processing if it takes too long,
+					// but processReceiptOCR is async.
+					// If we want the UI to show "Scanning...", we might want to return
 					// something indicating OCR started.
 					await processReceiptOCR(result.url, receipt.id);
 				} catch (ocrError) {

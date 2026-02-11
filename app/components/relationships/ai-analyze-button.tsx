@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import type { RelationshipEntityType } from "~/db/schema";
@@ -52,7 +52,7 @@ export function AIAnalyzeButton({
 
 		setIsAnalyzing(true);
 		const toastId = toast.loading(
-			t("relationships.ai.analyzing", "Analyzing relationships...")
+			t("relationships.ai.analyzing", "Analyzing relationships..."),
 		);
 
 		try {
@@ -78,14 +78,14 @@ export function AIAnalyzeButton({
 					t(
 						"relationships.ai.success",
 						"Created {{count}} suggested relationships",
-						{ count: result.createdCount }
+						{ count: result.createdCount },
 					),
 					{
 						id: toastId,
 						description: result.created
 							.map((c: { name: string }) => `• ${c.name}`)
 							.join("\n"),
-					}
+					},
 				);
 
 				// Trigger page revalidation to show new draft entities
@@ -102,7 +102,7 @@ export function AIAnalyzeButton({
 							label: t("common.actions.retry", "Retry"),
 							onClick: () => handleAnalyze(),
 						},
-					}
+					},
 				);
 			}
 		} catch (error) {
@@ -111,13 +111,12 @@ export function AIAnalyzeButton({
 				t("relationships.ai.error", "Failed to analyze relationships"),
 				{
 					id: toastId,
-					description:
-						error instanceof Error ? error.message : String(error),
+					description: error instanceof Error ? error.message : String(error),
 					action: {
 						label: t("common.actions.retry", "Retry"),
 						onClick: () => handleAnalyze(),
 					},
-				}
+				},
 			);
 		} finally {
 			setIsAnalyzing(false);

@@ -82,7 +82,9 @@ export function FileUpload({
 				if (fileInputRef.current) {
 					fileInputRef.current.files = dataTransfer.files;
 					// Trigger change event
-					fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+					fileInputRef.current.dispatchEvent(
+						new Event("change", { bubbles: true }),
+					);
 				}
 			}
 		}

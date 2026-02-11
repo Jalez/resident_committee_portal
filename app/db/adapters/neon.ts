@@ -6,43 +6,50 @@ import {
 	appSettings,
 	type CommitteeMailMessage,
 	committeeMailMessages,
+	type EntityRelationship,
+	entityRelationships,
 	type Faq,
-	faq,
 	type FundBudget,
+	faq,
 	fundBudgets,
 	type InventoryItem,
 	inventoryItems,
 	type MailDraft,
-	mailDrafts,
 	type Message,
+	type Minute,
+	mailDrafts,
 	messages,
+	minutes,
 	type NewCommitteeMailMessage,
-	type NewMailDraft,
+	type NewEntityRelationship,
 	type NewFaq,
 	type NewFundBudget,
 	type NewInventoryItem,
+	type NewMailDraft,
 	type NewMessage,
+	type NewMinute,
 	type NewNews,
 	type NewPoll,
 	type NewPurchase,
 	type NewReceipt,
+	type NewReceiptContent,
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
+	type News,
 	type NewTransaction,
 	type NewUser,
-	type News,
 	news,
 	type Poll,
-	polls,
 	type Purchase,
+	polls,
 	purchases,
 	type Receipt,
-	receipts,
 	type ReceiptContent,
-	receiptContents,
-	type NewReceiptContent,
+	type RelationshipEntityType,
 	type Role,
+	receiptContents,
+	receipts,
 	roles,
 	type SocialLink,
 	type Submission,
@@ -54,13 +61,6 @@ import {
 	type User,
 	userRoles,
 	users,
-	type Minute,
-	minutes,
-	type NewMinute,
-	entityRelationships,
-	type NewEntityRelationship,
-	type EntityRelationship,
-	type RelationshipEntityType,
 } from "../schema";
 
 import type { DatabaseAdapter } from "./types";
@@ -132,9 +132,7 @@ export class NeonAdapter implements DatabaseAdapter {
 			.offset(offset);
 	}
 
-	async upsertUser(
-		user: Omit<NewUser, "roleId">,
-	): Promise<User> {
+	async upsertUser(user: Omit<NewUser, "roleId">): Promise<User> {
 		const existing = await this.findUserByEmail(user.email);
 		if (existing) {
 			const updated = await this.updateUser(existing.id, {
@@ -216,7 +214,7 @@ export class NeonAdapter implements DatabaseAdapter {
 			// Remove the role and assign Resident role instead
 			for (const user of usersWithRole) {
 				const currentRoleIds = await this.getUserRoleIds(user.id);
-				const newRoleIds = currentRoleIds.filter(rid => rid !== id);
+				const newRoleIds = currentRoleIds.filter((rid) => rid !== id);
 				// If user has no roles left, assign Resident
 				if (newRoleIds.length === 0) {
 					await this.setUserRoles(user.id, [residentRole.id]);
@@ -252,7 +250,8 @@ export class NeonAdapter implements DatabaseAdapter {
 		if (!user) return null;
 
 		const roleIds = await this.getUserRoleIds(userId);
-		const firstRole = roleIds.length > 0 ? await this.getRoleById(roleIds[0]) : null;
+		const firstRole =
+			roleIds.length > 0 ? await this.getRoleById(roleIds[0]) : null;
 		const permissions = await this.getUserPermissions(userId);
 		return {
 			...user,
@@ -269,9 +268,7 @@ export class NeonAdapter implements DatabaseAdapter {
 		return rows.map((r) => r.roleId);
 	}
 
-	async getAllUserRoles(): Promise<
-		{ userId: string; roleId: string }[]
-	> {
+	async getAllUserRoles(): Promise<{ userId: string; roleId: string }[]> {
 		const rows = await this.db
 			.select({
 				userId: userRoles.userId,
@@ -282,9 +279,7 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async setUserRoles(userId: string, roleIds: string[]): Promise<void> {
-		await this.db
-			.delete(userRoles)
-			.where(eq(userRoles.userId, userId));
+		await this.db.delete(userRoles).where(eq(userRoles.userId, userId));
 
 		// If no roles provided, assign default "Resident" role to prevent users from having no roles
 		let finalRoleIds = roleIds;
@@ -298,19 +293,16 @@ export class NeonAdapter implements DatabaseAdapter {
 			finalRoleIds = [residentRole.id];
 		}
 
-		await this.db.insert(userRoles).values(
-			finalRoleIds.map((roleId) => ({ userId, roleId })),
-		);
+		await this.db
+			.insert(userRoles)
+			.values(finalRoleIds.map((roleId) => ({ userId, roleId })));
 	}
 
 	async getUsersByRoleId(roleId: string): Promise<User[]> {
 		const rows = await this.db
 			.select({ user: users })
 			.from(users)
-			.innerJoin(
-				userRoles,
-				eq(users.id, userRoles.userId),
-			)
+			.innerJoin(userRoles, eq(users.id, userRoles.userId))
 			.where(eq(userRoles.roleId, roleId));
 		return rows.map((r) => r.user);
 	}
@@ -419,8 +411,7 @@ export class NeonAdapter implements DatabaseAdapter {
 		// Return items with available quantity > 0 (no transaction link filtering)
 		const result: (InventoryItem & { availableQuantity: number })[] = [];
 		for (const item of activeItems) {
-			const availableQuantity =
-				item.quantity - (item.manualCount || 0);
+			const availableQuantity = item.quantity - (item.manualCount || 0);
 			if (availableQuantity > 0) {
 				result.push({ ...item, availableQuantity });
 			}
@@ -433,10 +424,19 @@ export class NeonAdapter implements DatabaseAdapter {
 		itemId: string,
 	): Promise<{ transaction: Transaction; quantity: number }[]> {
 		// Use entity relationships to find linked transactions
-		const relationships = await this.getEntityRelationships("inventory", itemId);
+		const relationships = await this.getEntityRelationships(
+			"inventory",
+			itemId,
+		);
 		const transactionIds = relationships
-			.filter(r => r.relationBType === "transaction" || r.relationAType === "transaction")
-			.map(r => r.relationBType === "transaction" ? r.relationBId : r.relationId);
+			.filter(
+				(r) =>
+					r.relationBType === "transaction" ||
+					r.relationAType === "transaction",
+			)
+			.map((r) =>
+				r.relationBType === "transaction" ? r.relationBId : r.relationId,
+			);
 
 		if (transactionIds.length === 0) return [];
 
@@ -556,9 +556,17 @@ export class NeonAdapter implements DatabaseAdapter {
 		purchaseId: string,
 	): Promise<Transaction | null> {
 		// Find transaction linked to purchase via entity relationships
-		const relationships = await this.getEntityRelationships("reimbursement", purchaseId);
-		const transactionId = relationships.find(r => r.relationBType === "transaction" || r.relationAType === "transaction")?.relationBId
-			|| relationships.find(r => r.relationAType === "transaction")?.relationId;
+		const relationships = await this.getEntityRelationships(
+			"reimbursement",
+			purchaseId,
+		);
+		const transactionId =
+			relationships.find(
+				(r) =>
+					r.relationBType === "transaction" ||
+					r.relationAType === "transaction",
+			)?.relationBId ||
+			relationships.find((r) => r.relationAType === "transaction")?.relationId;
 		if (!transactionId) return null;
 		return this.getTransactionById(transactionId);
 	}
@@ -645,10 +653,19 @@ export class NeonAdapter implements DatabaseAdapter {
 	async getTransactionsForInventoryItem(
 		itemId: string,
 	): Promise<Transaction[]> {
-		const relationships = await this.getEntityRelationships("inventory", itemId);
+		const relationships = await this.getEntityRelationships(
+			"inventory",
+			itemId,
+		);
 		const transactionIds = relationships
-			.filter(r => r.relationBType === "transaction" || r.relationAType === "transaction")
-			.map(r => r.relationBType === "transaction" ? r.relationBId : r.relationId);
+			.filter(
+				(r) =>
+					r.relationBType === "transaction" ||
+					r.relationAType === "transaction",
+			)
+			.map((r) =>
+				r.relationBType === "transaction" ? r.relationBId : r.relationId,
+			);
 		if (transactionIds.length === 0) return [];
 		const result: Transaction[] = [];
 		for (const tid of transactionIds) {
@@ -665,10 +682,18 @@ export class NeonAdapter implements DatabaseAdapter {
 	async getInventoryItemsForTransaction(
 		transactionId: string,
 	): Promise<(InventoryItem & { quantity: number })[]> {
-		const relationships = await this.getEntityRelationships("transaction", transactionId);
+		const relationships = await this.getEntityRelationships(
+			"transaction",
+			transactionId,
+		);
 		const itemIds = relationships
-			.filter(r => r.relationBType === "inventory" || r.relationAType === "inventory")
-			.map(r => r.relationBType === "inventory" ? r.relationBId : r.relationId);
+			.filter(
+				(r) =>
+					r.relationBType === "inventory" || r.relationAType === "inventory",
+			)
+			.map((r) =>
+				r.relationBType === "inventory" ? r.relationBId : r.relationId,
+			);
 		if (itemIds.length === 0) return [];
 		const result: (InventoryItem & { quantity: number })[] = [];
 		for (const itemId of itemIds) {
@@ -711,8 +736,6 @@ export class NeonAdapter implements DatabaseAdapter {
 			.returning();
 		return result[0];
 	}
-
-
 
 	async updateSubmissionStatus(
 		id: string,
@@ -780,10 +803,6 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-
-
-
-
 	// ==================== Social Link Methods ====================
 	async getSocialLinks(): Promise<SocialLink[]> {
 		return this.db.select().from(socialLinks);
@@ -846,10 +865,7 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	// ==================== News Methods ====================
 	async getNews(): Promise<News[]> {
-		return this.db
-			.select()
-			.from(news)
-			.orderBy(desc(news.createdAt));
+		return this.db.select().from(news).orderBy(desc(news.createdAt));
 	}
 
 	async getNewsById(id: string): Promise<News | null> {
@@ -921,10 +937,7 @@ export class NeonAdapter implements DatabaseAdapter {
 	}
 
 	async deleteFaq(id: string): Promise<boolean> {
-		const result = await this.db
-			.delete(faq)
-			.where(eq(faq.id, id))
-			.returning();
+		const result = await this.db.delete(faq).where(eq(faq.id, id)).returning();
 		return result.length > 0;
 	}
 
@@ -1097,10 +1110,7 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	// ==================== Mail Drafts Methods ====================
 	async insertMailDraft(draft: NewMailDraft): Promise<MailDraft> {
-		const result = await this.db
-			.insert(mailDrafts)
-			.values(draft)
-			.returning();
+		const result = await this.db.insert(mailDrafts).values(draft).returning();
 		return result[0];
 	}
 
@@ -1142,10 +1152,7 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	// ==================== Message Methods ====================
 	async createMessage(message: NewMessage): Promise<Message> {
-		const result = await this.db
-			.insert(messages)
-			.values(message)
-			.returning();
+		const result = await this.db.insert(messages).values(message).returning();
 		return result[0];
 	}
 
@@ -1234,22 +1241,12 @@ export class NeonAdapter implements DatabaseAdapter {
 		return this.db
 			.select()
 			.from(fundBudgets)
-			.where(
-				and(
-					eq(fundBudgets.year, year),
-					eq(fundBudgets.status, "open"),
-				),
-			)
+			.where(and(eq(fundBudgets.year, year), eq(fundBudgets.status, "open")))
 			.orderBy(desc(fundBudgets.createdAt));
 	}
 
-	async createFundBudget(
-		budget: NewFundBudget,
-	): Promise<FundBudget> {
-		const result = await this.db
-			.insert(fundBudgets)
-			.values(budget)
-			.returning();
+	async createFundBudget(budget: NewFundBudget): Promise<FundBudget> {
+		const result = await this.db.insert(fundBudgets).values(budget).returning();
 		return result[0];
 	}
 
@@ -1279,13 +1276,12 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-
-
 	async getBudgetUsedAmount(budgetId: string): Promise<number> {
 		const relationships = await this.getEntityRelationships("budget", budgetId);
 		let total = 0;
 		for (const rel of relationships) {
-			const txId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+			const txId =
+				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
 			const tx = await this.getTransactionById(txId);
 			if (tx && tx.status === "complete") {
 				total += parseFloat(tx.amount);
@@ -1298,7 +1294,8 @@ export class NeonAdapter implements DatabaseAdapter {
 		const relationships = await this.getEntityRelationships("budget", budgetId);
 		let total = 0;
 		for (const rel of relationships) {
-			const txId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+			const txId =
+				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
 			const tx = await this.getTransactionById(txId);
 			if (tx && tx.status === "pending") {
 				total += parseFloat(tx.amount);
@@ -1324,9 +1321,15 @@ export class NeonAdapter implements DatabaseAdapter {
 		const allBudgets = await this.getFundBudgetsByYear(year);
 		const budgetLinkedTransactionIds = new Set<string>();
 		for (const budget of allBudgets) {
-			const relationships = await this.getEntityRelationships("budget", budget.id);
+			const relationships = await this.getEntityRelationships(
+				"budget",
+				budget.id,
+			);
 			for (const rel of relationships) {
-				const txId = rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+				const txId =
+					rel.relationBType === "transaction"
+						? rel.relationBId
+						: rel.relationId;
 				budgetLinkedTransactionIds.add(txId);
 			}
 		}
@@ -1336,7 +1339,9 @@ export class NeonAdapter implements DatabaseAdapter {
 			.filter((t) => t.type === "income")
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const expenses = validTransactions
-			.filter((t) => t.type === "expense" && !budgetLinkedTransactionIds.has(t.id))
+			.filter(
+				(t) => t.type === "expense" && !budgetLinkedTransactionIds.has(t.id),
+			)
 			.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 		const balance = income - expenses;
 
@@ -1353,8 +1358,6 @@ export class NeonAdapter implements DatabaseAdapter {
 
 		return balance - totalReserved;
 	}
-
-
 
 	// ==================== Poll Methods ====================
 	async getPolls(year?: number): Promise<Poll[]> {
@@ -1419,10 +1422,7 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	// ==================== Receipt Methods ====================
 	async getReceipts(): Promise<Receipt[]> {
-		return this.db
-			.select()
-			.from(receipts)
-			.orderBy(desc(receipts.createdAt));
+		return this.db.select().from(receipts).orderBy(desc(receipts.createdAt));
 	}
 
 	async getReceiptById(id: string): Promise<Receipt | null> {
@@ -1436,10 +1436,17 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	async getReceiptsByPurchaseId(purchaseId: string): Promise<Receipt[]> {
 		// Find receipts linked to purchase via entity relationships
-		const relationships = await this.getEntityRelationships("reimbursement", purchaseId);
+		const relationships = await this.getEntityRelationships(
+			"reimbursement",
+			purchaseId,
+		);
 		const receiptIds = relationships
-			.filter(r => r.relationBType === "receipt" || r.relationAType === "receipt")
-			.map(r => r.relationBType === "receipt" ? r.relationBId : r.relationId);
+			.filter(
+				(r) => r.relationBType === "receipt" || r.relationAType === "receipt",
+			)
+			.map((r) =>
+				r.relationBType === "receipt" ? r.relationBId : r.relationId,
+			);
 		if (receiptIds.length === 0) return [];
 		return this.db
 			.select()
@@ -1455,22 +1462,28 @@ export class NeonAdapter implements DatabaseAdapter {
 		const relationships = await this.db.select().from(entityRelationships);
 		const linkedReceiptIds = new Set<string>();
 		for (const rel of relationships) {
-			if ((rel.relationAType === "receipt" && rel.relationBType === "reimbursement") ||
-			    (rel.relationBType === "receipt" && rel.relationAType === "reimbursement")) {
-				linkedReceiptIds.add(rel.relationAType === "receipt" ? rel.relationId : rel.relationBId);
+			if (
+				(rel.relationAType === "receipt" &&
+					rel.relationBType === "reimbursement") ||
+				(rel.relationBType === "receipt" &&
+					rel.relationAType === "reimbursement")
+			) {
+				linkedReceiptIds.add(
+					rel.relationAType === "receipt" ? rel.relationId : rel.relationBId,
+				);
 			}
 		}
 		// Return receipts not in the linked set
 		return allReceipts
-			.filter(r => !linkedReceiptIds.has(r.id))
-			.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+			.filter((r) => !linkedReceiptIds.has(r.id))
+			.sort(
+				(a, b) =>
+					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+			);
 	}
 
 	async createReceipt(receipt: NewReceipt): Promise<Receipt> {
-		const result = await this.db
-			.insert(receipts)
-			.values(receipt)
-			.returning();
+		const result = await this.db.insert(receipts).values(receipt).returning();
 		return result[0];
 	}
 
@@ -1545,8 +1558,6 @@ export class NeonAdapter implements DatabaseAdapter {
 			.returning();
 		return result[0] ?? null;
 	}
-
-
 
 	async getIncompleteInventoryItems(): Promise<InventoryItem[]> {
 		return this.db
@@ -1648,34 +1659,34 @@ export class NeonAdapter implements DatabaseAdapter {
 
 	async getOrphanedDrafts(
 		type: RelationshipEntityType,
-		olderThanMinutes: number,
+		_olderThanMinutes: number,
 	): Promise<string[]> {
 		// Helper to get table and status field based on type
-		let table: any;
+		let _table: any;
 		switch (type) {
 			case "receipt":
-				table = receipts;
+				_table = receipts;
 				break;
 			case "transaction":
-				table = transactions;
+				_table = transactions;
 				break;
 			case "reimbursement":
-				table = purchases;
+				_table = purchases;
 				break;
 			case "minute":
-				table = minutes;
+				_table = minutes;
 				break;
 			case "budget":
-				table = fundBudgets;
+				_table = fundBudgets;
 				break;
 			case "inventory":
-				table = inventoryItems;
+				_table = inventoryItems;
 				break;
 			case "news":
-				table = news; // News doesn't have status yet, assume all are valid? Or drafts not supported?
+				_table = news; // News doesn't have status yet, assume all are valid? Or drafts not supported?
 				return []; // Skip news for now if no draft status
 			case "faq":
-				table = faq; // FAQ doesn't have status
+				_table = faq; // FAQ doesn't have status
 				return [];
 			default:
 				return [];

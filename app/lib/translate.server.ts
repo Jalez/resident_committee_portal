@@ -61,15 +61,24 @@ Return ONLY a valid JSON object with exactly these keys: "title", "summary", "co
 		prompt,
 	});
 
-	const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
-	const parsed = JSON.parse(jsonStr) as { title?: string; summary?: string | null; content?: string };
+	const jsonStr = text
+		.replace(/```json/g, "")
+		.replace(/```/g, "")
+		.trim();
+	const parsed = JSON.parse(jsonStr) as {
+		title?: string;
+		summary?: string | null;
+		content?: string;
+	};
 
 	if (
 		typeof parsed.title !== "string" ||
 		typeof parsed.content !== "string" ||
 		(parsed.summary !== null && typeof parsed.summary !== "string")
 	) {
-		throw new Error("Invalid AI response: missing or invalid title, summary, or content");
+		throw new Error(
+			"Invalid AI response: missing or invalid title, summary, or content",
+		);
 	}
 
 	return {
@@ -107,11 +116,19 @@ No markdown, no code fences, no explanation.`;
 		prompt,
 	});
 
-	const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+	const jsonStr = text
+		.replace(/```json/g, "")
+		.replace(/```/g, "")
+		.trim();
 	const parsed = JSON.parse(jsonStr) as { question?: string; answer?: string };
 
-	if (typeof parsed.question !== "string" || typeof parsed.answer !== "string") {
-		throw new Error("Invalid AI response: missing or invalid question or answer");
+	if (
+		typeof parsed.question !== "string" ||
+		typeof parsed.answer !== "string"
+	) {
+		throw new Error(
+			"Invalid AI response: missing or invalid question or answer",
+		);
 	}
 
 	return {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import { X } from "lucide-react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import {
 	Popover,
@@ -104,9 +104,7 @@ export function TagPicker<TItem, TSuggestion>({
 			}
 			if (e.key === "ArrowDown") {
 				e.preventDefault();
-				setHighlightedIndex((i) =>
-					i < suggestions.length - 1 ? i + 1 : i,
-				);
+				setHighlightedIndex((i) => (i < suggestions.length - 1 ? i + 1 : i));
 				return;
 			}
 			if (e.key === "ArrowUp") {
@@ -165,20 +163,20 @@ export function TagPicker<TItem, TSuggestion>({
 										customClassName,
 									)}
 								>
-								<span className="max-w-[200px] truncate">
-									{renderItem(item)}
-								</span>
-								{!disabled && (
-									<button
-										type="button"
-										onClick={() => onRemove(getItemId(item))}
-										className="rounded p-0.5 hover:bg-black/20 dark:hover:bg-white/20"
-										aria-label="Remove"
-									>
-										<X className="size-3" />
-									</button>
-								)}
-							</Badge>
+									<span className="max-w-[200px] truncate">
+										{renderItem(item)}
+									</span>
+									{!disabled && (
+										<button
+											type="button"
+											onClick={() => onRemove(getItemId(item))}
+											className="rounded p-0.5 hover:bg-black/20 dark:hover:bg-white/20"
+											aria-label="Remove"
+										>
+											<X className="size-3" />
+										</button>
+									)}
+								</Badge>
 							);
 						})}
 						{!disabled && (
@@ -211,9 +209,7 @@ export function TagPicker<TItem, TSuggestion>({
 								}}
 								onKeyDown={onInputKeyDown}
 								className={INPUT_CLASS}
-								placeholder={
-									selectedItems.length === 0 ? placeholder : ""
-								}
+								placeholder={selectedItems.length === 0 ? placeholder : ""}
 							/>
 						)}
 					</div>

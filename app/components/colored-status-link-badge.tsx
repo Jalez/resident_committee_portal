@@ -1,19 +1,17 @@
-import { Badge } from "~/components/ui/badge";
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { cn } from "~/lib/utils";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Check } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 export const TREASURY_PURCHASE_STATUS_VARIANTS: Record<string, string> = {
 	pending:
 		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-	approved:
-		"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+	approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 	reimbursed:
 		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-	rejected:
-		"bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+	rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 };
 
 export const TREASURY_TRANSACTION_STATUS_VARIANTS: Record<string, string> = {
@@ -77,8 +75,9 @@ export function ColoredStatusLinkBadge({
 }: ColoredStatusLinkProps) {
 	const { t } = useTranslation();
 	const statusVariant =
-		status && (variantMap[status] || variantMap.pending || "bg-gray-100 text-gray-800");
-	const extraClass = className ? ` ${className}` : "";
+		status &&
+		(variantMap[status] || variantMap.pending || "bg-gray-100 text-gray-800");
+	const _extraClass = className ? ` ${className}` : "";
 
 	// Wrapper component to handle conditional linking - unused now, logic moved to main return
 	// const Wrapper = ...
@@ -90,7 +89,7 @@ export function ColoredStatusLinkBadge({
 				"inline-flex items-center gap-1 hover:underline text-sm font-medium border-0 px-2 py-1 h-8 cursor-pointer select-none",
 				statusVariant,
 				className,
-				onCheck && "cursor-pointer select-none"
+				onCheck && "cursor-pointer select-none",
 			)}
 			onClick={(e) => {
 				if (onCheck) {
@@ -106,15 +105,16 @@ export function ColoredStatusLinkBadge({
 				className="flex items-center gap-1"
 			>
 				{icon ? (
-					<span className="material-symbols-outlined text-base">
-						{icon}
-					</span>
+					<span className="material-symbols-outlined text-base">{icon}</span>
 				) : null}
 				{title || id.slice(0, 8)}
 			</Link>
 
 			{subtitle && (
-				<span className="text-[10px] font-normal opacity-70 truncate max-w-[140px]" title={subtitle}>
+				<span
+					className="text-[10px] font-normal opacity-70 truncate max-w-[140px]"
+					title={subtitle}
+				>
 					{subtitle}
 				</span>
 			)}
@@ -133,9 +133,7 @@ export function ColoredStatusLinkBadge({
 					aria-label={t("common.actions.remove")}
 					aria-describedby={id}
 				>
-					<span className="material-symbols-outlined text-base">
-						delete
-					</span>
+					<span className="material-symbols-outlined text-base">delete</span>
 				</Button>
 			)}
 
@@ -145,7 +143,7 @@ export function ColoredStatusLinkBadge({
 						"ml-2 flex items-center justify-center h-4 w-4 shrink-0 rounded-sm border ring-offset-background transition-colors",
 						checked
 							? "bg-primary border-primary text-primary-foreground"
-							: "border-input bg-background/50"
+							: "border-input bg-background/50",
 					)}
 				>
 					{checked && <Check className="h-3 w-3" strokeWidth={3} />}

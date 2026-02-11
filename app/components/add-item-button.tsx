@@ -1,4 +1,4 @@
-import { Link, Form } from "react-router";
+import { Form, Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { Button } from "./ui/button";
 
@@ -75,11 +75,14 @@ export function AddItemButton({
 
 	if (createType) {
 		return (
-			<Form method="post" action="/api/entities/create-draft" className="contents">
+			<Form
+				method="post"
+				action="/api/entities/create-draft"
+				className="contents"
+			>
 				<input type="hidden" name="type" value={createType} />
 				<Button
 					variant="ghost"
-
 					type="submit"
 					className={classes}
 					title={title}

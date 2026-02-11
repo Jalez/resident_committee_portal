@@ -10,7 +10,9 @@ export const RECEIPTS_SECTION_ID = "reimbursement-receipts-section";
 export function parseReceiptLinks(formData: FormData): ReceiptLink[] {
 	const receiptLinksJson = formData.get("receiptLinks") as string;
 	try {
-		return receiptLinksJson ? (JSON.parse(receiptLinksJson) as ReceiptLink[]) : [];
+		return receiptLinksJson
+			? (JSON.parse(receiptLinksJson) as ReceiptLink[])
+			: [];
 	} catch {
 		return [];
 	}

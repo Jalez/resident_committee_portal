@@ -1,10 +1,15 @@
 import { redirect } from "react-router";
 import { getDatabase } from "~/db";
-import type { ReimbursementStatus, Transaction, TransactionStatus, TransactionType } from "~/db/schema";
+import type {
+	ReimbursementStatus,
+	Transaction,
+	TransactionStatus,
+	TransactionType,
+} from "~/db/schema";
 
 export async function handleDeleteTransaction(
 	transaction: Transaction,
-	year: number
+	year: number,
 ) {
 	const db = getDatabase();
 
@@ -13,7 +18,9 @@ export async function handleDeleteTransaction(
 		// when the transaction is deleted, since entity_relationships has
 		// onDelete: "cascade" on both relation ID columns.
 		await db.deleteTransaction(transaction.id);
-		return redirect(`/treasury/transactions?year=${year}&success=transaction_deleted`);
+		return redirect(
+			`/treasury/transactions?year=${year}&success=transaction_deleted`,
+		);
 	} catch (error) {
 		console.error("[deleteTransaction] Error:", error);
 		return { error: "Failed to delete transaction" };
@@ -23,7 +30,7 @@ export async function handleDeleteTransaction(
 export async function handleUpdateTransaction(
 	formData: FormData,
 	transaction: Transaction,
-	year: number
+	year: number,
 ) {
 	const db = getDatabase();
 
@@ -40,7 +47,8 @@ export async function handleUpdateTransaction(
 		"declined",
 	];
 
-	const status = (formData.get("status") as TransactionStatus) || transaction.status;
+	const status =
+		(formData.get("status") as TransactionStatus) || transaction.status;
 	const reimbursementStatus =
 		(formData.get("reimbursementStatus") as ReimbursementStatus) ||
 		transaction.reimbursementStatus ||
