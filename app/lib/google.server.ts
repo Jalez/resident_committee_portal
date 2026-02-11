@@ -1,8 +1,3 @@
-import { getDatabase } from "~/db";
-import {
-	getAuthenticatedUser,
-} from "./auth.server";
-
 interface GoogleConfig {
 	apiKey: string;
 	calendarId: string;
@@ -52,7 +47,10 @@ let _cachedAccessToken: { token: string; expiry: number } | null = null;
 
 async function getAccessToken(): Promise<string | null> {
 	// Check if we have a valid cached token (with 5 min buffer)
-	if (_cachedAccessToken && _cachedAccessToken.expiry > Date.now() + 5 * 60 * 1000) {
+	if (
+		_cachedAccessToken &&
+		_cachedAccessToken.expiry > Date.now() + 5 * 60 * 1000
+	) {
 		return _cachedAccessToken.token;
 	}
 
@@ -318,7 +316,9 @@ export interface CalendarEventInput {
 /**
  * Build RRULE string from recurrence options
  */
-function buildRRule(recurrence: CalendarEventInput["recurrence"]): string | null {
+function buildRRule(
+	recurrence: CalendarEventInput["recurrence"],
+): string | null {
 	if (!recurrence) return null;
 
 	const parts = [`FREQ=${recurrence.frequency}`];
@@ -377,8 +377,14 @@ export async function createCalendarEvent(
 		eventBody.start = { date: event.startDate };
 		eventBody.end = { date: event.endDate || event.startDate };
 	} else {
-		eventBody.start = { dateTime: event.startDateTime, timeZone: "Europe/Helsinki" };
-		eventBody.end = { dateTime: event.endDateTime, timeZone: "Europe/Helsinki" };
+		eventBody.start = {
+			dateTime: event.startDateTime,
+			timeZone: "Europe/Helsinki",
+		};
+		eventBody.end = {
+			dateTime: event.endDateTime,
+			timeZone: "Europe/Helsinki",
+		};
 	}
 
 	// Add recurrence if specified
@@ -479,8 +485,14 @@ export async function updateCalendarEvent(
 		eventBody.start = { date: event.startDate };
 		eventBody.end = { date: event.endDate || event.startDate };
 	} else if (event.startDateTime) {
-		eventBody.start = { dateTime: event.startDateTime, timeZone: "Europe/Helsinki" };
-		eventBody.end = { dateTime: event.endDateTime, timeZone: "Europe/Helsinki" };
+		eventBody.start = {
+			dateTime: event.startDateTime,
+			timeZone: "Europe/Helsinki",
+		};
+		eventBody.end = {
+			dateTime: event.endDateTime,
+			timeZone: "Europe/Helsinki",
+		};
 	}
 
 	// Add recurrence if specified
@@ -1544,7 +1556,8 @@ export async function getGoogleForms(
 				// Form URL for respondents (viewform)
 				formUrl: `https://docs.google.com/forms/d/${f.id}/viewform`,
 				// Edit URL for owners
-				editUrl: f.webViewLink || `https://docs.google.com/forms/d/${f.id}/edit`,
+				editUrl:
+					f.webViewLink || `https://docs.google.com/forms/d/${f.id}/edit`,
 				createdTime: f.createdTime,
 				modifiedTime: f.modifiedTime,
 			}),
@@ -1565,7 +1578,9 @@ export async function getGoogleForms(
 /**
  * Get Google Form metadata (title, description)
  */
-export async function getGoogleForm(formId: string): Promise<{ title: string; description?: string } | null> {
+export async function getGoogleForm(
+	formId: string,
+): Promise<{ title: string; description?: string } | null> {
 	const accessToken = await getServiceAccountAccessToken();
 	if (!accessToken) return null;
 
@@ -1576,7 +1591,10 @@ export async function getGoogleForm(formId: string): Promise<{ title: string; de
 		});
 
 		if (!res.ok) {
-			console.error(`[getGoogleForm] Failed to fetch form ${formId}:`, await res.text());
+			console.error(
+				`[getGoogleForm] Failed to fetch form ${formId}:`,
+				await res.text(),
+			);
 			return null;
 		}
 
@@ -1604,7 +1622,7 @@ export async function getGoogleForm(formId: string): Promise<{ title: string; de
  */
 export async function createGoogleForm(
 	title: string,
-	userId?: string, // user ID param kept for API compatibility, but unused
+	_userId?: string, // user ID param kept for API compatibility, but unused
 ): Promise<{ formId: string; formUrl: string; editUrl: string } | null> {
 	// Only use Service Account
 	const accessToken = await getServiceAccountAccessToken();
@@ -1628,7 +1646,10 @@ export async function createGoogleForm(
 			fileMetadata.parents = [parentFolderId];
 		}
 
-		console.log(`[createGoogleForm] Creating file via Drive API (SA)`, JSON.stringify(fileMetadata));
+		console.log(
+			`[createGoogleForm] Creating file via Drive API (SA)`,
+			JSON.stringify(fileMetadata),
+		);
 
 		const res = await fetch("https://www.googleapis.com/drive/v3/files", {
 			method: "POST",
@@ -1641,7 +1662,6 @@ export async function createGoogleForm(
 
 		// ... rest of function logic (error handling etc)
 		// Note: Logic continues at line 1667 (check original file)
-
 
 		const responseText = await res.text();
 		console.log("[createGoogleForm] Drive API Response status:", res.status);
@@ -1658,7 +1678,7 @@ export async function createGoogleForm(
 		console.log(`[createGoogleForm] Created form file: ${formId}`);
 
 		// Wait briefly for propagation
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 
 		// We need to get the responder URI (viewform link)
 		// Drive API returnswebViewLink (edit link) but not viewform link directly
@@ -1680,7 +1700,10 @@ export async function createGoogleForm(
 /**
  * Update form description via Forms API
  */
-async function updateFormDescription(formId: string, description: string): Promise<boolean> {
+async function _updateFormDescription(
+	formId: string,
+	description: string,
+): Promise<boolean> {
 	const accessToken = await getServiceAccountAccessToken();
 	if (!accessToken) return false;
 
@@ -1698,14 +1721,17 @@ async function updateFormDescription(formId: string, description: string): Promi
 			],
 		};
 
-		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				"Content-Type": "application/json",
+		const res = await fetch(
+			`https://forms.googleapis.com/v1/forms/${formId}:batchUpdate`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(updateData),
 			},
-			body: JSON.stringify(updateData),
-		});
+		);
 
 		if (!res.ok) {
 			const errorText = await res.text();
@@ -1733,7 +1759,7 @@ export async function updateFormPublishingState(
 	try {
 		// Note: The API requires setting isPublished to true if isAcceptingResponses is true
 		// If we are closing, we can keep it published but not accepting
-		const updateData = {
+		const _updateData = {
 			requests: [
 				{
 					updateFormInfo: {
@@ -1741,15 +1767,15 @@ export async function updateFormPublishingState(
 							// We are not updating title/desc here
 						},
 						updateMask: "", // No mask for info
-					}
-				}
-			]
+					},
+				},
+			],
 		};
 
 		// Wait: updateFormInfo doesn't handle publishSettings.
 		// There is a specific batchUpdate request for it? No, it's a separate method in v1?
-		// Checking docs: forms.setPublishSettings is a separate method? 
-		// Actually, I should check if there is a batchUpdate request for it. 
+		// Checking docs: forms.setPublishSettings is a separate method?
+		// Actually, I should check if there is a batchUpdate request for it.
 		// The docs said "Forms with publishSettings value set can call forms.setPublishSettings API".
 
 		// Let's use batchUpdate if possible, or the dedicated endpoint.
@@ -1757,11 +1783,11 @@ export async function updateFormPublishingState(
 		// PUT https://forms.googleapis.com/v1/forms/{formId}/publishSettings
 
 		const publishSettings = {
-			isPublished: true, // Always keep it published (visible) if we want people to see the "Closed" message? 
+			isPublished: true, // Always keep it published (visible) if we want people to see the "Closed" message?
 			// Actually if isPublished is false, nobody can see it.
 			// Users usually want "This form is no longer accepting responses".
 			// So isPublished=true, isAcceptingResponses=false.
-			isAcceptingResponses: isAcceptingResponses
+			isAcceptingResponses: isAcceptingResponses,
 		};
 
 		// Note: The API is PUT /v1/forms/{formId}/publishSettings?updateMask=isAcceptingResponses
@@ -1774,16 +1800,19 @@ export async function updateFormPublishingState(
 		// IMPORTANT: We should probably fetch the current settings first to preserve isPublished?
 		// But defaulting isPublished=true is usually safe for active forms.
 
-		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}/publishSettings?updateMask=isAcceptingResponses`, {
-			method: "PUT", // Docs say it's an update, likely PUT or PATCH. Standard Google is PUT for set...
-			// Actually for Google APIs "set" often implies replacement.
-			// Let's rely on the UpdateMask.
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				"Content-Type": "application/json",
+		const res = await fetch(
+			`https://forms.googleapis.com/v1/forms/${formId}/publishSettings?updateMask=isAcceptingResponses`,
+			{
+				method: "PUT", // Docs say it's an update, likely PUT or PATCH. Standard Google is PUT for set...
+				// Actually for Google APIs "set" often implies replacement.
+				// Let's rely on the UpdateMask.
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(publishSettings),
 			},
-			body: JSON.stringify(publishSettings),
-		});
+		);
 
 		if (!res.ok) {
 			const errorText = await res.text();
@@ -1791,7 +1820,9 @@ export async function updateFormPublishingState(
 			return false;
 		}
 
-		console.log(`[updateFormPublishingState] Updated form ${formId} accepting responses: ${isAcceptingResponses}`);
+		console.log(
+			`[updateFormPublishingState] Updated form ${formId} accepting responses: ${isAcceptingResponses}`,
+		);
 		return true;
 	} catch (error) {
 		console.error("[updateFormPublishingState] Error:", error);
@@ -1841,7 +1872,9 @@ export async function shareFormWithUser(
 			return false;
 		}
 
-		console.log(`[shareFormWithUser] Shared form ${formId} with ${email} as ${role}`);
+		console.log(
+			`[shareFormWithUser] Shared form ${formId} with ${email} as ${role}`,
+		);
 		return true;
 	} catch (error) {
 		console.error("[shareFormWithUser] Error:", error);
@@ -1862,7 +1895,9 @@ export interface FormSettings {
 	linkedSheetId?: string;
 }
 
-export async function getFormSettings(formId: string): Promise<FormSettings | null> {
+export async function getFormSettings(
+	formId: string,
+): Promise<FormSettings | null> {
 	const accessToken = await getServiceAccountAccessToken();
 	if (!accessToken) {
 		console.error("[getFormSettings] Could not get service account token");
@@ -1887,7 +1922,9 @@ export async function getFormSettings(formId: string): Promise<FormSettings | nu
 			title: data.info?.title || "",
 			description: data.info?.description,
 			documentTitle: data.info?.documentTitle || "",
-			responderUri: data.responderUri || `https://docs.google.com/forms/d/${formId}/viewform`,
+			responderUri:
+				data.responderUri ||
+				`https://docs.google.com/forms/d/${formId}/viewform`,
 			linkedSheetId: data.linkedSheetId,
 		};
 	} catch (error) {
@@ -1903,13 +1940,18 @@ export interface FormResponse {
 	responseId: string;
 	createTime: string;
 	lastSubmittedTime: string;
-	answers: Record<string, {
-		questionId: string;
-		textAnswers?: { answers: Array<{ value: string }> };
-	}>;
+	answers: Record<
+		string,
+		{
+			questionId: string;
+			textAnswers?: { answers: Array<{ value: string }> };
+		}
+	>;
 }
 
-export async function getFormResponses(formId: string): Promise<FormResponse[]> {
+export async function getFormResponses(
+	formId: string,
+): Promise<FormResponse[]> {
 	const accessToken = await getServiceAccountAccessToken();
 	if (!accessToken) {
 		console.error("[getFormResponses] Could not get service account token");
@@ -1917,9 +1959,12 @@ export async function getFormResponses(formId: string): Promise<FormResponse[]> 
 	}
 
 	try {
-		const res = await fetch(`https://forms.googleapis.com/v1/forms/${formId}/responses`, {
-			headers: { Authorization: `Bearer ${accessToken}` },
-		});
+		const res = await fetch(
+			`https://forms.googleapis.com/v1/forms/${formId}/responses`,
+			{
+				headers: { Authorization: `Bearer ${accessToken}` },
+			},
+		);
 
 		if (!res.ok) {
 			const errorText = await res.text();
@@ -1930,7 +1975,9 @@ export async function getFormResponses(formId: string): Promise<FormResponse[]> 
 		const data = await res.json();
 		const responses: FormResponse[] = data.responses || [];
 
-		console.log(`[getFormResponses] Found ${responses.length} responses for form ${formId}`);
+		console.log(
+			`[getFormResponses] Found ${responses.length} responses for form ${formId}`,
+		);
 		return responses;
 	} catch (error) {
 		console.error("[getFormResponses] Error:", error);
@@ -2101,9 +2148,7 @@ export async function getAnalyticsSheets(
 			}) => ({
 				id: f.id,
 				name: f.name,
-				url:
-					f.webViewLink ||
-					`https://docs.google.com/spreadsheets/d/${f.id}`,
+				url: f.webViewLink || `https://docs.google.com/spreadsheets/d/${f.id}`,
 				lastModified: f.modifiedTime,
 			}),
 		);
@@ -2242,7 +2287,10 @@ export async function importToAnalyticsSheet(
 
 		if (!createRes.ok) {
 			const errorText = await createRes.text();
-			console.error("[importToAnalyticsSheet] Failed to create sheet:", errorText);
+			console.error(
+				"[importToAnalyticsSheet] Failed to create sheet:",
+				errorText,
+			);
 			return null;
 		}
 
@@ -2272,7 +2320,9 @@ export async function importToAnalyticsSheet(
 			},
 		);
 
-		console.log(`[importToAnalyticsSheet] Created and populated: ${name} (${sheetId})`);
+		console.log(
+			`[importToAnalyticsSheet] Created and populated: ${name} (${sheetId})`,
+		);
 
 		// Clear the sheets list cache
 		clearCache(`${CACHE_KEYS.ANALYTICS_LIST}_${year || "current"}`);
@@ -2641,7 +2691,10 @@ export async function getFileAsBase64(fileId: string): Promise<string | null> {
 			return null;
 		}
 
-		const metadata = (await metaRes.json()) as { mimeType: string; name: string };
+		const metadata = (await metaRes.json()) as {
+			mimeType: string;
+			name: string;
+		};
 		console.log(
 			`[getFileAsBase64] File ${fileId} is ${metadata.mimeType} (${metadata.name})`,
 		);
@@ -2655,7 +2708,9 @@ export async function getFileAsBase64(fileId: string): Promise<string | null> {
 				? `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`
 				: `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf&key=${config.apiKey}`;
 			console.log(`[getFileAsBase64] Exporting Google Doc as PDF`);
-		} else if (metadata.mimeType === "application/vnd.google-apps.spreadsheet") {
+		} else if (
+			metadata.mimeType === "application/vnd.google-apps.spreadsheet"
+		) {
 			// Export Google Sheets as PDF
 			downloadUrl = accessToken
 				? `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`

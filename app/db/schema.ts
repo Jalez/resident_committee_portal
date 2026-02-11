@@ -1,13 +1,13 @@
 import {
 	boolean,
 	decimal,
+	index,
 	integer,
 	pgTable,
 	text,
 	timestamp,
 	unique,
 	uuid,
-	index,
 } from "drizzle-orm/pg-core";
 
 // ============================================
@@ -64,7 +64,9 @@ export const users = pgTable("users", {
 	// Local AI model preferences
 	// Local AI model preferences
 	localOllamaEnabled: boolean("local_ollama_enabled").notNull().default(false),
-	localOllamaUrl: text("local_ollama_url").notNull().default("http://localhost:11434"),
+	localOllamaUrl: text("local_ollama_url")
+		.notNull()
+		.default("http://localhost:11434"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -154,7 +156,12 @@ export type NewInventoryItem = typeof inventoryItems.$inferInsert;
  * - reimbursed: Paid, deducted from treasury
  * - rejected: Not approved, not deducted
  */
-export type PurchaseStatus = "draft" | "pending" | "approved" | "reimbursed" | "rejected";
+export type PurchaseStatus =
+	| "draft"
+	| "pending"
+	| "approved"
+	| "reimbursed"
+	| "rejected";
 
 /**
  * Purchases table schema
@@ -212,7 +219,12 @@ export type TransactionType = "income" | "expense";
  * - paused: Temporarily on hold
  * - declined: Rejected by admin
  */
-export type TransactionStatus = "draft" | "pending" | "complete" | "paused" | "declined";
+export type TransactionStatus =
+	| "draft"
+	| "pending"
+	| "complete"
+	| "paused"
+	| "declined";
 
 /**
  * Reimbursement status values
@@ -308,6 +320,11 @@ export const socialLinks = pgTable("social_links", {
 	sortOrder: integer("sort_order").notNull().default(0),
 	isActive: boolean("is_active").notNull().default(true),
 	isPrimary: boolean("is_primary").notNull().default(false),
+	// Status tracking
+	status: text("status")
+		.$type<"draft" | "active" | "archived">()
+		.notNull()
+		.default("active"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -328,6 +345,11 @@ export const news = pgTable("news", {
 	summarySecondary: text("summary_secondary"),
 	contentSecondary: text("content_secondary"),
 	createdBy: uuid("created_by").references(() => users.id),
+	// Status tracking
+	status: text("status")
+		.$type<"draft" | "active" | "archived">()
+		.notNull()
+		.default("active"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -346,6 +368,11 @@ export const faq = pgTable("faq", {
 	questionSecondary: text("question_secondary"),
 	answerSecondary: text("answer_secondary"),
 	sortOrder: integer("sort_order").notNull().default(0),
+	// Status tracking
+	status: text("status")
+		.$type<"draft" | "active" | "archived">()
+		.notNull()
+		.default("active"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -467,10 +494,7 @@ export const fundBudgets = pgTable("fund_budgets", {
 	description: text("description"), // Additional details
 	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Reserved amount
 	year: integer("year").notNull(), // Year the budget applies to
-	status: text("status")
-		.$type<BudgetStatus>()
-		.notNull()
-		.default("open"),
+	status: text("status").$type<BudgetStatus>().notNull().default("open"),
 	// Creator tracking for self-edit/delete permissions
 	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
@@ -518,7 +542,7 @@ export type PollType = "managed" | "linked" | "external";
  * - active: Poll is currently accepting responses
  * - closed: Poll is no longer accepting responses
  */
-export type PollStatus = "active" | "closed";
+export type PollStatus = "active" | "closed" | "draft";
 
 /**
  * Polls table schema
@@ -552,7 +576,6 @@ export const polls = pgTable("polls", {
 export type Poll = typeof polls.$inferSelect;
 export type NewPoll = typeof polls.$inferInsert;
 
-
 /**
  * Receipt status values
  * - draft: Receipt is being created but not yet finalized
@@ -569,10 +592,7 @@ export type ReceiptStatus = "draft" | "active" | "archived";
 export const receipts = pgTable("receipts", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	// Status tracking
-	status: text("status")
-		.$type<ReceiptStatus>()
-		.notNull()
-		.default("draft"),
+	status: text("status").$type<ReceiptStatus>().notNull().default("draft"),
 	// Receipt metadata
 	name: text("name"), // Optional name (defaults to filename if not provided)
 	description: text("description"), // Optional description
@@ -640,10 +660,7 @@ export type MinuteStatus = "draft" | "active" | "archived";
 export const minutes = pgTable("minutes", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	// Status tracking
-	status: text("status")
-		.$type<MinuteStatus>()
-		.notNull()
-		.default("draft"),
+	status: text("status").$type<MinuteStatus>().notNull().default("draft"),
 	date: timestamp("date"), // Can be null for drafts
 	title: text("title"), // Can be null for drafts
 	description: text("description"),
@@ -691,7 +708,10 @@ export type RelationshipEntityType =
 	| "inventory"
 	| "minute"
 	| "news"
-	| "faq";
+	| "faq"
+	| "poll"
+	| "social"
+	| "event";
 
 export const entityRelationships = pgTable(
 	"entity_relationships",
@@ -700,11 +720,11 @@ export const entityRelationships = pgTable(
 		relationAType: text("relation_a_type")
 			.$type<RelationshipEntityType>()
 			.notNull(),
-		relationId: uuid("relation_a_id").notNull(),
+		relationId: text("relation_a_id").notNull(),
 		relationBType: text("relation_b_type")
 			.$type<RelationshipEntityType>()
 			.notNull(),
-		relationBId: uuid("relation_b_id").notNull(),
+		relationBId: text("relation_b_id").notNull(),
 		metadata: text("metadata"), // JSON string
 		createdBy: uuid("created_by").references(() => users.id),
 		createdAt: timestamp("created_at").defaultNow().notNull(),

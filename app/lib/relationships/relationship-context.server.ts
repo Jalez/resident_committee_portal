@@ -1,22 +1,22 @@
 /**
  * Relationship Context & Domination Scale
- * 
+ *
  * Implements the priority-based value resolution system for linked entities.
  * When multiple entities are linked (Receipt, Transaction, Reimbursement, etc.),
  * this determines which entity's values should be used as the "source of truth"
  * for shared fields like date, amount, and description.
- * 
+ *
  * Priority Scale (Domination):
  * 0. Manual (Ultimate) - User explicitly sets a value
  * 1. Receipt (High) - Physical proof with immutable facts
  * 2. Reimbursement (Medium) - User's intent and logical grouping
  * 3. Transaction (Low) - Bank record, lacks context
- * 
+ *
  * See: TODO-relationship_context_design.md for full specification
  */
 
-import type { RelationshipEntityType } from "~/db/schema";
 import type { getDatabase } from "~/db";
+import type { RelationshipEntityType } from "~/db/schema";
 
 export interface RelationshipContextValues {
 	/** Source date (when the event occurred) */
@@ -58,17 +58,20 @@ const PRIORITY_LEVELS: Record<RelationshipEntityType | "manual", number> = {
 	minute: 0,
 	news: 0,
 	faq: 0,
+	poll: 0,
+	social: 0,
+	event: 0,
 };
 
 /**
  * Determine the relationship context values for an entity based on its linked entities.
- * 
+ *
  * This function:
  * 1. Fetches all linked entities
  * 2. Determines which has the highest priority
  * 3. Extracts values from that entity
  * 4. Returns a context object with the "truth" values
- * 
+ *
  * @param db - Database adapter
  * @param entityType - Type of the source entity
  * @param entityId - ID of the source entity (null if creating new)
@@ -163,7 +166,7 @@ async function populateContextFromEntity(
 					const receiptContent = await db.getReceiptContentByReceiptId(
 						receipt.id,
 					);
-					
+
 					if (receiptContent) {
 						context.date = receiptContent.purchaseDate;
 						context.totalAmount = receiptContent.totalAmount

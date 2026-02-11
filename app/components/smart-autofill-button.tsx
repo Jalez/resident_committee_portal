@@ -1,12 +1,17 @@
+import { Check, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { useFetcher } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Sparkles, Check, Loader2 } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { Button } from "~/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
 import type { RelationshipEntityType } from "~/db/schema";
-import type { SmartAutofillSuggestions } from "~/routes/api.entities.smart-autofill";
+import type { SmartAutofillSuggestions } from "~/routes/api/entities/smart-autofill/_index";
 
 export interface SmartAutofillButtonProps {
 	/** Entity type being edited */
@@ -113,7 +118,8 @@ export function SmartAutofillButton({
 					<p>
 						{useAI
 							? t("smart_autofill.tooltip_ai", {
-									defaultValue: "Fill fields from linked entities + AI suggestions",
+									defaultValue:
+										"Fill fields from linked entities + AI suggestions",
 								})
 							: t("smart_autofill.tooltip", {
 									defaultValue: "Fill fields from linked entities",

@@ -18,7 +18,14 @@ function getPublishedStatus(type: RelationshipEntityType): string | null {
 			return "active";
 		case "minute":
 			return "active";
-		// news and faq don't have status fields with draft
+		case "social":
+			return "active";
+		case "news":
+			return "active";
+		case "faq":
+			return "active";
+		case "poll":
+			return "active";
 		default:
 			return null;
 	}
@@ -73,7 +80,9 @@ function isReimbursementReady(fields: RequiredFieldsCheck): boolean {
  */
 function isBudgetReady(fields: RequiredFieldsCheck): boolean {
 	const name = String(fields.name || "").trim();
-	const amount = Number.parseFloat(String(fields.amount || "0").replace(",", "."));
+	const amount = Number.parseFloat(
+		String(fields.amount || "0").replace(",", "."),
+	);
 	return name.length > 0 && amount > 0;
 }
 
@@ -95,6 +104,54 @@ function isMinuteReady(fields: RequiredFieldsCheck): boolean {
 	const title = String(fields.title || "").trim();
 	const date = fields.date;
 	return title.length > 0 && !!date;
+}
+
+/**
+ * Check if a social draft should be auto-published.
+ * Required: name, url
+ */
+function isSocialReady(fields: RequiredFieldsCheck): boolean {
+	const name = String(fields.name || "").trim();
+	const url = String(fields.url || "").trim();
+	return name.length > 0 && url.length > 0;
+}
+
+/**
+ * Check if a news draft should be auto-published.
+ * Required: title, content
+ */
+function isNewsReady(fields: RequiredFieldsCheck): boolean {
+	const title = String(fields.title || "").trim();
+	const content = String(fields.content || "").trim();
+	return title.length > 0 && content.length > 0;
+}
+
+/**
+ * Check if an FAQ draft should be auto-published.
+ * Required: question, answer
+ */
+function isFaqReady(fields: RequiredFieldsCheck): boolean {
+	const question = String(fields.question || "").trim();
+	const answer = String(fields.answer || "").trim();
+	return question.length > 0 && answer.length > 0;
+}
+
+/**
+ * Check if a poll draft should be auto-published.
+ * Required: name
+ */
+function isPollReady(fields: RequiredFieldsCheck): boolean {
+	const name = String(fields.name || "").trim();
+	return name.length > 0;
+}
+
+/**
+ * Check if an event draft should be auto-published.
+ * Required: title (summary)
+ */
+function isEventReady(fields: RequiredFieldsCheck): boolean {
+	const title = String(fields.title || fields.summary || "").trim();
+	return title.length > 0;
 }
 
 /**
@@ -142,6 +199,21 @@ export function getDraftAutoPublishStatus(
 			break;
 		case "minute":
 			isReady = isMinuteReady(fields);
+			break;
+		case "social":
+			isReady = isSocialReady(fields);
+			break;
+		case "news":
+			isReady = isNewsReady(fields);
+			break;
+		case "faq":
+			isReady = isFaqReady(fields);
+			break;
+		case "poll":
+			isReady = isPollReady(fields);
+			break;
+		case "event":
+			isReady = isEventReady(fields);
 			break;
 		default:
 			return null;
