@@ -8,9 +8,8 @@ import {
 	useLoaderData,
 	useLocation,
 } from "react-router";
-
-import type { Route } from "./+types/root";
 import { Subnavbar } from "~/components/subnavbar";
+import type { Route } from "./+types/root";
 import "./app.css";
 import type { ClientUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db";
@@ -66,7 +65,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Get unread message count and messages for authenticated users
 	let unreadMessageCount = 0;
-	let unreadMessages: Array<{ id: string; title: string; content: string; createdAt: Date; relatedPurchaseId: string | null; relatedNewsId: string | null }> = [];
+	let unreadMessages: Array<{
+		id: string;
+		title: string;
+		content: string;
+		createdAt: Date;
+		relatedPurchaseId: string | null;
+		relatedNewsId: string | null;
+	}> = [];
 	if (user && user.userId !== "guest") {
 		const db = getDatabase();
 		unreadMessageCount = await db.getUnreadMessageCount(user.userId);
@@ -250,9 +256,7 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 							<Navigation variant="mobile" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<Subnavbar
-								key={`${location.pathname}${location.search ?? ""}`}
-							/>
+							<Subnavbar key={`${location.pathname}${location.search ?? ""}`} />
 						</div>
 					</div>
 				</div>
@@ -294,9 +298,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 					<h1 className="text-2xl font-bold text-foreground">
 						{t("app.setup_required")}
 					</h1>
-					<p className="text-muted-foreground">
-						{t("app.setup_message")}
-					</p>
+					<p className="text-muted-foreground">{t("app.setup_message")}</p>
 					<div className="bg-muted p-4 rounded-lg text-left space-y-2">
 						<p className="text-sm font-medium">{t("app.error_details")}:</p>
 						<code className="text-xs text-destructive block overflow-auto">
@@ -310,9 +312,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 						<span className="material-symbols-outlined">arrow_forward</span>
 						{t("app.open_setup")}
 					</a>
-					<p className="text-xs text-muted-foreground">
-						{t("app.copy_env")}
-					</p>
+					<p className="text-xs text-muted-foreground">{t("app.copy_env")}</p>
 				</div>
 			</main>
 		);
