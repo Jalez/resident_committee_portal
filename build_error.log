@@ -1,0 +1,124 @@
+$ react-router build
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 246 modules transformed.
+✗ Build failed in 704ms
+[vite]: Rollup failed to resolve import "~/components/treasury/treasury-detail-components" from "/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/minutes/$minuteId/_index.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteLog (file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/vite/dist/node/chunks/config.js:33635:57)
+    at file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/vite/dist/node/chunks/config.js:33669:73
+    at onwarn (/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/@react-router/dev/dist/cli/index.js:1657:11)
+    at file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/vite/dist/node/chunks/config.js:33669:28
+    at onRollupLog (file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/vite/dist/node/chunks/config.js:33664:63)
+    at onLog (file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/vite/dist/node/chunks/config.js:33467:4)
+    at file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/rollup/dist/es/shared/node-entry.js:21081:32
+    at Object.logger [as onLog] (file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/rollup/dist/es/shared/node-entry.js:22968:9)
+    at ModuleLoader.handleInvalidResolvedId (file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/rollup/dist/es/shared/node-entry.js:21712:26)
+    at file:///Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/node_modules/rollup/dist/es/shared/node-entry.js:21670:26 {
+  watchFiles: [
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/root.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/admin/migrate/relationships/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/entry.client.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/admin/storage/minutes/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/admin/storage/avatars/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/analytics/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/admin/storage/receipts/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api.entities.import-from-source.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api.risc.receiver.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/analytics/analyze/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api.relationships.analyze.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/analytics/questions/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/avatar/set/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/avatars/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/avatar/upload/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/budgets/$budgetId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/analytics/export/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/drafts/cleanup/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/faq/$faqId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/entities/create-draft/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/faq/$faqId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/inventory/$itemId/complete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/budgets/$budgetId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/entities/smart-autofill/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/inventory/$itemId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/inventory/export/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/messages/mark-read/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/minutes/$minuteId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/inventory/import/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/minutes/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/minutes/$minuteId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/minutes/upload/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/news/$newsId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/$receiptId/process/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/$receiptId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/analyze/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/$receiptId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/ocr/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/news/$newsId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/$receiptId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/delete-temp/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/rename/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/upload/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/upload-temp/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/receipts/thumbnail/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/reimbursements/$reimbursementId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/reimbursements/$reimbursementId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/transactions/$transactionId/update/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/set-language/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/relationship/analyze/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/transactions/$transactionId/delete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/treasury/import/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/treasury/export/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/auth/callback/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/auth/login/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/api/webhooks/resend/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/auth/logout/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/contact/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/committee/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/committee/mail/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/events/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/events/$eventId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/faq/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/events/new/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/faq/$faqId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/faq/$faqId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/inventory/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/inventory/$itemId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/inventory/$itemId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/inventory/incomplete/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/drafts/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/drafts/$draftId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/compose/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/messages/$messageId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/thread/$threadId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/messages/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/mail/new/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/minutes/$minuteId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/minutes/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/news/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/minutes/$minuteId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/news/$newsId/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/polls/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/polls/analytics/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/polls/$pollId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/news/$newsId/edit/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/faqs/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/polls/new/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/analytics/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/profile/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/general/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/news/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/reimbursements/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/relationship-contexts/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/users/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/receipts/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/settings/roles/_index.tsx',
+    '/Users/jaakkorajala/Projects/hippos_kotisivut/hippos-portal/app/routes/setup/_index.tsx',
+    ... 108 more items
+  ]
+}
+error: script "build" exited with code 1
