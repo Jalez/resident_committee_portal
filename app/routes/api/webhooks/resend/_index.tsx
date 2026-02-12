@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import {
 	extractPurchaseIdFromEmail,
 	getWebhookSecret,

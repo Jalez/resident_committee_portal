@@ -9,7 +9,7 @@
  */
 
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import {
 	type AnalysisResult,

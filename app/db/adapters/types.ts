@@ -31,7 +31,6 @@ import type {
 	Purchase,
 	Receipt,
 	ReceiptContent,
-	RelationshipEntityType,
 	Role,
 	SocialLink,
 	Submission,
@@ -39,6 +38,7 @@ import type {
 	Transaction,
 	User,
 } from "../schema";
+import type { RelationshipEntityType } from "../types";
 
 /**
  * Database adapter interface

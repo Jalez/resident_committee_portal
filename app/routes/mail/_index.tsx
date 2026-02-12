@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, redirect, useActionData, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { isCommitteeMailConfigured } from "~/lib/mail-nodemailer.server";

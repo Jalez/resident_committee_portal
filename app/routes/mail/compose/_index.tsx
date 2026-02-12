@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 
@@ -42,7 +42,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     });
 
     // Redirect to the new standard edit path
-    const targetUrl = new URL(`/mail/${draft.id}/edit`, request.url);
+    const targetUrl = new URL(`/mail/drafts/${draft.id}/edit`, request.url);
 
     // Preserve other params like returnUrl or source context if needed
     for (const [key, value] of url.searchParams.entries()) {

@@ -15,7 +15,7 @@
  * See: TODO-relationship_context_design.md for full specification
  */
 
-import type { getDatabase } from "~/db";
+import type { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 
 export interface RelationshipContextValues {

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { RelationActions } from "~/components/relation-actions";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 import {
 	type AnyEntity,
 	entityToLinkableItem,
@@ -235,7 +235,7 @@ function RelationshipSectionComponent({
 	// Handler for creating new entities via draft system
 	const handleAdd = () => {
 		const formData = new FormData();
-		formData.append("type", section.relationBType);
+		formData.append("type", section.createType || section.relationBType);
 		formData.append("sourceType", relationAType);
 		formData.append("sourceId", relationAId);
 		if (relationAName) formData.append("sourceName", relationAName);
@@ -337,6 +337,16 @@ function RelationshipSectionComponent({
  * Universal relationship picker component
  * Replaces entity-specific pickers with a unified interface
  */
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
+
+// ... (previous imports)
+
+// ... (RelationshipSectionComponent remains unchanged)
+
+/**
+ * Universal relationship picker component
+ * Replaces entity-specific pickers with a unified interface
+ */
 export function RelationshipPicker({
 	relationAType,
 	relationAId,
@@ -355,6 +365,31 @@ export function RelationshipPicker({
 	// Convert relationAType to EntityType for legacy RelationActions compatibility
 	const sourceEntityType = relationAType as unknown as EntityType;
 
+	// Derive initial relationships from sections for the internal hook
+	const initialRelationships = React.useMemo(() => {
+		const initials: any[] = [];
+		for (const section of sections) {
+			for (const entity of section.linkedEntities) {
+				initials.push({
+					relationBType: section.relationBType,
+					relationBId: entity.id,
+				});
+			}
+		}
+		return initials;
+	}, [sections]);
+
+	// Use internal hook if handlers are not provided
+	const internalPicker = useRelationshipPicker({
+		relationAType,
+		relationAId,
+		initialRelationships,
+	});
+
+	const handleLink = onLink || internalPicker.handleLink;
+	const handleUnlink = onUnlink || internalPicker.handleUnlink;
+	const effectiveFormData = formData || internalPicker.toFormData();
+
 	return (
 		<div className={className}>
 			{/* Relationship Sections */}
@@ -368,8 +403,8 @@ export function RelationshipPicker({
 						relationAName={relationAName}
 						mode={mode}
 						currentPath={currentPath}
-						onLink={onLink}
-						onUnlink={onUnlink}
+						onLink={handleLink}
+						onUnlink={handleUnlink}
 						storageKeyPrefix={storageKeyPrefix}
 						sourceEntityType={sourceEntityType}
 					/>
@@ -394,8 +429,8 @@ export function RelationshipPicker({
 				))}
 
 			{/* Form data hidden inputs */}
-			{formData &&
-				Object.entries(formData).map(([key, value]) => (
+			{effectiveFormData &&
+				Object.entries(effectiveFormData).map(([key, value]) => (
 					<input key={key} type="hidden" name={key} value={value} />
 				))}
 		</div>

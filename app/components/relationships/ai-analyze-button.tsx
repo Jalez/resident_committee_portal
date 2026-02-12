@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 export interface AIAnalyzeButtonProps {
 	/** The type of the source entity being analyzed */

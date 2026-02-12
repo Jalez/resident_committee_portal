@@ -7,7 +7,7 @@ import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";

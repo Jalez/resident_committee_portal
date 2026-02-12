@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { SITE_CONFIG } from "~/lib/config.server";
 
 interface LoaderArgs {

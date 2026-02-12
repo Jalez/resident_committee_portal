@@ -1,4 +1,4 @@
-import { getReceiptStorage } from "~/lib/receipts";
+import { getReceiptStorage } from "~/lib/receipts/server";
 import type { Route } from "./+types/_index";
 
 export async function action({ request }: Route.ActionArgs) {

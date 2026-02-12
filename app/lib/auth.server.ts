@@ -325,7 +325,7 @@ export function canDeleteSelf(
 export async function requirePermissionOrSelf(
 	request: Request,
 	generalPermission: string,
-	selfPermission: string,
+	selfPermission: string | undefined,
 	itemCreatedBy: string | null | undefined,
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
@@ -341,12 +341,12 @@ export async function requirePermissionOrSelf(
 	}
 
 	// Check self permission with ownership
-	if (canEditSelf(user, itemCreatedBy, selfPermission)) {
+	if (selfPermission && canEditSelf(user, itemCreatedBy, selfPermission)) {
 		return user;
 	}
 
 	throw new Response(
-		`Forbidden - Missing permission: ${generalPermission} or ${selfPermission} (with ownership)`,
+		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
 		{ status: 403 },
 	);
 }
@@ -357,7 +357,7 @@ export async function requirePermissionOrSelf(
 export async function requireDeletePermissionOrSelf(
 	request: Request,
 	generalPermission: string,
-	selfPermission: string,
+	selfPermission: string | undefined,
 	itemCreatedBy: string | null | undefined,
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
@@ -373,12 +373,12 @@ export async function requireDeletePermissionOrSelf(
 	}
 
 	// Check self permission with ownership
-	if (canDeleteSelf(user, itemCreatedBy, selfPermission)) {
+	if (selfPermission && canDeleteSelf(user, itemCreatedBy, selfPermission)) {
 		return user;
 	}
 
 	throw new Response(
-		`Forbidden - Missing permission: ${generalPermission} or ${selfPermission} (with ownership)`,
+		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
 		{ status: 403 },
 	);
 }

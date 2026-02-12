@@ -6,7 +6,7 @@ import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { NewsAiSettings } from "~/components/settings/news-ai-settings";
 import { handleNewsAiSettingsAction } from "~/components/settings/news-ai-settings.server";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import {
 	getAvailableModels,

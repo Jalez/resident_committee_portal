@@ -12,7 +12,7 @@ import { Subnavbar } from "~/components/subnavbar";
 import type { Route } from "./+types/root";
 import "./app.css";
 import type { ClientUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import i18next, { getSupportedLanguages } from "~/i18next.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -158,6 +158,7 @@ import { NavigationStackProvider } from "./contexts/navigation-stack-context";
 import { NewTransactionProvider } from "./contexts/new-transaction-context";
 import { ReimbursementTemplateProvider } from "./contexts/reimbursement-template-context";
 import { UserProvider } from "./contexts/user-context";
+import { ActionNotifier } from "./components/action-notifier";
 import { queryClient } from "./lib/query-client";
 
 function ContentFader({ children }: { children: React.ReactNode }) {
@@ -202,6 +203,7 @@ export default function App() {
 							<InfoReelProvider>
 								<LanguageProvider>
 									<AppContent siteConfig={siteConfig} />
+									<ActionNotifier />
 								</LanguageProvider>
 							</InfoReelProvider>
 						</ReimbursementTemplateProvider>

@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs, redirect } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { localeCookie } from "~/i18next.server";
 import {
 	createSession,

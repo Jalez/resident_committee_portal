@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, requireAnyPermission } from "~/lib/auth.server";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";
 import { buildMinutePath, getMinutesPrefix } from "~/lib/minutes/utils";

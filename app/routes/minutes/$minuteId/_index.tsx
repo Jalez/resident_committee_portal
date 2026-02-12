@@ -3,12 +3,10 @@ import { Link, useRouteLoaderData } from "react-router";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
-import {
-	TreasuryDetailCard,
-	TreasuryField,
-} from "~/components/treasury/treasury-detail-components";
 import { Button } from "~/components/ui/button";
-import { getDatabase } from "~/db";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Label } from "~/components/ui/label";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { AnyEntity } from "~/lib/entity-converters";
@@ -87,61 +85,81 @@ export default function MinuteView({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				<div className="space-y-6">
-					<TreasuryDetailCard title={t("minutes.details", "Minute Details")}>
-						<div className="grid gap-4">
-							<TreasuryField
-								label={t("minutes.title_field", "Title")}
-								valueClassName="text-foreground font-semibold"
-							>
-								{minute.title || "—"}
-							</TreasuryField>
-							<TreasuryField label={t("minutes.date", "Date")}>
-								{formatDate(minute.date)}
-							</TreasuryField>
-							{minute.description ? (
-								<TreasuryField label={t("minutes.description", "Description")}>
-									{minute.description}
-								</TreasuryField>
-							) : null}
-							{minute.fileUrl && (
-								<TreasuryField label={t("minutes.file", "File")}>
-									<a
-										href={minute.fileUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="inline-flex items-center text-primary hover:underline font-medium"
-									>
-										<span className="material-symbols-outlined mr-2 text-base">
-											description
-										</span>
-										{minute.fileKey?.split("/").pop() ||
-											t("minutes.view_file", "View File")}
-									</a>
-								</TreasuryField>
-							)}
-						</div>
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("minutes.details", "Minute Details")}</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-6">
+							<div className="grid gap-4">
+								<div>
+									<Label className="text-muted-foreground">
+										{t("minutes.title_field", "Title")}
+									</Label>
+									<div className="text-foreground font-semibold">
+										{minute.title || "—"}
+									</div>
+								</div>
+								<div>
+									<Label className="text-muted-foreground">
+										{t("minutes.date", "Date")}
+									</Label>
+									<div className="font-medium">{formatDate(minute.date)}</div>
+								</div>
+								{minute.description ? (
+									<div>
+										<Label className="text-muted-foreground">
+											{t("minutes.description", "Description")}
+										</Label>
+										<div className="font-medium">{minute.description}</div>
+									</div>
+								) : null}
+								{minute.fileUrl && (
+									<div>
+										<Label className="text-muted-foreground">
+											{t("minutes.file", "File")}
+										</Label>
+										<div className="font-medium">
+											<a
+												href={minute.fileUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="inline-flex items-center text-primary hover:underline"
+											>
+												<span className="material-symbols-outlined mr-2 text-base">
+													description
+												</span>
+												{minute.fileKey?.split("/").pop() ||
+													t("minutes.view_file", "View File")}
+											</a>
+										</div>
+									</div>
+								)}
+							</div>
 
-						<RelationshipPicker
-							relationAType="minute"
-							relationAId={minute.id}
-							relationAName={minute.title || ""}
-							mode="view"
-							sections={[
-								{
-									relationBType: "reimbursement",
-									linkedEntities: (relationships.reimbursement?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: [],
-								},
-								{
-									relationBType: "inventory",
-									linkedEntities: (relationships.inventory?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: [],
-								},
-							]}
-						/>
-					</TreasuryDetailCard>
+							<div className="space-y-4">
+								<RelationshipPicker
+									relationAType="minute"
+									relationAId={minute.id}
+									relationAName={minute.title || ""}
+									mode="view"
+									sections={[
+										{
+											relationBType: "reimbursement",
+											linkedEntities: (relationships.reimbursement?.linked ||
+												[]) as unknown as AnyEntity[],
+											availableEntities: [],
+										},
+										{
+											relationBType: "inventory",
+											linkedEntities: (relationships.inventory?.linked ||
+												[]) as unknown as AnyEntity[],
+											availableEntities: [],
+										},
+									]}
+								/>
+							</div>
+						</CardContent>
+					</Card>
 
 					<div className="flex justify-start">
 						<Button variant="ghost" asChild>

@@ -1,5 +1,5 @@
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
-import { getReceiptStorage } from "~/lib/receipts";
+import { getReceiptStorage } from "~/lib/receipts/server";
 import { buildReceiptPath } from "~/lib/receipts/utils";
 import type { Route } from "./+types/_index";
 

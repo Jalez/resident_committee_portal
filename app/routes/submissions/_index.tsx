@@ -4,7 +4,7 @@ import { Form } from "react-router";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { getDatabase, type Submission, type SubmissionStatus } from "~/db";
+import { getDatabase, type Submission, type SubmissionStatus } from "~/db/server";
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
@@ -184,7 +184,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"px-2 py-1 rounded-full text-xs font-bold uppercase",
 											TYPE_COLORS[submission.type] ||
-												"bg-gray-100 text-gray-700",
+											"bg-gray-100 text-gray-700",
 										)}
 									>
 										{t(`contact.types.${submission.type}.title`, {

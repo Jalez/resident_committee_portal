@@ -5,6 +5,8 @@ export interface ReceiptFile {
 	createdTime: string;
 }
 
+export type ReceiptStorageProvider = "vercel-blob" | "filesystem";
+
 export interface ReceiptsByYear {
 	year: string;
 	files: ReceiptFile[];

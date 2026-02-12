@@ -23,12 +23,8 @@ export default [
 	route("api/avatar/upload", "routes/api/avatar/upload/_index.tsx"),
 	route("api/avatars/delete", "routes/api/avatars/delete/_index.tsx"),
 	route(
-		"api/budgets/:budgetId/delete",
-		"routes/api/budgets/$budgetId/delete/_index.tsx",
-	),
-	route(
-		"api/budgets/:budgetId/update",
-		"routes/api/budgets/$budgetId/update/_index.tsx",
+		"treasury/budgets/:budgetId/delete",
+		"routes/treasury/budgets/$budgetId/delete/_index.tsx",
 	),
 	route("api/drafts/cleanup", "routes/api/drafts/cleanup/_index.tsx"),
 	route(
@@ -39,7 +35,7 @@ export default [
 		"api/entities/smart-autofill",
 		"routes/api/entities/smart-autofill/_index.tsx",
 	),
-	route("api/faq/:faqId/delete", "routes/api/faq/$faqId/delete/_index.tsx"),
+	route("faq/:faqId/delete", "routes/faq/$faqId/delete/_index.tsx"),
 	route("api/faq/:faqId/update", "routes/api/faq/$faqId/update/_index.tsx"),
 	route(
 		"api/inventory/:itemId/complete",
@@ -54,28 +50,24 @@ export default [
 	route("api/messages/mark-read", "routes/api/messages/mark-read/_index.tsx"),
 	route("api/minutes", "routes/api/minutes/_index.tsx"),
 	route(
-		"api/minutes/:minuteId/delete",
-		"routes/api/minutes/$minuteId/delete/_index.tsx",
+		"minutes/:minuteId/delete",
+		"routes/minutes/$minuteId/delete/_index.tsx",
 	),
 	route(
 		"api/minutes/:minuteId/update",
 		"routes/api/minutes/$minuteId/update/_index.tsx",
 	),
 	route("api/minutes/upload", "routes/api/minutes/upload/_index.tsx"),
-	route("api/news/:newsId/delete", "routes/api/news/$newsId/delete/_index.tsx"),
+	route("news/:newsId/delete", "routes/news/$newsId/delete/_index.tsx"),
 	route("api/news/:newsId/update", "routes/api/news/$newsId/update/_index.tsx"),
 	route("api/receipts/:receiptId", "routes/api/receipts/$receiptId/_index.tsx"),
 	route(
-		"api/receipts/:receiptId/delete",
-		"routes/api/receipts/$receiptId/delete/_index.tsx",
+		"treasury/receipts/:receiptId/delete",
+		"routes/treasury/receipts/$receiptId/delete/_index.tsx",
 	),
 	route(
 		"api/receipts/:receiptId/process",
 		"routes/api/receipts/$receiptId/process/_index.tsx",
-	),
-	route(
-		"api/receipts/:receiptId/update",
-		"routes/api/receipts/$receiptId/update/_index.tsx",
 	),
 	route("api/receipts/analyze", "routes/api/receipts/analyze/_index.tsx"),
 	route(
@@ -91,8 +83,8 @@ export default [
 		"routes/api/receipts/upload-temp/_index.tsx",
 	),
 	route(
-		"api/reimbursements/:reimbursementId/delete",
-		"routes/api/reimbursements/$reimbursementId/delete/_index.tsx",
+		"treasury/reimbursements/:purchaseId/delete",
+		"routes/treasury/reimbursements/$purchaseId/delete/_index.tsx",
 	),
 	route(
 		"api/reimbursements/:reimbursementId/update",
@@ -104,8 +96,8 @@ export default [
 	),
 	route("api/set-language", "routes/api/set-language/_index.tsx"),
 	route(
-		"api/transactions/:transactionId/delete",
-		"routes/api/transactions/$transactionId/delete/_index.tsx",
+		"treasury/transactions/:transactionId/delete",
+		"routes/treasury/transactions/$transactionId/delete/_index.tsx",
 	),
 	route(
 		"api/transactions/:transactionId/update",
@@ -131,9 +123,10 @@ export default [
 	route("inventory/:itemId/edit", "routes/inventory/$itemId/edit/_index.tsx"),
 	route("inventory/incomplete", "routes/inventory/incomplete/_index.tsx"),
 	route("mail", "routes/mail/_index.tsx"),
-	route("mail/:messageId", "routes/mail/$messageId/_index.tsx"),
+	route("mail/messages/:messageId", "routes/mail/messages/$messageId/_index.tsx"),
 	route("mail/compose", "routes/mail/compose/_index.tsx"),
 	route("mail/drafts", "routes/mail/drafts/_index.tsx"),
+	route("mail/drafts/:draftId/edit", "routes/mail/drafts/$draftId/edit/_index.tsx"),
 	route("mail/new", "routes/mail/new/_index.tsx"),
 	route("mail/thread/:threadId", "routes/mail/thread/$threadId/_index.tsx"),
 	route("messages", "routes/messages/_index.tsx"),

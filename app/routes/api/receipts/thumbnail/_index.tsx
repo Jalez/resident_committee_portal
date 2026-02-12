@@ -1,8 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router";
 import sharp from "sharp";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requireAnyPermission } from "~/lib/auth.server";
-import { getReceiptStorage } from "~/lib/receipts";
+import { getReceiptStorage } from "~/lib/receipts/server";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 
 const IMAGE_CONTENT_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -36,7 +36,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		Math.max(
 			100,
 			parseInt(url.searchParams.get("w") || String(DEFAULT_WIDTH), 10) ||
-				DEFAULT_WIDTH,
+			DEFAULT_WIDTH,
 		),
 	);
 

@@ -61,21 +61,5 @@ export function getRelationshipContextFromUrl(url: URL): SourceContext | null {
 	const newFormat = decodeRelationshipContext(url.searchParams.get("source"));
 	if (newFormat) return newFormat;
 
-	// Fallback to legacy formats
-	const legacyReceipt = url.searchParams.get("sourceReceiptId");
-	if (legacyReceipt) {
-		return { type: "receipt", id: legacyReceipt };
-	}
-
-	const legacyTransaction = url.searchParams.get("sourceTransactionId");
-	if (legacyTransaction) {
-		return { type: "transaction", id: legacyTransaction };
-	}
-
-	const legacyPurchase = url.searchParams.get("sourcePurchaseId");
-	if (legacyPurchase) {
-		return { type: "reimbursement", id: legacyPurchase };
-	}
-
 	return null;
 }

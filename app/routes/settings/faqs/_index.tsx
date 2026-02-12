@@ -6,7 +6,7 @@ import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { FaqAiSettings } from "~/components/settings/faq-ai-settings";
 import { handleFaqAiSettingsAction } from "~/components/settings/faq-ai-settings.server";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import {
 	getAvailableModels,

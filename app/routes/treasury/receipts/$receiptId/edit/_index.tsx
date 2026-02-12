@@ -1,87 +1,85 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, useActionData, useNavigate } from "react-router";
+import { useActionData, useNavigate } from "react-router";
+import { z } from "zod";
+import {
+	handleFileUpload,
+	saveReceiptOCRContent,
+} from "~/actions/receipt-actions.server";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { EditForm } from "~/components/ui/edit-form";
 import { ReceiptFormFields } from "~/components/treasury/receipt-form-fields";
-import { TreasuryDetailCard } from "~/components/treasury/treasury-detail-components";
-import { TreasuryFormActions } from "~/components/treasury/treasury-form-actions";
-import { getDatabase } from "~/db";
 import { useReceiptUpload } from "~/hooks/use-receipt-upload";
-import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
-import { requirePermissionOrSelf } from "~/lib/auth.server";
-import { SITE_CONFIG } from "~/lib/config.server";
-import type { AnyEntity } from "~/lib/entity-converters";
-import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
-import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
-import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
+import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
+import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
-			title: `${data?.siteConfig?.name || "Portal"} - Muokkaa kuittia / Edit Receipt`,
+			title: `${(data as any)?.siteConfig?.name || "Portal"} - Muokkaa kuittia / Edit Receipt`,
 		},
 		{ name: "robots", content: "noindex" },
 	];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	const db = getDatabase();
-	const receipt = await db.getReceiptById(params.receiptId);
-
-	if (!receipt) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
-	await requirePermissionOrSelf(
+	return createEditLoader({
+		entityType: "receipt",
+		permission: "treasury:receipts:update",
+		permissionSelf: "treasury:receipts:update-self",
+		params,
 		request,
-		"treasury:receipts:update",
-		"treasury:receipts:update-self",
-		receipt.createdBy,
-		getDatabase,
-	);
-
-	// Load relationships using new universal system
-	const relationships = await loadRelationshipsForEntity(
-		db,
-		"receipt",
-		receipt.id,
-		["reimbursement", "transaction", "inventory"],
-	);
-
-	// Get relationship context from URL for auto-linking
-	const url = new URL(request.url);
-	const sourceContext = getRelationshipContextFromUrl(url);
-	const returnUrl = url.searchParams.get("returnUrl");
-
-	return {
-		siteConfig: SITE_CONFIG,
-		receipt,
-		receiptContent: await db.getReceiptContentByReceiptId(receipt.id),
-		relationshipContext: await getRelationshipContext(
-			db,
-			"receipt",
-			receipt.id,
-			undefined,
-		),
-		relationships,
-		sourceContext,
-		returnUrl,
-	};
+		fetchEntity: (db, id) => db.getReceiptById(id),
+		relationshipTypes: ["reimbursement", "transaction", "inventory"],
+		extend: async ({ db, entity }) => ({
+			receiptContent: await db.getReceiptContentByReceiptId(entity.id),
+		}),
+	});
 }
 
-export async function action() {
-	// Receipt update logic has been moved to /api/receipts/:receiptId/update
-	return null;
+const updateReceiptSchema = z.object({
+	name: z.string().optional(),
+	description: z.string().optional(),
+});
+
+export async function action({ request, params }: Route.ActionArgs) {
+	return createEditAction({
+		entityType: "receipt",
+		permission: "treasury:receipts:update",
+		permissionSelf: "treasury:receipts:update-self",
+		params,
+		request,
+		schema: updateReceiptSchema,
+		fetchEntity: (db, id) => db.getReceiptById(id),
+		onUpdate: async ({ db, id, data, entity, formData, newStatus }) => {
+			const name = data.name || "";
+			const uploadResult = await handleFileUpload(formData, entity as any, name);
+			if ("error" in uploadResult) {
+				return uploadResult;
+			}
+
+			const { nextUrl, nextPathname, nextName } = uploadResult;
+			await db.updateReceipt(id, {
+				name: nextName,
+				description: data.description?.trim() || null,
+				url: nextUrl,
+				pathname: nextPathname,
+				status: (newStatus as any) || (entity as any).status,
+			});
+		},
+		afterUpdate: async ({ entity, formData }) => {
+			await saveReceiptOCRContent(formData, entity as any);
+		},
+	});
 }
 
 export default function TreasuryReceiptsEdit({
 	loaderData,
 }: Route.ComponentProps) {
 	const actionData = useActionData<any>();
-	const { receipt, receiptContent, relationships } = loaderData;
+	const { receipt, receiptContent, relationships, returnUrl, sourceContext } = loaderData as any;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 
@@ -93,13 +91,6 @@ export default function TreasuryReceiptsEdit({
 	const [name, setName] = useState(receipt.name || "");
 	const [description, setDescription] = useState(receipt.description || "");
 	const [analyzeWithAI, setAnalyzeWithAI] = useState(true);
-
-	// Use relationship picker hook
-	const relationshipPicker = useRelationshipPicker({
-		relationAType: "receipt",
-		relationAId: receipt.id,
-		initialRelationships: [],
-	});
 
 	const {
 		isUploading,
@@ -119,142 +110,81 @@ export default function TreasuryReceiptsEdit({
 
 	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
 
-	// Clear draft on successful submission
-	const handleSubmit = () => {
-		clearDraft();
-	};
+	// Clear draft on successful submission is implicit if we navigate away, 
+	// but EditForm submits and redirects.
+	// If we want to clear draft explicitly, we might need to hook into form submission or unmount.
 
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<PageHeader title={t("treasury.receipts.edit")} />
-
+				{/* Error display */}
 				{actionData &&
 					typeof actionData === "object" &&
 					"error" in actionData && (
 						<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
 							{actionData.error === "invalid_file_type"
 								? t("treasury.receipts.invalid_file_type", {
-										types: allowedTypes,
-									})
+									types: allowedTypes,
+								})
 								: (actionData.error as string)}
 						</div>
 					)}
-				<TreasuryDetailCard
-					title={t("treasury.receipts.link_to_reimbursement")}
+
+				<EditForm
+					title={t("treasury.receipts.edit")}
+					action=""
+					encType="multipart/form-data"
+					inputFields={{
+						name: null,
+						description: null
+					}}
+					entityType="receipt"
+					entityId={receipt.id}
+					relationships={relationships}
+					returnUrl={returnUrl || "/treasury/receipts"}
+					onCancel={() => {
+						handleCancel();
+						if (window.history.length > 1) {
+							navigate(-1);
+						} else {
+							navigate("/treasury/receipts");
+						}
+					}}
+					deleteUrl={ENTITY_REGISTRY.receipt.deleteUrl(receipt.id)}
+					submitDisabled={isAnalyzing || isUploading}
+					hiddenFields={{
+						_sourceType: sourceContext?.type,
+						_sourceId: sourceContext?.id,
+						_returnUrl: returnUrl,
+						tempUrl: tempUrl,
+						tempPathname: tempPathname,
+						ocr_data: ocrData ? JSON.stringify({
+							rawText: ocrData.rawText,
+							parsedData: ocrData.parsedData,
+						}) : undefined,
+					}}
+					translationNamespace="treasury.receipts"
 				>
-					<Form
-						method="post"
-						action={`/api/receipts/${receipt.id}/update`}
-						encType="multipart/form-data"
-						className="space-y-6"
-						onSubmit={handleSubmit}
-					>
-						{/* Hidden fields for auto-linking */}
-						{loaderData.sourceContext && (
-							<>
-								<input
-									type="hidden"
-									name="sourceType"
-									value={loaderData.sourceContext.type}
-								/>
-								<input
-									type="hidden"
-									name="sourceId"
-									value={loaderData.sourceContext.id}
-								/>
-							</>
-						)}
-						{loaderData.returnUrl && (
-							<input
-								type="hidden"
-								name="_returnUrl"
-								value={loaderData.returnUrl}
-							/>
-						)}
-
-						{tempUrl && <input type="hidden" name="tempUrl" value={tempUrl} />}
-						{tempPathname && (
-							<input type="hidden" name="tempPathname" value={tempPathname} />
-						)}
-						{ocrData && (
-							<input
-								type="hidden"
-								name="ocr_data"
-								value={JSON.stringify({
-									rawText: ocrData.rawText,
-									parsedData: ocrData.parsedData,
-								})}
-							/>
-						)}
-
-						<ReceiptFormFields
-							receiptId={receipt.id}
-							analyzeWithAI={analyzeWithAI}
-							onAnalyzeChange={setAnalyzeWithAI}
-							onFileChange={handleFileChange}
-							isUploading={isUploading}
-							isAnalyzing={isAnalyzing}
-							name={name}
-							onNameChange={setName}
-							description={description || ""}
-							onDescriptionChange={setDescription}
-							ocrData={ocrData}
-							tempUrl={tempUrl}
-							onReanalyze={handleReanalyze}
-							selectedFile={selectedFile}
-							existingReceiptUrl={receipt.url || undefined}
-							existingFileName={currentFileName}
-							existingReceiptContent={receiptContent}
-						/>
-
-						<RelationshipPicker
-							relationAType="receipt"
-							relationAId={receipt.id}
-							relationAName={receipt.name || "Receipt"}
-							sections={[
-								{
-									relationBType: "reimbursement",
-									linkedEntities: (relationships.reimbursement?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: (relationships.reimbursement?.available ||
-										[]) as unknown as AnyEntity[],
-									maxItems: 1,
-									createType: "reimbursement",
-								},
-								{
-									relationBType: "transaction",
-									linkedEntities: (relationships.transaction?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: (relationships.transaction?.available ||
-										[]) as unknown as AnyEntity[],
-									createType: "transaction",
-								},
-								{
-									relationBType: "inventory",
-									linkedEntities: (relationships.inventory?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: (relationships.inventory?.available ||
-										[]) as unknown as AnyEntity[],
-									createType: "inventory",
-								},
-							]}
-							mode="edit"
-							onLink={relationshipPicker.handleLink}
-							onUnlink={relationshipPicker.handleUnlink}
-							storageKeyPrefix={`receipt-${receipt.id}`}
-							formData={relationshipPicker.toFormData()}
-						/>
-
-						<TreasuryFormActions
-							disabled={isAnalyzing || isUploading}
-							onCancel={() => {
-								handleCancel();
-								navigate(loaderData.returnUrl || "/treasury/receipts");
-							}}
-						/>
-					</Form>
-				</TreasuryDetailCard>
+					<ReceiptFormFields
+						receiptId={receipt.id}
+						analyzeWithAI={analyzeWithAI}
+						onAnalyzeChange={setAnalyzeWithAI}
+						onFileChange={handleFileChange}
+						isUploading={isUploading}
+						isAnalyzing={isAnalyzing}
+						name={name}
+						onNameChange={setName}
+						description={description || ""}
+						onDescriptionChange={setDescription}
+						ocrData={ocrData}
+						tempUrl={tempUrl}
+						onReanalyze={handleReanalyze}
+						selectedFile={selectedFile}
+						existingReceiptUrl={receipt.url || undefined}
+						existingFileName={currentFileName}
+						existingReceiptContent={receiptContent}
+					/>
+				</EditForm>
 			</div>
 		</PageWrapper>
 	);

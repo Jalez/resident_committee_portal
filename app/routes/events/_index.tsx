@@ -19,7 +19,7 @@ import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import {
 	getAuthenticatedUser,
 	getGuestContext,
@@ -158,7 +158,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			location: item.location || "",
 			type:
 				item.description?.includes("#meeting") ||
-				summary.toLowerCase().includes("kokous")
+					summary.toLowerCase().includes("kokous")
 					? "meeting"
 					: "social",
 		};
@@ -355,13 +355,13 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	// Filter events client-side based on title filter
 	const filteredMonths: GroupedMonth[] = filters?.title
 		? groupedMonths
-				.map((month: GroupedMonth) => ({
-					...month,
-					events: month.events.filter((event: Event) =>
-						event.title.toLowerCase().includes(filters.title.toLowerCase()),
-					),
-				}))
-				.filter((month: GroupedMonth) => month.events.length > 0)
+			.map((month: GroupedMonth) => ({
+				...month,
+				events: month.events.filter((event: Event) =>
+					event.title.toLowerCase().includes(filters.title.toLowerCase()),
+				),
+			}))
+			.filter((month: GroupedMonth) => month.events.length > 0)
 		: groupedMonths;
 
 	// QR Panel only shown in info reel mode

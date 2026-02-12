@@ -8,7 +8,7 @@
  * - Write-through to legacy FKs (for backward compatibility)
  */
 
-import type { getDatabase } from "~/db";
+import type { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import { cleanupOrphanedDraft } from "./draft-lifecycle.server";
 

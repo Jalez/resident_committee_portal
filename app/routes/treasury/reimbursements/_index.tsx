@@ -29,7 +29,7 @@ import {
 	type InventoryItem,
 	type Purchase,
 	type PurchaseStatus,
-} from "~/db";
+} from "~/db/server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
@@ -262,10 +262,10 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 		const linkedTransaction = txRel
 			? await db.getTransactionById(
-					txRel.relationBType === "transaction"
-						? txRel.relationBId
-						: txRel.relationId,
-				)
+				txRel.relationBType === "transaction"
+					? txRel.relationBId
+					: txRel.relationId,
+			)
 			: null;
 		if (linkedTransaction) {
 			// Map purchase status to transaction reimbursementStatus and status
@@ -449,16 +449,16 @@ export default function BudgetReimbursements({
 								className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer border-0 ${statusColor}`}
 							>
 								<option value="pending">
-									{t("treasury.reimbursements.statuses.pending")}
+									{t("treasury.reimbursements.status.pending")}
 								</option>
 								<option value="approved">
-									{t("treasury.reimbursements.statuses.approved")}
+									{t("treasury.reimbursements.status.approved")}
 								</option>
 								<option value="reimbursed">
-									{t("treasury.reimbursements.statuses.reimbursed")}
+									{t("treasury.reimbursements.status.reimbursed")}
 								</option>
 								<option value="rejected">
-									{t("treasury.reimbursements.statuses.rejected")}
+									{t("treasury.reimbursements.status.rejected")}
 								</option>
 							</select>
 						</Form>
@@ -468,7 +468,7 @@ export default function BudgetReimbursements({
 					<TreasuryStatusPill
 						value={row.status}
 						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
-						label={t(`treasury.reimbursements.statuses.${row.status}`)}
+						label={t(`treasury.reimbursements.status.${row.status}`)}
 					/>
 				);
 			},
@@ -538,7 +538,7 @@ export default function BudgetReimbursements({
 				const mailHref = row.mailLink?.threadId
 					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
 					: row.mailLink?.messageId
-						? `/mail/${row.mailLink.messageId}`
+						? `/mail/messages/${row.mailLink.messageId}`
 						: null;
 				if (row.emailSent) {
 					const icon = (
@@ -569,7 +569,7 @@ export default function BudgetReimbursements({
 				const mailHref = row.mailLink?.threadId
 					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
 					: row.mailLink?.messageId
-						? `/mail/${row.mailLink.messageId}`
+						? `/mail/messages/${row.mailLink.messageId}`
 						: null;
 				if (!row.emailReplyReceived) {
 					return <span className="text-gray-400">—</span>;
@@ -658,13 +658,13 @@ export default function BudgetReimbursements({
 									deleteProps={
 										canDelete
 											? {
-													action: `/api/reimbursements/${purchase.id}/delete`,
-													hiddenFields: {},
-													confirmMessage: t(
-														"treasury.reimbursements.delete_confirm",
-													),
-													title: t("common.actions.delete"),
-												}
+												action: `/treasury/reimbursements/${purchase.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t(
+													"treasury.reimbursements.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
 											: undefined
 									}
 								/>

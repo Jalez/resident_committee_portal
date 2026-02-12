@@ -70,7 +70,6 @@ export function PermissionsTable({
 	const allPermissions: PermissionRow[] = useMemo(() => {
 		const flattened: PermissionRow[] = [];
 		for (const [category, perms] of Object.entries(permissionsByCategory)) {
-			// @ts-expect-error - iterating typed object
 			for (const perm of perms) {
 				flattened.push({
 					id: perm.name,
@@ -229,13 +228,13 @@ export function PermissionsTable({
 										<Checkbox
 											checked={
 												filteredPermissions.length > 0 &&
-												filteredPermissions.every((p) =>
-													checkedPermissions.has(p.id),
-												)
+													filteredPermissions.every((p) =>
+														checkedPermissions.has(p.id),
+													)
 													? true
 													: filteredPermissions.some((p) =>
-																checkedPermissions.has(p.id),
-															)
+														checkedPermissions.has(p.id),
+													)
 														? "indeterminate"
 														: false
 											}

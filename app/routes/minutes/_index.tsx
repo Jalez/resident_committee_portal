@@ -16,7 +16,7 @@ import {
 } from "~/components/ui/accordion";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getMinutesByYear, type MinutesByYear } from "~/lib/google.server";

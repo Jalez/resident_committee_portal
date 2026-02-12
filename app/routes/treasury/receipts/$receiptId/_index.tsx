@@ -9,7 +9,7 @@ import {
 	TreasuryField,
 } from "~/components/treasury/treasury-detail-components";
 import { Button } from "~/components/ui/button";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { AnyEntity } from "~/lib/entity-converters";

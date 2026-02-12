@@ -7,7 +7,7 @@ import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import {
@@ -68,9 +68,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const attendeesRaw = formData.get("attendees") as string;
 	const attendees = attendeesRaw
 		? attendeesRaw
-				.split(/[,;\n]/)
-				.map((e) => e.trim())
-				.filter((e) => e.includes("@"))
+			.split(/[,;\n]/)
+			.map((e) => e.trim())
+			.filter((e) => e.includes("@"))
 		: undefined;
 
 	// Build the event input

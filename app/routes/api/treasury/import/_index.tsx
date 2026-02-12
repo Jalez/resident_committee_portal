@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { getDatabase, type NewTransaction } from "~/db";
+import { getDatabase, type NewTransaction } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 

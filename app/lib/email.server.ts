@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import { getFileAsBase64 } from "./google.server";
 import {
@@ -20,7 +20,7 @@ import {
 import { computeThreadId } from "./mail-threading.server";
 import { getMinuteStorage } from "./minutes/storage.server";
 import { SETTINGS_KEYS } from "./openrouter.server";
-import { getReceiptContentBase64 } from "./receipts";
+import { getReceiptContentBase64 } from "./receipts/server";
 import { getSystemLanguageDefaults } from "./settings.server";
 
 interface ReimbursementEmailConfig {
@@ -299,11 +299,11 @@ export async function sendReimbursementEmail(
                 <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;"><strong>${t("email.reimbursement.receipts")}:</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">
                     ${data.receiptLinks
-											.map(
-												(r) =>
-													`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
-											)
-											.join("")}
+					.map(
+						(r) =>
+							`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
+					)
+					.join("")}
                 </td>
                </tr>`
 				: "";

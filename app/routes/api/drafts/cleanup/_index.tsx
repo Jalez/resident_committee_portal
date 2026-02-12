@@ -9,7 +9,7 @@
  */
 
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 
@@ -167,7 +167,7 @@ async function deleteAssociatedFiles(
 		if (receipt?.pathname) {
 			try {
 				// Dynamically import to avoid circular dependencies
-				const { getReceiptStorage } = await import("~/lib/receipts");
+				const { getReceiptStorage } = await import("~/lib/receipts/server");
 				const storage = getReceiptStorage();
 				await storage.deleteFile(receipt.pathname);
 				console.log(`[DraftCleanup] Deleted receipt file: ${receipt.pathname}`);

@@ -12,7 +12,7 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
-import { type EntityRelationship, getDatabase, type Receipt } from "~/db";
+import { type EntityRelationship, getDatabase, type Receipt } from "~/db/server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
@@ -125,7 +125,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	// Fetch reimbursement statuses for receipts via entity relationships
+	// Fetch reimbursement status for receipts via entity relationships
 	const purchaseStatusMap = new Map<string, string>();
 	const receiptReimbursementMap = new Map<string, string>(); // receiptId -> reimbursementId
 
@@ -337,11 +337,11 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDelete
 										? {
-												action: `/api/receipts/${receipt.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("treasury.receipts.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/api/receipts/${receipt.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("treasury.receipts.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

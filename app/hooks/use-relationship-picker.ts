@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 /**
  * Represents a pending link to be created

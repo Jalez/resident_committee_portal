@@ -19,7 +19,7 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Purchase, type Transaction } from "~/db";
+import { getDatabase, type Purchase, type Transaction } from "~/db/server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
@@ -112,8 +112,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => b - a,
 	);
 
-	// Get unique statuses for filter
-	const statuses = [...new Set(allTransactions.map((t) => t.status))];
+	// Get unique status for filter
+	const status = [...new Set(allTransactions.map((t) => t.status))];
 
 	// Get unique categories for filter (excluding null/empty)
 	const categories = [
@@ -222,7 +222,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalExpenses,
 		totalIncome,
 		years,
-		statuses,
+		status,
 		categories,
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
@@ -243,7 +243,7 @@ export default function TreasuryTransactions({
 	const {
 		transactions,
 		years,
-		statuses,
+		status,
 		categories,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
@@ -328,7 +328,7 @@ export default function TreasuryTransactions({
 	}, [searchParams, setSearchParams, t]);
 
 	// Configure search fields
-	const statusOptions = ["all", ...statuses];
+	const statusOptions = ["all", ...status];
 	const searchFields: SearchField[] = [
 		{
 			name: "year",
@@ -416,7 +416,7 @@ export default function TreasuryTransactions({
 				<TreasuryStatusPill
 					value={row.status}
 					variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
-					label={t(`treasury.breakdown.edit.statuses.${row.status}`, {
+					label={t(`treasury.breakdown.edit.status.${row.status}`, {
 						defaultValue: row.status,
 					})}
 				/>
@@ -510,10 +510,9 @@ export default function TreasuryTransactions({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -553,13 +552,13 @@ export default function TreasuryTransactions({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-												action: `/api/transactions/${transaction.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/transactions/${transaction.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t(
+												"treasury.breakdown.edit.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

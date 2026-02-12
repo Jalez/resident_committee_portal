@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs, redirect } from "react-router";
 import { handleUpdateTransaction } from "~/actions/transaction-actions";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";

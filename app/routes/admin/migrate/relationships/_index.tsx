@@ -1,6 +1,6 @@
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 

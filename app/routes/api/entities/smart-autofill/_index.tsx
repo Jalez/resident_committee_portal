@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import {
 	type AIEnrichmentResult,
@@ -10,6 +10,8 @@ import {
 	getRelationshipContext,
 	type RelationshipContextValues,
 } from "~/lib/relationships/relationship-context.server";
+import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import { translateNews, translateFaq } from "~/lib/translate.server";
 import type { Route } from "./+types/_index";
 
 /**
@@ -70,6 +72,8 @@ export async function action({ request }: Route.ActionArgs) {
 			"treasury:budgets:update",
 			"treasury:reimbursements:update",
 			"inventory:write",
+			"news:update",
+			"faq:update",
 		],
 		getDatabase,
 	);
@@ -78,9 +82,12 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const entityType = formData.get(
 		"entityType",
-	) as RelationshipEntityType | null;
+	) as string | null;
 	const entityId = formData.get("entityId") as string | null;
 	const useAI = formData.get("useAI") === "true";
+	const localModel = formData.get("localModel") as string | null;
+	const sourceLanguage = formData.get("sourceLanguage") as string | null;
+	const targetLanguage = formData.get("targetLanguage") as string | null;
 
 	if (!entityType || !entityId) {
 		return Response.json(
@@ -89,7 +96,7 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 	}
 
-	// Parse current form values (so we know which fields need filling)
+	// Parse current form values
 	const currentValuesStr = formData.get("currentValues") as string | null;
 	let currentValues: Record<string, string> = {};
 	if (currentValuesStr) {
@@ -100,42 +107,85 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
-	// 1. Get deterministic relationship context
-	const contextValues = await getRelationshipContext(db, entityType, entityId);
+	// 1. Get deterministic relationship context (for financial entities)
+	let contextValues: RelationshipContextValues | null = null;
+	const finEntities: string[] = ["transaction", "reimbursement", "budget", "inventory"];
+	if (finEntities.includes(entityType)) {
+		contextValues = await getRelationshipContext(db, entityType as RelationshipEntityType, entityId);
+	}
 
 	// 2. Build suggestions based on entity type field mapping
 	const fieldMap = ENTITY_FIELD_MAPS[entityType] || {};
 	const suggestions: Record<string, string | number | null> = {};
 
-	for (const [formField, contextField] of Object.entries(fieldMap)) {
-		const contextValue = contextValues[contextField];
-		if (contextValue === null || contextValue === undefined) continue;
+	if (contextValues) {
+		for (const [formField, contextField] of Object.entries(fieldMap)) {
+			const contextValue = contextValues[contextField];
+			if (contextValue === null || contextValue === undefined) continue;
 
-		// Only suggest if the current value is empty/default
-		const currentVal = currentValues[formField];
-		const isEmpty =
-			!currentVal ||
-			currentVal === "" ||
-			currentVal === "0" ||
-			currentVal === "0.00" ||
-			currentVal === "0,00";
+			const currentVal = currentValues[formField];
+			const isEmpty = !currentVal || currentVal === "" || currentVal === "0" || currentVal === "0.00" || currentVal === "0,00";
 
-		if (isEmpty) {
-			if (contextField === "date" && contextValue instanceof Date) {
-				suggestions[formField] = contextValue.toISOString().split("T")[0];
-			} else if (contextField === "totalAmount") {
-				suggestions[formField] = Number(contextValue);
-			} else {
-				suggestions[formField] = String(contextValue);
+			if (isEmpty) {
+				if (contextField === "date" && contextValue instanceof Date) {
+					suggestions[formField] = contextValue.toISOString().split("T")[0];
+				} else if (contextField === "totalAmount") {
+					suggestions[formField] = Number(contextValue);
+				} else {
+					suggestions[formField] = String(contextValue);
+				}
 			}
 		}
 	}
 
-	// 3. Optionally enhance with AI
+	// 3. AI Enrichment / Translation
 	let aiResult: AIEnrichmentResult | null = null;
-	if (useAI && contextValues.valueSource) {
+
+	// If it's a multi-language entity and we want AI translation (and it's not a local model - local should be handled on client ideally)
+	if (useAI && !localModel && (entityType === "news" || entityType === "faq")) {
+		// Server-side AI translation using OpenRouter (as an alternative to local model)
+		// How do we decide which direction to translate? 
+		// Usually from primary to secondary if secondary is empty.
+		const fieldsToTranslate = entityType === "news"
+			? ["title", "summary", "content"]
+			: ["question", "answer"];
+
+		const apiKey = await db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY);
+		const model = await db.getSetting(entityType === "news" ? SETTINGS_KEYS.NEWS_AI_MODEL : SETTINGS_KEYS.FAQ_AI_MODEL);
+
+		if (apiKey && model) {
+			const sourceVals: Record<string, string> = {};
+			for (const f of fieldsToTranslate) {
+				if (currentValues[f]) sourceVals[f] = currentValues[f];
+			}
+
+			if (Object.keys(sourceVals).length > 0) {
+				try {
+					// We reuse the existing translation server logic
+					const translateFn = entityType === "news" ? translateNews : translateFaq;
+					const result = await translateFn(
+						sourceVals as any,
+						sourceLanguage || "Source",
+						targetLanguage || "Target",
+						apiKey,
+						model
+					);
+
+					// Apply translated values to secondary fields if they are empty
+					for (const [key, val] of Object.entries(result as Record<string, any>)) {
+						const secondaryKey = `${key}Secondary`;
+						if (!currentValues[secondaryKey]) {
+							suggestions[secondaryKey] = val as string;
+						}
+					}
+				} catch (err) {
+					console.error("[SmartAutofill] Server-side translation failed:", err);
+				}
+			}
+		}
+	} else if (useAI && !localModel && contextValues?.valueSource) {
+		// Legacy financial AI enrichment
 		try {
-			// Convert new context to old format for the analyzer
 			const legacyContext: RelationshipContext = {
 				id: `smart-autofill-${entityId}`,
 				date: contextValues.date,
@@ -151,35 +201,15 @@ export async function action({ request }: Route.ActionArgs) {
 
 			aiResult = await analyzeRelationshipContext(db, legacyContext);
 
-			// Merge AI suggestions into suggestions (only for empty fields)
 			if (aiResult) {
-				const categoryField = Object.entries(fieldMap).find(
-					([, v]) => v === "category",
-				)?.[0];
-				const descriptionField = Object.entries(fieldMap).find(
-					([, v]) => v === "description",
-				)?.[0];
+				const categoryField = Object.entries(fieldMap).find(([, v]) => v === "category")?.[0];
+				const descriptionField = Object.entries(fieldMap).find(([, v]) => v === "description")?.[0];
 
-				if (
-					categoryField &&
-					aiResult.suggestedCategory &&
-					!suggestions[categoryField]
-				) {
-					const currentCat = currentValues[categoryField];
-					if (!currentCat || currentCat === "") {
-						suggestions[categoryField] = aiResult.suggestedCategory;
-					}
+				if (categoryField && aiResult.suggestedCategory && !suggestions[categoryField]) {
+					if (!currentValues[categoryField]) suggestions[categoryField] = aiResult.suggestedCategory;
 				}
-
-				if (
-					descriptionField &&
-					aiResult.suggestedDescription &&
-					!suggestions[descriptionField]
-				) {
-					const currentDesc = currentValues[descriptionField];
-					if (!currentDesc || currentDesc === "") {
-						suggestions[descriptionField] = aiResult.suggestedDescription;
-					}
+				if (descriptionField && aiResult.suggestedDescription && !suggestions[descriptionField]) {
+					if (!currentValues[descriptionField]) suggestions[descriptionField] = aiResult.suggestedDescription;
 				}
 			}
 		} catch (error) {
@@ -187,18 +217,16 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
-	const result: SmartAutofillSuggestions = {
+	const resp: SmartAutofillSuggestions = {
 		context: contextValues,
-		ai: aiResult
-			? {
-					suggestedCategory: aiResult.suggestedCategory,
-					suggestedDescription: aiResult.suggestedDescription,
-					reasoning: aiResult.reasoning,
-					tags: aiResult.tags,
-				}
-			: null,
+		ai: aiResult ? {
+			suggestedCategory: aiResult.suggestedCategory,
+			suggestedDescription: aiResult.suggestedDescription,
+			reasoning: aiResult.reasoning,
+			tags: aiResult.tags,
+		} : null,
 		suggestions,
 	};
 
-	return Response.json(result);
+	return Response.json(resp);
 }

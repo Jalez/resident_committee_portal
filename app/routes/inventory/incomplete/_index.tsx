@@ -3,7 +3,7 @@ import { Link, type LoaderFunctionArgs, useLoaderData } from "react-router";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type InventoryItem } from "~/db";
+import { getDatabase, type InventoryItem } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 

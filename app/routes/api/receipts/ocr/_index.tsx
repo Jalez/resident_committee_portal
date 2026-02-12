@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, data } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { processReceiptOCR } from "~/lib/receipt-ocr.server";
 

@@ -7,10 +7,10 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Thumbnail } from "~/components/ui/thumbnail";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getReceiptStorage } from "~/lib/receipts";
+import { getReceiptStorage } from "~/lib/receipts/server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
@@ -211,8 +211,8 @@ export default function AdminStorageReceipts() {
 												>
 													{deletingPathname === item.pathname
 														? t("common.actions.loading", {
-																defaultValue: "...",
-															})
+															defaultValue: "...",
+														})
 														: t("receipts.delete")}
 												</Button>
 											</>

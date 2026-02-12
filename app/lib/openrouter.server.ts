@@ -5,7 +5,7 @@
 
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 
 // Setting keys for app_settings table
 export const SETTINGS_KEYS = {

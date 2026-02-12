@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
 import { MailItem } from "~/components/mail/mail-item";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { Route } from "./+types/_index";
@@ -120,7 +120,7 @@ export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 								secondaryText={subject}
 								date={formatDraftDate(draft.updatedAt)}
 								preview={preview || undefined}
-								href={`/mail/compose?draftId=${draft.id}`}
+								href={`/mail/drafts/${draft.id}/edit`}
 								onDelete={handleDeleteDraft}
 							/>
 						);

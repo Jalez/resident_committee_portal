@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { isAdmin, requirePermission } from "~/lib/auth.server";
 
 export async function handleUsersSettingsAction(request: Request) {

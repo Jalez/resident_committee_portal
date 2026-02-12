@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { AnyEntity } from "~/lib/entity-converters";
@@ -158,7 +158,7 @@ export default function TreasuryBudgetsView({
 								<TreasuryStatusPill
 									value={budget.status}
 									variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
-									label={t(`treasury.budgets.statuses.${budget.status}`)}
+									label={t(`treasury.budgets.status.${budget.status}`)}
 								/>
 							</TreasuryField>
 							<TreasuryField label={t("treasury.budgets.year")}>
@@ -208,7 +208,7 @@ export default function TreasuryBudgetsView({
 											onConfirm={() => {
 												deleteFetcher.submit(null, {
 													method: "DELETE",
-													action: `/api/budgets/${budget.id}/delete`,
+													action: `/treasury/budgets/${budget.id}/delete`,
 												});
 												setShowDeleteConfirm(false);
 											}}

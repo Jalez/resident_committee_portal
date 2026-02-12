@@ -1,9 +1,9 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
-import { getReceiptStorage } from "~/lib/receipts";
+import { getReceiptStorage } from "~/lib/receipts/server";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";
 
 function isSafePathname(pathname: string): boolean {

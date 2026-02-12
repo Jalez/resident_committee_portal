@@ -15,7 +15,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useLocalReel } from "~/contexts/info-reel-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import {
 	getAuthenticatedUser,
 	getGuestContext,
@@ -350,7 +350,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 								className={cn(
 									"relative w-full flex items-center gap-6 p-5 rounded-xl transition-all text-left group outline-none overflow-hidden",
 									!isActive &&
-										"bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
+									"bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
 									!channel.isActive && "opacity-50",
 								)}
 							>
@@ -379,8 +379,8 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										style={
 											isActive
 												? {
-														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
-													}
+													color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
+												}
 												: undefined
 										}
 									>
@@ -391,13 +391,13 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 											className={cn(
 												"text-2xl font-black leading-tight uppercase tracking-wide",
 												!isActive &&
-													"text-gray-900 dark:text-white group-hover:text-primary",
+												"text-gray-900 dark:text-white group-hover:text-primary",
 											)}
 											style={
 												isActive
 													? {
-															color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--foreground) ${(1 - itemOpacity) * 100}%)`,
-														}
+														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--foreground) ${(1 - itemOpacity) * 100}%)`,
+													}
 													: undefined
 											}
 										>
@@ -413,13 +413,13 @@ export default function Social({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"relative material-symbols-outlined ml-auto text-2xl",
 											!isActive &&
-												"text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1",
+											"text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1",
 										)}
 										style={
 											isActive
 												? {
-														color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
-													}
+													color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--muted-foreground) ${(1 - itemOpacity) * 100}%)`,
+												}
 												: undefined
 										}
 									>

@@ -16,7 +16,7 @@ import {
 } from "~/components/treasury/treasury-detail-components";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type Receipt } from "~/db";
+import { getDatabase, type Receipt } from "~/db/server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import {
@@ -121,10 +121,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 		const linkedReceipts =
 			linkedReceiptIds.length > 0
 				? await Promise.all(
-						linkedReceiptIds.map((id) => db.getReceiptById(id)),
-					).then((receipts) =>
-						receipts.filter((r): r is NonNullable<typeof r> => r !== null),
-					)
+					linkedReceiptIds.map((id) => db.getReceiptById(id)),
+				).then((receipts) =>
+					receipts.filter((r): r is NonNullable<typeof r> => r !== null),
+				)
 				: [];
 
 		if (linkedReceipts.length === 0) {
@@ -348,7 +348,7 @@ export default function ViewReimbursement({
 								valueClassName="text-foreground"
 							>
 								<Badge variant="secondary">
-									{t(`treasury.reimbursements.statuses.${purchase.status}`)}
+									{t(`treasury.reimbursements.status.${purchase.status}`)}
 								</Badge>
 							</TreasuryField>
 							{purchase.emailSent && (

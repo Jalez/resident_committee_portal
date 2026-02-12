@@ -1,4 +1,4 @@
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 /**
  * Determines the appropriate "published" status for an entity type

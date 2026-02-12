@@ -330,7 +330,6 @@
 			"link_to_reimbursement": "Link to reimbursement request",
 			"title": "Reimbursement Requests",
 			"new": "New",
-			"status": "Status",
 			"purchaser": "Purchaser",
 			"receipts": "Receipts",
 			"view_receipt": "View receipt",
@@ -342,7 +341,7 @@
 			"delete_confirm": "Are you sure you want to delete this reimbursement?",
 			"use_as_template": "Use as template",
 			"linked_transactions": "Linked Transactions",
-			"statuses": {
+			"status": {
 				"pending": "Pending",
 				"approved": "Approved",
 				"reimbursed": "Paid",
@@ -385,14 +384,13 @@
 			"date": "Date",
 			"description": "Description",
 			"category": "Category",
-			"status": "Status",
 			"reimbursement_status": "Reimbursement Status",
 			"amount": "Amount",
 			"export": "Export CSV",
 			"import": "Import CSV",
 			"import_success": "Imported {{count}} transactions",
 			"import_error": "Import failed",
-			"statuses": {
+			"status": {
 				"complete": "Complete",
 				"pending": "Pending",
 				"paused": "Paused",
@@ -416,7 +414,7 @@
 				"items_linked_success": "Items linked",
 				"delete_error_linked": "Cannot delete transaction because it has linked active inventory items: {{names}}. Remove or mark items as Legacy first.",
 				"reimbursement_statuses": {},
-				"statuses": {}
+				"status": {}
 			}
 		},
 		"budgets": {
@@ -430,12 +428,13 @@
 			"used": "Used",
 			"reserved": "Reserved",
 			"remaining": "Remaining",
-			"status": "Status",
 			"created_by": "Created By",
 			"year": "Year",
+			"status": "Status",
 			"statuses": {
 				"open": "Open",
-				"closed": "Closed"
+				"closed": "Closed",
+				"draft": "Draft"
 			},
 			"actions": {
 				"edit": "Edit",

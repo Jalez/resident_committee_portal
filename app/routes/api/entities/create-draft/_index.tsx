@@ -1,5 +1,5 @@
 import { data, redirect } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import { requireAnyPermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
@@ -244,7 +244,7 @@ export async function action({ request }: Route.ActionArgs) {
 			poll: `/polls/${entity.id}/edit`,
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
-			mail: `/mail/${entity.id}/edit`,
+			mail: `/mail/drafts/${entity.id}/edit`,
 		};
 		let redirectUrl = editUrls[type] || "/";
 

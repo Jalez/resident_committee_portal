@@ -21,6 +21,7 @@
 			"search": "Hae",
 			"view": "Näytä",
 			"confirm": "Vahvista",
+			"delete_confirm": "Haluatko varmasti poistaa tämän kohteen?",
 			"sort": "Järjestä",
 			"back": "Takaisin",
 			"all": "Kaikki",
@@ -84,6 +85,12 @@
 			"error": "Virhe",
 			"saved": "Tallennettu",
 			"saving": "Tallennetaan..."
+		},
+		"success": {
+			"generic": "Toiminto onnistui",
+			"updated": "Tallennettu onnistuneesti",
+			"sent": "Lähetetty onnistuneesti",
+			"deleted": "Poistettu onnistuneesti"
 		}
 	},
 	"app": {
@@ -145,6 +152,7 @@
 		"selected_count": "valittu",
 		"analyze_with_ai": "Analysoi tekoälyllä (OCR)"
 	},
+	"status": "Tila",
 	"lang": {
 		"label": "Kieli"
 	},
@@ -162,20 +170,20 @@
 		},
 		"options": {
 			"committee": {
-				"title": "Liity toimikuntaan",
-				"description": "Täytä lomake liittyäksesi toimikuntaan."
+				"title": "Hae toimikuntaan",
+				"description": "Oletko kiinnostunut toimikunnanhommista? Ilmoita itsesi mukaan!"
 			},
 			"events": {
-				"title": "Ehdottaa tapahtumaa",
-				"description": "Ehdottaa tapahtumaa toimikunnalle."
+				"title": "Ehdota tapahtumaa",
+				"description": "Ehdota taloon sopivaa tapahtumaa!"
 			},
 			"purchases": {
 				"title": "Pyydä hankintaa",
-				"description": "Pyydä hankintaa toimikunnalta."
+				"description": "Pyydä hankintaa toimikunnalta!"
 			},
 			"questions": {
-				"title": "Kysy kysymys",
-				"description": "Kysy kysymys toimikunnalta."
+				"title": "Esitä kysymys",
+				"description": "Onko sinulla talon tapahtumiin, hankintoihin tai järjestelyihin liittyviä kysymyksiä? Esitä ne toimikunnalle!"
 			}
 		}
 	},
@@ -329,7 +337,6 @@
 			"link_to_reimbursement": "Linkitä kulukorvaukseen",
 			"title": "Kulukorvaushakemukset",
 			"new": "Uusi",
-			"status": "Tila",
 			"purchaser": "Ostaja",
 			"receipts": "Kuitit",
 			"view_receipt": "Näytä kuitti",
@@ -341,7 +348,7 @@
 			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
 			"use_as_template": "Käytä pohjana",
 			"linked_transactions": "Linkitetyt transaktiot",
-			"statuses": {
+			"status": {
 				"pending": "Odottaa",
 				"approved": "Hyväksytty",
 				"reimbursed": "Maksettu",
@@ -384,14 +391,13 @@
 			"date": "Päivä",
 			"description": "Kuvaus",
 			"category": "Kategoria",
-			"status": "Tila",
 			"reimbursement_status": "Kulukorvauksen tila",
 			"amount": "Summa",
 			"export": "Lataa CSV",
 			"import": "Tuo CSV",
 			"import_success": "Tuotu {{count}} tapahtumaa",
 			"import_error": "Tuonti epäonnistui",
-			"statuses": {
+			"status": {
 				"complete": "Valmis",
 				"pending": "Odottaa",
 				"paused": "Keskeytetty",
@@ -415,7 +421,7 @@
 				"items_linked_success": "Tavarat linkitetty",
 				"delete_error_linked": "Tapahtumaa ei voi poistaa koska siihen on linkitetty aktiivisia tavaroita: {{names}}. Poista tai merkitse tavarat Legacy-tilaan ensin.",
 				"reimbursement_statuses": {},
-				"statuses": {}
+				"status": {}
 			}
 		},
 		"budgets": {
@@ -429,12 +435,13 @@
 			"used": "Käytetty",
 			"reserved": "Varattu",
 			"remaining": "Jäljellä",
-			"status": "Tila",
 			"created_by": "Luoja",
 			"year": "Vuosi",
+			"status": "Tila",
 			"statuses": {
 				"open": "Avoinna",
-				"closed": "Suljettu"
+				"closed": "Suljettu",
+				"draft": "Luonnostelma"
 			},
 			"actions": {
 				"edit": "Muokkaa",
@@ -449,6 +456,7 @@
 			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
 			"linked_transactions": "Linkitetyt transaktiot",
 			"no_budgets": "Ei budjetteja",
+			"used_funds": "Käytetty budjetti",
 			"no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
 			"available_funds": "Käytettävissä olevat varat",
 			"success": {

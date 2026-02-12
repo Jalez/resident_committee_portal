@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { NewInventoryItem } from "~/db/schema";
 
 export async function handleCreateItem(formData: FormData) {

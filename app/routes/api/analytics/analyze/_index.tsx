@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { analyzeTextFrequencies, SETTINGS_KEYS } from "~/lib/openrouter.server";
 

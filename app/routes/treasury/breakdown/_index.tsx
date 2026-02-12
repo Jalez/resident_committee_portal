@@ -11,7 +11,7 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Transaction } from "~/db";
+import { getDatabase, type Transaction } from "~/db/server";
 import {
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
@@ -28,6 +28,8 @@ export function meta({ data }: Route.MetaArgs) {
 		{ name: "description", content: "Toimikunnan rahastoerittely" },
 	];
 }
+
+export async function action({ request }: Route.ActionArgs) { }
 
 export async function loader({ request }: Route.LoaderArgs) {
 	// Require either treasury:breakdown:read or treasury:breakdown:read-self permission
@@ -351,7 +353,7 @@ export default function TreasuryBreakdown({
 				<TreasuryStatusPill
 					value={row.status}
 					variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
-					label={t(`treasury.breakdown.actions.edit.statuses.${row.status}`, {
+					label={t(`treasury.breakdown.actions.edit.status.${row.status}`, {
 						defaultValue: row.status,
 					})}
 				/>
@@ -376,10 +378,9 @@ export default function TreasuryBreakdown({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -412,13 +413,13 @@ export default function TreasuryBreakdown({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-												action: `/treasury/transactions/${transaction.id}/edit`,
-												hiddenFields: { _action: "delete" },
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/transactions/${transaction.id}/edit`,
+											hiddenFields: { _action: "delete" },
+											confirmMessage: t(
+												"treasury.breakdown.edit.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

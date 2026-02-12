@@ -10,7 +10,7 @@
  */
 
 import { data } from "react-router";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db/schema";
 import { getAnalyzerForType } from "~/lib/ai/entity-relationship-analyzer.server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";

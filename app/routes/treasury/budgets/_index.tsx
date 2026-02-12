@@ -18,7 +18,7 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import {
 	type AuthenticatedUser,
 	getAuthenticatedUser,
@@ -153,7 +153,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		budgetYears.sort((a, b) => b - a);
 	}
 
-	// Get unique statuses for SearchMenu
+	// Get unique status for SearchMenu
 	const uniqueStatuses = [...new Set(allBudgets.map((r) => r.status))];
 
 	// Batch resolve creator names
@@ -177,7 +177,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		selectedYear,
 		budgets: budgetsWithUsage,
 		years: budgetYears,
-		statuses: uniqueStatuses,
+		status: uniqueStatuses,
 		languages,
 		userId,
 		canReadAll,
@@ -190,7 +190,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 		selectedYear,
 		budgets,
 		years,
-		statuses,
+		status,
 		languages,
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
@@ -272,7 +272,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 			label: t("common.fields.status"),
 			type: "select",
 			placeholder: t("common.actions.all"),
-			options: ["all", ...statuses],
+			options: ["all", ...status],
 		},
 	];
 
@@ -324,7 +324,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 				<TreasuryStatusPill
 					value={row.status}
 					variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
-					label={t(`treasury.budgets.statuses.${row.status}`)}
+					label={t(`treasury.budgets.status.${row.status}`)}
 				/>
 			),
 		},
@@ -376,10 +376,9 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 			header: t("treasury.budgets.remaining"),
 			cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
 			cellClassName: (row: BudgetRow) =>
-				`font-semibold ${
-					row.remainingAmount > 0
-						? "text-green-600 dark:text-green-400"
-						: "text-gray-500"
+				`font-semibold ${row.remainingAmount > 0
+					? "text-green-600 dark:text-green-400"
+					: "text-gray-500"
 				}`,
 		},
 		{
@@ -419,11 +418,11 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDeleteBudget(budget)
 										? {
-												action: `/api/budgets/${budget.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("treasury.budgets.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/budgets/${budget.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("treasury.budgets.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

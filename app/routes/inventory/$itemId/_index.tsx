@@ -10,7 +10,7 @@ import {
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { AnyEntity } from "~/lib/entity-converters";
@@ -133,7 +133,7 @@ export default function ViewInventoryItem({
 								<TreasuryStatusPill
 									value={item.status}
 									variantMap={INVENTORY_STATUS_VARIANTS}
-									label={t(`inventory.statuses.${item.status}`, item.status)}
+									label={t(`inventory.status.${item.status}`, item.status)}
 								/>
 							</TreasuryField>
 							{item.purchasedAt ? (

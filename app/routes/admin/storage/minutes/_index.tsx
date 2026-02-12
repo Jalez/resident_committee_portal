@@ -7,7 +7,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Thumbnail } from "~/components/ui/thumbnail";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";

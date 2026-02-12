@@ -5,7 +5,7 @@ import { handleApiKeySettingsAction } from "~/components/settings/api-key-settin
 import { LanguageSettings } from "~/components/settings/language-settings";
 import { handleLanguageSettingsAction } from "~/components/settings/language-settings.server";
 import { useLanguage } from "~/contexts/language-context";
-import { getDatabase } from "~/db";
+import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";

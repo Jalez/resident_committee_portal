@@ -12,7 +12,7 @@ import {
 } from "~/components/treasury/treasury-detail-components";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type Transaction } from "~/db";
+import { getDatabase, type Transaction } from "~/db/server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import type { AnyEntity } from "~/lib/entity-converters";
@@ -92,9 +92,9 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		linkedReimbursements.length > 0 ? linkedReimbursements[0] : null;
 	const isEditLocked = Boolean(
 		purchase &&
-			(purchase as { emailSent?: boolean; status?: string }).emailSent &&
-			(purchase as { emailSent?: boolean; status?: string }).status !==
-				"rejected",
+		(purchase as { emailSent?: boolean; status?: string }).emailSent &&
+		(purchase as { emailSent?: boolean; status?: string }).status !==
+		"rejected",
 	);
 
 	useEffect(() => {
@@ -170,7 +170,7 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 								<TreasuryStatusPill
 									value={transaction.status}
 									variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
-									label={t(`treasury.breakdown.statuses.${transaction.status}`)}
+									label={t(`treasury.breakdown.status.${transaction.status}`)}
 								/>
 							</TreasuryField>
 						</div>
