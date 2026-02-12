@@ -177,7 +177,6 @@
 		"reimbursements": {
 			"title": "Utlägg",
 			"new": "Ny",
-			"status": "Status",
 			"purchaser": "Inköpare",
 			"transaction": "Transaktion",
 			"view_transaction": "Visa transaktion",
@@ -185,7 +184,7 @@
 			"reply_received": "Svar mottaget",
 			"delete_confirm": "Är du säker på att du vill ta bort detta utlägg?",
 			"use_as_template": "Använd som mall",
-			"statuses": {
+			"status": {
 				"pending": "Väntande",
 				"approved": "Godkänd",
 				"reimbursed": "Utbetald",
@@ -221,11 +220,10 @@
 			"date": "Datum",
 			"description": "Beskrivning",
 			"category": "Kategori",
-			"status": "Status",
 			"reimbursement_status": "Ersättningsstatus",
 			"amount": "Belopp",
 			"export": "Exportera CSV",
-			"statuses": {
+			"status": {
 				"complete": "Klar",
 				"pending": "Väntande",
 				"paused": "Pausad",
@@ -246,7 +244,7 @@
 				"items_linked_success": "Artiklar länkade",
 				"delete_error_linked": "Kan inte ta bort transaktion eftersom den har länkade aktiva inventarier: {{names}}. Ta bort eller markera artiklar som gamla först.",
 				"reimbursement_statuses": {},
-				"statuses": {}
+				"status": {}
 			}
 		}
 	},
@@ -934,24 +932,6 @@
 			"read": "Visa kommittémedlemmar"
 		},
 		"categories": {}
-	},
-	"receipts": {
-		"process_receipt": "Bearbeta kvitto",
-		"processed": "Bearbetad",
-		"processing": "Bearbetar...",
-		"auto_filled_from_receipt": "Automatiskt ifylld från kvitto: {{name}}",
-		"create_reimbursement": "Skapa ersättning",
-		"analyze_with_ai": "Analysera med AI (OCR)",
-		"analyzing": "Analyserar kvitto...",
-		"analysis_complete": "Kvitto analyserat framgångsrikt",
-		"analysis_failed": "Misslyckades att analysera kvitto"
-	},
-	"inventory": {
-		"created_items": "Skapade inventarieobjekt",
-		"location_missing": "Plats behövs",
-		"incomplete_items": "Ofullständiga objekt",
-		"complete_item": "Markera som fullständig",
-		"location_tbd": "Plats väntande"
 	},
 	"relationships": {
 		"ai": {

@@ -12,13 +12,13 @@ OUTPUT_FILE="unused_keys.txt"
 
 # Whitelisted prefixes (keys starting with these are considered dynamic and "used")
 WHITELIST=(
-    "treasury.reimbursements.statuses."
-    "treasury.breakdown.statuses."
+    "treasury.reimbursements.status."
+    "treasury.breakdown.status."
     "treasury.categories."
     "treasury.types."
     "inventory.modals.remove.reasons."
     "polls.new.type_"
-    "treasury.budgets.statuses."
+    "treasury.budgets.status."
     "common.categories."
     "common.types."
 )
