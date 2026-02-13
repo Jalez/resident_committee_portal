@@ -10,10 +10,10 @@ import type {
 	Poll,
 	Purchase,
 	Receipt,
-	RelationshipEntityType,
 	SocialLink,
 	Transaction,
 } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 import { ENTITY_REGISTRY } from "./entity-registry";
 
 /**
@@ -31,7 +31,16 @@ export type AnyEntity =
 	| Poll
 	| SocialLink
 	| CommitteeMailMessage
-	| { id: string; summary: string; title?: string; name?: string; description?: string; status?: string; createdAt?: Date; start?: { dateTime: string; date: string } };
+	| {
+			id: string;
+			summary: string;
+			title?: string;
+			name?: string;
+			description?: string;
+			status?: string;
+			createdAt?: Date;
+			start?: { dateTime: string; date: string };
+	  };
 
 /**
  * Helper to get a consistent display title for any entity
@@ -76,7 +85,9 @@ export function getEntityTitle(
 		case "mail":
 			return (entity as any).subject;
 		case "event":
-			return (entity as any).summary || (entity as any).title || "Untitled Event";
+			return (
+				(entity as any).summary || (entity as any).title || "Untitled Event"
+			);
 		default:
 			return "Unknown Entity";
 	}
@@ -186,13 +197,18 @@ export function entityToLinkableItem(
 		description = (entity as any).answer?.slice(0, 100);
 	} else if (type === "mail") {
 		const m = entity as any;
-		description = m.bodyText || m.bodyHtml?.replace(/<[^>]+>/g, "").slice(0, 100);
+		description =
+			m.bodyText || m.bodyHtml?.replace(/<[^>]+>/g, "").slice(0, 100);
 		purchaserName = m.fromName || m.fromAddress;
 		createdAt = m.date;
 	} else if (type === "event") {
 		const e = entity as any;
 		description = e.description?.slice(0, 100);
-		createdAt = e.start?.dateTime ? new Date(e.start.dateTime) : (e.start?.date ? new Date(e.start.date) : undefined);
+		createdAt = e.start?.dateTime
+			? new Date(e.start.dateTime)
+			: e.start?.date
+				? new Date(e.start.date)
+				: undefined;
 	}
 
 	return {

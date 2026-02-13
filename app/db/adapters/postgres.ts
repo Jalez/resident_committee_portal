@@ -48,7 +48,6 @@ import {
 	purchases,
 	type Receipt,
 	type ReceiptContent,
-	type RelationshipEntityType,
 	type Role,
 	receiptContents,
 	receipts,
@@ -65,6 +64,7 @@ import {
 	users,
 } from "../schema";
 import type { DatabaseAdapter } from "./types";
+import type { RelationshipEntityType } from "../types";
 
 /**
  * Standard PostgreSQL database adapter using Drizzle ORM

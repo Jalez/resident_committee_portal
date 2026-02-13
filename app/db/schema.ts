@@ -9,6 +9,7 @@ import {
 	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
+import type { RelationshipEntityType } from "./types";
 
 // ============================================
 // RBAC (Role-Based Access Control) System
@@ -700,19 +701,6 @@ export type NewAppSetting = typeof appSettings.$inferInsert;
 // UNIVERSAL RELATIONSHIPS
 // ============================================
 
-export type RelationshipEntityType =
-	| "receipt"
-	| "transaction"
-	| "reimbursement"
-	| "budget"
-	| "inventory"
-	| "minute"
-	| "news"
-	| "faq"
-	| "poll"
-	| "social"
-	| "event"
-	| "mail";
 
 export const entityRelationships = pgTable(
 	"entity_relationships",

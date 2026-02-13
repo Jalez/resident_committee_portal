@@ -10,14 +10,15 @@ export interface FieldConfig {
 		| "currency"
 		| "checkbox"
 		| "time"
-		| "hidden";
-	labelKey?: string; // If not provided, inferred from entity prefix + field name
-	required?: boolean; // Defaults to false
+		| "hidden"
+		| "url";
+	labelKey?: string;
+	required?: boolean;
 	options?: string[] | { label: string; value: string }[];
 	placeholder?: string;
 	description?: string;
-	className?: string; // Wrapper class
-	valueClassName?: string; // Class for the input itself
+	className?: string;
+	valueClassName?: string;
 	disabled?: boolean;
 	min?: string;
 	max?: string;
@@ -28,6 +29,15 @@ export interface FieldConfig {
 export interface RelationshipConfig {
 	maxItems?: number; // If undefined, unlimited
 	labelKey?: string;
+}
+
+export interface RequiredRelationshipConfig {
+	/** The entity type that must be linked */
+	type: RelationshipEntityType;
+	/** Minimum number of items required (default: 1) */
+	minItems?: number;
+	/** Human-readable reason why this is required */
+	reasonKey?: string;
 }
 
 /**
@@ -61,6 +71,9 @@ export interface EntityDefinition {
 
 	/** Relationship configurations */
 	relationships?: Partial<Record<RelationshipEntityType, RelationshipConfig>>;
+
+	/** Required relationships for certain actions (e.g., sending reimbursement email) */
+	requiredRelationships?: RequiredRelationshipConfig[];
 }
 
 export const ENTITY_DEFINITIONS: Record<
@@ -188,7 +201,39 @@ export const ENTITY_DEFINITIONS: Record<
 			notes: { type: "textarea" },
 			minutesId: { type: "hidden" },
 			minutesName: { type: "hidden" },
+			status: {
+				type: "select",
+				options: [
+					{ value: "pending", label: "Pending" },
+					{ value: "approved", label: "Approved" },
+					{ value: "reimbursed", label: "Reimbursed" },
+					{ value: "rejected", label: "Rejected" },
+				],
+			},
 		},
+		relationships: {
+			receipt: {},
+			transaction: { maxItems: 1 },
+			minute: {},
+			mail: {},
+		},
+		requiredRelationships: [
+			{
+				type: "receipt",
+				minItems: 1,
+				reasonKey: "treasury.reimbursements.required_receipt_reason",
+			},
+			{
+				type: "transaction",
+				minItems: 1,
+				reasonKey: "treasury.reimbursements.required_transaction_reason",
+			},
+			{
+				type: "minute",
+				minItems: 1,
+				reasonKey: "treasury.reimbursements.required_minute_reason",
+			},
+		],
 		defaultRedirect: (id) =>
 			`/treasury/reimbursements?year=${new Date().getFullYear()}&success=Reimbursement updated`,
 		draftAutoPublishFields: [
@@ -231,8 +276,19 @@ export const ENTITY_DEFINITIONS: Record<
 			category: { type: "text" },
 			description: { type: "textarea" },
 			value: { type: "currency" },
+			status: {
+				type: "select",
+				options: [
+					{ value: "active", label: "Active" },
+					{ value: "removed", label: "Removed" },
+					{ value: "legacy", label: "Legacy" },
+				],
+			},
 			purchasedAt: { type: "date" },
 			showInInfoReel: { type: "checkbox" },
+		},
+		relationships: {
+			transaction: {},
 		},
 	},
 
@@ -244,7 +300,7 @@ export const ENTITY_DEFINITIONS: Record<
 		fields: {
 			name: { type: "text", required: true },
 			description: { type: "textarea" },
-			externalUrl: { type: "text", required: true },
+			externalUrl: { type: "url", required: true },
 			status: {
 				type: "select",
 				options: [

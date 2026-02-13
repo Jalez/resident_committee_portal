@@ -46,7 +46,6 @@ import {
 	purchases,
 	type Receipt,
 	type ReceiptContent,
-	type RelationshipEntityType,
 	type Role,
 	receiptContents,
 	receipts,
@@ -64,6 +63,7 @@ import {
 } from "../schema";
 
 import type { DatabaseAdapter } from "./types";
+import type { RelationshipEntityType } from "../types";
 
 /**
  * Neon PostgreSQL database adapter using Drizzle ORM
