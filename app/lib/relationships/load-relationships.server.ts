@@ -6,7 +6,7 @@
  */
 
 import type { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 interface RelationshipData<T = unknown> {
 	linked: T[];
@@ -36,31 +36,28 @@ export async function loadRelationshipsForEntity(
 ): Promise<Record<string, RelationshipData>> {
 	const result: Record<string, RelationshipData> = {};
 
-	// Fetch all relationships once (they don't change per type)
 	const allRelationships = await db.getEntityRelationships(
 		entityType,
 		entityId,
 	);
 
-	// Load relationships for each type
 	for (const relationBType of relationBTypes) {
-		// Filter relationships to only include those matching the current relationBType
 		const linkedIds = allRelationships
 			.map((rel) => {
-				// Entity can be either relationA or relationB — find the "other" side
+				// Case 1: Current entity is relationA, linked entity is relationB
 				if (rel.relationAType === entityType && rel.relationId === entityId) {
-					// We are relationA, check if relationB matches the target type
 					return rel.relationBType === relationBType ? rel.relationBId : null;
 				}
-				// We are relationB, check if relationA matches the target type
-				return rel.relationAType === relationBType ? rel.relationId : null;
+				// Case 2: Current entity is relationB, linked entity is relationA
+				if (rel.relationBType === entityType && rel.relationBId === entityId) {
+					return rel.relationAType === relationBType ? rel.relationId : null;
+				}
+				return null;
 			})
 			.filter((id): id is string => id !== null);
 
-		// Fetch linked entities with full data
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
-		// Fetch available entities (all non-archived entities of this type)
 		const available = await fetchAvailableEntities(
 			db,
 			relationBType,

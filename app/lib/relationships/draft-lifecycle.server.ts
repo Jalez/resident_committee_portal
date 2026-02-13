@@ -7,7 +7,7 @@
  */
 
 import type { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";
 import { getReceiptStorage } from "~/lib/receipts/server";
 

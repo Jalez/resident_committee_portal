@@ -16,7 +16,7 @@
  */
 
 import type { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 export interface RelationshipContextValues {
 	/** Source date (when the event occurred) */

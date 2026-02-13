@@ -9,7 +9,7 @@
  */
 
 import type { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 import { cleanupOrphanedDraft } from "./draft-lifecycle.server";
 
 interface RelationshipLink {
