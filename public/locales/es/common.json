@@ -76,6 +76,12 @@
 	"lang": {
 		"label": "Idioma"
 	},
+	"theme": {
+		"label": "Tema",
+		"system": "Sistema",
+		"light": "Claro",
+		"dark": "Oscuro"
+	},
 	"search_menu": {
 		"title": "Search",
 		"filter": "Filter",

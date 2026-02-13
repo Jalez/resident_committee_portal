@@ -28,7 +28,9 @@
 			"loading": "Ladataan...",
 			"update": "Päivitä",
 			"link_existing": "Linkitä olemassa oleva",
-			"create_new": "Luo uusi"
+			"create_new": "Luo uusi",
+			"save": "Tallenna",
+			"cancel": "Peruuta"
 		},
 		"filters": {
 			"all": "Kaikki kategoriat"
@@ -64,7 +66,8 @@
 			"end_time": "Päättymisaika",
 			"primary": "Ensisijainen",
 			"hidden": "Piilotettu",
-			"none": "Ei mitään"
+			"none": "Ei mitään",
+			"attendees": "Osallistujat"
 		},
 		"file_upload": {
 			"drag_drop": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
@@ -84,7 +87,8 @@
 		"status": {
 			"error": "Virhe",
 			"saved": "Tallennettu",
-			"saving": "Tallennetaan..."
+			"saving": "Tallennetaan...",
+			"draft": "Luonnos"
 		},
 		"success": {
 			"generic": "Toiminto onnistui",
@@ -143,7 +147,7 @@
 		"invalid_type": "Virheellinen tiedostotyyppi. Sallitut: {{types}}",
 		"uploading": "Ladataan...",
 		"upload_notice": "Suuret tiedostot voivat latautua hetken.",
-		"no_receipts": "Ei kuitteja vuodelta {{year}}",
+		"no_receipts": "Ei kuitteja vuodelle {{year}}",
 		"done": "Valmis",
 		"open": "Avaa",
 		"delete": "Poista",
@@ -155,6 +159,12 @@
 	"status": "Tila",
 	"lang": {
 		"label": "Kieli"
+	},
+	"theme": {
+		"label": "Teema",
+		"system": "Järjestelmä",
+		"light": "Vaalea",
+		"dark": "Tumma"
 	},
 	"search_menu": {
 		"title": "Haku",
@@ -207,9 +217,252 @@
 		"transactions_count": "{{count}} tapahtumaa",
 		"no_transactions": "Ei tapahtumia",
 		"no_transactions_desc": "Vuodelle {{year}} ei ole vielä kirjattu tapahtumia.",
+		"actions": {
+			"breakdown": "Erittely",
+			"transactions": "Transaktiovirta",
+			"receipts": "Kuitit",
+			"reimbursements": "Kulukorvaushakemukset",
+			"budgets": "Budjetit"
+		},
+		"new": {
+			"header": "Uusi transaktio",
+			"details_header": "Transaktion tiedot",
+			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
+			"items_selected": "{{count}} tavaraa valittu",
+			"total": "Yhteensä",
+			"select_items": "Valitse tavarat",
+			"or": "tai",
+			"submit": "Lisää",
+			"link_budget": "Linkitä budjettiin",
+			"link_budget_help": "Valinnainen: Käytä varoja olemassa olevasta budjetista.",
+			"no_budget": "Älä käytä budjettia",
+			"budget_note": "Menon summa vähennetään valitusta budjetista.",
+			"add_item": "Lisää tavara"
+		},
+		"form": {
+			"amount": "Summa €",
+			"description": "Kuvaus",
+			"description_placeholder": "Esim. Kahvitarjoilut, Kokoukseen hankitut eväät",
+			"date": "Päivämäärä",
+			"year": "Vuosi"
+		},
+		"placeholders": {},
+		"types": {
+			"income": "Tulo",
+			"expense": "Meno"
+		},
+		"categories": {
+			"inventory": "Tavarat",
+			"snacks": "Eväät",
+			"event": "Tapahtuma",
+			"other": "Muu",
+			"grant": "Avustus",
+			"sales": "Myynti",
+			"event_income": "Tapahtumatulo",
+			"membership": "Jäsenmaksut"
+		},
+		"budgets": {
+			"title": "Budjetit",
+			"new": "Uusi budjetti",
+			"name": "Budjetin nimi",
+			"name_placeholder": "Esim. Kitaran hankinta",
+			"description": "Kuvaus",
+			"description_placeholder": "Lisätietoja budjetista",
+			"amount": "Budjetin koko",
+			"amount_placeholder": "0.00",
+			"used": "Käytetty",
+			"reserved": "Varattu",
+			"remaining": "Jäljellä",
+			"created_by": "Luoja",
+			"year": "Vuosi",
+			"status": "Tila",
+			"available_funds": "Käytettävissä olevat varat",
+			"used_funds": "Käytetty budjetti",
+			"statuses": {
+				"open": "Avoinna",
+				"closed": "Suljettu",
+				"draft": "Luonnostelma"
+			},
+			"actions": {
+				"edit": "Muokkaa",
+				"delete": "Poista",
+				"close": "Sulje budjetti",
+				"reopen": "Avaa uudelleen"
+			},
+			"close_confirm": "Budjetin sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
+			"reopen_confirm": "Avaa tämä budjetti uudelleen?",
+			"delete_confirm": "Poista tämä budjetti? Tätä ei voi peruuttaa.",
+			"cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
+			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
+			"linked_transactions": "Linkitetyt transaktiot",
+			"no_budgets": "Ei budjetteja",
+			"no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
+			"success": {
+				"created": "Budjetti luotu",
+				"updated": "Budjetti päivitetty",
+				"deleted": "Budjetti poistettu",
+				"closed": "Budjetti suljettu",
+				"reopened": "Budjetti avattu uudelleen"
+			},
+			"error": {
+				"delete_failed": "Budjetin poisto epäonnistui",
+				"has_transactions": "Budjettia ei voi poistaa, koska siihen on linkitetty transaktioita"
+			},
+			"form": {
+				"create": "Luo budjetti"
+			},
+			"view": {
+				"title": "Näytä budjetti"
+			},
+			"edit": {
+				"title": "Muokkaa budjettia"
+			}
+		},
+		"transactions": {
+			"title": "Transaktiot",
+			"new": "Uusi transaktio",
+			"all": "Kaikki",
+			"type": "Tyyppi",
+			"status": "Tila",
+			"description": "Kuvaus",
+			"description_placeholder": "Esim. Kahvitarjoilut, Kokoukseen hankitut eväät",
+			"amount": "Summa",
+			"amount_placeholder": "0.00",
+			"category": "Kategoria",
+			"category_placeholder": "Valitse kategoria",
+			"notes": "Lisätiedot",
+			"notes_placeholder": "Lisätiedot",
+			"reimbursementStatus": "Kulukorvauksen tila",
+			"year": "Vuosi",
+			"locked_by_reimbursement": "Lukittu (kulukorvaus lähetetty)",
+			"link_existing": "Liitä transaktio",
+			"create": "Luo transaktio",
+			"linked": "Linkitetyt transaktiot",
+			"select_placeholder": "Valitse transaktio...",
+			"no_link": "Älä liitä olemassa olevaan transaktioon",
+			"statuses": {
+				"pending": "Odottaa",
+				"complete": "Valmis",
+				"paused": "Keskeytetty",
+				"declined": "Hylätty"
+			},
+			"types": {
+				"income": "Tulo",
+				"expense": "Meno"
+			},
+			"edit": {
+				"title": "Muokkaa transaktiota",
+				"delete_title": "Poista transaktio?",
+				"delete_confirm": "Haluatko varmasti poistaa tämän transaktion? Tätä toimintoa ei voi peruuttaa.",
+				"delete_blocked": "Poistaminen estetty",
+				"linked_reimbursement": "Linkitetty kulukorvaus",
+				"purchaser": "Ostaja",
+				"iban": "Tilinumero",
+				"minutes": "Pöytäkirja",
+				"email": "Sähköposti",
+				"email_sent": "Lähetetty",
+				"email_not_sent": "Ei lähetetty",
+				"items_linked_success": "Tavarat linkitetty",
+				"delete_error_linked": "Tapahtumaa ei voi poistaa koska siihen on linkitetty aktiivisia tavaroita: {{names}}. Poista tai merkitse tavarat Legacy-tilaan ensin."
+			}
+		},
+		"reimbursements": {
+			"link_to_reimbursement": "Linkitä kulukorvaukseen",
+			"title": "Kulukorvaushakemukset",
+			"new": "Uusi",
+			"purchaser": "Ostaja",
+			"receipts": "Kuitit",
+			"view_receipt": "Näytä kuitti",
+			"transaction": "Tapahtuma",
+			"view_transaction": "Näytä transaktio",
+			"email_sent": "Sähköposti lähetetty",
+			"locked_sent": "Lukittu (lähetetty)",
+			"reply_received": "Vastaus vastaanotettu",
+			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
+			"use_as_template": "Käytä pohjana",
+			"linked_transactions": "Linkitetyt transaktiot",
+			"description": "Kuvaus",
+			"description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
+			"amount": "Summa",
+			"amount_placeholder": "0.00",
+			"purchaserName": "Ostajan nimi",
+			"purchaserName_placeholder": "Etu- ja sukunimi",
+			"bankAccount": "Tilinumero (IBAN)",
+			"bankAccount_placeholder": "FI12 3456 7890 1234 56",
+			"notes": "Lisätiedot",
+			"notes_placeholder": "Lisätiedot",
+			"status": "Tila",
+			"year": "Vuosi",
+			"statuses": {
+				"pending": "Odottaa",
+				"approved": "Hyväksytty",
+				"reimbursed": "Maksettu",
+				"rejected": "Hylätty"
+			},
+			"view": {
+				"title": "Näytä kulukorvaus"
+			},
+			"edit": {
+				"title": "Muokkaa kulukorvausta",
+				"reimbursement_details": "Kulukorvauksen tiedot"
+			},
+			"link_existing": "Liitä kulukorvaus",
+			"select_placeholder": "Valitse kulukorvaus...",
+			"no_link": "Älä liitä"
+		},
+		"new_reimbursement": {
+			"title": "Uusi kulukorvaus",
+			"description": "Kuvaus",
+			"description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
+			"amount": "Summa €",
+			"purchaser_name": "Ostajan nimi",
+			"purchaser_placeholder": "Etu- ja sukunimi",
+			"bank_account": "Tilinumero (IBAN)",
+			"minutes_help": "Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.",
+			"notes": "Lisätiedot",
+			"notes_placeholder": "Vapaamuotoinen viesti...",
+			"receipt_uploaded": "Kuitti ladattu",
+			"error": "Virhe",
+			"email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
+			"link_existing_transaction": "Liitä transaktio",
+			"select_transaction_placeholder": "Valitse transaktio...",
+			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
+			"reimbursement_details": "Kulukorvauksen tiedot",
+			"transaction_section_title": "Transaktio"
+		},
+		"breakdown": {
+			"title": "Rahastoerittely",
+			"no_transactions": "Ei tapahtumia tälle vuodelle",
+			"date": "Päivä",
+			"description": "Kuvaus",
+			"category": "Kategoria",
+			"reimbursement_status": "Kulukorvauksen tila",
+			"amount": "Summa",
+			"export": "Lataa CSV",
+			"import": "Tuo CSV",
+			"import_success": "Tuotu {{count}} tapahtumaa",
+			"import_error": "Tuonti epäonnistui",
+			"status": "Tila",
+			"statuses": {
+				"complete": "Valmis",
+				"pending": "Odottaa",
+				"paused": "Keskeytetty",
+				"declined": "Hylätty"
+			},
+			"view": {
+				"title": "Näytä transaktio"
+			},
+			"edit": {
+				"title": "Muokkaa transaktiota"
+			}
+		},
 		"receipts": {
 			"title": "Kuitit",
 			"new": "Uusi kuitti",
+			"name": "Kuitin nimi",
+			"name_placeholder": "Kuitin nimi (valinnainen)",
+			"description": "Kuvaus",
+			"description_placeholder": "Kuvaile kuittia tarvittaessa",
 			"edit": "Muokkaa kuittia",
 			"edit_description": "Muokkaa kuittin tietoja. Tiedostoa ei voi vaihtaa tässä näkymässä.",
 			"view": "Näytä",
@@ -220,8 +473,6 @@
 			"delete_confirm": "Haluatko varmasti poistaa tämän kuitin?",
 			"file": "Tiedosto",
 			"allowed_types": "Sallitut tiedostotyypit",
-			"name_placeholder": "Kuittin nimi (valinnainen)",
-			"description_placeholder": "Kuvaile kuittia tarvittaessa",
 			"link_to_reimbursement": "Linkitä kulukorvaushakemukseen",
 			"invalid_file_type": "Virheellinen tiedostotyyppi. Sallitut tyypit: {{types}}",
 			"form": {
@@ -275,210 +526,6 @@
 			"select_placeholder": "Valitse kuitti...",
 			"no_link": "Älä liitä",
 			"upload_new": "Lataa uusi kuitti"
-		},
-		"actions": {
-			"breakdown": "Erittely",
-			"transactions": "Transaktiovirta",
-			"receipts": "Kuitit",
-			"reimbursements": "Kulukorvaushakemukset",
-			"budgets": "Budjetit"
-		},
-		"new": {
-			"header": "Uusi transaktio",
-			"details_header": "Transaktion tiedot",
-			"inventory_desc": "Valitse listalta tai lisää uusi tavara. Valitut tavarat lisätään uuteen transaktioon.",
-			"items_selected": "{{count}} tavaraa valittu",
-			"total": "Yhteensä",
-			"select_items": "Valitse tavarat",
-			"or": "tai",
-			"submit": "Lisää",
-			"link_budget": "Linkitä budjettiin",
-			"link_budget_help": "Valinnainen: Käytä varoja olemassa olevasta budjetista.",
-			"no_budget": "Älä käytä budjettia",
-			"budget_note": "Menon summa vähennetään valitusta budjetista.",
-			"add_item": "Lisää tavara"
-		},
-		"form": {
-			"amount": "Summa €",
-			"description": "Kuvaus",
-			"description_placeholder": "Esim. Kahvitarjoilut, Kokoukseen hankitut eväät",
-			"date": "Päivämäärä",
-			"year": "Vuosi"
-		},
-		"placeholders": {},
-		"types": {
-			"income": "Tulo",
-			"expense": "Meno"
-		},
-		"categories": {
-			"inventory": "Tavarat",
-			"snacks": "Eväät",
-			"event": "Tapahtuma",
-			"other": "Muu",
-			"grant": "Avustus",
-			"sales": "Myynti",
-			"event_income": "Tapahtumatulo",
-			"membership": "Jäsenmaksut"
-		},
-		"transactions": {
-			"title": "Transaktiot",
-			"new": "Uusi transaktio",
-			"all": "Kaikki",
-			"type": "Tyyppi",
-			"status": "Tila",
-			"locked_by_reimbursement": "Lukittu (kulukorvaus lähetetty)",
-			"link_existing": "Liitä transaktio",
-			"create": "Luo transaktio",
-			"linked": "Linkitetyt transaktiot",
-			"select_placeholder": "Valitse transaktio...",
-			"no_link": "Älä liitä olemassa olevaan transaktioon"
-		},
-		"reimbursements": {
-			"link_to_reimbursement": "Linkitä kulukorvaukseen",
-			"title": "Kulukorvaushakemukset",
-			"new": "Uusi",
-			"purchaser": "Ostaja",
-			"receipts": "Kuitit",
-			"view_receipt": "Näytä kuitti",
-			"transaction": "Tapahtuma",
-			"view_transaction": "Näytä transaktio",
-			"email_sent": "Sähköposti lähetetty",
-			"locked_sent": "Lukittu (lähetetty)",
-			"reply_received": "Vastaus vastaanotettu",
-			"delete_confirm": "Haluatko varmasti poistaa tämän kulukorvauksen?",
-			"use_as_template": "Käytä pohjana",
-			"linked_transactions": "Linkitetyt transaktiot",
-			"status": {
-				"pending": "Odottaa",
-				"approved": "Hyväksytty",
-				"reimbursed": "Maksettu",
-				"rejected": "Hylätty"
-			},
-			"view": {
-				"title": "Näytä kulukorvaus"
-			},
-			"edit": {
-				"title": "Muokkaa kulukorvausta",
-				"reimbursement_details": "Kulukorvauksen tiedot"
-			},
-			"link_existing": "Liitä kulukorvaus",
-			"select_placeholder": "Valitse kulukorvaus...",
-			"no_link": "Älä liitä"
-		},
-		"new_reimbursement": {
-			"title": "Uusi kulukorvaus",
-			"description": "Kuvaus",
-			"description_placeholder": "Esim. Kahvitarjoilu kokoukseen",
-			"amount": "Summa €",
-			"purchaser_name": "Ostajan nimi",
-			"purchaser_placeholder": "Etu- ja sukunimi",
-			"bank_account": "Tilinumero (IBAN)",
-			"minutes_help": "Yli 100€ hankinnoissa pöytäkirja vaaditaan ennen maksua.",
-			"notes": "Lisätiedot",
-			"notes_placeholder": "Vapaamuotoinen viesti...",
-			"receipt_uploaded": "Kuitti ladattu",
-			"error": "Virhe",
-			"email_warning": "⚠️ Sähköpostilähetys ei ole konfiguroitu. Pyyntö tallennetaan, mutta sähköpostia ei lähetetä.",
-			"link_existing_transaction": "Liitä transaktio",
-			"select_transaction_placeholder": "Valitse transaktio...",
-			"linked_transaction_info": "Tämä kulukorvaus liitetään valittuun transaktion. Transaktion tietoja käytetään.",
-			"reimbursement_details": "Kulukorvauksen tiedot",
-			"transaction_section_title": "Transaktio"
-		},
-		"breakdown": {
-			"title": "Rahastoerittely",
-			"no_transactions": "Ei tapahtumia tälle vuodelle",
-			"date": "Päivä",
-			"description": "Kuvaus",
-			"category": "Kategoria",
-			"reimbursement_status": "Kulukorvauksen tila",
-			"amount": "Summa",
-			"export": "Lataa CSV",
-			"import": "Tuo CSV",
-			"import_success": "Tuotu {{count}} tapahtumaa",
-			"import_error": "Tuonti epäonnistui",
-			"status": {
-				"complete": "Valmis",
-				"pending": "Odottaa",
-				"paused": "Keskeytetty",
-				"declined": "Hylätty"
-			},
-			"view": {
-				"title": "Näytä transaktio"
-			},
-			"edit": {
-				"title": "Muokkaa transaktiota",
-				"delete_title": "Poista transaktio?",
-				"delete_confirm": "Haluatko varmasti poistaa tämän transaktion? Tätä toimintoa ei voi peruuttaa.",
-				"delete_blocked": "Poistaminen estetty",
-				"linked_reimbursement": "Linkitetty kulukorvaus",
-				"purchaser": "Ostaja",
-				"iban": "Tilinumero",
-				"minutes": "Pöytäkirja",
-				"email": "Sähköposti",
-				"email_sent": "Lähetetty",
-				"email_not_sent": "Ei lähetetty",
-				"items_linked_success": "Tavarat linkitetty",
-				"delete_error_linked": "Tapahtumaa ei voi poistaa koska siihen on linkitetty aktiivisia tavaroita: {{names}}. Poista tai merkitse tavarat Legacy-tilaan ensin.",
-				"reimbursement_statuses": {},
-				"status": {}
-			}
-		},
-		"budgets": {
-			"title": "Budjetit",
-			"new": "Uusi budjetti",
-			"name": "Budjetin nimi",
-			"name_placeholder": "Esim. Kitaran hankinta",
-			"description": "Kuvaus",
-			"description_placeholder": "Lisätietoja budjetista",
-			"amount": "Budjetin koko",
-			"used": "Käytetty",
-			"reserved": "Varattu",
-			"remaining": "Jäljellä",
-			"created_by": "Luoja",
-			"year": "Vuosi",
-			"status": "Tila",
-			"statuses": {
-				"open": "Avoinna",
-				"closed": "Suljettu",
-				"draft": "Luonnostelma"
-			},
-			"actions": {
-				"edit": "Muokkaa",
-				"delete": "Poista",
-				"close": "Sulje budjetti",
-				"reopen": "Avaa uudelleen"
-			},
-			"close_confirm": "Budjetin sulkeminen palauttaa {{amount}} käytettävissä oleviin varoihin. Jatka?",
-			"reopen_confirm": "Avaa tämä budjetti uudelleen?",
-			"delete_confirm": "Poista tämä budjetti? Tätä ei voi peruuttaa.",
-			"cannot_reduce": "Summaa ei voi pienentää alle käytetyn määrän ({{used}})",
-			"insufficient_funds": "Käytettävissä olevat varat eivät riitä. Käytettävissä: {{available}}",
-			"linked_transactions": "Linkitetyt transaktiot",
-			"no_budgets": "Ei budjetteja",
-			"used_funds": "Käytetty budjetti",
-			"no_budgets_desc": "Vuodelle {{year}} ei ole vielä budjetteja.",
-			"available_funds": "Käytettävissä olevat varat",
-			"success": {
-				"created": "Budjetti luotu",
-				"updated": "Budjetti päivitetty",
-				"deleted": "Budjetti poistettu",
-				"closed": "Budjetti suljettu",
-				"reopened": "Budjetti avattu uudelleen"
-			},
-			"error": {
-				"delete_failed": "Budjetin poisto epäonnistui",
-				"has_transactions": "Budjettia ei voi poistaa, koska siihen on linkitetty transaktioita"
-			},
-			"form": {
-				"create": "Luo budjetti"
-			},
-			"view": {
-				"title": "Näytä budjetti"
-			},
-			"edit": {
-				"title": "Muokkaa budjettia"
-			}
 		}
 	},
 	"inventory": {
@@ -549,6 +596,16 @@
 			"title_new": "Uusi tavara",
 			"title_edit": "Muokkaa tavaraa",
 			"details_header": "Tavaran tiedot",
+			"name": "Nimi",
+			"quantity": "Määrä",
+			"quantity_placeholder": "Määrä",
+			"location": "Sijainti",
+			"category": "Kategoria",
+			"description": "Kuvaus",
+			"value": "Kpl-arvo",
+			"purchasedAt": "Hankintapäivä",
+			"purchasedAt_placeholder": "Hankintapäivä",
+			"showInInfoReel": "Näytä Info Reelissä",
 			"name_placeholder": "Valitse tai kirjoita nimi...",
 			"name_search_placeholder": "Etsi tavaraa...",
 			"name_empty": "Ei löydy.",
@@ -560,7 +617,6 @@
 			"description_placeholder": "Lisätietoja tavarasta",
 			"value_placeholder": "0.00",
 			"purchased_at_label": "Hankintapäivä",
-			"show_in_info_reel": "Näytä Info Reelissä",
 			"example": "Esim. {{example}}"
 		},
 		"new": {},
@@ -639,6 +695,14 @@
 		"no_minutes": "Ei pöytäkirjoja",
 		"no_minutes_yet": "Ei vielä pöytäkirjoja",
 		"this_year": "Tämä vuosi",
+		"date": "Päivämäärä",
+		"minute_title": "Otsikko",
+		"title_placeholder": "Kokouksen otsikko",
+		"description": "Kuvaus",
+		"description_placeholder": "Kokouksen kuvaus",
+		"file": "Tiedosto",
+		"replace_file": "Korvaa tiedosto (valinnainen)",
+		"edit": "Muokkaa pöytäkirjaa",
 		"search": {
 			"name_label": "Nimi",
 			"name_placeholder": "Hae nimellä...",
@@ -1006,6 +1070,12 @@
 			"summary_placeholder": "Lyhyt yhteenveto (valinnainen)",
 			"content": "Sisältö",
 			"content_placeholder": "Uutisen teksti",
+			"titleSecondary": "Otsikko (toinen kieli)",
+			"titleSecondary_placeholder": "Otsikko toisella kielellä",
+			"summarySecondary": "Yhteenveto (toinen kieli)",
+			"summarySecondary_placeholder": "Yhteenveto toisella kielellä",
+			"contentSecondary": "Sisältö (toinen kieli)",
+			"contentSecondary_placeholder": "Sisältö toisella kielellä",
 			"default_language": "Oletuskieli ({{language}})",
 			"secondary_language": "Toinen kieli ({{language}})"
 		},
@@ -1032,7 +1102,13 @@
 			"question_placeholder": "Kirjoita kysymys",
 			"answer": "Vastaus",
 			"answer_placeholder": "Kirjoita vastaus",
+			"questionSecondary": "Kysymys (toinen kieli)",
+			"questionSecondary_placeholder": "Kysymys toisella kielellä",
+			"answerSecondary": "Vastaus (toinen kieli)",
+			"answerSecondary_placeholder": "Vastaus toisella kielellä",
 			"sort_order": "Järjestysnumero",
+			"sortOrder": "Järjestysnumero",
+			"sortOrder_placeholder": "Järjestysnumero",
 			"default_language": "Oletuskieli ({{language}})",
 			"secondary_language": "Toinen kieli ({{language}})"
 		},
@@ -1081,12 +1157,21 @@
 			"google_form_url": "Google Form URL",
 			"deadline": "Deadline",
 			"deadline_help": "Milloin kyselyn tulisi sulkeutua? (valinnainen)",
-			"analytics_sheet": "Linkitä analytiikka-taulukkoon",
-			"analytics_sheet_help": "Valinnainen: Valitse taulukko nähdäksesi vastaukset analytiikassa",
+			"deadlineDate": "Deadline (päivämäärä)",
+			"deadlineTime": "Deadline (aika)",
+			"status": "Tila",
+			"analyticsSheetId": "Analytiikka-taulukko",
 			"no_sheet": "Älä linkitä taulukkoon",
 			"submit": "Lisää kysely",
 			"create_form": "Luo lomake",
-			"creating": "Luodaan lomaketta..."
+			"creating": "Luodaan lomaketta...",
+			"externalUrl": "Kyselyn URL",
+			"externalUrl_placeholder": "https://forms.google.com/...",
+			"statuses": {
+				"draft": "Luonnos",
+				"active": "Aktiivinen",
+				"closed": "Suljettu"
+			}
 		},
 		"instructions": {},
 		"success": {}
@@ -1169,7 +1254,7 @@
 				"read": "Näytä korvausvaatimukset",
 				"write": "Luo korvausvaatimuksia",
 				"write-self": "Luo omia korvausvaatimuksia",
-				"update": "Päivitä ja hyväksy/hylkää korvausvaatimuksia",
+				"update": "Päivitä ja hyväksy/hylkää korvauksia",
 				"delete": "Poista korvausvaatimuksia",
 				"update-self": "Muokkaa omia korvausvaatimuksia",
 				"delete-self": "Poista omia korvausvaatimuksia",

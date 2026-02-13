@@ -85,6 +85,12 @@
 	"lang": {
 		"label": "Sprache"
 	},
+	"theme": {
+		"label": "Design",
+		"system": "System",
+		"light": "Hell",
+		"dark": "Dunkel"
+	},
 	"search_menu": {
 		"title": "Search",
 		"filter": "Filter",

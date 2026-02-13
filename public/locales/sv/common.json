@@ -77,6 +77,12 @@
 	"lang": {
 		"label": "Språk"
 	},
+	"theme": {
+		"label": "Tema",
+		"system": "System",
+		"light": "Ljust",
+		"dark": "Mörkt"
+	},
 	"search_menu": {
 		"title": "Search",
 		"filter": "Filter",
@@ -223,7 +229,8 @@
 			"reimbursement_status": "Ersättningsstatus",
 			"amount": "Belopp",
 			"export": "Exportera CSV",
-			"status": {
+			"status": "Status",
+			"statuses": {
 				"complete": "Klar",
 				"pending": "Väntande",
 				"paused": "Pausad",

@@ -381,3 +381,32 @@ To activate Info Reel mode, append `?view=infoReel` to any URL:
 ---
 
 Built with ❤️ using React Router.
+
+---
+
+## Entity Relationships
+
+The portal features a powerful relationship system that links entities together (Receipts, Transactions, Reimbursements, Inventory, etc.).
+
+### Key Benefits
+
+- **Automatic Value Sync**: When entities are linked, shared values (amount, date, description) are automatically synchronized based on a priority system
+- **Smart Pre-fill**: Creating a Transaction from a Receipt pre-fills the form with Receipt values
+- **Explicit Links**: Relationships are direct and explicit - no surprise transitive connections
+
+### Priority System (Domination Scale)
+
+When linked entities have conflicting values, the system uses this priority:
+
+| Priority | Entity Type | Reason |
+|----------|-------------|--------|
+| 4 (Ultimate) | Manual | User explicitly sets values |
+| 3 (High) | Receipt | Physical proof - immutable facts |
+| 2 (Medium) | Reimbursement | User's intent and grouping |
+| 1 (Low) | Transaction | Bank record - lacks context |
+
+**Example**: Linking a Transaction (€50) with a Receipt (€48.50) → the system uses the Receipt's amount.
+
+### Documentation
+
+For implementation details, see [docs/RELATIONSHIPS.md](./docs/RELATIONSHIPS.md).
