@@ -8,7 +8,6 @@ import {
 } from "~/components/treasury/treasury-detail-components";
 import { Button } from "~/components/ui/button";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
 import { encodeRelationshipContext } from "~/lib/linking/relationship-context";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";

@@ -1,10 +1,10 @@
 import { type ActionFunctionArgs, data } from "react-router";
-import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { processReceiptOCR } from "~/lib/receipt-ocr.server";
 
 export async function action({ request }: ActionFunctionArgs) {
 	// 1. Authentication & Permission Check
+	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const user = await getAuthenticatedUser(request, () => db);
 
