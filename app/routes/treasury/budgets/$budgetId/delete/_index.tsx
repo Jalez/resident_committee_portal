@@ -10,5 +10,5 @@ export const action = createGenericDeleteAction("budget", {
 });
 
 export default function BudgetDeleteRoute() {
-	return <DeleteRouteRedirect entityType="treasury/budgets" />;
+	return <DeleteRouteRedirect listPath="/treasury/budgets" />;
 }

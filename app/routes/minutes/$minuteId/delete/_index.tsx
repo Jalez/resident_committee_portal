@@ -17,5 +17,5 @@ export const action = createGenericDeleteAction("minute", {
 });
 
 export default function MinuteDeleteRoute() {
-	return <DeleteRouteRedirect entityType="minutes" />;
+	return <DeleteRouteRedirect listPath="/minutes" />;
 }

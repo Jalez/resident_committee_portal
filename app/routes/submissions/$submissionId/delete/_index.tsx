@@ -1,11 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
 import { DeleteRouteRedirect } from "~/components/delete-route-redirect";
 import { getDatabase } from "~/db/server";
-import {
-	createGenericDeleteAction,
-	genericDeleteLoader,
-} from "~/lib/actions/generic-delete.server";
+import { genericDeleteLoader } from "~/lib/actions/generic-delete.server";
 import { requirePermission } from "~/lib/auth.server";
 
 export const loader = genericDeleteLoader;
@@ -24,12 +19,5 @@ export async function action({
 }
 
 export default function SubmissionDeleteRoute() {
-	const navigate = useNavigate();
-	const params = useParams();
-
-	useEffect(() => {
-		navigate("/submissions", { replace: true });
-	}, [navigate]);
-
-	return null;
+	return <DeleteRouteRedirect listPath="/submissions" />;
 }

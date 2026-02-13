@@ -6,7 +6,6 @@
 // Configurable cache durations (in milliseconds)
 export const CACHE_TTL = {
 	CALENDAR_EVENTS: 3 * 60 * 60 * 1000, // 3 hours
-	MINUTES: 3 * 60 * 60 * 1000, // 3 hours
 	SOCIAL_CHANNELS: 3 * 60 * 60 * 1000, // 3 hours
 	INVENTORY: 3 * 60 * 60 * 1000, // 3 hours
 	ANALYTICS_LIST: 5 * 60 * 1000, // 5 minutes
@@ -70,7 +69,6 @@ export function clearAllCache(): void {
 // Cache keys
 export const CACHE_KEYS = {
 	CALENDAR_EVENTS: "calendar_events",
-	MINUTES: "minutes",
 	SOCIAL_CHANNELS: "social_channels",
 	INVENTORY: "inventory",
 	ANALYTICS_LIST: "analytics_list",

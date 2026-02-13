@@ -8,5 +8,5 @@ export const loader = genericDeleteLoader;
 export const action = createGenericDeleteAction("poll", { idParam: "pollId" });
 
 export default function PollDeleteRoute() {
-	return <DeleteRouteRedirect entityType="polls" />;
+	return <DeleteRouteRedirect listPath="/polls" />;
 }

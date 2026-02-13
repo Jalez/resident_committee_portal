@@ -10,5 +10,5 @@ export const action = createGenericDeleteAction("event", {
 });
 
 export default function EventDeleteRoute() {
-	return <DeleteRouteRedirect entityType="events" />;
+	return <DeleteRouteRedirect listPath="/events" />;
 }

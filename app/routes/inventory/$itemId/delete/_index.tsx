@@ -10,5 +10,5 @@ export const action = createGenericDeleteAction("inventory", {
 });
 
 export default function InventoryDeleteRoute() {
-	return <DeleteRouteRedirect entityType="inventory" />;
+	return <DeleteRouteRedirect listPath="/inventory" />;
 }

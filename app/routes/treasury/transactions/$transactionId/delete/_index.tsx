@@ -14,5 +14,5 @@ export const action = createGenericDeleteAction("transaction", {
 });
 
 export default function TransactionDeleteRoute() {
-	return <DeleteRouteRedirect entityType="treasury/transactions" />;
+	return <DeleteRouteRedirect listPath="/treasury/transactions" />;
 }

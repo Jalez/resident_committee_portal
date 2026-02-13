@@ -17,5 +17,5 @@ export const action = createGenericDeleteAction("reimbursement", {
 });
 
 export default function ReimbursementDeleteRoute() {
-	return <DeleteRouteRedirect entityType="treasury/reimbursements" />;
+	return <DeleteRouteRedirect listPath="/treasury/reimbursements" />;
 }

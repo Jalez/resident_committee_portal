@@ -19,7 +19,6 @@ import {
 	createEditLoader,
 	createEmailAction,
 } from "~/lib/edit-handlers.server";
-// import { SITE_CONFIG } from "~/lib/config.server"; // Removed server-side import
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
@@ -27,7 +26,6 @@ import {
 	sendReimbursementEmail,
 } from "~/lib/email.server";
 import type { AnyEntity } from "~/lib/entity-converters";
-import { getMinutesByYear } from "~/lib/google.server";
 import { getReceiptsForPurchaseEdit } from "~/lib/receipts/server";
 import {
 	getMissingReceiptsError,
@@ -55,36 +53,32 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		request,
 		fetchEntity: (db, id) => db.getPurchaseById(id),
 		extend: async ({ db, entity }: any) => {
-			// Redirect if already sent
 			if (entity.emailSent) {
 				throw redirect(`/treasury/reimbursements/${entity.id}`);
 			}
 
-			const [receiptsByYear, pickerItems, recentMinutes, emailConfigured] =
+			const [receiptsByYear, pickerItems, allMinutes, emailConfigured] =
 				await Promise.all([
 					getReceiptsForPurchaseEdit(entity.id),
 					db.getActiveInventoryItems(),
-					getMinutesByYear()
-						.then((years) =>
-							years
-								.flatMap((year) =>
-									year.files.map((f) => ({
-										id: f.id,
-										name: f.name,
-										url: f.url,
-										year: year.year,
-									})),
-								)
-								.slice(0, 50),
-						)
-						.catch(() => []),
+					db.getMinutes().then((minutes) =>
+						minutes
+							.filter((m) => m.status !== "draft")
+							.map((m) => ({
+								id: m.id,
+								name: m.title || "Untitled",
+								url: m.fileUrl,
+								year: m.year?.toString() || new Date().getFullYear().toString(),
+							}))
+							.slice(0, 50),
+					),
 					isEmailConfigured(),
 				]);
 
 			return {
 				receiptsByYear,
 				pickerItems,
-				recentMinutes,
+				recentMinutes: allMinutes,
 				emailConfigured,
 				currentYear: new Date().getFullYear(),
 			};
