@@ -22,6 +22,9 @@ export default [
 	route("api/avatar/set", "routes/api/avatar/set/_index.tsx"),
 	route("api/avatar/upload", "routes/api/avatar/upload/_index.tsx"),
 	route("api/avatars/delete", "routes/api/avatars/delete/_index.tsx"),
+	route("api/files/delete-temp", "routes/api/files/delete-temp/_index.tsx"),
+	route("api/files/upload-temp", "routes/api/files/upload-temp/_index.tsx"),
+	route("api/files/upload-token", "routes/api/files/upload-token/_index.tsx"),
 	route(
 		"treasury/budgets/:budgetId/delete",
 		"routes/treasury/budgets/$budgetId/delete/_index.tsx",
@@ -35,6 +38,7 @@ export default [
 		"api/entities/smart-autofill",
 		"routes/api/entities/smart-autofill/_index.tsx",
 	),
+	route("api/entities/:type/:id", "routes/api/entities/$type.$id/_index.tsx"),
 	route("faq/:faqId/delete", "routes/faq/$faqId/delete/_index.tsx"),
 	route("api/faq/:faqId/update", "routes/api/faq/$faqId/update/_index.tsx"),
 	route(
@@ -95,6 +99,7 @@ export default [
 		"routes/api/relationship/analyze/_index.tsx",
 	),
 	route("api/set-language", "routes/api/set-language/_index.tsx"),
+	route("api/set-theme-palette", "routes/api/set-theme-palette/_index.tsx"),
 	route(
 		"treasury/transactions/:transactionId/delete",
 		"routes/treasury/transactions/$transactionId/delete/_index.tsx",
@@ -123,10 +128,16 @@ export default [
 	route("inventory/:itemId/edit", "routes/inventory/$itemId/edit/_index.tsx"),
 	route("inventory/incomplete", "routes/inventory/incomplete/_index.tsx"),
 	route("mail", "routes/mail/_index.tsx"),
-	route("mail/messages/:messageId", "routes/mail/messages/$messageId/_index.tsx"),
+	route(
+		"mail/messages/:messageId",
+		"routes/mail/messages/$messageId/_index.tsx",
+	),
 	route("mail/compose", "routes/mail/compose/_index.tsx"),
 	route("mail/drafts", "routes/mail/drafts/_index.tsx"),
-	route("mail/drafts/:draftId/edit", "routes/mail/drafts/$draftId/edit/_index.tsx"),
+	route(
+		"mail/drafts/:draftId/edit",
+		"routes/mail/drafts/$draftId/edit/_index.tsx",
+	),
 	route("mail/new", "routes/mail/new/_index.tsx"),
 	route("mail/thread/:threadId", "routes/mail/thread/$threadId/_index.tsx"),
 	route("messages", "routes/messages/_index.tsx"),
@@ -142,6 +153,7 @@ export default [
 	route("polls/new", "routes/polls/new/_index.tsx"),
 	route("profile", "routes/profile/_index.tsx"),
 	route("settings/analytics", "routes/settings/analytics/_index.tsx"),
+	route("settings/auto-input", "routes/settings/auto-input/_index.tsx"),
 	route("settings/faqs", "routes/settings/faqs/_index.tsx"),
 	route("settings/general", "routes/settings/general/_index.tsx"),
 	route("settings/news", "routes/settings/news/_index.tsx"),

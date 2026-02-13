@@ -1,90 +1,70 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	Link,
-	useActionData,
-	useFetcher,
-	useRouteLoaderData,
-} from "react-router";
+import { useFetcher, useRouteLoaderData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { RelationshipPicker } from "~/components/relationships/relationship-picker";
-import {
-	TreasuryDetailCard,
-	TreasuryField,
-} from "~/components/treasury/treasury-detail-components";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { getDatabase, type Receipt } from "~/db/server";
-import { requirePermissionOrSelf } from "~/lib/auth.server";
-import { SITE_CONFIG } from "~/lib/config.server";
+import { ViewForm } from "~/components/ui/view-form";
+import { getDatabase } from "~/db/server";
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import type { AnyEntity } from "~/lib/entity-converters";
 import { maskBankAccount } from "~/lib/mask-bank-account";
-import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
-import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
+import {
+	formatMissingRelationshipsMessage,
+	validateRequiredRelationships,
+} from "~/lib/required-relationships";
+import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
-	const description = data?.purchase?.description;
+	const description = (data as any)?.reimbursement?.description;
 	const title = description
 		? `${description.substring(0, 30)} / View Reimbursement`
 		: "View Reimbursement";
 	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - ${title}` },
+		{ title: `${(data as any)?.siteConfig?.name || "Portal"} - ${title}` },
 		{ name: "robots", content: "noindex" },
 	];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	const db = getDatabase();
-
-	const purchase = await db.getPurchaseById(params.purchaseId);
-
-	if (!purchase) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
-	// Check permission with self-read support
-	await requirePermissionOrSelf(
+	return createViewLoader({
+		entityType: "reimbursement",
+		permission: "treasury:reimbursements:read",
+		permissionSelf: "treasury:reimbursements:read-self",
+		params,
 		request,
-		"treasury:reimbursements:read",
-		"treasury:reimbursements:read-self",
-		purchase.createdBy,
-		getDatabase,
-	);
-
-	// Load relationships using universal system
-	const relationships = await loadRelationshipsForEntity(
-		db,
-		"reimbursement",
-		purchase.id,
-		["transaction", "receipt", "inventory"],
-	);
-
-	// Get OCR content for linked receipts
-	const linkedReceipts = (relationships.receipt?.linked ||
-		[]) as unknown as AnyEntity[];
-	const receiptIds = linkedReceipts.map((r) => r.id);
-	const receiptContents =
-		receiptIds.length > 0
-			? await db.getReceiptContentsByReceiptIds(receiptIds)
-			: [];
-
-	return {
-		siteConfig: SITE_CONFIG,
-		purchase,
-		relationships,
-		receiptContents,
-		emailConfigured: await isEmailConfigured(),
-	};
+		fetchEntity: (db, id) => db.getPurchaseById(id),
+		extend: async ({ db, entity: purchase }) => {
+			let mailThread = null;
+			if (purchase.emailMessageId) {
+				const mailMessage = await db.getCommitteeMailMessageByMessageId(
+					purchase.emailMessageId,
+				);
+				if (mailMessage?.threadId) {
+					const threadMessages = await db.getCommitteeMailMessagesByThreadId(
+						mailMessage.threadId,
+					);
+					if (threadMessages.length > 0) {
+						mailThread = {
+							id: mailMessage.threadId,
+							subject: threadMessages[0].subject,
+							messageCount: threadMessages.length,
+						};
+					}
+				}
+			}
+			return {
+				mailThread,
+				emailConfigured: await isEmailConfigured(),
+			};
+		},
+	});
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -97,21 +77,63 @@ export async function action({ request, params }: Route.ActionArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	await requirePermissionOrSelf(
-		request,
-		"treasury:reimbursements:update",
-		"treasury:reimbursements:update-self",
-		purchase.createdBy,
-		getDatabase,
-	);
-
 	if (actionType === "sendRequest") {
-		// Get linked receipts via entity relationships
-		const receiptRelationships = await db.getEntityRelationships(
+		// Validate required relationships before sending
+		const allRelationships = await db.getEntityRelationships(
 			"reimbursement",
 			purchase.id,
 		);
-		const linkedReceiptIds = receiptRelationships
+
+		// Build relationships object for validation
+		const relationshipsForValidation: Record<string, { linked: any[] }> = {};
+
+		// Extract linked entities by type
+		for (const rel of allRelationships) {
+			let linkedType: string | null = null;
+			let linkedId: string | null = null;
+
+			if (
+				rel.relationAType === "reimbursement" &&
+				rel.relationId === purchase.id
+			) {
+				linkedType = rel.relationBType;
+				linkedId = rel.relationBId;
+			} else if (
+				rel.relationBType === "reimbursement" &&
+				rel.relationBId === purchase.id
+			) {
+				linkedType = rel.relationAType;
+				linkedId = rel.relationId;
+			}
+
+			if (linkedType && linkedId) {
+				if (!relationshipsForValidation[linkedType]) {
+					relationshipsForValidation[linkedType] = { linked: [] };
+				}
+				relationshipsForValidation[linkedType].linked.push({ id: linkedId });
+			}
+		}
+
+		const validation = validateRequiredRelationships(
+			"reimbursement",
+			relationshipsForValidation,
+		);
+
+		if (!validation.valid) {
+			return {
+				success: false,
+				error: formatMissingRelationshipsMessage(
+					validation.missing,
+					(key, opts) =>
+						key.includes(".")
+							? key
+							: `Missing required relationships: ${validation.missing.map((m) => m.type).join(", ")}`,
+				),
+			};
+		}
+
+		// Get receipt attachments
+		const linkedReceiptIds = allRelationships
 			.filter(
 				(r) => r.relationBType === "receipt" || r.relationAType === "receipt",
 			)
@@ -121,10 +143,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 		const linkedReceipts =
 			linkedReceiptIds.length > 0
 				? await Promise.all(
-					linkedReceiptIds.map((id) => db.getReceiptById(id)),
-				).then((receipts) =>
-					receipts.filter((r): r is NonNullable<typeof r> => r !== null),
-				)
+						linkedReceiptIds.map((id) => db.getReceiptById(id)),
+					).then((receipts) =>
+						receipts.filter((r): r is NonNullable<typeof r> => r !== null),
+					)
 				: [];
 
 		if (linkedReceipts.length === 0) {
@@ -134,8 +156,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			};
 		}
 
-		// Filter out drafts (receipts without pathname/url)
-		const receiptLinks: ReceiptLink[] = linkedReceipts
+		const receiptLinks = linkedReceipts
 			.filter((r) => r.pathname && r.url)
 			.map((r) => ({
 				id: r.pathname!,
@@ -174,12 +195,26 @@ export async function action({ request, params }: Route.ActionArgs) {
 				db,
 			);
 
-			if (emailResult.success) {
+			if (emailResult.success && emailResult.messageId) {
 				await db.updatePurchase(purchase.id, {
 					emailSent: true,
 					emailMessageId: emailResult.messageId,
 					emailError: null,
 				});
+
+				const mailMessage = await db.getCommitteeMailMessageByMessageId(
+					emailResult.messageId,
+				);
+				if (mailMessage) {
+					await db.createEntityRelationship({
+						relationAType: "reimbursement",
+						relationId: purchase.id,
+						relationBType: "mail",
+						relationBId: mailMessage.id,
+						createdBy: null,
+					});
+				}
+
 				return {
 					success: true,
 					message: "treasury.reimbursements.email_sent_success",
@@ -194,7 +229,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 				};
 			}
 		} catch (error) {
-			console.error("[Reimbursement View] Email error:", error);
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 			await db.updatePurchase(purchase.id, {
@@ -211,16 +245,15 @@ export default function ViewReimbursement({
 	loaderData,
 }: Route.ComponentProps) {
 	const {
-		purchase,
+		reimbursement: purchase,
 		relationships,
-		receiptContents: receiptContentsData,
-	} = loaderData;
+		mailThread,
+		emailConfigured,
+	} = loaderData as any;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 	const fetcher = useFetcher();
-	const _actionData = useActionData<typeof action>();
 
-	// Toast for email sending
 	useEffect(() => {
 		if (fetcher.data?.success) {
 			if (fetcher.data.message) {
@@ -233,7 +266,6 @@ export default function ViewReimbursement({
 		}
 	}, [fetcher.data, t]);
 
-	// Check if user can edit
 	const canUpdateGeneral =
 		rootData?.user?.permissions?.includes("treasury:reimbursements:update") ||
 		rootData?.user?.permissions?.includes("*");
@@ -245,154 +277,116 @@ export default function ViewReimbursement({
 		rootData?.user?.userId === purchase.createdBy;
 	const canUpdate = canUpdateGeneral || canUpdateSelf;
 
-	// Can view full bank account if user can update OR is the creator
 	const isCreator =
 		purchase.createdBy && rootData?.user?.userId === purchase.createdBy;
 	const canViewFullBankAccount = canUpdateGeneral || isCreator;
 
-	const formatCurrency = (value: string | number) => {
-		const num = typeof value === "string" ? parseFloat(value) : value;
-		return `${num.toFixed(2).replace(".", ",")} €`;
-	};
+	const linkedReceipts = relationships.receipt?.linked || [];
 
-	// Get linked receipts count for email button check
-	const linkedReceipts = (relationships.receipt?.linked ||
-		[]) as unknown as AnyEntity[];
-	const _nonDraftReceipts = linkedReceipts.filter(
-		(r) => (r as Receipt).pathname,
-	);
+	// Validate required relationships for sending email
+	const requiredValidation = useMemo(() => {
+		return validateRequiredRelationships("reimbursement", relationships);
+	}, [relationships]);
 
 	const canSendRequest =
 		canUpdate &&
 		purchase.purchaserName &&
 		purchase.bankAccount &&
-		purchase.minutesId &&
-		linkedReceipts.length > 0;
+		requiredValidation.valid;
+
+	const missingRequirementsMessage = useMemo(() => {
+		if (requiredValidation.valid) return null;
+		return formatMissingRelationshipsMessage(
+			requiredValidation.missing,
+			t.bind(null),
+		);
+	}, [requiredValidation, t]);
+
+	const displayFields = {
+		description: purchase.description || "—",
+		amount: { value: purchase.amount, valueClassName: "font-bold" },
+		purchaserName: purchase.purchaserName || "—",
+		bankAccount: {
+			value: canViewFullBankAccount
+				? purchase.bankAccount || "—"
+				: maskBankAccount(purchase.bankAccount),
+			valueClassName: "font-mono",
+		},
+		notes: { value: purchase.notes, hide: !purchase.notes },
+		status: purchase.status,
+	};
+
+	const mailRelationships = mailThread
+		? {
+				mail: {
+					linked: [
+						{
+							id: mailThread.id,
+							name: mailThread.subject || "Email Thread",
+							__type: "mail",
+						},
+					],
+				},
+			}
+		: relationships.mail
+			? { mail: relationships.mail }
+			: {};
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<div className="flex items-center justify-between mb-4">
-					<PageHeader title={t("treasury.reimbursements.view.title")} />
-					<div className="flex gap-2">
-						{canSendRequest && !purchase.emailSent && (
+			<ViewForm
+				title={t("treasury.reimbursements.view.title")}
+				entityType="reimbursement"
+				entityId={purchase.id}
+				entityName={purchase.description || ""}
+				displayFields={displayFields}
+				relationships={{ ...relationships, ...mailRelationships }}
+				returnUrl="/treasury/reimbursements"
+				canEdit={canUpdate && !purchase.emailSent}
+				canDelete={canUpdate && !purchase.emailSent}
+				translationNamespace="treasury.reimbursements"
+			>
+				{!purchase.emailSent && emailConfigured && (
+					<div className="space-y-2">
+						{canSendRequest ? (
 							<fetcher.Form method="post">
 								<Button
 									type="submit"
 									name="_action"
 									value="sendRequest"
-									variant="secondary"
+									variant="default"
 									disabled={fetcher.state === "submitting"}
 								>
 									<span className="material-symbols-outlined mr-2">send</span>
 									{t("treasury.reimbursements.send_request")}
 								</Button>
 							</fetcher.Form>
-						)}
-						{canUpdate && !purchase.emailSent && (
-							<Link to={`/treasury/reimbursements/${purchase.id}/edit`}>
-								<Button variant="default">
-									<span className="material-symbols-outlined mr-2">edit</span>
-									{t("common.actions.edit")}
-								</Button>
-							</Link>
-						)}
-						{purchase.emailSent && (
-							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-md">
-								<span className="material-symbols-outlined text-base">
-									lock
-								</span>
-								{t("treasury.reimbursements.locked_sent")}
-							</div>
+						) : (
+							missingRequirementsMessage && (
+								<div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm">
+									<span className="material-symbols-outlined text-sm">
+										warning
+									</span>
+									<span>
+										{t("treasury.reimbursements.missing_requirements", {
+											defaultValue: `Cannot send: ${missingRequirementsMessage}`,
+										})}
+									</span>
+								</div>
+							)
 						)}
 					</div>
-				</div>
+				)}
 
-				<div className="space-y-6">
-					<TreasuryDetailCard
-						title={t("treasury.reimbursements.edit.reimbursement_details")}
-					>
-						<div className="grid gap-4">
-							<TreasuryField
-								label={t("treasury.new_reimbursement.description")}
-							>
-								{purchase.description || "—"}
-							</TreasuryField>
-							<TreasuryField
-								label={t("treasury.new_reimbursement.amount")}
-								valueClassName="text-foreground font-bold"
-							>
-								{formatCurrency(purchase.amount)}
-							</TreasuryField>
-							<TreasuryField
-								label={t("treasury.new_reimbursement.purchaser_name")}
-							>
-								{purchase.purchaserName || "—"}
-							</TreasuryField>
-							<TreasuryField
-								label={t("treasury.new_reimbursement.bank_account")}
-							>
-								<span className="font-mono">
-									{canViewFullBankAccount
-										? purchase.bankAccount || "—"
-										: maskBankAccount(purchase.bankAccount)}
-								</span>
-							</TreasuryField>
-							{purchase.notes ? (
-								<TreasuryField label={t("treasury.new_reimbursement.notes")}>
-									{purchase.notes}
-								</TreasuryField>
-							) : null}
-							<TreasuryField
-								label={t("treasury.reimbursements.status")}
-								valueClassName="text-foreground"
-							>
-								<Badge variant="secondary">
-									{t(`treasury.reimbursements.status.${purchase.status}`)}
-								</Badge>
-							</TreasuryField>
-							{purchase.emailSent && (
-								<TreasuryField
-									label={t("treasury.reimbursements.email_status")}
-									valueClassName="text-green-600 dark:text-green-400 font-medium flex items-center gap-2"
-								>
-									<span className="material-symbols-outlined text-sm">
-										check_circle
-									</span>
-									{t("treasury.reimbursements.email_sent")}
-								</TreasuryField>
-							)}
-						</div>
-
-						<RelationshipPicker
-							relationAType="reimbursement"
-							relationAId={purchase.id}
-							relationAName={purchase.description || ""}
-							mode="view"
-							sections={[
-								{
-									relationBType: "transaction",
-									linkedEntities: (relationships.transaction?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: [],
-								},
-								{
-									relationBType: "receipt",
-									linkedEntities: (relationships.receipt?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: [],
-								},
-								{
-									relationBType: "inventory",
-									linkedEntities: (relationships.inventory?.linked ||
-										[]) as unknown as AnyEntity[],
-									availableEntities: [],
-								},
-							]}
-						/>
-					</TreasuryDetailCard>
-				</div>
-			</div>
+				{purchase.emailSent && (
+					<div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+						<span className="material-symbols-outlined text-sm">
+							check_circle
+						</span>
+						{t("treasury.reimbursements.email_sent")}
+					</div>
+				)}
+			</ViewForm>
 		</PageWrapper>
 	);
 }

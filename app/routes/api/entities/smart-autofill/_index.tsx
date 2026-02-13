@@ -1,11 +1,10 @@
 import { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
+
 import {
 	type AIEnrichmentResult,
 	analyzeRelationshipContext,
 } from "~/lib/ai/relationship-analyzer.server";
 import { requireAnyPermission } from "~/lib/auth.server";
-import type { RelationshipContext } from "~/lib/linking/relationship-context.server";
 import {
 	getRelationshipContext,
 	type RelationshipContextValues,
@@ -13,6 +12,25 @@ import {
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import { translateNews, translateFaq } from "~/lib/translate.server";
 import type { Route } from "./+types/_index";
+import type { RelationshipEntityType } from "~/db";
+
+interface LegacyContext {
+	id: string;
+	date: Date | null;
+	totalAmount: number | null;
+	description: string | null;
+	currency: string | null;
+	category: string | null;
+	purchaserId: string | null;
+	lineItems: Array<{
+		name: string;
+		quantity: number;
+		unitPrice: number;
+		totalPrice: number;
+	}>;
+	valueSource: "manual" | "receipt" | "reimbursement" | "transaction" | "unknown";
+	linkedEntityIds: string[];
+}
 
 /**
  * Smart Autofill suggestions returned to the client.
@@ -184,9 +202,8 @@ export async function action({ request }: Route.ActionArgs) {
 			}
 		}
 	} else if (useAI && !localModel && contextValues?.valueSource) {
-		// Legacy financial AI enrichment
 		try {
-			const legacyContext: RelationshipContext = {
+			const legacyContext: LegacyContext = {
 				id: `smart-autofill-${entityId}`,
 				date: contextValues.date,
 				totalAmount: contextValues.totalAmount,

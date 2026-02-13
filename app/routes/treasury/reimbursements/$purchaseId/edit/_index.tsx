@@ -1,28 +1,38 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { redirect, useActionData, useFetcher, useNavigate, useNavigation } from "react-router";
+import {
+	redirect,
+	useActionData,
+	useFetcher,
+	useNavigate,
+	useNavigation,
+} from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { Button } from "~/components/ui/button";
 import { EditForm } from "~/components/ui/edit-form";
-import { createEmailAction, createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getDatabase } from "~/db/server";
-// import { SITE_CONFIG } from "~/lib/config.server"; // Removed server-side import
-import { isEmailConfigured } from "~/lib/email.server";
-import { getReceiptsForPurchaseEdit } from "~/lib/receipts/server";
-import { getMinutesByYear } from "~/lib/google.server";
 import { clearCache } from "~/lib/cache.server";
+import {
+	createEditAction,
+	createEditLoader,
+	createEmailAction,
+} from "~/lib/edit-handlers.server";
+// import { SITE_CONFIG } from "~/lib/config.server"; // Removed server-side import
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
+	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
+import type { AnyEntity } from "~/lib/entity-converters";
+import { getMinutesByYear } from "~/lib/google.server";
+import { getReceiptsForPurchaseEdit } from "~/lib/receipts/server";
 import {
 	getMissingReceiptsError,
 	parseReceiptLinks,
 } from "~/lib/treasury/receipt-validation";
-import { toast } from "sonner";
-import { useEffect } from "react";
-import { Button } from "~/components/ui/button";
-import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -44,37 +54,32 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getPurchaseById(id),
-		relationshipTypes: ["transaction", "receipt", "inventory"],
 		extend: async ({ db, entity }: any) => {
 			// Redirect if already sent
 			if (entity.emailSent) {
 				throw redirect(`/treasury/reimbursements/${entity.id}`);
 			}
 
-			const [
-				receiptsByYear,
-				pickerItems,
-				recentMinutes,
-				emailConfigured,
-			] = await Promise.all([
-				getReceiptsForPurchaseEdit(entity.id),
-				db.getActiveInventoryItems(),
-				getMinutesByYear()
-					.then((years) =>
-						years
-							.flatMap((year) =>
-								year.files.map((f) => ({
-									id: f.id,
-									name: f.name,
-									url: f.url,
-									year: year.year,
-								})),
-							)
-							.slice(0, 50),
-					)
-					.catch(() => []),
-				isEmailConfigured(),
-			]);
+			const [receiptsByYear, pickerItems, recentMinutes, emailConfigured] =
+				await Promise.all([
+					getReceiptsForPurchaseEdit(entity.id),
+					db.getActiveInventoryItems(),
+					getMinutesByYear()
+						.then((years) =>
+							years
+								.flatMap((year) =>
+									year.files.map((f) => ({
+										id: f.id,
+										name: f.name,
+										url: f.url,
+										year: year.year,
+									})),
+								)
+								.slice(0, 50),
+						)
+						.catch(() => []),
+					isEmailConfigured(),
+				]);
 
 			return {
 				receiptsByYear,
@@ -140,9 +145,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 						purchaserName: purchase.purchaserName,
 						bankAccount: purchase.bankAccount,
 						minutesReference:
-							purchase.minutesName ||
-							purchase.minutesId ||
-							"Not specified",
+							purchase.minutesName || purchase.minutesId || "Not specified",
 						notes: purchase.notes || undefined,
 						receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
 					},
@@ -187,7 +190,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 	});
 }
 
-export default function EditReimbursement({ loaderData }: Route.ComponentProps) {
+export default function EditReimbursement({
+	loaderData,
+}: Route.ComponentProps) {
 	const {
 		purchase,
 		relationships,
@@ -202,7 +207,8 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 	const navigation = useNavigation();
 	const fetcher = useFetcher();
 
-	const isSubmitting = navigation.state === "submitting" || fetcher.state === "submitting";
+	const isSubmitting =
+		navigation.state === "submitting" || fetcher.state === "submitting";
 
 	const inputFields = {
 		description: purchase.description,
@@ -226,7 +232,7 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		_returnUrl: returnUrl,
 		minutesId: purchase.minutesId,
 		minutesName: purchase.minutesName,
-		// We'll manage receiptLinks via state/children if needed, 
+		// We'll manage receiptLinks via state/children if needed,
 		// but EditForm doesn't easily expose form values to children to update hidden fields.
 		// However, we can use the `render` prop or just standard hidden inputs in children.
 	};
@@ -241,39 +247,57 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		sections: [
 			{
 				relationBType: "transaction" as const,
-				linkedEntities: (relationships.transaction?.linked || []) as unknown as AnyEntity[],
-				availableEntities: (relationships.transaction?.available || []) as unknown as AnyEntity[],
+				linkedEntities: (relationships.transaction?.linked ||
+					[]) as unknown as AnyEntity[],
+				availableEntities: (relationships.transaction?.available ||
+					[]) as unknown as AnyEntity[],
 				maxItems: 1,
 				label: t("treasury.transactions.title"),
 			},
 			{
 				relationBType: "receipt" as const,
-				linkedEntities: (relationships.receipt?.linked || []) as unknown as AnyEntity[],
-				availableEntities: (relationships.receipt?.available || []) as unknown as AnyEntity[],
+				linkedEntities: (relationships.receipt?.linked ||
+					[]) as unknown as AnyEntity[],
+				availableEntities: (relationships.receipt?.available ||
+					[]) as unknown as AnyEntity[],
 				label: t("treasury.receipts.title"),
 				// onUpload would go here but EditForm's RelationshipPicker handle it
 			},
 			{
 				relationBType: "inventory" as const,
-				linkedEntities: (relationships.inventory?.linked || []) as unknown as AnyEntity[],
-				availableEntities: (relationships.inventory?.available || []) as unknown as AnyEntity[],
+				linkedEntities: (relationships.inventory?.linked ||
+					[]) as unknown as AnyEntity[],
+				availableEntities: (relationships.inventory?.available ||
+					[]) as unknown as AnyEntity[],
 				label: t("treasury.inventory.title"),
 			},
 			{
 				relationBType: "minute" as const,
-				linkedEntities: purchase.minutesId ? [{ id: purchase.minutesId, name: purchase.minutesName, type: "minute" }] as any : [],
+				linkedEntities: purchase.minutesId
+					? ([
+							{
+								id: purchase.minutesId,
+								name: purchase.minutesName,
+								type: "minute",
+							},
+						] as any)
+					: [],
 				availableEntities: recentMinutes as unknown as AnyEntity[],
 				maxItems: 1,
 				label: t("minutes.title"),
-			}
+			},
 		],
 		// Custom handlers to sync minutesId/minutesName back to hidden fields
 		onLink: (type: string, id: string) => {
 			if (type === "minute") {
 				const minute = recentMinutes.find((m: any) => m.id === id);
 				if (minute) {
-					const mId = document.getElementsByName("minutesId")[0] as HTMLInputElement;
-					const mName = document.getElementsByName("minutesName")[0] as HTMLInputElement;
+					const mId = document.getElementsByName(
+						"minutesId",
+					)[0] as HTMLInputElement;
+					const mName = document.getElementsByName(
+						"minutesName",
+					)[0] as HTMLInputElement;
 					if (mId) mId.value = id;
 					if (mName) mName.value = minute.name;
 				}
@@ -281,15 +305,23 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 		},
 		onUnlink: (type: string) => {
 			if (type === "minute") {
-				const mId = document.getElementsByName("minutesId")[0] as HTMLInputElement;
-				const mName = document.getElementsByName("minutesName")[0] as HTMLInputElement;
+				const mId = document.getElementsByName(
+					"minutesId",
+				)[0] as HTMLInputElement;
+				const mName = document.getElementsByName(
+					"minutesName",
+				)[0] as HTMLInputElement;
 				if (mId) mId.value = "";
 				if (mName) mName.value = "";
 			}
-		}
+		},
 	};
 
-	const canSendRequest = purchase.purchaserName && purchase.bankAccount && purchase.minutesId && relationships.receipt?.linked?.length > 0;
+	const canSendRequest =
+		purchase.purchaserName &&
+		purchase.bankAccount &&
+		purchase.minutesId &&
+		relationships.receipt?.linked?.length > 0;
 
 	return (
 		<PageWrapper>
@@ -315,7 +347,9 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 							variant="secondary"
 							disabled={isSubmitting}
 						>
-							<span className="material-symbols-outlined mr-2 text-sm">send</span>
+							<span className="material-symbols-outlined mr-2 text-sm">
+								send
+							</span>
 							{t("treasury.reimbursements.send_request")}
 						</Button>
 					)}
@@ -329,7 +363,6 @@ export default function EditReimbursement({ loaderData }: Route.ComponentProps) 
 					*/}
 				</div>
 			</EditForm>
-
 		</PageWrapper>
 	);
 }

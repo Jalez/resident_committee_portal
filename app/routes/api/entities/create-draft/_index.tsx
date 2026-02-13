@@ -1,6 +1,6 @@
 import { data, redirect } from "react-router";
+import type { RelationshipEntityType } from "~/db";
 import { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db/schema";
 import { requireAnyPermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 
@@ -223,7 +223,7 @@ export async function action({ request }: Route.ActionArgs) {
 					createdBy: userId,
 				});
 			} catch (relError) {
-				console.warn(
+				console.error(
 					`[CreateDraft] Failed to link ${type} to ${sourceType}:`,
 					relError,
 				);

@@ -1,294 +1,256 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
-import {
-	ActionButton,
-	ContentArea,
-	PageWrapper,
-	QRPanel,
-	SplitLayout,
-} from "~/components/layout/page-layout";
+import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
+import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "~/components/ui/accordion";
-import { useLanguage } from "~/contexts/language-context";
-import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
-import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
+	TREASURY_TABLE_STYLES,
+	TreasuryTable,
+} from "~/components/treasury/treasury-table";
+import { type EntityRelationship, getDatabase, type Minute } from "~/db/server";
+import {
+	type RBACDatabaseAdapter,
+	requireAnyPermission,
+	hasAnyPermission,
+} from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { getMinutesByYear, type MinutesByYear } from "~/lib/google.server";
-import { queryClient } from "~/lib/query-client";
-import { queryKeys, STALE_TIME } from "~/lib/query-config";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - Pöytäkirjat / Minutes` },
 		{
-			name: "description",
-			content:
-				"Toimikunnan kokouspöytäkirjat / Tenant Committee Meeting Minutes",
+			title: `${data?.siteConfig?.name ?? "Portal"} - Pöytäkirjat / Minutes`,
 		},
+		{ name: "robots", content: "noindex" } as const,
 	];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Check permission (works for both logged-in users and guests)
-	const authUser = await getAuthenticatedUser(request, getDatabase);
+	const user = await requireAnyPermission(
+		request,
+		["minutes:read", "minutes:write"],
+		getDatabase as unknown as () => RBACDatabaseAdapter,
+	);
 
-	let permissions: string[];
-	let languages: { primary: string; secondary: string };
+	const canWrite = hasAnyPermission(user, ["minutes:write"]);
+	const canUpdate = hasAnyPermission(user, ["minutes:update"]);
+	const canDelete = hasAnyPermission(user, ["minutes:delete"]);
 
-	if (authUser) {
-		permissions = authUser.permissions;
-		languages = {
-			primary: authUser.primaryLanguage,
-			secondary: authUser.secondaryLanguage,
-		};
-	} else {
-		const guestContext = await getGuestContext(() => getDatabase());
-		permissions = guestContext.permissions;
-		languages = guestContext.languages;
-	}
-
-	const canRead = permissions.some((p) => p === "minutes:read" || p === "*");
-	if (!canRead) {
-		throw new Response("Not Found", { status: 404 });
-	}
-
+	const systemLanguages = await getSystemLanguageDefaults();
+	const db = getDatabase();
 	const url = new URL(request.url);
-	const yearFilter = url.searchParams.get("year") || "";
-	const nameFilter = url.searchParams.get("name") || "";
-	const hasFilters = yearFilter || nameFilter;
+	const yearParam = url.searchParams.get("year");
+	const currentYear = new Date().getFullYear();
+	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
 
-	const minutesByYear = await queryClient.ensureQueryData({
-		queryKey: queryKeys.minutes,
-		queryFn: getMinutesByYear,
-		staleTime: STALE_TIME,
+	let allMinutes = await db.getMinutes();
+
+	if (yearParam && yearParam !== "all") {
+		allMinutes = allMinutes.filter((m) => m.year === year);
+	}
+
+	const sortedMinutes = allMinutes.sort(
+		(a, b) =>
+			new Date(b.date || b.createdAt).getTime() -
+			new Date(a.date || a.createdAt).getTime(),
+	);
+
+	const creatorIds = [
+		...new Set(
+			sortedMinutes
+				.map((m) => m.createdBy)
+				.filter((id): id is string => Boolean(id)),
+		),
+	];
+	const creatorUsers = await Promise.all(
+		creatorIds.map((id) => db.findUserById(id)),
+	);
+	const creatorsMap = new Map<string, string>();
+	creatorIds.forEach((id, i) => {
+		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	const archiveUrl =
-		minutesByYear.find((y) => y.files.length > 0)?.folderUrl || "#";
-	const uniqueYears = minutesByYear
-		.map((y) => y.year)
-		.sort()
-		.reverse();
+	const years = [
+		...new Set(
+			allMinutes
+				.map((m) => m.year)
+				.filter((y): y is number => Boolean(y)),
+		),
+	].sort((a, b) => b - a);
 
 	return {
 		siteConfig: SITE_CONFIG,
-		minutesByYear,
-		archiveUrl,
-		uniqueYears,
-		filters: { year: yearFilter, name: nameFilter },
-		hasFilters,
-		languages,
+		canWrite,
+		canUpdate,
+		canDelete,
+		systemLanguages,
+		minutes: sortedMinutes,
+		years,
+		currentYear: year,
+		creatorsMap: Object.fromEntries(creatorsMap),
 	};
 }
 
 export default function Minutes({ loaderData }: Route.ComponentProps) {
 	const {
-		minutesByYear,
-		archiveUrl,
-		uniqueYears,
-		filters,
-		hasFilters,
-		languages,
+		minutes,
+		years,
+		systemLanguages,
+		creatorsMap: creatorsMapRaw,
+		canWrite,
+		canUpdate,
+		canDelete,
 	} = loaderData;
-	const { hasPermission } = useUser();
-	const canSeeNamingGuide = hasPermission("minutes:naming-guide");
-	const currentYear = new Date().getFullYear().toString();
+	const creatorsMap = new Map(
+		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const { t, i18n } = useTranslation();
 
-	const { t } = useTranslation();
-	const { isInfoReel } = useLanguage();
+	useEffect(() => {
+		const success = searchParams.get("success");
+		if (success === "minute_created") {
+			toast.success(t("minutes.success.minute_created"));
+		}
+		if (success === "minute_updated") {
+			toast.success(t("minutes.success.minute_updated"));
+		}
+		if (success) {
+			setSearchParams((prev) => {
+				prev.delete("success");
+				return prev;
+			});
+		}
+	}, [searchParams, setSearchParams, t]);
 
-	// Configure search fields
+	const formatDate = (date: Date | string) =>
+		new Date(date).toLocaleDateString(
+			i18n.language === "fi" ? "fi-FI" : "en-US",
+		);
+
 	const searchFields: SearchField[] = [
 		{
-			name: "name",
-			label: t("minutes.search.name_label"),
-			type: "text",
-			placeholder: t("minutes.search.name_placeholder"),
-		},
-		{
 			name: "year",
-			label: t("minutes.search.year_label"),
+			label: t("common.fields.year"),
 			type: "select",
-			placeholder: t("minutes.search.year_placeholder"),
-			options: uniqueYears,
+			placeholder: t("minutes.select_year"),
+			options:
+				years.length > 0
+					? ["all", ...years.map(String)]
+					: [String(new Date().getFullYear())],
 		},
 	];
 
-	// Filter minutes based on filters
-	const filteredMinutes: MinutesByYear[] = minutesByYear
-		.filter(
-			(yearGroup: MinutesByYear) =>
-				!filters?.year || yearGroup.year === filters.year,
-		)
-		.map((yearGroup: MinutesByYear) => ({
-			...yearGroup,
-			files: yearGroup.files.filter(
-				(file) =>
-					!filters?.name ||
-					file.name.toLowerCase().includes(filters.name.toLowerCase()),
-			),
-		}))
-		.filter((yearGroup: MinutesByYear) => yearGroup.files.length > 0);
-
-	// QR Panel only shown in info reel mode
-	const RightContent = (
-		<QRPanel
-			qrUrl={archiveUrl}
-			title={
-				<h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-					{t("minutes.all_minutes")} <br />
-					{isInfoReel && (
-						<span className="text-3xl text-gray-400 font-bold">
-							All Minutes
-						</span>
-					)}
-				</h2>
-			}
-		/>
-	);
-
-	// Header actions: Search + Link button
-	const FooterContent = (
-		<div className="flex items-center gap-2">
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
 			<SearchMenu fields={searchFields} />
-			{hasPermission("minutes:write") && (
+			{canWrite && (
 				<AddItemButton
 					title={t("minutes.add")}
 					variant="icon"
 					createType="minute"
 				/>
 			)}
-			<ActionButton
-				href={archiveUrl}
-				icon="folder_open"
-				labelPrimary={t("minutes.archive", { lng: languages.primary })}
-				labelSecondary={t("minutes.archive", { lng: languages.secondary })}
-				external={true}
-			/>
 		</div>
 	);
+
+	const columns = [
+		{
+			key: "date",
+			header: t("common.fields.date"),
+			cell: (row: Minute) =>
+				row.date ? formatDate(row.date) : "—",
+			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
+		},
+		{
+			key: "title",
+			header: t("common.fields.title"),
+			cell: (row: Minute) => row.title || "—",
+			cellClassName: "font-medium",
+		},
+		{
+			key: "description",
+			header: t("common.fields.description"),
+			cell: (row: Minute) => row.description || "—",
+			cellClassName: "text-gray-500",
+		},
+		{
+			key: "file",
+			header: t("minutes.file"),
+			cell: (row: Minute) => {
+				if (!row.fileUrl) return <span className="text-gray-400">—</span>;
+				return (
+					<a
+						href={row.fileUrl}
+						target="_blank"
+						rel="noreferrer"
+						className="text-primary hover:underline flex items-center gap-1"
+					>
+						<span className="material-symbols-outlined text-sm">description</span>
+						{row.fileKey?.split("/").pop() || "PDF"}
+					</a>
+				);
+			},
+		},
+		{
+			key: "createdBy",
+			header: t("common.fields.created_by"),
+			cell: (row: Minute) =>
+				row.createdBy ? (creatorsMap.get(row.createdBy) ?? "—") : "—",
+			cellClassName: "text-gray-500",
+		},
+	];
 
 	return (
 		<PageWrapper>
 			<SplitLayout
-				right={RightContent}
-				footer={FooterContent}
 				header={{
-					primary: t("minutes.title", { lng: languages.primary }),
-					secondary: t("minutes.title", { lng: languages.secondary }),
+					primary: t("minutes.title", {
+						lng: systemLanguages.primary,
+					}),
+					secondary: t("minutes.title", {
+						lng: systemLanguages.secondary ?? systemLanguages.primary,
+					}),
 				}}
+				footer={footerContent}
 			>
-				<div className="space-y-8">
-					{/* Staff instructions for naming convention - outside scrollable area */}
-					{canSeeNamingGuide && (
-						<div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-							<div className="flex items-start gap-3">
-								<span className="material-symbols-outlined text-blue-600 dark:text-blue-400 shrink-0">
-									info
-								</span>
-								<div className="text-sm text-blue-800 dark:text-blue-200">
-									<p className="font-bold mb-1">
-										{t("minutes.naming_guide.title")}
-									</p>
-									<p className="mb-2">
-										{t("minutes.naming_guide.use_format")}:{" "}
-										<code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-800 rounded font-mono text-xs">
-											YYYY-MM-DD_KuvausName.pdf
-										</code>
-									</p>
-									<p className="text-xs opacity-80">
-										{t("minutes.naming_guide.example")}
-									</p>
-								</div>
-							</div>
-						</div>
-					)}
-
-					{/* Scrollable accordion list */}
-					<ContentArea>
-						{filteredMinutes.length === 0 ? (
-							<div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 text-center">
-								<span className="material-symbols-outlined text-4xl text-gray-400 mb-2">
-									description
-								</span>
-								<p className="text-gray-600 dark:text-gray-400">
-									{hasFilters
-										? t("minutes.no_results")
-										: t("minutes.no_minutes")}
-								</p>
-							</div>
-						) : (
-							<Accordion
-								type="single"
-								collapsible
-								defaultValue={currentYear}
-								className="space-y-4"
-							>
-								{filteredMinutes.map((yearGroup: MinutesByYear) => (
-									<AccordionItem
-										key={yearGroup.year}
-										value={yearGroup.year}
-										className="border-none"
-									>
-										{/* Year header trigger - styled like month headers */}
-										<AccordionTrigger className="bg-primary rounded-xl px-8 py-4 text-white hover:no-underline hover:bg-primary/90 [&[data-state=open]>svg]:rotate-180">
-											<div className="flex items-center justify-between w-full pr-4">
-												<p className="text-xl font-bold leading-none uppercase tracking-widest">
-													{yearGroup.year}
-												</p>
-												{yearGroup.year === currentYear && (
-													<span className="text-xs font-bold uppercase tracking-wider opacity-80">
-														{t("minutes.this_year")}
-													</span>
-												)}
-											</div>
-										</AccordionTrigger>
-
-										<AccordionContent className="pt-4 pb-0">
-											{/* Files list or placeholder */}
-											{yearGroup.files.length === 0 ? (
-												<div className="p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/50 text-center">
-													<p className="text-gray-400 font-medium">
-														{t("minutes.no_minutes_yet")}
-													</p>
-												</div>
-											) : (
-												<div className="space-y-2">
-													{yearGroup.files.map((file) => (
-														<a
-															key={file.id}
-															href={file.url}
-															target="_blank"
-															rel="noreferrer"
-															className="block group"
-														>
-															<div className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-																<div className="flex-1 min-w-0">
-																	<h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors truncate">
-																		{file.name}
-																	</h3>
-																</div>
-																<span className="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors shrink-0 ml-4">
-																	description
-																</span>
-															</div>
-														</a>
-													))}
-												</div>
-											)}
-										</AccordionContent>
-									</AccordionItem>
-								))}
-							</Accordion>
+				<div className="space-y-6">
+					<TreasuryTable<Minute>
+						data={minutes}
+						columns={columns}
+						getRowKey={(row) => row.id}
+						renderActions={(minute) => (
+							<TreasuryActionCell
+								viewTo={`/minutes/${minute.id}`}
+								viewTitle={t("minutes.view")}
+								editTo={
+									canUpdate
+										? `/minutes/${minute.id}/edit`
+										: undefined
+								}
+								editTitle={t("common.actions.edit")}
+								canEdit={canUpdate}
+								deleteProps={
+									canDelete
+										? {
+											action: `/api/minutes/${minute.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("minutes.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
+										: undefined
+								}
+							/>
 						)}
-					</ContentArea>
+						emptyState={{
+							title: t("minutes.no_minutes"),
+						}}
+					/>
 				</div>
 			</SplitLayout>
 		</PageWrapper>

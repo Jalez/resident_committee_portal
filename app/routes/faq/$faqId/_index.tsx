@@ -1,18 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
+import { ViewForm } from "~/components/ui/view-form";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
-import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
+import { createViewLoader } from "~/lib/view-handlers.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
-			title: `${data?.siteConfig?.name || "Portal"} - ${data?.item?.question ?? "FAQ"}`,
+			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.faq?.question ?? "FAQ"}`,
 		},
 		{ name: "robots", content: "noindex" },
 	];
@@ -31,22 +29,22 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	if (!canRead) {
 		throw new Response("Not Found", { status: 404 });
 	}
-	const db = getDatabase();
-	const item = await db.getFaqById(params.faqId);
-	if (!item) {
-		throw new Response("Not Found", { status: 404 });
-	}
-	const systemLanguages = await getSystemLanguageDefaults();
 
-	return {
-		siteConfig: SITE_CONFIG,
-		item,
-		systemLanguages,
-	};
+	return createViewLoader({
+		entityType: "faq",
+		permission: "faq:read",
+		params,
+		request,
+		fetchEntity: (db, id) => db.getFaqById(id),
+		extend: async () => {
+			const systemLanguages = await getSystemLanguageDefaults();
+			return { systemLanguages };
+		},
+	});
 }
 
 export default function FaqView({ loaderData }: Route.ComponentProps) {
-	const { item, systemLanguages } = loaderData;
+	const { faq: item, systemLanguages } = loaderData as any;
 	const { t, i18n } = useTranslation();
 	const { hasPermission } = useUser();
 	const canUpdate = hasPermission("faq:update");
@@ -61,62 +59,28 @@ export default function FaqView({ loaderData }: Route.ComponentProps) {
 	const answer =
 		useSecondary && item.answerSecondary ? item.answerSecondary : item.answer;
 
-	const headerPrimary = question;
-	const headerSecondary = useSecondary
-		? item.question
-		: item.questionSecondary || question;
+	const displayFields = {
+		question: { value: question, valueClassName: "text-3xl font-bold" },
+		answer: {
+			value: answer,
+			valueClassName:
+				"prose dark:prose-invert max-w-none whitespace-pre-wrap text-lg leading-relaxed",
+		},
+		createdAt: item.createdAt,
+	};
 
 	return (
-		<PageWrapper>
-			<SplitLayout
-				header={{
-					primary: headerPrimary,
-					secondary: headerSecondary,
-				}}
-			>
-				<div className="max-w-2xl space-y-6">
-					<div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
-						<div className="space-y-4">
-							<h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-								{question}
-							</h1>
-						</div>
-
-						<div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-							{answer}
-						</div>
-
-						<div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500">
-							<span>
-								{new Date(item.createdAt).toLocaleDateString(
-									i18n.language === "fi" ? "fi-FI" : "en-US",
-								)}
-							</span>
-							{canUpdate && (
-								<Button variant="outline" size="sm" asChild>
-									<Link to={`/faq/${item.id}/edit`}>
-										<span className="material-symbols-outlined mr-2 text-sm">
-											edit
-										</span>
-										{t("faq.edit")}
-									</Link>
-								</Button>
-							)}
-						</div>
-					</div>
-
-					<div className="flex justify-start">
-						<Button variant="ghost" asChild>
-							<Link to="/faq" className="flex items-center">
-								<span className="material-symbols-outlined mr-2">
-									arrow_back
-								</span>
-								{t("common.actions.back")}
-							</Link>
-						</Button>
-					</div>
-				</div>
-			</SplitLayout>
-		</PageWrapper>
+		<ViewForm
+			title=""
+			entityType="faq"
+			entityId={item.id}
+			displayFields={displayFields}
+			variant="content"
+			systemLanguages={systemLanguages}
+			useSecondary={useSecondary}
+			returnUrl="/faq"
+			canEdit={canUpdate}
+			translationNamespace="faq"
+		/>
 	);
 }

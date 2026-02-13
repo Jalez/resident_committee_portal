@@ -1,14 +1,15 @@
+import * as React from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigate } from "react-router";
+import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
 import { getDatabase } from "~/db/server";
+import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
-import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
-import { z } from "zod";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -30,7 +31,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		extend: async ({ db, entity: item }) => {
 			const url = new URL(request.url);
 			const sourceContext = getRelationshipContextFromUrl(url);
-			const contextValues = await getRelationshipContext(db, "inventory", item.id);
+			const contextValues = await getRelationshipContext(
+				db,
+				"inventory",
+				item.id,
+			);
 
 			const itemName = (item as any).name;
 			const metaTitle = itemName ? `Muokkaa: ${itemName}` : "Muokkaa tavaraa";
@@ -52,7 +57,10 @@ const inventorySchema = z.object({
 	description: z.string().optional(),
 	value: z.string().optional(),
 	purchasedAt: z.string().optional(),
-	showInInfoReel: z.preprocess((val) => val === "true" || val === "on", z.boolean()),
+	showInInfoReel: z.preprocess(
+		(val) => val === "true" || val === "on",
+		z.boolean(),
+	),
 });
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -69,35 +77,55 @@ export async function action({ request, params }: Route.ActionArgs) {
 	});
 }
 
-export default function EditInventoryItem({ loaderData }: Route.ComponentProps) {
-	const { item, contextValues, sourceContext, returnUrl } = loaderData as any;
+export default function EditInventoryItem({
+	loaderData,
+}: Route.ComponentProps) {
+	const { inventory, contextValues, sourceContext, returnUrl, relationships } =
+		loaderData as any;
 	const { t } = useTranslation();
 
-	const isDraft = item.status === "draft";
+	const isDraft = inventory.status === "draft";
+	const item = inventory;
 
-	const initialValues = {
-		name: isDraft && !item.name && contextValues?.description ? contextValues.description : item.name,
-		quantity: item.quantity,
-		location: item.location || "",
-		category: isDraft && !item.category && contextValues?.category ? contextValues.category : item.category || "",
-		description: item.description || "",
-		value: isDraft && (!item.value || item.value === "0") && contextValues?.totalAmount ? String(contextValues.totalAmount) : item.value || "0",
-		purchasedAt: isDraft && !item.purchasedAt && contextValues?.date
-			? new Date(contextValues.date).toISOString().split("T")[0]
-			: item.purchasedAt ? new Date(item.purchasedAt).toISOString().split("T")[0] : "",
-		showInInfoReel: item.showInInfoReel
-	};
+	const inputFields = React.useMemo(() => {
+		const initialValues = {
+			name:
+				isDraft && !item.name && contextValues?.description
+					? contextValues.description
+					: item.name,
+			quantity: item.quantity,
+			location: item.location || "",
+			category:
+				isDraft && !item.category && contextValues?.category
+					? contextValues.category
+					: item.category || "",
+			description: item.description || "",
+			value:
+				isDraft &&
+				(!item.value || item.value === "0") &&
+				contextValues?.totalAmount
+					? String(contextValues.totalAmount)
+					: item.value || "0",
+			purchasedAt:
+				isDraft && !item.purchasedAt && contextValues?.date
+					? new Date(contextValues.date).toISOString().split("T")[0]
+					: item.purchasedAt
+						? new Date(item.purchasedAt).toISOString().split("T")[0]
+						: "",
+			showInInfoReel: item.showInInfoReel,
+		};
 
-	const inputFields = {
-		name: initialValues.name,
-		quantity: initialValues.quantity,
-		location: initialValues.location,
-		category: initialValues.category,
-		description: initialValues.description,
-		value: initialValues.value,
-		purchasedAt: initialValues.purchasedAt,
-		showInInfoReel: initialValues.showInInfoReel
-	};
+		return {
+			name: initialValues.name,
+			quantity: initialValues.quantity,
+			location: initialValues.location,
+			category: initialValues.category,
+			description: initialValues.description,
+			value: initialValues.value,
+			purchasedAt: initialValues.purchasedAt,
+			showInInfoReel: initialValues.showInInfoReel,
+		};
+	}, [item, contextValues, isDraft]);
 
 	return (
 		<PageWrapper>
@@ -114,6 +142,7 @@ export default function EditInventoryItem({ loaderData }: Route.ComponentProps) 
 					_returnUrl: returnUrl,
 				}}
 				translationNamespace="inventory.form"
+				relationships={relationships}
 			/>
 		</PageWrapper>
 	);

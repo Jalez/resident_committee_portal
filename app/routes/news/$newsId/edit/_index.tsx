@@ -1,17 +1,18 @@
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { EditForm } from "~/components/ui/edit-form";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getLanguageNames } from "~/lib/language-names.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { z } from "zod";
-import { EditForm } from "~/components/ui/edit-form";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
-			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.item?.title ?? "News"}`,
+			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.news?.title ?? "News"}`,
 		},
 		{ name: "robots", content: "noindex" },
 	];
@@ -71,37 +72,40 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function NewsEdit({ loaderData }: Route.ComponentProps) {
-	const { item, primaryLabel, secondaryLabel, returnUrl } =
+	const { news, primaryLabel, secondaryLabel, returnUrl, relationships } =
 		loaderData as any;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 
-	const inputFields = {
-		title: {
-			label: t("news.form.title") + ` (${primaryLabel})`,
-			value: item.title
-		},
-		summary: {
-			label: t("news.form.summary") + ` (${primaryLabel})`,
-			value: item.summary ?? ""
-		},
-		content: {
-			label: t("news.form.content") + ` (${primaryLabel})`,
-			value: item.content
-		},
-		titleSecondary: {
-			label: t("news.form.title") + ` (${secondaryLabel})`,
-			value: item.titleSecondary ?? ""
-		},
-		summarySecondary: {
-			label: t("news.form.summary") + ` (${secondaryLabel})`,
-			value: item.summarySecondary ?? ""
-		},
-		contentSecondary: {
-			label: t("news.form.content") + ` (${secondaryLabel})`,
-			value: item.contentSecondary ?? ""
-		},
-	};
+	const inputFields = React.useMemo(
+		() => ({
+			title: {
+				label: t("news.form.title") + ` (${primaryLabel})`,
+				value: news.title,
+			},
+			summary: {
+				label: t("news.form.summary") + ` (${primaryLabel})`,
+				value: news.summary ?? "",
+			},
+			content: {
+				label: t("news.form.content") + ` (${primaryLabel})`,
+				value: news.content,
+			},
+			titleSecondary: {
+				label: t("news.form.title") + ` (${secondaryLabel})`,
+				value: news.titleSecondary ?? "",
+			},
+			summarySecondary: {
+				label: t("news.form.summary") + ` (${secondaryLabel})`,
+				value: news.summarySecondary ?? "",
+			},
+			contentSecondary: {
+				label: t("news.form.content") + ` (${secondaryLabel})`,
+				value: news.contentSecondary ?? "",
+			},
+		}),
+		[news, primaryLabel, secondaryLabel, t],
+	);
 
 	return (
 		<PageWrapper>
@@ -109,13 +113,14 @@ export default function NewsEdit({ loaderData }: Route.ComponentProps) {
 				title={t("news.edit_title")}
 				action=""
 				inputFields={inputFields}
-				entityId={item.id}
+				entityId={news.id}
 				entityType="news"
 				returnUrl={returnUrl || "/news"}
 				onCancel={() => navigate(returnUrl || "/news")}
 				sourceLanguage={primaryLabel}
 				targetLanguage={secondaryLabel}
 				translationNamespace="news.form"
+				relationships={relationships}
 			/>
 		</PageWrapper>
 	);

@@ -22,7 +22,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getFundBudgetById(id),
-		relationshipTypes: ["transaction"],
 		extend: async ({ db, entity }) => {
 			const usedAmount = await db.getBudgetUsedAmount(entity.id);
 			const availableFunds = await db.getAvailableFundsForYear(entity.year);

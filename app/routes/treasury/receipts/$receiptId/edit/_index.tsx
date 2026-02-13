@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
-import {
-	handleFileUpload,
-	saveReceiptOCRContent,
-} from "~/actions/receipt-actions.server";
+import { saveReceiptOCRContent } from "~/actions/receipt-actions.server";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { EditForm } from "~/components/ui/edit-form";
 import { ReceiptFormFields } from "~/components/treasury/receipt-form-fields";
-import { useReceiptUpload } from "~/hooks/use-receipt-upload";
+import { EditForm } from "~/components/ui/edit-form";
+import { useFileUpload } from "~/hooks/use-file-upload";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { ENTITY_REGISTRY } from "~/lib/entity-registry";
+import {
+	handleFileUpload,
+	deleteOldFile,
+	extractYearFromPath,
+} from "~/lib/file-upload.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -32,7 +35,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getReceiptById(id),
-		relationshipTypes: ["reimbursement", "transaction", "inventory"],
 		extend: async ({ db, entity }) => ({
 			receiptContent: await db.getReceiptContentByReceiptId(entity.id),
 		}),
@@ -55,17 +57,33 @@ export async function action({ request, params }: Route.ActionArgs) {
 		fetchEntity: (db, id) => db.getReceiptById(id),
 		onUpdate: async ({ db, id, data, entity, formData, newStatus }) => {
 			const name = data.name || "";
-			const uploadResult = await handleFileUpload(formData, entity as any, name);
+			const extractedYear = extractYearFromPath(entity.pathname);
+
+			const uploadResult = await handleFileUpload({
+				formData,
+				entityType: "receipt",
+				entity: {
+					id: entity.id,
+					fileUrl: entity.url,
+					fileKey: entity.pathname,
+				},
+				name: name,
+				year: extractedYear,
+			});
+
 			if ("error" in uploadResult) {
 				return uploadResult;
 			}
 
-			const { nextUrl, nextPathname, nextName } = uploadResult;
+			if (uploadResult.pathname && uploadResult.pathname !== entity.pathname) {
+				await deleteOldFile("receipt", entity.pathname);
+			}
+
 			await db.updateReceipt(id, {
-				name: nextName,
+				name: uploadResult.name || name,
 				description: data.description?.trim() || null,
-				url: nextUrl,
-				pathname: nextPathname,
+				url: uploadResult.url || entity.url,
+				pathname: uploadResult.pathname || entity.pathname,
 				status: (newStatus as any) || (entity as any).status,
 			});
 		},
@@ -79,18 +97,22 @@ export default function TreasuryReceiptsEdit({
 	loaderData,
 }: Route.ComponentProps) {
 	const actionData = useActionData<any>();
-	const { receipt, receiptContent, relationships, returnUrl, sourceContext } = loaderData as any;
+	const { receipt, receiptContent, relationships, returnUrl, sourceContext } =
+		loaderData as any;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-
-	const allowedTypes =
-		actionData && typeof actionData === "object" && "allowedTypes" in actionData
-			? (actionData.allowedTypes as string)
-			: "";
 
 	const [name, setName] = useState(receipt.name || "");
 	const [description, setDescription] = useState(receipt.description || "");
 	const [analyzeWithAI, setAnalyzeWithAI] = useState(true);
+
+	useEffect(() => {
+		if (actionData && typeof actionData === "object" && "error" in actionData) {
+			toast.error(actionData.error as string);
+		}
+	}, [actionData]);
+
+	const year = receipt.pathname?.split("/")[1] || new Date().getFullYear().toString();
 
 	const {
 		isUploading,
@@ -102,41 +124,27 @@ export default function TreasuryReceiptsEdit({
 		handleFileChange,
 		handleReanalyze,
 		handleCancel,
-		clearDraft,
-	} = useReceiptUpload({
-		receiptId: receipt.id,
-		analyzeWithAI,
+	} = useFileUpload({
+		entityType: "receipt",
+		entityId: receipt.id,
+		year,
+		enableAI: analyzeWithAI,
+		onNameSuggestion: setName,
+		onDescriptionSuggestion: setDescription,
 	});
 
 	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
 
-	// Clear draft on successful submission is implicit if we navigate away, 
-	// but EditForm submits and redirects.
-	// If we want to clear draft explicitly, we might need to hook into form submission or unmount.
-
 	return (
 		<PageWrapper>
 			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				{/* Error display */}
-				{actionData &&
-					typeof actionData === "object" &&
-					"error" in actionData && (
-						<div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
-							{actionData.error === "invalid_file_type"
-								? t("treasury.receipts.invalid_file_type", {
-									types: allowedTypes,
-								})
-								: (actionData.error as string)}
-						</div>
-					)}
-
 				<EditForm
 					title={t("treasury.receipts.edit")}
 					action=""
 					encType="multipart/form-data"
 					inputFields={{
 						name: null,
-						description: null
+						description: null,
 					}}
 					entityType="receipt"
 					entityId={receipt.id}
@@ -158,10 +166,12 @@ export default function TreasuryReceiptsEdit({
 						_returnUrl: returnUrl,
 						tempUrl: tempUrl,
 						tempPathname: tempPathname,
-						ocr_data: ocrData ? JSON.stringify({
-							rawText: ocrData.rawText,
-							parsedData: ocrData.parsedData,
-						}) : undefined,
+						ocr_data: ocrData
+							? JSON.stringify({
+									rawText: ocrData.rawText,
+									parsedData: ocrData.parsedData,
+								})
+							: undefined,
 					}}
 					translationNamespace="treasury.receipts"
 				>

@@ -1,15 +1,15 @@
 import { useTranslation } from "react-i18next";
+import { useFetcher } from "react-router";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { EditForm } from "~/components/ui/edit-form";
-import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import {
 	EXPENSE_CATEGORIES,
 	INCOME_CATEGORIES,
 } from "~/components/treasury/transaction-details-form";
+import { EditForm } from "~/components/ui/edit-form";
+import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/_index";
-import { useFetcher } from "react-router";
 
 export function meta({ data }: Route.MetaArgs) {
 	const description = (data as any)?.transaction?.description;
@@ -30,7 +30,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getTransactionById(id),
-		relationshipTypes: ["inventory", "budget", "reimbursement"],
 		extend: async ({ db, entity }) => {
 			const openBudgets = await db.getOpenFundBudgetsByYear(entity.year);
 			const enrichedBudgets = await Promise.all(

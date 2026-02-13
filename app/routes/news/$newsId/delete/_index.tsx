@@ -1,3 +1,4 @@
+import { DeleteRouteRedirect } from "~/components/delete-route-redirect";
 import {
 	createGenericDeleteAction,
 	genericDeleteLoader,
@@ -5,3 +6,7 @@ import {
 
 export const loader = genericDeleteLoader;
 export const action = createGenericDeleteAction("news", { idParam: "newsId" });
+
+export default function NewsDeleteRoute() {
+	return <DeleteRouteRedirect listPath="/news" />;
+}

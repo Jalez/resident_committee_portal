@@ -1,3 +1,4 @@
+import { DeleteRouteRedirect } from "~/components/delete-route-redirect";
 import {
 	createGenericDeleteAction,
 	genericDeleteLoader,
@@ -7,3 +8,7 @@ export const loader = genericDeleteLoader;
 export const action = createGenericDeleteAction("budget", {
 	idParam: "budgetId",
 });
+
+export default function BudgetDeleteRoute() {
+	return <DeleteRouteRedirect entityType="treasury/budgets" />;
+}

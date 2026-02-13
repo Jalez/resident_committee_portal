@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
 import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
-import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
+import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import {
 	type CalendarEventInput,
 	getCalendarEvent,
@@ -12,8 +14,6 @@ import {
 } from "~/lib/google.server";
 import { queryClient } from "~/lib/query-client";
 import { queryKeys } from "~/lib/query-config";
-import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
-import { z } from "zod";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -32,7 +32,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: async (db, id) => getCalendarEvent(id),
-		relationshipTypes: ["minute", "news", "transaction"],
 	});
 }
 
@@ -57,13 +56,23 @@ export async function action({ request, params }: Route.ActionArgs) {
 		schema: eventSchema,
 		fetchEntity: async (db, id) => getCalendarEvent(id),
 		onUpdate: async ({ db, id, data, formData }) => {
-			const { title, description, location, isAllDay, startDate, startTime, endDate, endTime, attendees: attendeesRaw } = data;
+			const {
+				title,
+				description,
+				location,
+				isAllDay,
+				startDate,
+				startTime,
+				endDate,
+				endTime,
+				attendees: attendeesRaw,
+			} = data;
 
 			const attendees = attendeesRaw
 				? attendeesRaw
-					.split(/[,;\n]/)
-					.map((e: string) => e.trim())
-					.filter((e: string) => e.includes("@"))
+						.split(/[,;\n]/)
+						.map((e: string) => e.trim())
+						.filter((e: string) => e.includes("@"))
 				: undefined;
 
 			const eventUpdate: Partial<CalendarEventInput> = {
@@ -115,10 +124,10 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 		? event.end.dateTime.split("T")[0]
 		: event.end?.date
 			? (() => {
-				const d = new Date(event.end.date);
-				d.setDate(d.getDate() - 1);
-				return d.toISOString().split("T")[0];
-			})()
+					const d = new Date(event.end.date);
+					d.setDate(d.getDate() - 1);
+					return d.toISOString().split("T")[0];
+				})()
 			: existingStartDate;
 	const existingEndTime = event.end?.dateTime
 		? event.end.dateTime.split("T")[1]?.substring(0, 5) || "10:00"
@@ -150,7 +159,7 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 					/>
 					<Label htmlFor="isAllDay">{t("common.fields.all_day")}</Label>
 				</div>
-			)
+			),
 		},
 		startDate: {
 			label: t("common.fields.start_date") + " *",
@@ -174,7 +183,7 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 			label: t("common.fields.attendees"),
 			value: existingAttendees,
 			description: t("events.form.attendees_help"),
-		}
+		},
 	};
 
 	return (

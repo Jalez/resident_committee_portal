@@ -1,11 +1,12 @@
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
+import { EditForm } from "~/components/ui/edit-form";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getLanguageNames } from "~/lib/language-names.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { z } from "zod";
-import { EditForm } from "~/components/ui/edit-form";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -70,33 +71,36 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function FaqEdit({ loaderData }: Route.ComponentProps) {
-	const { faq, primaryLabel, secondaryLabel, returnUrl } =
+	const { faq, primaryLabel, secondaryLabel, returnUrl, relationships } =
 		loaderData as any;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 
-	const inputFields = {
-		question: {
-			label: t("faq.form.question") + ` (${primaryLabel})`,
-			value: faq.question
-		},
-		answer: {
-			label: t("faq.form.answer") + ` (${primaryLabel})`,
-			value: faq.answer
-		},
-		questionSecondary: {
-			label: t("faq.form.question") + ` (${secondaryLabel})`,
-			value: faq.questionSecondary ?? ""
-		},
-		answerSecondary: {
-			label: t("faq.form.answer") + ` (${secondaryLabel})`,
-			value: faq.answerSecondary ?? ""
-		},
-		sortOrder: {
-			label: t("faq.form.sort_order"),
-			value: faq.sortOrder
-		},
-	};
+	const inputFields = React.useMemo(
+		() => ({
+			question: {
+				label: t("faq.form.question") + ` (${primaryLabel})`,
+				value: faq.question,
+			},
+			answer: {
+				label: t("faq.form.answer") + ` (${primaryLabel})`,
+				value: faq.answer,
+			},
+			questionSecondary: {
+				label: t("faq.form.question") + ` (${secondaryLabel})`,
+				value: faq.questionSecondary ?? "",
+			},
+			answerSecondary: {
+				label: t("faq.form.answer") + ` (${secondaryLabel})`,
+				value: faq.answerSecondary ?? "",
+			},
+			sortOrder: {
+				label: t("faq.form.sort_order"),
+				value: faq.sortOrder,
+			},
+		}),
+		[faq, primaryLabel, secondaryLabel, t],
+	);
 
 	return (
 		<PageWrapper>
@@ -109,6 +113,7 @@ export default function FaqEdit({ loaderData }: Route.ComponentProps) {
 				returnUrl={returnUrl || "/faq"}
 				onCancel={() => navigate(returnUrl || "/faq")}
 				translationNamespace="faq.form"
+				relationships={relationships}
 			/>
 		</PageWrapper>
 	);

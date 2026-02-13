@@ -10,13 +10,8 @@ import { Switch } from "~/components/ui/switch";
 import { getDatabase } from "~/db/server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { FILE_TYPE_CONFIGS } from "~/lib/file-upload-types";
 import type { Route } from "./+types/_index";
-
-const AVATAR_ALLOWED_EXT = ["jpg", "jpeg", "png", "webp"] as const;
-// Maximum file size: 2MB (2 * 1024 * 1024 bytes)
-const AVATAR_MAX_SIZE_BYTES = 2 * 1024 * 1024;
-// Maximum dimensions: 1024x1024px (for high-DPI displays)
-const AVATAR_MAX_DIMENSION = 1024;
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -144,22 +139,20 @@ export default function Profile({
 	const uploadPicture = useCallback(
 		async (file: File) => {
 			const ext = file.name.split(".").pop()?.toLowerCase();
-			if (
-				!ext ||
-				!AVATAR_ALLOWED_EXT.includes(ext as (typeof AVATAR_ALLOWED_EXT)[number])
-			) {
+			const allowedExtensions = FILE_TYPE_CONFIGS.avatar.extensions.map(e => e.replace(/^\./, ""));
+			
+			if (!ext || !allowedExtensions.includes(ext)) {
 				toast.error(t("profile.picture_invalid_type"));
 				return;
 			}
 
-			// Validate file size
-			if (file.size > AVATAR_MAX_SIZE_BYTES) {
-				const maxSizeMB = AVATAR_MAX_SIZE_BYTES / (1024 * 1024);
-				toast.error(t("profile.picture_too_large", { maxSize: maxSizeMB }));
+			const maxSizeBytes = (FILE_TYPE_CONFIGS.avatar.maxSizeMB || 5) * 1024 * 1024;
+			if (file.size > maxSizeBytes) {
+				toast.error(t("profile.picture_too_large", { maxSize: FILE_TYPE_CONFIGS.avatar.maxSizeMB }));
 				return;
 			}
 
-			// Validate image dimensions
+			const maxDimension = 1024;
 			try {
 				const dimensions = await new Promise<{ width: number; height: number }>(
 					(resolve, reject) => {
@@ -178,19 +171,18 @@ export default function Profile({
 				);
 
 				if (
-					dimensions.width > AVATAR_MAX_DIMENSION ||
-					dimensions.height > AVATAR_MAX_DIMENSION
+					dimensions.width > maxDimension ||
+					dimensions.height > maxDimension
 				) {
 					toast.error(
 						t("profile.picture_too_large_dimensions", {
-							maxDimension: AVATAR_MAX_DIMENSION,
+							maxDimension: maxDimension,
 						}),
 					);
 					return;
 				}
 			} catch (error) {
 				console.error("Failed to validate image dimensions:", error);
-				// Continue with upload if dimension validation fails (non-critical)
 			}
 
 			const pathname = `avatars/${user.id}.${ext}`;
@@ -198,7 +190,8 @@ export default function Profile({
 			try {
 				const blob = await upload(pathname, file, {
 					access: "public",
-					handleUploadUrl: "/api/avatar/upload",
+					handleUploadUrl: "/api/files/upload-token",
+					clientPayload: JSON.stringify({ entityType: "avatar" }),
 				});
 				const res = await fetch("/api/avatar/set", {
 					method: "POST",

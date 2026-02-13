@@ -4,13 +4,18 @@ import { ApiKeySettings } from "~/components/settings/api-key-settings";
 import { handleApiKeySettingsAction } from "~/components/settings/api-key-settings.server";
 import { LanguageSettings } from "~/components/settings/language-settings";
 import { handleLanguageSettingsAction } from "~/components/settings/language-settings.server";
+import { ThemeSettings } from "~/components/settings/theme-settings";
 import { useLanguage } from "~/contexts/language-context";
 import { getDatabase } from "~/db/server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
-import { getSystemLanguageDefaults } from "~/lib/settings.server";
+import {
+	getSystemLanguageDefaults,
+	getThemePrimaryColor,
+} from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
+import { PageHeader } from "~/components/layout/page-header";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -25,9 +30,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "settings:general", getDatabase);
 
 	const db = getDatabase();
-	const [defaults, apiKey] = await Promise.all([
+	const [defaults, apiKey, themePrimary] = await Promise.all([
 		getSystemLanguageDefaults(),
 		db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
+		getThemePrimaryColor(),
 	]);
 
 	return {
@@ -35,6 +41,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		defaults,
 		apiKey: apiKey ? "••••••••" : "", // Mask API key
 		hasApiKey: !!apiKey,
+		themePrimary,
 	};
 }
 
@@ -53,29 +60,26 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
-	const { defaults, apiKey, hasApiKey } = loaderData;
+	const { defaults, apiKey, hasApiKey, themePrimary } = loaderData;
 	const { t } = useTranslation();
 	const { supportedLanguages, languageNames } = useLanguage();
 
 	return (
 		<PageWrapper>
-			<SplitLayout
-				header={{
-					primary: t("settings.general.title", { lng: defaults.primary }),
-					secondary: t("settings.general.title", {
-						lng: defaults.secondary ?? defaults.primary,
-					}),
-				}}
-			>
-				<div className="max-w-2xl space-y-6">
-					<LanguageSettings
-						defaults={defaults}
-						supportedLanguages={supportedLanguages}
-						languageNames={languageNames}
-					/>
-					<ApiKeySettings apiKey={apiKey} hasApiKey={hasApiKey} />
-				</div>
-			</SplitLayout>
+
+			<PageHeader
+				title={t("settings.general.title", { lng: defaults.primary })}
+
+			/>
+			<div className="max-w-2xl space-y-6">
+				<LanguageSettings
+					defaults={defaults}
+					supportedLanguages={supportedLanguages}
+					languageNames={languageNames}
+				/>
+				<ApiKeySettings apiKey={apiKey} hasApiKey={hasApiKey} />
+				<ThemeSettings currentPrimary={themePrimary} />
+			</div>
 		</PageWrapper>
 	);
 }
