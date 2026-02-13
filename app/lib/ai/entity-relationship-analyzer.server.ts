@@ -12,7 +12,7 @@
  */
 
 import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { RelationshipEntityType } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 
 /**
  * Suggestion for a new entity to create

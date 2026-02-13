@@ -7,6 +7,7 @@ import { getDatabase } from "~/db/server";
 export const SETTINGS_KEYS = {
 	DEFAULT_PRIMARY_LANGUAGE: "default_primary_language",
 	DEFAULT_SECONDARY_LANGUAGE: "default_secondary_language",
+	THEME_PRIMARY_COLOR: "theme_primary_color",
 } as const;
 
 export interface SystemLanguageDefaults {
@@ -14,14 +15,9 @@ export interface SystemLanguageDefaults {
 	secondary: string;
 }
 
-/**
- * Get system-wide language defaults
- * Falls back to 'fi'/'en' if not configured
- */
 export async function getSystemLanguageDefaults(): Promise<SystemLanguageDefaults> {
 	const db = getDatabase();
 
-	// Fetch both settings in parallel
 	const [primary, secondary] = await Promise.all([
 		db.getSetting(SETTINGS_KEYS.DEFAULT_PRIMARY_LANGUAGE),
 		db.getSetting(SETTINGS_KEYS.DEFAULT_SECONDARY_LANGUAGE),
@@ -33,9 +29,6 @@ export async function getSystemLanguageDefaults(): Promise<SystemLanguageDefault
 	};
 }
 
-/**
- * Update system-wide language defaults
- */
 export async function updateSystemLanguageDefaults(
 	primary: string,
 	secondary: string,
@@ -54,4 +47,19 @@ export async function updateSystemLanguageDefaults(
 			"Default secondary language for guests (fi/en)",
 		),
 	]);
+}
+
+export async function getThemePrimaryColor(): Promise<string> {
+	const db = getDatabase();
+	const color = await db.getSetting(SETTINGS_KEYS.THEME_PRIMARY_COLOR);
+	return color || "#ff2446";
+}
+
+export async function setThemePrimaryColor(color: string): Promise<void> {
+	const db = getDatabase();
+	await db.setSetting(
+		SETTINGS_KEYS.THEME_PRIMARY_COLOR,
+		color,
+		"Primary color for theme (hex)",
+	);
 }

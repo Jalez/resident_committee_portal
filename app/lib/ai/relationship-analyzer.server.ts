@@ -1,8 +1,25 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { RelationshipContext } from "../linking/relationship-context.server";
 import { SETTINGS_KEYS } from "../openrouter.server";
+
+interface RelationshipContext {
+	id: string;
+	date: Date | null;
+	totalAmount: number | null;
+	description: string | null;
+	currency: string | null;
+	category: string | null;
+	purchaserId: string | null;
+	lineItems: Array<{
+		name: string;
+		quantity: number;
+		unitPrice: number;
+		totalPrice: number;
+	}>;
+	valueSource: "manual" | "receipt" | "reimbursement" | "transaction" | "unknown";
+	linkedEntityIds: string[];
+}
 
 export type TransactionCategory =
 	| "inventory"

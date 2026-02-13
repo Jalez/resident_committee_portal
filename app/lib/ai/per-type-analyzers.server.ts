@@ -11,10 +11,8 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
-import type {
-	NewEntityRelationship,
-	RelationshipEntityType,
-} from "~/db/schema";
+import type { NewEntityRelationship } from "~/db/schema";
+import type { RelationshipEntityType } from "~/db/types";
 import { SETTINGS_KEYS } from "../openrouter.server";
 
 export interface SuggestedEntity {

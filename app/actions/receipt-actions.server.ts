@@ -1,86 +1,10 @@
 import { z } from "zod";
 import { getDatabase, type NewReceiptContent, type Receipt } from "~/db/server";
-import {
-	RECEIPT_ALLOWED_MIME_TYPES,
-	RECEIPT_ALLOWED_TYPES,
-} from "~/lib/constants";
-import { getReceiptStorage } from "~/lib/receipts/server";
-import { buildReceiptPath } from "~/lib/receipts/utils";
 
 const updateReceiptSchema = z.object({
 	name: z.string().optional(),
 	description: z.string().optional(),
 });
-
-type FileUploadResult =
-	| {
-		nextUrl: string | null;
-		nextPathname: string | null;
-		nextName: string | null;
-	}
-	| {
-		error: "invalid_file_type";
-		allowedTypes: string;
-	};
-
-export async function handleFileUpload(
-	formData: FormData,
-	receipt: Receipt,
-	name?: string,
-): Promise<FileUploadResult> {
-	const file = formData.get("file") as File | null;
-	const tempUrl = formData.get("tempUrl") as string | null;
-	const tempPathname = formData.get("tempPathname") as string | null;
-
-	const pathnameParts = receipt.pathname?.split("/") || [];
-	const year = pathnameParts[1] || new Date().getFullYear().toString();
-
-	let nextUrl = receipt.url || null;
-	let nextPathname = receipt.pathname || null;
-	let nextName = name?.trim() || receipt.name || null;
-
-	// Use temp file if available
-	if (tempUrl && tempPathname) {
-		nextUrl = tempUrl;
-		nextPathname = tempPathname;
-	} else if (file) {
-		const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`;
-		if (
-			!RECEIPT_ALLOWED_TYPES.includes(
-				fileExt as (typeof RECEIPT_ALLOWED_TYPES)[number],
-			)
-		) {
-			return {
-				error: "invalid_file_type",
-				allowedTypes: RECEIPT_ALLOWED_TYPES.join(", "),
-			};
-		}
-		if (
-			!RECEIPT_ALLOWED_MIME_TYPES.includes(
-				file.type as (typeof RECEIPT_ALLOWED_MIME_TYPES)[number],
-			)
-		) {
-			return {
-				error: "invalid_file_type",
-				allowedTypes: RECEIPT_ALLOWED_TYPES.join(", "),
-			};
-		}
-
-		const pathname = buildReceiptPath(year, file.name, nextName || "kuitti");
-		const storage = getReceiptStorage();
-		const uploadResult = await storage.uploadFile(pathname, file, {
-			access: "public",
-			addRandomSuffix: true,
-		});
-		nextUrl = uploadResult.url;
-		nextPathname = uploadResult.pathname;
-		if (!name?.trim()) {
-			nextName = file.name;
-		}
-	}
-
-	return { nextUrl, nextPathname, nextName };
-}
 
 export async function saveReceiptOCRContent(
 	formData: FormData,
@@ -106,13 +30,11 @@ export async function saveReceiptOCRContent(
 	const db = getDatabase();
 
 	try {
-		// Delete existing content first
 		const existingContent = await db.getReceiptContentByReceiptId(receipt.id);
 		if (existingContent) {
 			await db.deleteReceiptContent(existingContent.id);
 		}
 
-		// Create new content
 		const content: NewReceiptContent = {
 			receiptId: receipt.id,
 			rawText: ocrData.rawText,
@@ -135,11 +57,8 @@ export async function saveReceiptOCRContent(
 
 export async function deleteReceipt(receiptId: string) {
 	const db = getDatabase();
-	//Get entity relationships
 	const _relationships = await db.getEntityRelationships("receipt", receiptId);
-
-	//Delete file from storage
-	const _storage = getReceiptStorage();
-
 	await db.deleteReceipt(receiptId);
 }
+
+export { handleFileUpload } from "~/lib/file-upload.server";

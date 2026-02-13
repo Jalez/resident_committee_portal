@@ -17,6 +17,7 @@ import i18next, { getSupportedLanguages } from "~/i18next.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getLanguageNames } from "~/lib/language-names.server";
+import { getThemePrimaryColor } from "~/lib/settings.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const authUser = await getAuthenticatedUser(request, getDatabase);
@@ -93,6 +94,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 	}
 
+	// Get theme primary color
+	const themePrimary = await getThemePrimaryColor();
+
 	return {
 		user,
 		siteConfig: SITE_CONFIG,
@@ -101,6 +105,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		languageNames,
 		unreadMessageCount,
 		unreadMessages,
+		themePrimary,
 	};
 }
 
@@ -132,15 +137,46 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: React.ReactNode }) {
 	const loaderData = useLoaderData<typeof loader>();
 	const locale = loaderData?.locale ?? "en";
+	const themePrimary = loaderData?.themePrimary || "#ff2446";
 	return (
-		<html lang={locale}>
+		<html lang={locale} suppressHydrationWarning>
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<Meta />
 				<Links />
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `
+							(function() {
+								try {
+									var theme = localStorage.getItem('theme') || 'system';
+									var isDark = theme === 'dark' || 
+										(theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+									if (isDark) {
+										document.documentElement.classList.add('dark');
+									}
+								} catch (e) {}
+							})();
+						`,
+					}}
+				/>
+				<style
+					dangerouslySetInnerHTML={{
+						__html: `
+							:root {
+								--primary: ${themePrimary};
+								--ring: ${themePrimary};
+							}
+							.dark {
+								--primary: ${themePrimary};
+								--ring: ${themePrimary};
+							}
+						`,
+					}}
+				/>
 			</head>
-			<body>
+			<body suppressHydrationWarning>
 				{children}
 				<ScrollRestoration />
 				<Scripts />
@@ -151,14 +187,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "~/components/ui/sonner";
+import { ActionNotifier } from "./components/action-notifier";
 import { Navigation } from "./components/navigation";
 import { InfoReelProvider, useInfoReel } from "./contexts/info-reel-context";
 import { LanguageProvider, useLanguage } from "./contexts/language-context";
 import { NavigationStackProvider } from "./contexts/navigation-stack-context";
 import { NewTransactionProvider } from "./contexts/new-transaction-context";
 import { ReimbursementTemplateProvider } from "./contexts/reimbursement-template-context";
+import { ThemeProvider } from "./contexts/theme-context";
 import { UserProvider } from "./contexts/user-context";
-import { ActionNotifier } from "./components/action-notifier";
 import { queryClient } from "./lib/query-client";
 
 function ContentFader({ children }: { children: React.ReactNode }) {
@@ -196,21 +233,23 @@ export default function App() {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<UserProvider user={user}>
-				<NavigationStackProvider>
-					<NewTransactionProvider>
-						<ReimbursementTemplateProvider>
-							<InfoReelProvider>
-								<LanguageProvider>
-									<AppContent siteConfig={siteConfig} />
-									<ActionNotifier />
-								</LanguageProvider>
-							</InfoReelProvider>
-						</ReimbursementTemplateProvider>
-					</NewTransactionProvider>
-				</NavigationStackProvider>
-			</UserProvider>
-			<Toaster richColors position="top-center" />
+			<ThemeProvider>
+				<UserProvider user={user}>
+					<NavigationStackProvider>
+						<NewTransactionProvider>
+							<ReimbursementTemplateProvider>
+								<InfoReelProvider>
+									<LanguageProvider>
+										<AppContent siteConfig={siteConfig} />
+										<ActionNotifier />
+									</LanguageProvider>
+								</InfoReelProvider>
+							</ReimbursementTemplateProvider>
+						</NewTransactionProvider>
+					</NavigationStackProvider>
+				</UserProvider>
+				<Toaster richColors position="top-center" />
+			</ThemeProvider>
 		</QueryClientProvider>
 	);
 }
