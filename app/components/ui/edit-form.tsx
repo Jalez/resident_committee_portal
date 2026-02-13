@@ -211,7 +211,6 @@ export function EditForm({
 		return sortedList;
 	}, [hiddenFields, inputFields, entityType]);
 
-	// Helper to derive state from props
 	const getInitialValues = React.useCallback(() => {
 		const defaults: Record<string, any> = {};
 		for (const field of fields) {
@@ -222,14 +221,8 @@ export function EditForm({
 		return defaults;
 	}, [fields]);
 
-	// Internal state management
 	const [values, setValues] =
 		React.useState<Record<string, any>>(getInitialValues);
-
-	// Update state when fields change
-	React.useEffect(() => {
-		setValues(getInitialValues());
-	}, [getInitialValues]);
 
 	const handleChange = (name: string, value: any) => {
 		setValues((prev) => ({ ...prev, [name]: value }));
@@ -285,27 +278,37 @@ export function EditForm({
 			if (!entityType || !relationships || !entityId) return null;
 
 			const schema = ENTITY_DEFINITIONS[entityType as RelationshipEntityType];
-			if (!schema?.relationships) return null;
+			const configuredRelationships = schema?.relationships || {};
 
-			const sections: RelationshipSection[] = Object.entries(
-				schema.relationships,
-			)
-				.map(([type, config]) => {
-					const relData = relationships[type as RelationshipEntityType];
-					// If we have config but no data, we might still want to show it if we can find data or if it's just available for creation?
-					// Usually we need `available` entities to show the picker.
-					// If `relationships` prop is partial, we only show what's there.
-					if (!relData && !config) return null;
+			const allEntityTypes: RelationshipEntityType[] = [
+				"receipt",
+				"transaction",
+				"reimbursement",
+				"budget",
+				"inventory",
+				"minute",
+				"news",
+				"faq",
+				"poll",
+				"social",
+				"event",
+				"mail",
+			];
+
+			const sections: RelationshipSection[] = allEntityTypes
+				.filter((type) => type !== entityType)
+				.map((type) => {
+					const relData = relationships[type];
+					const config = configuredRelationships[type];
 
 					return {
-						relationBType: type as RelationshipEntityType,
+						relationBType: type,
 						linkedEntities: relData?.linked || [],
 						availableEntities: relData?.available || [],
 						maxItems: config?.maxItems,
 						label: config?.labelKey ? t(config.labelKey) : undefined,
 					};
-				})
-				.filter(Boolean) as RelationshipSection[];
+				});
 
 			if (sections.length === 0) return null;
 
@@ -320,7 +323,7 @@ export function EditForm({
 			return {
 				relationAType: entityType as RelationshipEntityType,
 				relationAId: entityId,
-				relationAName: entityName || "", // Need entityName prop or default
+				relationAName: entityName || "",
 				sections,
 				mode: "edit",
 				currentPath,

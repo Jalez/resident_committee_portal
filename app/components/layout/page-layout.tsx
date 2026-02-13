@@ -46,7 +46,7 @@ export function PageWrapper({ children, className }: PageWrapperProps) {
 	return (
 		<div
 			className={cn(
-				"font-sans text-[#111418] dark:text-gray-100 flex flex-col overflow-y-auto selection:bg-primary/30 min-h-0 h-full",
+				"font-sans text-foreground flex flex-col overflow-y-auto selection:bg-primary/30 min-h-0 h-full",
 				className,
 			)}
 		>

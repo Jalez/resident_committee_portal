@@ -152,7 +152,7 @@ export function DataTable<TData, TValue>({
 		<div className="space-y-4">
 			{/* Filter controls */}
 			{filterComponent && (
-				<div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+				<div className="bg-card rounded-xl p-4 border border-border">
 					{filterComponent}
 				</div>
 			)}
@@ -187,13 +187,13 @@ export function DataTable<TData, TValue>({
 			)}
 
 			{/* Table */}
-			<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+			<div className="bg-card rounded-xl border border-border overflow-hidden">
 				<div
 					className={maxBodyHeight ? "overflow-auto" : ""}
 					style={maxBodyHeight ? { maxHeight: maxBodyHeight } : undefined}
 				>
 					<table className="w-full caption-bottom text-sm">
-						<TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+						<TableHeader className="sticky top-0 bg-card z-10">
 							{table.getHeaderGroups().map((headerGroup) => (
 								<TableRow key={headerGroup.id}>
 									{headerGroup.headers.map((header) => (
@@ -237,7 +237,7 @@ export function DataTable<TData, TValue>({
 								<TableRow>
 									<TableCell
 										colSpan={columnsWithSelection.length}
-										className="h-24 text-center text-gray-500"
+										className="h-24 text-center text-muted-foreground"
 									>
 										Ei tuloksia / No results
 									</TableCell>
@@ -252,7 +252,7 @@ export function DataTable<TData, TValue>({
 			{totalCount
 				? totalCount > pageSize && (
 						<div className="flex items-center justify-between px-2">
-							<p className="text-sm text-gray-500 dark:text-gray-400">
+							<p className="text-sm text-muted-foreground">
 								Sivu {currentPage} / {totalPages} ({totalCount} yhteensä)
 							</p>
 							<div className="flex items-center gap-2">

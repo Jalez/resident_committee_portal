@@ -12,7 +12,7 @@ import {
 import { cn } from "~/lib/utils";
 
 const INPUT_CLASS =
-	"flex-1 min-w-[100px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 border-0 outline-none py-1 text-sm";
+	"flex-1 min-w-[100px] bg-card border-border border-0 outline-none py-1 text-sm";
 
 export interface TagPickerProps<TItem, TSuggestion> {
 	selectedItems: TItem[];

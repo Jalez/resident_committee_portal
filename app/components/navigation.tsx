@@ -9,6 +9,7 @@ import {
 	useRouteLoaderData,
 } from "react-router";
 import { LanguageSwitcher } from "~/components/language-switcher";
+import { ThemeSwitcher } from "~/components/theme-switcher";
 import { Button } from "~/components/ui/button";
 import {
 	Sheet,
@@ -51,6 +52,8 @@ export function Navigation({ variant }: NavigationProps) {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [mobileMessagesOpen, setMobileMessagesOpen] = useState(false);
 	const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
+	const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+	const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 	const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 	useEffect(() => {
 		const parent = NAV_ITEMS.find(
@@ -173,7 +176,7 @@ export function Navigation({ variant }: NavigationProps) {
 				to={item.path}
 				onClick={onNavigate}
 				className={cn(
-					"relative group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
+					"relative group flex items-center gap-3 px-2 py-2 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
 					!isAnimating && isActive && "text-primary bg-primary/10",
 					!isActive && "text-gray-500 dark:text-gray-400",
@@ -214,6 +217,109 @@ export function Navigation({ variant }: NavigationProps) {
 		return link;
 	};
 
+	type CollapsibleMenuItem = {
+		to?: string;
+		icon: string;
+		label: string;
+		show: boolean;
+		destructive?: boolean;
+		customRender?: (
+			showLabels: boolean,
+			onNavigate?: () => void,
+		) => React.ReactNode;
+	};
+
+	const renderCollapsibleMenu = (
+		id: string,
+		icon: string,
+		label: string,
+		isOpen: boolean,
+		setIsOpen: (open: boolean) => void,
+		items: CollapsibleMenuItem[],
+		showLabels: boolean,
+		onNavigate?: () => void,
+	) => {
+		const visibleItems = items.filter((item) => item.show);
+		if (visibleItems.length === 0) return null;
+
+		const trigger = (
+			<button
+				type="button"
+				onClick={() => setIsOpen(!isOpen)}
+				className={cn(
+					"flex items-center gap-3 px-2 py-2 rounded-xl transition-all w-full text-left",
+					"hover:bg-primary/10 hover:text-primary",
+					"text-gray-500 dark:text-gray-400",
+					!showLabels && "justify-center px-3",
+				)}
+			>
+				<span className="material-symbols-outlined text-2xl shrink-0">
+					{icon}
+				</span>
+				{showLabels && (
+					<>
+						<span className="text-sm font-bold flex-1">{label}</span>
+						<span
+							className={cn(
+								"material-symbols-outlined text-lg transition-transform",
+								isOpen && "rotate-90",
+							)}
+						>
+							chevron_right
+						</span>
+					</>
+				)}
+			</button>
+		);
+
+		const content = isOpen && (
+			<div className={cn("space-y-1", showLabels ? "pl-4" : "mt-1")}>
+				{visibleItems.map((item) => {
+					if (item.customRender) {
+						return (
+							<div key={`custom-${item.icon}-${item.label}`}>
+								{item.customRender(showLabels, onNavigate)}
+							</div>
+						);
+					}
+					if (item.to) {
+						return renderMenuLink(
+							item.to,
+							item.icon,
+							item.label,
+							pathname === item.to,
+							showLabels,
+							onNavigate,
+							item.destructive,
+						);
+					}
+					return null;
+				})}
+			</div>
+		);
+
+		if (!showLabels) {
+			return (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div className="flex flex-col">
+							{trigger}
+							{content}
+						</div>
+					</TooltipTrigger>
+					<TooltipContent side="right">{label}</TooltipContent>
+				</Tooltip>
+			);
+		}
+
+		return (
+			<div className="flex flex-col">
+				{trigger}
+				{content}
+			</div>
+		);
+	};
+
 	// Shared menu link for settings/profile (icon + optional label, optional tooltip when collapsed)
 	const renderMenuLink = (
 		to: string,
@@ -229,7 +335,7 @@ export function Navigation({ variant }: NavigationProps) {
 				to={to}
 				onClick={onNavigate}
 				className={cn(
-					"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full shrink-0",
+					"flex items-center gap-3 px-2 py-2 rounded-xl transition-all w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
 					isActive
 						? "text-primary bg-primary/10"
@@ -281,8 +387,8 @@ export function Navigation({ variant }: NavigationProps) {
 		return pathname === childPath || pathname.startsWith(`${childPath}/`);
 	};
 
-	// Shared menu content used by both mobile Sheet and desktop sidebar
-	const renderMenuContent = (showLabels: boolean, onNavigate?: () => void) => (
+	// Main nav items (scrollable)
+	const renderMainNavItems = (showLabels: boolean, onNavigate?: () => void) => (
 		<>
 			{navItems.map((item) => {
 				// Items with children: render as expandable sub-items
@@ -297,7 +403,7 @@ export function Navigation({ variant }: NavigationProps) {
 								to={item.path}
 								onClick={onNavigate}
 								className={cn(
-									"relative group flex items-center justify-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
+									"relative group flex items-center justify-center gap-3 px-2 py-2 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 									"hover:bg-primary/10 hover:text-primary",
 									isParentActive && "text-primary bg-primary/10",
 									!isParentActive && "text-gray-500 dark:text-gray-400",
@@ -331,7 +437,7 @@ export function Navigation({ variant }: NavigationProps) {
 									}))
 								}
 								className={cn(
-									"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
+									"flex items-center gap-3 px-2 py-2 rounded-xl transition-all relative w-full text-left",
 									"hover:bg-primary/10 hover:text-primary",
 									isParentActive
 										? "text-primary bg-primary/10"
@@ -368,7 +474,7 @@ export function Navigation({ variant }: NavigationProps) {
 												to={child.path}
 												onClick={onNavigate}
 												className={cn(
-													"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
+													"flex items-center gap-3 px-2 py-2 rounded-lg transition-all text-sm w-full",
 													"hover:bg-primary/10 hover:text-primary",
 													isChildActive(item.path, child.path)
 														? "text-primary bg-primary/10 font-medium"
@@ -401,399 +507,189 @@ export function Navigation({ variant }: NavigationProps) {
 				}
 				return itemEl;
 			})}
+		</>
+	);
 
+	// Bottom section (settings/profile) - fixed at bottom
+	const renderBottomSection = (
+		showLabels: boolean,
+		onNavigate?: () => void,
+	) => (
+		<>
 			{showSettingsMenu && (
 				<div
-					className={cn(
-						"mt-4 pt-4 border-t border-border",
-						!showLabels && "mt-2 pt-2",
-					)}
+					className={cn("pt-4 border-t border-border", !showLabels && "pt-2")}
 				>
-					{showLabels && (
-						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-							{t("nav.settings")}
-						</p>
+					{renderCollapsibleMenu(
+						"settings",
+						"settings",
+						t("nav.settings"),
+						settingsMenuOpen,
+						setSettingsMenuOpen,
+						[
+							{
+								to: "/settings/general",
+								icon: "tune",
+								label: t("settings.general.title"),
+								show: hasPermission("settings:general"),
+							},
+							{
+								to: "/settings/users",
+								icon: "manage_accounts",
+								label: t("nav.users"),
+								show: hasPermission("settings:users"),
+							},
+							{
+								to: "/settings/roles",
+								icon: "shield_person",
+								label: t("nav.roles"),
+								show: hasPermission("settings:roles"),
+							},
+							{
+								to: "/settings/reimbursements",
+								icon: "smart_toy",
+								label: t("nav.reimbursements"),
+								show: hasPermission("settings:reimbursements"),
+							},
+							{
+								to: "/settings/analytics",
+								icon: "bar_chart",
+								label: t("nav.analytics"),
+								show: hasPermission("settings:analytics"),
+							},
+							{
+								to: "/settings/receipts",
+								icon: "receipt_long",
+								label: t("settings.receipt_ocr_title", {
+									defaultValue: "Receipt OCR",
+								}),
+								show: hasPermission("settings:receipts"),
+							},
+							{
+								to: "/settings/auto-input",
+								icon: "auto_awesome",
+								label: t("nav.auto_input", {
+									defaultValue: "Auto Input",
+								}),
+								show: hasPermission("settings:relationship-context"),
+							},
+						],
+						showLabels,
+						onNavigate,
 					)}
-					{hasPermission("settings:general") &&
-						renderMenuLink(
-							"/settings/general",
-							"settings",
-							t("settings.general.title"),
-							pathname === "/settings/general",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:users") &&
-						renderMenuLink(
-							"/settings/users",
-							"manage_accounts",
-							t("nav.users"),
-							pathname === "/settings/users",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:roles") &&
-						renderMenuLink(
-							"/settings/roles",
-							"shield_person",
-							t("nav.roles"),
-							pathname === "/settings/roles",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:reimbursements") &&
-						renderMenuLink(
-							"/settings/reimbursements",
-							"smart_toy",
-							t("nav.reimbursements"),
-							pathname === "/settings/reimbursements",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:analytics") &&
-						renderMenuLink(
-							"/settings/analytics",
-							"bar_chart",
-							t("nav.analytics"),
-							pathname === "/settings/analytics",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:news") &&
-						renderMenuLink(
-							"/settings/news",
-							"article",
-							t("nav.news"),
-							pathname === "/settings/news",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:faqs") &&
-						renderMenuLink(
-							"/settings/faqs",
-							"help",
-							t("nav.faq"),
-							pathname === "/settings/faqs",
-							showLabels,
-							onNavigate,
-						)}
-
-					{hasPermission("settings:receipts") &&
-						renderMenuLink(
-							"/settings/receipts",
-							"receipt_long",
-							t("settings.receipt_ocr_title", { defaultValue: "Receipt OCR" }),
-							pathname === "/settings/receipts",
-							showLabels,
-							onNavigate,
-						)}
-					{hasPermission("settings:relationship-context") &&
-						renderMenuLink(
-							"/settings/relationship-contexts",
-							"dataset_linked",
-							t("nav.source_contexts", { defaultValue: "Source Contexts" }),
-							pathname === "/settings/relationship-contexts",
-							showLabels,
-							onNavigate,
-						)}
 				</div>
 			)}
 
 			{showProfileMenu && !isInfoReel && (
 				<div
-					className={cn(
-						"mt-4 pt-4 border-t border-border",
-						!showLabels && "mt-2 pt-2",
-					)}
+					className={cn("pt-4 border-t border-border", !showLabels && "pt-2")}
 				>
-					{showLabels && (
-						<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-							{t("nav.profile")}
-						</p>
-					)}
-					{renderMenuLink(
-						"/profile",
-						"edit",
-						t("nav.edit_profile"),
-						isProfileActive,
+					{renderCollapsibleMenu(
+						"profile",
+						"account_circle",
+						t("nav.profile"),
+						profileMenuOpen,
+						setProfileMenuOpen,
+						[
+							{
+								to: "/profile",
+								icon: "edit",
+								label: t("nav.edit_profile"),
+								show: true,
+							},
+							{
+								to: "/messages",
+								icon: "mail",
+								label: t("nav.messages"),
+								show: true,
+							},
+							{
+								icon: "dark_mode",
+								label: t("theme.label"),
+								show: true,
+								customRender: (showLabels) =>
+									showLabels ? (
+										<ThemeSwitcher />
+									) : (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<div className="flex">
+													<ThemeSwitcher compact />
+												</div>
+											</TooltipTrigger>
+											<TooltipContent side="right">
+												{t("theme.label")}
+											</TooltipContent>
+										</Tooltip>
+									),
+							},
+							{
+								icon: "language",
+								label: t("lang.label"),
+								show: true,
+								customRender: (showLabels) =>
+									showLabels ? (
+										<LanguageSwitcher variant="standalone" />
+									) : (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<div className="flex">
+													<LanguageSwitcher variant="standalone" compact />
+												</div>
+											</TooltipTrigger>
+											<TooltipContent side="right">
+												{t("lang.label")}
+											</TooltipContent>
+										</Tooltip>
+									),
+							},
+							{
+								to: "/auth/logout",
+								icon: "logout",
+								label: t("nav.log_out"),
+								show: true,
+								destructive: true,
+							},
+						],
 						showLabels,
 						onNavigate,
-					)}
-					{showLabels ? (
-						<>
-							<div>
-								<button
-									type="button"
-									onClick={() => setMobileMessagesOpen(!mobileMessagesOpen)}
-									className={cn(
-										"flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative w-full text-left",
-										"hover:bg-primary/10 hover:text-primary",
-										pathname === "/messages"
-											? "text-primary bg-primary/10"
-											: "text-gray-500 dark:text-gray-400",
-									)}
-								>
-									<span className="material-symbols-outlined text-2xl">
-										mail
-									</span>
-									<span className="text-sm font-bold flex-1">
-										{t("nav.messages")}
-									</span>
-									{unreadMessageCount > 0 && (
-										<span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
-											{unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-										</span>
-									)}
-									<span
-										className={cn(
-											"material-symbols-outlined text-lg transition-transform",
-											mobileMessagesOpen && "rotate-90",
-										)}
-									>
-										chevron_right
-									</span>
-								</button>
-								{mobileMessagesOpen && (
-									<div className="pl-4 space-y-1">
-										{unreadMessages.length === 0 ? (
-											<div className="px-4 py-2 text-sm text-muted-foreground">
-												{t("messages.empty")}
-											</div>
-										) : (
-											<>
-												{unreadMessages.map((message) => (
-													<div
-														key={message.id}
-														className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-colors"
-													>
-														<div className="min-w-0 flex-1 flex flex-col gap-1.5">
-															<p className="font-medium text-sm line-clamp-1">
-																{message.title}
-															</p>
-															<p className="text-xs text-muted-foreground line-clamp-3">
-																{message.content}
-															</p>
-															<p className="text-xs text-muted-foreground mt-0.5">
-																{new Date(message.createdAt).toLocaleDateString(
-																	i18n.language === "fi" ? "fi-FI" : "en-US",
-																	{
-																		month: "short",
-																		day: "numeric",
-																		hour: "2-digit",
-																		minute: "2-digit",
-																	},
-																)}
-															</p>
-														</div>
-														<div className="flex flex-col items-end gap-2 shrink-0">
-															{message.relatedNewsId && (
-																<Link
-																	to={`/news/${message.relatedNewsId}/edit`}
-																	onClick={onNavigate}
-																	className="text-xs text-primary hover:underline whitespace-nowrap"
-																>
-																	{t("messages.view_news")}
-																</Link>
-															)}
-															<Button
-																type="button"
-																variant="outline"
-																size="sm"
-																className="h-8 px-2 text-xs flex items-center gap-1 shrink-0"
-																onClick={(e) => {
-																	e.preventDefault();
-																	markMessagesAsRead([message.id]);
-																}}
-															>
-																<span className="material-symbols-outlined text-base">
-																	done
-																</span>
-																{t("messages.mark_as_read")}
-															</Button>
-														</div>
-													</div>
-												))}
-												<div className="border-t border-border mt-2 pt-2">
-													<Link
-														to="/messages"
-														onClick={onNavigate}
-														className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg hover:bg-primary/10 text-primary text-sm font-medium transition-colors"
-													>
-														{t("messages.see_all")}
-													</Link>
-												</div>
-											</>
-										)}
-									</div>
-								)}
-							</div>
-							<div>
-								<button
-									type="button"
-									onClick={() => setMobileLanguageOpen(!mobileLanguageOpen)}
-									className={cn(
-										"flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full text-left",
-										"hover:bg-primary/10 hover:text-primary",
-										"text-gray-500 dark:text-gray-400",
-									)}
-								>
-									<span className="material-symbols-outlined text-2xl">
-										translate
-									</span>
-									<span className="text-sm font-bold flex-1">
-										{t("lang.label")}
-									</span>
-									<span
-										className={cn(
-											"material-symbols-outlined text-lg transition-transform",
-											mobileLanguageOpen && "rotate-90",
-										)}
-									>
-										chevron_right
-									</span>
-								</button>
-								{mobileLanguageOpen && (
-									<div className="pl-4 space-y-1">
-										<div className="px-4 py-2">
-											<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-												{t("settings.general.primary_language")}
-											</p>
-											{supportedLanguages.map((lang) => (
-												<button
-													type="button"
-													key={`primary-${lang}`}
-													onClick={() => {
-														i18n.changeLanguage(lang);
-														fetcher.submit(
-															{ language: lang, type: "primary" },
-															{ method: "post", action: "/api/set-language" },
-														);
-													}}
-													className={cn(
-														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-														i18n.language === lang &&
-															"bg-primary/10 text-primary",
-													)}
-												>
-													<span>{languageNames[lang] || lang}</span>
-													{i18n.language === lang && (
-														<span className="material-symbols-outlined text-sm">
-															check
-														</span>
-													)}
-												</button>
-											))}
-										</div>
-										<div className="px-4 py-2">
-											<p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-												{t("settings.general.secondary_language")}
-											</p>
-											{supportedLanguages.map((lang) => (
-												<button
-													type="button"
-													key={`secondary-${lang}`}
-													onClick={() => {
-														fetcher.submit(
-															{ language: lang, type: "secondary" },
-															{ method: "post", action: "/api/set-language" },
-														);
-														setTimeout(() => revalidator.revalidate(), 100);
-													}}
-													className={cn(
-														"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-														secondaryLanguage === lang &&
-															"bg-primary/10 text-primary",
-													)}
-												>
-													<span>{languageNames[lang] || lang}</span>
-													{secondaryLanguage === lang && (
-														<span className="material-symbols-outlined text-sm">
-															check
-														</span>
-													)}
-												</button>
-											))}
-											<button
-												type="button"
-												key="secondary-none"
-												onClick={() => {
-													fetcher.submit(
-														{ language: "none", type: "secondary" },
-														{ method: "post", action: "/api/set-language" },
-													);
-													setTimeout(() => revalidator.revalidate(), 100);
-												}}
-												className={cn(
-													"w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors text-sm",
-													secondaryLanguage === "none" &&
-														"bg-primary/10 text-primary",
-												)}
-											>
-												<span>{t("common.fields.none")}</span>
-												{secondaryLanguage === "none" && (
-													<span className="material-symbols-outlined text-sm">
-														check
-													</span>
-												)}
-											</button>
-										</div>
-									</div>
-								)}
-							</div>
-							{renderMenuLink(
-								"/auth/logout",
-								"logout",
-								t("nav.log_out"),
-								false,
-								true,
-								onNavigate,
-								true,
-							)}
-						</>
-					) : (
-						<>
-							{renderMenuLink(
-								"/messages",
-								"mail",
-								t("nav.messages"),
-								pathname === "/messages",
-								false,
-								onNavigate,
-							)}
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<div className="flex">
-										<LanguageSwitcher variant="standalone" compact />
-									</div>
-								</TooltipTrigger>
-								<TooltipContent side="right">{t("lang.label")}</TooltipContent>
-							</Tooltip>
-							{renderMenuLink(
-								"/auth/logout",
-								"logout",
-								t("nav.log_out"),
-								false,
-								false,
-								onNavigate,
-								true,
-							)}
-						</>
 					)}
 				</div>
 			)}
 			{!showProfileMenu && !isInfoReel && showLabels && (
-				<LanguageSwitcher variant="standalone" />
+				<div>
+					<ThemeSwitcher />
+					<LanguageSwitcher variant="standalone" />
+				</div>
 			)}
 			{!showProfileMenu && !isInfoReel && !showLabels && (
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<div className="mt-2 flex">
-							<LanguageSwitcher variant="standalone" compact />
-						</div>
-					</TooltipTrigger>
-					<TooltipContent side="right">{t("lang.label")}</TooltipContent>
-				</Tooltip>
+				<div className="space-y-1">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className="flex">
+								<ThemeSwitcher compact />
+							</div>
+						</TooltipTrigger>
+						<TooltipContent side="right">{t("theme.label")}</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className="flex">
+								<LanguageSwitcher variant="standalone" compact />
+							</div>
+						</TooltipTrigger>
+						<TooltipContent side="right">{t("lang.label")}</TooltipContent>
+					</Tooltip>
+				</div>
 			)}
+		</>
+	);
+
+	// Shared menu content used by both mobile Sheet and desktop sidebar
+	const renderMenuContent = (showLabels: boolean, onNavigate?: () => void) => (
+		<>
+			{renderMainNavItems(showLabels, onNavigate)}
+			{renderBottomSection(showLabels, onNavigate)}
 		</>
 	);
 
@@ -870,7 +766,7 @@ export function Navigation({ variant }: NavigationProps) {
 				)}
 			>
 				<div className="flex flex-col flex-1 min-h-0">
-					<div className="shrink-0 flex items-center justify-between gap-2 px-3 py-3 border-b border-border">
+					<div className="shrink-0 flex items-center justify-between gap-2 px-2 py-2 border-b border-border">
 						{!sidebarCollapsed && (
 							<span className="text-lg font-black truncate">
 								{t("nav.navigation")}
@@ -897,9 +793,12 @@ export function Navigation({ variant }: NavigationProps) {
 							</span>
 						</Button>
 					</div>
-					<nav className="flex flex-col gap-1 mt-2 overflow-y-auto min-h-0 flex-1 pb-4 px-2">
-						{renderMenuContent(!sidebarCollapsed)}
+					<nav className="flex flex-col gap-1 mt-2 overflow-y-auto min-h-0 flex-1 px-2">
+						{renderMainNavItems(!sidebarCollapsed)}
 					</nav>
+					<div className="shrink-0 px-2 pb-4">
+						{renderBottomSection(!sidebarCollapsed)}
+					</div>
 				</div>
 			</aside>
 		</TooltipProvider>
