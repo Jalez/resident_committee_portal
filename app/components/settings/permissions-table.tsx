@@ -146,14 +146,16 @@ export function PermissionsTable({
 
 	if (!selectedRoleData) {
 		return (
-			<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-				<p className="text-gray-500">{t("settings.roles.select_role_msg")}</p>
+			<div className="bg-card rounded-2xl shadow-sm border border-border p-12 text-center">
+				<p className="text-muted-foreground">
+					{t("settings.roles.select_role_msg")}
+				</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+		<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 			<div className="p-6 space-y-4">
 				<h3 className="font-bold">{t("settings.roles.permissions_header")}</h3>
 
@@ -219,22 +221,22 @@ export function PermissionsTable({
 				</div>
 
 				{/* Permissions Table */}
-				<div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+				<div className="border border-border rounded-lg overflow-hidden">
 					<div className="overflow-auto max-h-[calc(100vh-500px)]">
 						<table className="w-full">
-							<TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+							<TableHeader className="sticky top-0 bg-card z-10">
 								<TableRow>
 									<TableHead className="w-12">
 										<Checkbox
 											checked={
 												filteredPermissions.length > 0 &&
-													filteredPermissions.every((p) =>
-														checkedPermissions.has(p.id),
-													)
+												filteredPermissions.every((p) =>
+													checkedPermissions.has(p.id),
+												)
 													? true
 													: filteredPermissions.some((p) =>
-														checkedPermissions.has(p.id),
-													)
+																checkedPermissions.has(p.id),
+															)
 														? "indeterminate"
 														: false
 											}
@@ -277,7 +279,7 @@ export function PermissionsTable({
 												</span>
 											</TableCell>
 											<TableCell>
-												<span className="text-sm text-gray-600 dark:text-gray-400">
+												<span className="text-sm text-muted-foreground">
 													{permission.description}
 												</span>
 											</TableCell>
@@ -287,7 +289,7 @@ export function PermissionsTable({
 									<TableRow>
 										<TableCell
 											colSpan={4}
-											className="h-24 text-center text-gray-500"
+											className="h-24 text-center text-muted-foreground"
 										>
 											{t("common.no_results") || "No results"}
 										</TableCell>
@@ -299,7 +301,7 @@ export function PermissionsTable({
 				</div>
 
 				{/* Update Button */}
-				<div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+				<div className="flex justify-end pt-4 border-t border-border">
 					<fetcher.Form method="post">
 						<input type="hidden" name="_action" value="updatePermissions" />
 						<input type="hidden" name="roleId" value={selectedRoleData.id} />

@@ -77,7 +77,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 		<>
 			{/* New Role Form */}
 			{showNewRoleForm && (
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+				<div className="bg-card rounded-2xl shadow-sm border border-border p-6 mb-8">
 					<h2 className="text-xl font-bold mb-4">
 						{t("settings.roles.create_new_title")}
 					</h2>
@@ -97,7 +97,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 									type="text"
 									name="name"
 									required
-									className="w-full px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700"
+									className="w-full px-3 py-2 border rounded-lg bg-background border-input"
 									placeholder="e.g., Treasurer"
 								/>
 							</div>
@@ -111,7 +111,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 								<select
 									id="role-color"
 									name="color"
-									className="w-full px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700"
+									className="w-full px-3 py-2 border rounded-lg bg-background border-input"
 								>
 									{ROLE_COLORS.map((color) => (
 										<option key={color.value} value={color.value}>
@@ -133,7 +133,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 								id="role-desc"
 								type="text"
 								name="description"
-								className="w-full px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700"
+								className="w-full px-3 py-2 border rounded-lg bg-background border-input"
 								placeholder="Optional description"
 							/>
 						</div>
@@ -156,7 +156,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 				</div>
 			)}
 
-			<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+			<div className="bg-card rounded-2xl shadow-sm border border-border p-6">
 				<div className="flex items-center justify-between gap-4 flex-wrap">
 					<div className="flex-1 min-w-[200px]">
 						<div className="block text-sm font-medium mb-2">
@@ -181,7 +181,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 											<div className={cn("w-3 h-3 rounded-full", role.color)} />
 											<span>{role.name}</span>
 											{role.isSystem && (
-												<span className="text-xs text-gray-500">
+												<span className="text-xs text-muted-foreground">
 													({t("settings.roles.system")})
 												</span>
 											)}

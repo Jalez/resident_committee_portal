@@ -26,31 +26,31 @@ export function UsersTable({ users, roles }: UsersTableProps) {
 	const { t } = useTranslation();
 
 	return (
-		<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+		<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 			<div className="overflow-x-auto">
 				<table className="w-full">
-					<thead className="bg-gray-50 dark:bg-gray-900">
+					<thead className="bg-muted">
 						<tr>
-							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 								{t("settings.users.headers.name") || "Name"}
 							</th>
-							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 								{t("settings.users.headers.email") || "Email"}
 							</th>
-							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 								{t("settings.users.headers.roles") || "Roles"}
 							</th>
-							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 								{t("settings.users.headers.joined") || "Joined"}
 							</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+					<tbody className="divide-y divide-border">
 						{users.length === 0 ? (
 							<tr>
 								<td
 									colSpan={4}
-									className="px-4 py-12 text-center text-gray-500"
+									className="px-4 py-12 text-center text-muted-foreground"
 								>
 									{t("settings.users.no_users") || "No users found"}
 								</td>
@@ -103,9 +103,9 @@ function UserRow({ user, roles }: UserRowProps) {
 	}, [fetcher.state, fetcher.data, t]);
 
 	return (
-		<tr className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+		<tr className="hover:bg-muted/50 transition-colors">
 			<td className="px-4 py-4">
-				<p className="font-medium text-gray-900 dark:text-white px-2">
+				<p className="font-medium text-foreground px-2">
 					{user.name}
 					{user.isSuperAdmin && (
 						<span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
@@ -114,12 +114,10 @@ function UserRow({ user, roles }: UserRowProps) {
 					)}
 				</p>
 			</td>
-			<td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-				{user.email}
-			</td>
+			<td className="px-4 py-4 text-sm text-muted-foreground">{user.email}</td>
 			<td className="px-4 py-4">
 				{user.isSuperAdmin ? (
-					<span className="text-sm text-gray-400">—</span>
+					<span className="text-sm text-muted-foreground">—</span>
 				) : (
 					<div className="min-w-[200px]">
 						<RolePicker
@@ -140,7 +138,7 @@ function UserRow({ user, roles }: UserRowProps) {
 					</div>
 				)}
 			</td>
-			<td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+			<td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
 				{formattedDate}
 			</td>
 		</tr>

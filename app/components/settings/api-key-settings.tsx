@@ -65,9 +65,9 @@ export function ApiKeySettings({
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<fetcher.Form method="post" className="space-y-4">
-					<input type="hidden" name="intent" value="save-api-key" />
-					<div className="flex gap-2">
+				<div className="space-y-4">
+					<fetcher.Form method="post" className="flex gap-2">
+						<input type="hidden" name="intent" value="save-api-key" />
 						<Input
 							name="apiKey"
 							type="password"
@@ -81,22 +81,22 @@ export function ApiKeySettings({
 								? t("common.actions.save")
 								: t("common.status.saving")}
 						</Button>
-						{hasApiKey && (
-							<deleteFetcher.Form method="post">
-								<input type="hidden" name="intent" value="delete-api-key" />
-								<Button
-									type="submit"
-									variant="destructive"
-									disabled={deleteFetcher.state !== "idle"}
-								>
-									{deleteFetcher.state === "idle"
-										? t("common.actions.delete")
-										: t("common.status.deleting")}
-								</Button>
-							</deleteFetcher.Form>
-						)}
-					</div>
-				</fetcher.Form>
+					</fetcher.Form>
+					{hasApiKey && (
+						<deleteFetcher.Form method="post">
+							<input type="hidden" name="intent" value="delete-api-key" />
+							<Button
+								type="submit"
+								variant="destructive"
+								disabled={deleteFetcher.state !== "idle"}
+							>
+								{deleteFetcher.state === "idle"
+									? t("common.actions.delete")
+									: t("common.status.deleting")}
+							</Button>
+						</deleteFetcher.Form>
+					)}
+				</div>
 			</CardContent>
 		</Card>
 	);

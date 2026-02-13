@@ -46,7 +46,7 @@ export interface TreasuryTableProps<T> {
 }
 
 const CONTAINER_CLASS =
-	"bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden";
+	"bg-card rounded-2xl shadow-sm border border-border overflow-hidden";
 
 export function TreasuryTable<T>({
 	data,

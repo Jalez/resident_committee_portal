@@ -100,7 +100,7 @@ export function TransactionDetailsForm({
 		transactionType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
 	const cardClasses = showCard
-		? "bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4"
+		? "bg-card rounded-2xl p-6 shadow-sm border border-border space-y-4"
 		: "space-y-4";
 
 	return (

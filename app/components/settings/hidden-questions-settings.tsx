@@ -42,12 +42,8 @@ export function HiddenQuestionsSettings({
 		) {
 			questionsFetcher.load("/api/analytics/questions");
 		}
-	}, [
-		allQuestions.length,
-		questionsFetcher.state,
-		questionsFetcher.data,
-		questionsFetcher,
-	]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [allQuestions.length, questionsFetcher.state, questionsFetcher.data]);
 
 	useEffect(() => {
 		if (questionsFetcher.data && "allQuestions" in questionsFetcher.data) {
@@ -114,7 +110,7 @@ export function HiddenQuestionsSettings({
 										.map((question) => (
 											<div
 												key={question}
-												className="flex items-start gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+												className="flex items-start gap-2 p-2 hover:bg-muted/50 rounded"
 											>
 												<Checkbox
 													id={`q-${question}`}

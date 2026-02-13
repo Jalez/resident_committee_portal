@@ -143,10 +143,10 @@ export function AnalyticsTable({
 			</div>
 
 			{/* Table */}
-			<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+			<div className="bg-card rounded-xl border border-border overflow-x-auto">
 				<TooltipProvider>
-					<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-						<thead className="bg-gray-50 dark:bg-gray-900">
+					<table className="min-w-full divide-y divide-border">
+						<thead className="bg-muted/50">
 							<tr>
 								{sheetData.headers.map((header, index) => {
 									if (!visibleColumns.has(index)) return null;
@@ -227,19 +227,16 @@ export function AnalyticsTable({
 								})}
 							</tr>
 						</thead>
-						<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+						<tbody className="bg-card divide-y divide-border">
 							{sheetData.rows.map((row, rowIndex) => (
-								<tr
-									key={rowIndex}
-									className="hover:bg-gray-50 dark:hover:bg-gray-700"
-								>
+								<tr key={rowIndex} className="hover:bg-muted/50">
 									{sheetData.headers.map((header, colIndex) => {
 										if (!visibleColumns.has(colIndex)) return null;
 										return (
 											<td
 												key={colIndex}
-												className={`px-3 py-2 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate
-                                                    ${activeChartColumn === colIndex ? "bg-indigo-50/30 dark:bg-indigo-900/10" : ""}
+												className={`px-3 py-2 text-sm text-foreground max-w-xs truncate
+                                                    ${activeChartColumn === colIndex ? "bg-primary/10" : ""}
                                                 `}
 												title={row[header] || ""}
 											>

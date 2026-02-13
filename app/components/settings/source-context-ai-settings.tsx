@@ -22,7 +22,7 @@ export function SourceContextAISettings({
 			<TreasuryDetailCard
 				title={t("settings.source_context_ai.title", "Source Context AI")}
 			>
-				<div className="text-sm text-gray-600 dark:text-gray-400">
+				<div className="text-sm text-muted-foreground">
 					{t(
 						"settings.source_context_ai.no_api_key",
 						"Please configure your OpenRouter API key in General Settings first.",
@@ -39,7 +39,7 @@ export function SourceContextAISettings({
 			>
 				<div className="space-y-4">
 					<div>
-						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+						<p className="text-sm text-muted-foreground mb-4">
 							{t(
 								"settings.source_context_ai.description",
 								"Configure which AI model to use for analyzing receipt content and suggesting transaction categories when auto-filling from source context.",
@@ -55,7 +55,7 @@ export function SourceContextAISettings({
 							id="modelId"
 							name="modelId"
 							defaultValue={currentModel}
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+							className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
 							required
 						>
 							{models.length > 0 ? (
@@ -68,7 +68,7 @@ export function SourceContextAISettings({
 								<option value={currentModel}>{currentModel}</option>
 							)}
 						</select>
-						<p className="text-xs text-gray-500 dark:text-gray-400">
+						<p className="text-xs text-muted-foreground">
 							{t(
 								"settings.source_context_ai.model_help",
 								"This model will analyze receipt content to suggest appropriate transaction categories. Claude models generally work best for this task.",
@@ -87,7 +87,7 @@ export function SourceContextAISettings({
 			<TreasuryDetailCard
 				title={t("settings.source_context_ai.how_it_works", "How It Works")}
 			>
-				<div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+				<div className="space-y-3 text-sm text-muted-foreground">
 					<p>
 						{t(
 							"settings.source_context_ai.info_1",
@@ -107,7 +107,7 @@ export function SourceContextAISettings({
 						)}
 					</p>
 					<div className="pt-2">
-						<p className="font-medium text-gray-700 dark:text-gray-300">
+						<p className="font-medium text-foreground">
 							{t(
 								"settings.source_context_ai.categories",
 								"Available Categories:",

@@ -152,7 +152,7 @@ export function AnalyticsChart({
 		}) ?? false;
 
 	return (
-		<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+		<div className="bg-card rounded-xl border border-border p-4">
 			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
 				<div className="flex flex-col">
 					<h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">

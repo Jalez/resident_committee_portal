@@ -1,8 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
+import { toast } from "sonner";
 import { RelationActions } from "~/components/relation-actions";
+import { Button } from "~/components/ui/button";
+import { Label } from "~/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
 import type { RelationshipEntityType } from "~/db/types";
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import {
 	type AnyEntity,
 	entityToLinkableItem,
@@ -11,81 +23,45 @@ import {
 import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { EntityType } from "~/lib/linking/relationship-context";
 
-/**
- * An import source that can provide data to pre-fill new items.
- * E.g. a linked receipt can provide line items to create inventory items.
- */
 export interface ImportSource {
-	/** Entity type to import from (e.g. "receipt") */
 	sourceType: RelationshipEntityType;
-	/** Label for the import button (e.g. "Import from receipt") */
 	label: string;
-	/** Icon for the import button (Material Symbol name) */
 	icon: string;
-	/** The linked source entity IDs available for import */
 	sourceEntityIds: string[];
 }
 
-/**
- * Configuration for a section of related entities
- */
 export interface RelationshipSection {
-	/** The type of entities in this section */
 	relationBType: RelationshipEntityType;
-	/** Entities that are currently linked */
 	linkedEntities: AnyEntity[];
-	/** Entities that are available to link */
 	availableEntities: AnyEntity[];
-	/** Maximum number of items allowed (e.g., 1 for 1:1 relationships) */
 	maxItems?: number;
-	/** Entity type string for draft creation (defaults to relationBType) */
 	createType?: string;
-	/** Handler for file uploads (for receipts/minutes) */
 	onUpload?: (file: File) => Promise<void>;
-	/** Custom label override */
 	label?: string;
-	/** Available import sources for this section */
 	importSources?: ImportSource[];
 }
 
-/**
- * Props for the RelationshipPicker component
- */
 export interface RelationshipPickerProps {
-	/** The type of the source entity */
 	relationAType: RelationshipEntityType;
-	/** The ID of the source entity */
 	relationAId: string;
-	/** The name/title of the source entity (for context) */
 	relationAName?: string;
-	/** Sections of relationships to display */
 	sections: RelationshipSection[];
-	/** View or edit mode */
 	mode?: "view" | "edit";
-	/** Current path for navigation stack */
 	currentPath?: string;
-	/** Handler when a relationship is linked */
 	onLink?: (
 		relationBType: RelationshipEntityType,
 		relationBId: string,
 		metadata?: Record<string, unknown>,
 	) => void;
-	/** Handler when a relationship is unlinked */
 	onUnlink?: (
 		relationBType: RelationshipEntityType,
 		relationBId: string,
 	) => void;
-	/** Prefix for storage keys (for persisting picker state) */
 	storageKeyPrefix?: string;
-	/** Custom className */
 	className?: string;
-	/** Form data to render as hidden inputs */
 	formData?: Record<string, string>;
 }
 
-/**
- * Response from create-draft API
- */
 interface CreateDraftResponse {
 	success: boolean;
 	entity?: {
@@ -98,9 +74,6 @@ interface CreateDraftResponse {
 	error?: string;
 }
 
-/**
- * Response from import-from-source API
- */
 interface ImportFromSourceResponse {
 	success: boolean;
 	entities?: Array<{
@@ -112,9 +85,6 @@ interface ImportFromSourceResponse {
 	error?: string;
 }
 
-/**
- * Individual section component that handles its own draft creation
- */
 function RelationshipSectionComponent({
 	section,
 	relationAType,
@@ -146,21 +116,18 @@ function RelationshipSectionComponent({
 	sourceEntityType: EntityType;
 }) {
 	const { t } = useTranslation();
+	const revalidator = useRevalidator();
 	const fetcher = useFetcher<CreateDraftResponse>();
 	const importFetcher = useFetcher<ImportFromSourceResponse>();
 
-	// Track locally created drafts
-	const [localDrafts, setLocalDrafts] = useState<AnyEntity[]>([]);
-	// Track removed item IDs (for immediate UI feedback)
 	const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
-	// Use ref to hold latest onLink to avoid stale closure and infinite re-render loop
 	const onLinkRef = useRef(onLink);
 	onLinkRef.current = onLink;
 	const processedDraftRef = useRef<string | null>(null);
 	const processedImportRef = useRef<string | null>(null);
 
-	// Handle successful draft creation
+	// When a draft is created, track it and revalidate to get fresh data
 	useEffect(() => {
 		if (
 			fetcher.data?.success &&
@@ -170,21 +137,28 @@ function RelationshipSectionComponent({
 			const entity = fetcher.data.entity;
 			processedDraftRef.current = entity.id;
 
-			const draftEntity = {
-				id: entity.id,
-				name: entity.name,
-				status: entity.status,
-				description: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			} as AnyEntity;
-
-			setLocalDrafts((prev) => [...prev, draftEntity]);
+			// Track the link for form submission
 			onLinkRef.current?.(section.relationBType, entity.id);
-		}
-	}, [fetcher.data, section.relationBType]);
 
-	// Handle successful import
+			// Show success toast
+			toast.success(
+				t("common.relationships.draft_created", {
+					defaultValue: "Draft created and linked",
+				}),
+			);
+
+			// Revalidate to get fresh data from server
+			revalidator.revalidate();
+		} else if (fetcher.data?.error) {
+			toast.error(
+				t("common.relationships.create_failed", {
+					defaultValue: "Failed to create draft",
+				}),
+			);
+		}
+	}, [fetcher.data, section.relationBType, revalidator, t]);
+
+	// When entities are imported, track them and revalidate
 	useEffect(() => {
 		if (importFetcher.data?.success && importFetcher.data.entities) {
 			const key = importFetcher.data.entities
@@ -194,33 +168,35 @@ function RelationshipSectionComponent({
 			if (processedImportRef.current === key) return;
 			processedImportRef.current = key;
 
-			const newEntities = importFetcher.data.entities.map(
-				(entity) =>
-					({
-						id: entity.id,
-						name: entity.name,
-						status: entity.status,
-						description: null,
-						createdAt: new Date(),
-						updatedAt: new Date(),
-					}) as AnyEntity,
-			);
-
-			setLocalDrafts((prev) => [...prev, ...newEntities]);
+			// Track the links for form submission
 			for (const entity of importFetcher.data.entities) {
 				onLinkRef.current?.(section.relationBType, entity.id);
 			}
+
+			// Show success toast
+			toast.success(
+				t("common.relationships.imported", {
+					count: importFetcher.data.entities.length,
+					defaultValue: `{{count}} item(s) imported and linked`,
+				}),
+			);
+
+			// Revalidate to get fresh data from server
+			revalidator.revalidate();
+		} else if (importFetcher.data?.error) {
+			toast.error(
+				t("common.relationships.import_failed", {
+					defaultValue: "Failed to import items",
+				}),
+			);
 		}
-	}, [importFetcher.data, section.relationBType]);
+	}, [importFetcher.data, section.relationBType, revalidator, t]);
 
 	const config = ENTITY_REGISTRY[section.relationBType];
 	const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
 
-	// Merge server-side linked entities with locally created drafts
-	const allLinkedEntities = [...section.linkedEntities, ...localDrafts];
-
-	// Filter out removed items for immediate UI feedback
-	const visibleEntities = allLinkedEntities.filter(
+	// Filter out removed entities
+	const visibleEntities = section.linkedEntities.filter(
 		(entity) => !removedIds.has(entity.id),
 	);
 
@@ -232,7 +208,6 @@ function RelationshipSectionComponent({
 		entityToLinkableItem(section.relationBType, entity),
 	);
 
-	// Handler for creating new entities via draft system
 	const handleAdd = () => {
 		const formData = new FormData();
 		formData.append("type", section.createType || section.relationBType);
@@ -248,7 +223,6 @@ function RelationshipSectionComponent({
 		});
 	};
 
-	// Handler for importing from a source entity
 	const handleImport = (
 		sourceType: RelationshipEntityType,
 		sourceId: string,
@@ -267,7 +241,6 @@ function RelationshipSectionComponent({
 		});
 	};
 
-	// Build import source actions for RelationActions
 	const importActions = (section.importSources || []).flatMap((source) =>
 		source.sourceEntityIds.map((sourceId) => ({
 			label: source.label,
@@ -276,37 +249,54 @@ function RelationshipSectionComponent({
 		})),
 	);
 
-	const _isCreating = fetcher.state !== "idle";
-	const _isImporting = importFetcher.state !== "idle";
-
-	// Handler for removing/unlinking entities
-	const handleRemove = (id: string) => {
-		console.log("[RelationshipPicker] handleRemove called with id:", id);
-		console.log("[RelationshipPicker] Current localDrafts:", localDrafts);
-		console.log(
-			"[RelationshipPicker] section.relationBType:",
-			section.relationBType,
-		);
+	const handleRemove = async (id: string) => {
+		const entity = section.linkedEntities.find((e) => e.id === id);
+		const isDraft = entity && (entity as any).status === "draft";
 
 		// Add to removed IDs for immediate UI feedback
 		setRemovedIds((prev) => new Set([...prev, id]));
 
-		// Remove from local drafts if it exists
-		const isLocalDraft = localDrafts.some((draft) => draft.id === id);
-		console.log("[RelationshipPicker] Is local draft?", isLocalDraft);
-
-		setLocalDrafts((prev) => {
-			const filtered = prev.filter((draft) => draft.id !== id);
-			console.log("[RelationshipPicker] Filtered localDrafts:", filtered);
-			return filtered;
-		});
-		console.log("Removing", id);
-		console.log(
-			"[RelationshipPicker] Calling onUnlink with:",
-			section.relationBType,
-			id,
-		);
+		// Call onUnlink to track the removal for form submission
 		onUnlink?.(section.relationBType, id);
+
+		// For drafts, immediately delete from database via API
+		if (isDraft) {
+			try {
+				const response = await fetch(
+					`/api/entities/${section.relationBType}/${id}`,
+					{ method: "DELETE" },
+				);
+				const result = await response.json();
+
+				if (response.ok && result.success) {
+					toast.success(
+						t("common.relationships.draft_removed", {
+							defaultValue: "Draft removed",
+						}),
+					);
+					revalidator.revalidate();
+				} else {
+					toast.error(
+						t("common.relationships.remove_failed", {
+							defaultValue: "Failed to remove draft",
+						}),
+					);
+				}
+			} catch (err) {
+				console.error("[RelationshipPicker] Failed to delete draft:", err);
+				toast.error(
+					t("common.relationships.remove_failed", {
+						defaultValue: "Failed to remove draft",
+					}),
+				);
+			}
+		} else {
+			toast.success(
+				t("common.relationships.unlinked", {
+					defaultValue: "Item unlinked",
+				}),
+			);
+		}
 	};
 
 	return (
@@ -317,7 +307,14 @@ function RelationshipSectionComponent({
 			mode={mode}
 			currentPath={currentPath}
 			onRemove={handleRemove}
-			onSelectionChange={(id) => onLink?.(section.relationBType, id)}
+			onSelectionChange={(id) => {
+				onLink?.(section.relationBType, id);
+				toast.success(
+					t("common.relationships.linked", {
+						defaultValue: "Item linked",
+					}),
+				);
+			}}
 			maxItems={section.maxItems}
 			storageKey={storageKey}
 			sourceEntityType={sourceEntityType}
@@ -333,20 +330,6 @@ function RelationshipSectionComponent({
 	);
 }
 
-/**
- * Universal relationship picker component
- * Replaces entity-specific pickers with a unified interface
- */
-import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
-
-// ... (previous imports)
-
-// ... (RelationshipSectionComponent remains unchanged)
-
-/**
- * Universal relationship picker component
- * Replaces entity-specific pickers with a unified interface
- */
 export function RelationshipPicker({
 	relationAType,
 	relationAId,
@@ -361,11 +344,12 @@ export function RelationshipPicker({
 	formData,
 }: RelationshipPickerProps) {
 	const { t } = useTranslation();
+	const [isAddingNewType, setIsAddingNewType] = useState(false);
+	const [selectedNewType, setSelectedNewType] =
+		useState<RelationshipEntityType | null>(null);
 
-	// Convert relationAType to EntityType for legacy RelationActions compatibility
 	const sourceEntityType = relationAType as unknown as EntityType;
 
-	// Derive initial relationships from sections for the internal hook
 	const initialRelationships = React.useMemo(() => {
 		const initials: any[] = [];
 		for (const section of sections) {
@@ -379,7 +363,6 @@ export function RelationshipPicker({
 		return initials;
 	}, [sections]);
 
-	// Use internal hook if handlers are not provided
 	const internalPicker = useRelationshipPicker({
 		relationAType,
 		relationAId,
@@ -390,11 +373,35 @@ export function RelationshipPicker({
 	const handleUnlink = onUnlink || internalPicker.handleUnlink;
 	const effectiveFormData = formData || internalPicker.toFormData();
 
+	const { visibleSections, hiddenSections } = React.useMemo(() => {
+		const visible: RelationshipSection[] = [];
+		const hidden: RelationshipSection[] = [];
+
+		for (const section of sections) {
+			if (section.linkedEntities.length > 0) {
+				visible.push(section);
+			} else {
+				hidden.push(section);
+			}
+		}
+
+		return { visibleSections: visible, hiddenSections: hidden };
+	}, [sections]);
+
+	const handleCancelNewType = () => {
+		setIsAddingNewType(false);
+		setSelectedNewType(null);
+	};
+
+	const selectedHiddenSection = React.useMemo(() => {
+		if (!selectedNewType) return null;
+		return hiddenSections.find((s) => s.relationBType === selectedNewType);
+	}, [hiddenSections, selectedNewType]);
+
 	return (
 		<div className={className}>
-			{/* Relationship Sections */}
 			<div className="space-y-4">
-				{sections.map((section) => (
+				{visibleSections.map((section) => (
 					<RelationshipSectionComponent
 						key={section.relationBType}
 						section={section}
@@ -411,7 +418,107 @@ export function RelationshipPicker({
 				))}
 			</div>
 
-			{/* File Upload Inputs (hidden, triggered by upload handlers) */}
+			{mode === "edit" && hiddenSections.length > 0 && (
+				<>
+					<Separator className="my-4" />
+					<div className="space-y-2">
+						<Label className="text-muted-foreground">
+							{t("common.relationships.add_type", "Add relation")}
+						</Label>
+						<div className="flex items-center gap-2">
+							{!isAddingNewType ? (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-8 text-muted-foreground"
+									onClick={() => setIsAddingNewType(true)}
+								>
+									<span className="material-symbols-outlined mr-2 text-sm">
+										add
+									</span>
+									{t(
+										"common.relationships.add_new_type",
+										"Link new entity type",
+									)}
+								</Button>
+							) : (
+								<div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border-2 border-dashed border-muted-foreground/30 rounded-md p-1">
+									<Select
+										value={selectedNewType || ""}
+										onValueChange={(val) =>
+											setSelectedNewType(val as RelationshipEntityType)
+										}
+									>
+										<SelectTrigger className="h-8 w-[180px]">
+											<SelectValue
+												placeholder={t(
+													"common.relationships.select_type",
+													"Select type",
+												)}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											{hiddenSections.map((section) => {
+												const config = ENTITY_REGISTRY[section.relationBType];
+												return (
+													<SelectItem
+														key={section.relationBType}
+														value={section.relationBType}
+													>
+														<span className="flex items-center gap-2">
+															<span className="material-symbols-outlined text-sm">
+																{config.icon}
+															</span>
+															{t(config.pluralKey)}
+														</span>
+													</SelectItem>
+												);
+											})}
+										</SelectContent>
+									</Select>
+
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8 rounded-full"
+										onClick={handleCancelNewType}
+										title={t("common.actions.cancel")}
+									>
+										<span className="material-symbols-outlined text-sm">
+											close
+										</span>
+									</Button>
+								</div>
+							)}
+						</div>
+					</div>
+
+					{selectedHiddenSection && (
+						<div className="mt-4">
+							<RelationshipSectionComponent
+								key={selectedHiddenSection.relationBType}
+								section={selectedHiddenSection}
+								relationAType={relationAType}
+								relationAId={relationAId}
+								relationAName={relationAName}
+								mode={mode}
+								currentPath={currentPath}
+								onLink={(type, id) => {
+									handleLink(type, id);
+									setIsAddingNewType(false);
+									setSelectedNewType(null);
+								}}
+								onUnlink={handleUnlink}
+								storageKeyPrefix={storageKeyPrefix}
+								sourceEntityType={sourceEntityType}
+							/>
+						</div>
+					)}
+				</>
+			)}
+
 			{sections
 				.filter((section) => section.onUpload)
 				.map((section) => (
@@ -428,7 +535,6 @@ export function RelationshipPicker({
 					/>
 				))}
 
-			{/* Form data hidden inputs */}
 			{effectiveFormData &&
 				Object.entries(effectiveFormData).map(([key, value]) => (
 					<input key={key} type="hidden" name={key} value={value} />

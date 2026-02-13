@@ -41,6 +41,8 @@ type RelationActionsProps = {
 	linkableItems?: LinkableItem[];
 	/** Callback when an existing item is selected */
 	onSelectionChange?: (id: string) => void;
+	/** Callback when create or link action completes - used to collapse the expanded state */
+	onCollapse?: () => void;
 	/** Label for the link existing selector */
 	linkExistingLabel?: string;
 	/** Placeholder for the link existing selector */
@@ -101,6 +103,7 @@ export function RelationActions({
 	onRemove,
 	linkableItems = [],
 	onSelectionChange,
+	onCollapse,
 	linkExistingLabel,
 	storageKey,
 	onAdd,
@@ -190,10 +193,14 @@ export function RelationActions({
 									<>
 										{onAdd ? (
 											<Button
+												type="button"
 												variant="ghost"
 												size="sm"
 												className="h-8"
-												onClick={onAdd}
+												onClick={() => {
+													onAdd();
+													setIsExpanded(false);
+												}}
 											>
 												<span className="material-symbols-outlined mr-2 text-sm">
 													add_circle
@@ -236,9 +243,6 @@ export function RelationActions({
 												className="h-8"
 												onClick={() => {
 													setIsLinking(true);
-													// Initialize with currently selected item if it exists in the list?
-													// Currently we don't pass the selected ID back to this component easily without parsing items props.
-													// Assuming fresh selection for now.
 													setSelectedLinkId(null);
 												}}
 											>
