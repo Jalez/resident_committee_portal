@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
@@ -68,6 +67,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
+	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;

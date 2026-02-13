@@ -1,5 +1,4 @@
 import { type LoaderFunctionArgs, redirect } from "react-router";
-import { getDatabase } from "~/db/server";
 import { localeCookie } from "~/i18next.server";
 import {
 	createSession,
@@ -38,6 +37,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	}
 
 	// Persist user to database (creates new or updates existing)
+	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const isAdminUser = isAdmin(userInfo.email);
 

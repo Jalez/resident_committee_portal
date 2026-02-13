@@ -37,8 +37,8 @@ import type {
 	SubmissionStatus,
 	Transaction,
 	User,
-} from "../schema";
-import type { RelationshipEntityType } from "../types";
+} from "../client";
+import type { RelationshipEntityType } from "../client";
 
 /**
  * Database adapter interface

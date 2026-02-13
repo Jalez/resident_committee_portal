@@ -9,7 +9,6 @@
  */
 
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
 import type { RelationshipEntityType } from "~/db";
 import {
 	type AnalysisResult,
@@ -27,6 +26,7 @@ interface AnalysisRequest {
 
 export async function action({ request }: ActionFunctionArgs) {
 	// 1. Auth check - require receipt processing or treasury write permission
+	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const user = await getAuthenticatedUser(request, () => db);
 

@@ -4,7 +4,6 @@ import { useRouteLoaderData, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/_index";

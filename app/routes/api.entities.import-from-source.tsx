@@ -1,6 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
-import type { RelationshipEntityType } from "~/db";
+import type { DatabaseAdapter, RelationshipEntityType } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 
 /**
@@ -19,6 +18,7 @@ import { getAuthenticatedUser } from "~/lib/auth.server";
  * 5. Returns the created entities
  */
 export async function action({ request }: ActionFunctionArgs) {
+	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const user = await getAuthenticatedUser(request, getDatabase);
 	if (!user) {
@@ -82,7 +82,7 @@ export async function action({ request }: ActionFunctionArgs) {
  * Import inventory items from receipt line items
  */
 async function importInventoryFromReceipt(
-	db: ReturnType<typeof getDatabase>,
+	db: DatabaseAdapter,
 	receiptId: string,
 	relationAId: string,
 	userId: string,

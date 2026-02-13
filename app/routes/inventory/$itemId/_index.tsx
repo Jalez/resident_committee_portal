@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/_index";
