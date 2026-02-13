@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { PageHeader, PageWrapper } from "~/components/layout/page-layout";
 import { DraftCleanupSettings } from "~/components/settings/draft-cleanup-settings";
 import { SourceContextAISettings } from "~/components/settings/source-context-ai-settings";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getAvailableModels, SETTINGS_KEYS } from "~/lib/openrouter.server";

@@ -21,7 +21,7 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";

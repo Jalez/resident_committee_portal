@@ -12,7 +12,7 @@ import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { EditForm } from "~/components/ui/edit-form";
-import { getDatabase } from "~/db/server";
+import { getDatabase, type Minute } from "~/db/server.server";
 import { clearCache } from "~/lib/cache.server";
 import {
 	createEditAction,
@@ -61,10 +61,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				await Promise.all([
 					getReceiptsForPurchaseEdit(entity.id),
 					db.getActiveInventoryItems(),
-					db.getMinutes().then((minutes) =>
+					db.getMinutes().then((minutes: Minute[]) =>
 						minutes
-							.filter((m) => m.status !== "draft")
-							.map((m) => ({
+							.filter((m: Minute) => m.status !== "draft")
+							.map((m: Minute) => ({
 								id: m.id,
 								name: m.title || "Untitled",
 								url: m.fileUrl,

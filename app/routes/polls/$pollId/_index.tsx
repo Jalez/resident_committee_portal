@@ -1,7 +1,7 @@
 import { useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";

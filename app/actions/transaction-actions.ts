@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type {
 	ReimbursementStatus,
 	Transaction,

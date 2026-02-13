@@ -4,7 +4,7 @@ import { Form } from "react-router";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { getDatabase, type Submission, type SubmissionStatus } from "~/db/server";
+import { getDatabase, type Submission, type SubmissionStatus } from "~/db/server.server";
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";

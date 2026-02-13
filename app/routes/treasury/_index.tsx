@@ -11,7 +11,7 @@ import {
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";

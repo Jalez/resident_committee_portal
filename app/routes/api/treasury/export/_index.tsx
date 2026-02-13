@@ -1,4 +1,4 @@
-import { getDatabase, type Transaction } from "~/db/server";
+import { getDatabase, type Transaction } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 

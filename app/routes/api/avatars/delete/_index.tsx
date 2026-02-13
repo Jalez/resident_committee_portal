@@ -1,6 +1,6 @@
 import { del } from "@vercel/blob";
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { isValidAvatarPathname } from "~/lib/avatars/utils";
 

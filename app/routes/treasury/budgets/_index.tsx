@@ -18,7 +18,7 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import {
 	type AuthenticatedUser,
 	getAuthenticatedUser,

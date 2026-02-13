@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, redirect } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";

@@ -12,7 +12,7 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
-import { type EntityRelationship, getDatabase, type Receipt } from "~/db/server";
+import { type EntityRelationship, getDatabase, type Receipt } from "~/db/server.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,

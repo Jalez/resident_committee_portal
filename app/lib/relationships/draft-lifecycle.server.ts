@@ -6,7 +6,7 @@
  * automatically deleted along with their associated files.
  */
 
-import type { getDatabase } from "~/db/server";
+import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { getMinuteStorage } from "~/lib/minutes/storage.server";
 import { getReceiptStorage } from "~/lib/receipts/server";

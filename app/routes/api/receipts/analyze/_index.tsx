@@ -1,7 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { extractTextFromPDF } from "~/lib/google-documentai.server";
 import { extractTextFromImage } from "~/lib/google-vision.server";

@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import sharp from "sharp";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { getReceiptStorage } from "~/lib/receipts/server";
 import { getReceiptsPrefix } from "~/lib/receipts/utils";

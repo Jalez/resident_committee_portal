@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getDatabase, type NewReceiptContent, type Receipt } from "~/db/server";
+import { getDatabase, type NewReceiptContent, type Receipt } from "~/db/server.server";
 
 const updateReceiptSchema = z.object({
 	name: z.string().optional(),

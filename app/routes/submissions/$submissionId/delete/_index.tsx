@@ -1,5 +1,5 @@
 import { DeleteRouteRedirect } from "~/components/delete-route-redirect";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { genericDeleteLoader } from "~/lib/actions/generic-delete.server";
 import { requirePermission } from "~/lib/auth.server";
 

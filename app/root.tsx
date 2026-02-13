@@ -12,7 +12,7 @@ import { Subnavbar } from "~/components/subnavbar";
 import type { Route } from "./+types/root";
 import "./app.css";
 import type { ClientUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import i18next, { getSupportedLanguages } from "~/i18next.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";

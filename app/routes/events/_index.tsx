@@ -19,7 +19,7 @@ import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import {
 	getAuthenticatedUser,
 	getGuestContext,

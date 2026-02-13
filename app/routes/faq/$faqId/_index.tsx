@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ViewForm } from "~/components/ui/view-form";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { createViewLoader } from "~/lib/view-handlers.server";

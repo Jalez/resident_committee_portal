@@ -1,5 +1,5 @@
-import type { DatabaseAdapter } from "~/db/server";
-import { getDatabase } from "~/db/server";
+import type { DatabaseAdapter } from "~/db/server.server";
+import { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { requirePermissionOrSelf } from "./auth.server";
 import { SITE_CONFIG } from "./config.server";

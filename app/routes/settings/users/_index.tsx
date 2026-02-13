@@ -6,7 +6,7 @@ import {
 	UsersTable,
 	type UserWithRole,
 } from "~/components/settings/users-table";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { isAdmin, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";

@@ -11,7 +11,7 @@ import {
 	TREASURY_TABLE_STYLES,
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
-import { type EntityRelationship, getDatabase, type Minute } from "~/db/server";
+import { type EntityRelationship, getDatabase, type Minute } from "~/db/server.server";
 import {
 	type RBACDatabaseAdapter,
 	requireAnyPermission,

@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, redirect } from "react-router";
-import { getDatabase, type NewInventoryItem } from "~/db/server";
+import { getDatabase, type NewInventoryItem } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 

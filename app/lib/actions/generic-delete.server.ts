@@ -3,7 +3,7 @@ import {
 	type LoaderFunctionArgs,
 	redirect,
 } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import {
 	requireDeletePermissionOrSelf,

@@ -6,7 +6,7 @@ import { LanguageSettings } from "~/components/settings/language-settings";
 import { handleLanguageSettingsAction } from "~/components/settings/language-settings.server";
 import { ThemeSettings } from "~/components/settings/theme-settings";
 import { useLanguage } from "~/contexts/language-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";

@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, data } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { localeCookie } from "~/i18next.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 

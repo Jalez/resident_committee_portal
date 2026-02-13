@@ -1,4 +1,4 @@
 // This file is safe to import in client code (types only)
-export * from "./adapters/types";
-export * from "./schema";
-export type { RelationshipEntityType } from "./types";
+// All types are defined in client.ts without any runtime dependencies
+export * from "./client";
+export type { DatabaseAdapter } from "./adapters/types";

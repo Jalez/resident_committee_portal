@@ -1,6 +1,6 @@
 import { data, redirect } from "react-router";
 import type { RelationshipEntityType } from "~/db";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 

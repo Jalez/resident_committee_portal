@@ -1,6 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 
 export interface PurchaseCategorization {
 	isInventory: boolean;

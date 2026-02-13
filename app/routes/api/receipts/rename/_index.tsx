@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";

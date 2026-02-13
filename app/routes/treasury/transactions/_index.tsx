@@ -19,7 +19,7 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Purchase, type Transaction } from "~/db/server";
+import { getDatabase, type Purchase, type Transaction } from "~/db/server.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,

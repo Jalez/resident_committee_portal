@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import { getFileAsBase64 } from "./google.server";
 import {

@@ -18,7 +18,7 @@ import {
 } from "~/components/committee-recipient-field";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { type CommitteeMailMessage, getDatabase, type MailDraft } from "~/db/server";
+import { type CommitteeMailMessage, getDatabase, type MailDraft } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { renderCommitteeEmail } from "~/lib/email-templates/committee-email";

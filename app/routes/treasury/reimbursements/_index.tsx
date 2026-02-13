@@ -29,7 +29,7 @@ import {
 	type InventoryItem,
 	type Purchase,
 	type PurchaseStatus,
-} from "~/db/server";
+} from "~/db/server.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,

@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { getAvatarsPrefix } from "~/lib/avatars/utils";
 

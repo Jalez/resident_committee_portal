@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 

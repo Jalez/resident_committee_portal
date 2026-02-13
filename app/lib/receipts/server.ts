@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { ReceiptLink } from "~/lib/treasury/receipt-validation";
 import { FilesystemReceiptStorage } from "./adapters/filesystem.server";
 import { VercelBlobReceiptStorage } from "./adapters/vercel-blob.server";

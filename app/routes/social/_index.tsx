@@ -15,7 +15,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useLocalReel } from "~/contexts/info-reel-context";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import {
 	getAuthenticatedUser,
 	getGuestContext,

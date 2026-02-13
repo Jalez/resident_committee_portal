@@ -5,7 +5,7 @@
  * providing data ready for the RelationshipPicker component.
  */
 
-import type { getDatabase } from "~/db/server";
+import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 
 interface RelationshipData<T = unknown> {

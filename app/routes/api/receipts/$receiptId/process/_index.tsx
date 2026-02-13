@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { PurchaseCategorization } from "~/lib/ai/categorize-purchase.server";
 import { categorizePurchase } from "~/lib/ai/categorize-purchase.server";
 import { requirePermission } from "~/lib/auth.server";

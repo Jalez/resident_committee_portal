@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, redirect } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { requirePermission, requirePermissionOrSelf } from "~/lib/auth.server";
 import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";

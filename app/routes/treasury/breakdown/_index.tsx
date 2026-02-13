@@ -11,7 +11,7 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Transaction } from "~/db/server";
+import { getDatabase, type Transaction } from "~/db/server.server";
 import {
 	type RBACDatabaseAdapter,
 	requireAnyPermission,

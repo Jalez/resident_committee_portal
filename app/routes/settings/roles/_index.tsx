@@ -6,7 +6,7 @@ import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { PermissionsTable } from "~/components/settings/permissions-table";
 import { RoleList } from "~/components/settings/role-list";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";

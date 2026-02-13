@@ -2,7 +2,7 @@
  * Server-side settings management
  * Handles system-wide configuration stored in app_settings table
  */
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 
 export const SETTINGS_KEYS = {
 	DEFAULT_PRIMARY_LANGUAGE: "default_primary_language",

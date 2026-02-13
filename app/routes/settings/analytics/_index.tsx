@@ -5,7 +5,7 @@ import { AiTextAnalyzerSettings } from "~/components/settings/ai-text-analyzer-s
 import { handleAiTextAnalyzerAction } from "~/components/settings/ai-text-analyzer-settings.server";
 import { HiddenQuestionsSettings } from "~/components/settings/hidden-questions-settings";
 import { handleHiddenQuestionsSettingsAction } from "~/components/settings/hidden-questions-settings.server";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import {
 	getAvailableModels,

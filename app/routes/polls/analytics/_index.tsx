@@ -4,7 +4,7 @@ import { AnalyticsChart } from "~/components/analytics/AnalyticsChart";
 import { AnalyticsHeader } from "~/components/analytics/AnalyticsHeader";
 import { AnalyticsTable } from "~/components/analytics/AnalyticsTable";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import {

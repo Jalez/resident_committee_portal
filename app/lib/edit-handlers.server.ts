@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
 import type { ZodSchema } from "zod";
-import { type DatabaseAdapter, getDatabase } from "~/db/server";
+import { type DatabaseAdapter, getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { requirePermissionOrSelf } from "./auth.server";
 import { SITE_CONFIG } from "./config.server";

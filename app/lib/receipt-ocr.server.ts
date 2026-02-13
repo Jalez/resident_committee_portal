@@ -1,6 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import type { NewReceiptContent } from "~/db/schema";
 import { extractTextFromImage } from "~/lib/google-vision.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";

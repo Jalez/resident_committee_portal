@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 
 import {
 	type AIEnrichmentResult,

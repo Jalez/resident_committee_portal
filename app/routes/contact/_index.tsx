@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Form, Link, useSearchParams } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button, buttonVariants } from "~/components/ui/button";
-import { getDatabase, type SubmissionType } from "~/db/server";
+import { getDatabase, type SubmissionType } from "~/db/server.server";
 import { getSession } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { cn } from "~/lib/utils";

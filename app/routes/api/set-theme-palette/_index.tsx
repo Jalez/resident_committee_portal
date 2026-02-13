@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, data } from "react-router";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { setThemePrimaryColor } from "~/lib/settings.server";
 

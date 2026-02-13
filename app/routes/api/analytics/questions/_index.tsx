@@ -1,4 +1,4 @@
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { getAnalyticsSheets, getSheetData } from "~/lib/google.server";
 import type { Route } from "./+types/_index";

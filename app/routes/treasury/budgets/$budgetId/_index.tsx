@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
-import { getDatabase } from "~/db/server";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { Route } from "./+types/_index";
