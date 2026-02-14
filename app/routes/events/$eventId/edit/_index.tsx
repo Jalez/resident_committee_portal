@@ -6,20 +6,18 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
 import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
+import type { EventType } from "~/db/client";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import {
 	type CalendarEventInput,
-	getCalendarEvent,
 	updateCalendarEvent,
 } from "~/lib/google.server";
-import { queryClient } from "~/lib/query-client";
-import { queryKeys } from "~/lib/query-config";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
-			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.event?.summary || "Edit Event"}`,
+			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.event?.title || "Edit Event"}`,
 		},
 		{ name: "robots", content: "noindex" },
 	];
@@ -31,7 +29,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		permission: "events:update",
 		params,
 		request,
-		fetchEntity: async (db, id) => getCalendarEvent(id),
+		fetchEntity: async (db, id) => db.getEventById(id),
 	});
 }
 
@@ -54,7 +52,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 		params,
 		request,
 		schema: eventSchema,
-		fetchEntity: async (db, id) => getCalendarEvent(id),
+		fetchEntity: async (db, id) => db.getEventById(id),
 		onUpdate: async ({ db, id, data, formData }) => {
 			const {
 				title,
@@ -75,34 +73,73 @@ export async function action({ request, params }: Route.ActionArgs) {
 						.filter((e: string) => e.includes("@"))
 				: undefined;
 
-			const eventUpdate: Partial<CalendarEventInput> = {
+			const existingEvent = await db.getEventById(id);
+			if (!existingEvent) throw new Error("Event not found");
+
+			const startDateTime = isAllDay
+				? new Date(startDate)
+				: new Date(`${startDate}T${startTime || "09:00"}:00`);
+
+			const endDateTime = endDate
+				? isAllDay
+					? new Date(endDate)
+					: new Date(`${endDate}T${endTime || "10:00"}:00`)
+				: null;
+
+			const eventType: EventType =
+				description?.includes("#meeting") ||
+				title.toLowerCase().includes("kokous")
+					? "meeting"
+					: description?.includes("#private")
+						? "private"
+						: existingEvent.eventType;
+
+			if (existingEvent.googleEventId) {
+				try {
+					const eventUpdate: Partial<CalendarEventInput> = {
+						title,
+						description,
+						location,
+						isAllDay,
+					};
+
+					if (isAllDay) {
+						eventUpdate.startDate = startDate;
+						const endDateObj = new Date(endDate || startDate);
+						endDateObj.setDate(endDateObj.getDate() + 1);
+						eventUpdate.endDate = endDateObj.toISOString().split("T")[0];
+					} else {
+						eventUpdate.startDateTime = `${startDate}T${startTime || "09:00"}:00`;
+						eventUpdate.endDateTime = `${endDate || startDate}T${endTime || "10:00"}:00`;
+					}
+
+					if (attendees && attendees.length > 0) {
+						eventUpdate.attendees = attendees;
+					}
+
+					await updateCalendarEvent(existingEvent.googleEventId, eventUpdate);
+				} catch (googleError) {
+					console.warn(
+						"[events.edit] Google Calendar sync failed:",
+						googleError,
+					);
+				}
+			}
+
+			const updatedEvent = await db.updateEvent(id, {
 				title,
 				description,
 				location,
 				isAllDay,
-			};
+				startDate: startDateTime,
+				endDate: endDateTime,
+				attendees: attendees ? JSON.stringify(attendees) : null,
+				eventType,
+			});
 
-			if (isAllDay) {
-				eventUpdate.startDate = startDate;
-				const endDateObj = new Date(endDate || startDate);
-				endDateObj.setDate(endDateObj.getDate() + 1);
-				eventUpdate.endDate = endDateObj.toISOString().split("T")[0];
-			} else {
-				eventUpdate.startDateTime = `${startDate}T${startTime || "09:00"}:00`;
-				eventUpdate.endDateTime = `${endDate || startDate}T${endTime || "10:00"}:00`;
-			}
+			if (!updatedEvent) throw new Error("Failed to update event");
 
-			if (attendees && attendees.length > 0) {
-				eventUpdate.attendees = attendees;
-			}
-
-			const result = await updateCalendarEvent(id, eventUpdate);
-			if (!result) throw new Error("Failed to update event");
-
-			return result;
-		},
-		afterUpdate: async () => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.calendar });
+			return updatedEvent;
 		},
 		successRedirect: (entity) => `/events`,
 	});
@@ -113,34 +150,23 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { event, relationships, sourceContext, returnUrl } = loaderData as any;
 
-	const existingIsAllDay = !event.start?.dateTime;
-	const existingStartDate = event.start?.dateTime
-		? event.start.dateTime.split("T")[0]
-		: event.start?.date || new Date().toISOString().split("T")[0];
-	const existingStartTime = event.start?.dateTime
-		? event.start.dateTime.split("T")[1]?.substring(0, 5) || "09:00"
-		: "09:00";
-	const existingEndDate = event.end?.dateTime
-		? event.end.dateTime.split("T")[0]
-		: event.end?.date
-			? (() => {
-					const d = new Date(event.end.date);
-					d.setDate(d.getDate() - 1);
-					return d.toISOString().split("T")[0];
-				})()
-			: existingStartDate;
-	const existingEndTime = event.end?.dateTime
-		? event.end.dateTime.split("T")[1]?.substring(0, 5) || "10:00"
-		: "10:00";
-	const existingAttendees =
-		event.attendees?.map((a: { email?: string }) => a.email).join(", ") || "";
+	const existingIsAllDay = event.isAllDay;
+	const eventStartDate = new Date(event.startDate);
+	const existingStartDate = eventStartDate.toISOString().split("T")[0];
+	const existingStartTime = eventStartDate.toTimeString().substring(0, 5);
+	const eventEndDate = event.endDate ? new Date(event.endDate) : eventStartDate;
+	const existingEndDate = eventEndDate.toISOString().split("T")[0];
+	const existingEndTime = eventEndDate.toTimeString().substring(0, 5);
+	const existingAttendees = event.attendees
+		? JSON.parse(event.attendees).join(", ")
+		: "";
 
 	const [isAllDay, setIsAllDay] = useState(existingIsAllDay);
 
 	const inputFields: Record<string, InputFieldConfig> = {
 		title: {
 			label: t("common.fields.title") + " *",
-			value: event.summary || "",
+			value: event.title || "",
 		},
 		description: event.description || "",
 		location: event.location || "",

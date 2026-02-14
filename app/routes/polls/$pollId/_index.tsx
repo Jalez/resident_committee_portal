@@ -35,7 +35,7 @@ export async function loader({
 }
 
 export default function ViewPoll({ loaderData }: { loaderData: any }) {
-	const { poll } = loaderData;
+	const { poll, relationships } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 
 	const canUpdate = rootData?.user?.permissions?.some(
@@ -58,6 +58,7 @@ export default function ViewPoll({ loaderData }: { loaderData: any }) {
 				entityId={poll.id}
 				entityName={poll.name}
 				displayFields={displayFields}
+				relationships={relationships}
 				returnUrl="/polls"
 				canEdit={canUpdate}
 				canDelete={canUpdate}

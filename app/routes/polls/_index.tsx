@@ -7,8 +7,9 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { getDatabase } from "~/db/server.server";
+import { EmptyState } from "~/components/ui/empty-state";
 import type { Poll } from "~/db/schema";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { updateFormPublishingState } from "~/lib/google.server";
@@ -416,11 +417,7 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
 						{t("polls.active")} ({totalActiveCount})
 					</h2>
 					{totalActiveCount === 0 ? (
-						<Card>
-							<CardContent className="py-8 text-center text-muted-foreground">
-								{t("polls.no_active_polls")}
-							</CardContent>
-						</Card>
+						<EmptyState message={t("polls.no_active_polls")} icon="poll" />
 					) : (
 						<div className="space-y-4">
 							{activePolls.map((poll: Poll) => (

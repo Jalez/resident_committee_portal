@@ -9,6 +9,10 @@ import {
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import {
+	EventsTable,
+	type EventTableRow,
+} from "~/components/events/events-table";
+import {
 	ActionButton,
 	ContentArea,
 	PageWrapper,
@@ -25,15 +29,8 @@ import {
 	getGuestContext,
 	requirePermission,
 } from "~/lib/auth.server";
-import { CACHE_KEYS, clearCache } from "~/lib/cache.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import {
-	deleteCalendarEvent,
-	getCalendarEvents,
-	getCalendarUrl,
-} from "~/lib/google.server";
-import { queryClient } from "~/lib/query-client";
-import { queryKeys, STALE_TIME } from "~/lib/query-config";
+import { deleteCalendarEvent, getCalendarUrl } from "~/lib/google.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -43,7 +40,7 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
-interface Event {
+interface DisplayEvent {
 	id: string;
 	type: "meeting" | "social" | "private";
 	title: string;
@@ -55,11 +52,10 @@ interface Event {
 interface GroupedMonth {
 	monthKey: string;
 	monthDate: string;
-	events: Event[];
+	events: DisplayEvent[];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Check permission (works for both logged-in users and guests)
 	const authUser = await getAuthenticatedUser(request, getDatabase);
 
 	let permissions: string[];
@@ -84,92 +80,79 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const url = new URL(request.url);
 	const titleFilter = url.searchParams.get("title") || "";
-	const forceRefresh =
-		url.searchParams.get("created") === "true" ||
-		url.searchParams.get("updated") === "true";
+	const viewMode = url.searchParams.get("view") || "upcoming";
 
-	if (forceRefresh) {
-		clearCache(CACHE_KEYS.CALENDAR_EVENTS);
-		await queryClient.removeQueries({ queryKey: queryKeys.calendar });
-	}
+	const db = getDatabase();
+	const canWrite = permissions.some((p) => p === "events:write" || p === "*");
 
-	// Use ensureQueryData for client-side caching
-	// Returns cached data if fresh, fetches if stale
-	const [calendarItems, calendarUrl] = await Promise.all([
-		queryClient.ensureQueryData({
-			queryKey: queryKeys.calendar,
-			queryFn: getCalendarEvents,
-			staleTime: STALE_TIME,
-		}),
-		queryClient.ensureQueryData({
-			queryKey: queryKeys.calendarUrl,
-			queryFn: getCalendarUrl,
-			staleTime: STALE_TIME,
-		}),
+	const [events, calendarUrl] = await Promise.all([
+		viewMode === "all" && canWrite ? db.getEvents() : db.getUpcomingEvents(50),
+		getCalendarUrl(),
 	]);
 
-	if (!calendarItems.length) {
+	const allEvents: EventTableRow[] = events.map((event) => ({
+		id: event.id,
+		title: event.title,
+		description: event.description,
+		location: event.location,
+		isAllDay: event.isAllDay,
+		startDate: new Date(event.startDate),
+		endDate: event.endDate ? new Date(event.endDate) : null,
+		eventType: event.eventType,
+		status: event.status,
+	}));
+
+	const filteredEvents = allEvents.filter((event) => {
+		if (!canWrite && event.status === "draft") {
+			return false;
+		}
+		if (
+			viewMode !== "all" &&
+			(event.status === "cancelled" || event.status === "completed")
+		) {
+			return false;
+		}
+		if (titleFilter) {
+			return event.title.toLowerCase().includes(titleFilter.toLowerCase());
+		}
+		return true;
+	});
+
+	if (!filteredEvents.length) {
 		return {
 			siteConfig: SITE_CONFIG,
 			groupedMonths: [],
+			allEvents: [],
 			calendarUrl,
 			languages,
 			filters: { title: titleFilter },
 			hasFilters: !!titleFilter,
+			canWrite,
+			viewMode,
 		};
 	}
 
-	const groupedMap = new Map<string, Event[]>();
+	const groupedMap = new Map<string, DisplayEvent[]>();
 
-	// Define the shape of calendar items from Google Calendar API
-	interface CalendarItem {
-		id: string;
-		summary?: string;
-		description?: string;
-		location?: string;
-		start?: {
-			dateTime?: string;
-			date?: string;
-		};
-	}
+	filteredEvents.forEach((event) => {
+		const year = event.startDate.getFullYear();
+		const displayMonthKey = `${year}-${event.startDate.getMonth()}`;
 
-	const canWrite = permissions.some((p) => p === "events:write" || p === "*");
-
-	calendarItems.forEach((item: CalendarItem) => {
-		// Filter out drafts for non-staff
-		if (!canWrite && item.description?.includes("#draft")) {
-			return;
-		}
-
-		const startDate = new Date(
-			item.start?.dateTime || item.start?.date || new Date(),
-		);
-		const year = startDate.getFullYear();
-		const displayMonthKey = `${year}-${startDate.getMonth()}`; // unique key
-
-		const isAllDay = !item.start?.dateTime;
-		const summary = item.summary || "Untitled Event";
-
-		const event: Event = {
-			id: item.id,
-			startDate: startDate.toISOString(),
-			isAllDay,
-			title: summary,
-			location: item.location || "",
-			type:
-				item.description?.includes("#meeting") ||
-					summary.toLowerCase().includes("kokous")
-					? "meeting"
-					: "social",
+		const displayEvent: DisplayEvent = {
+			id: event.id,
+			startDate: event.startDate.toISOString(),
+			isAllDay: event.isAllDay,
+			title: event.title,
+			location: event.location || "",
+			type: event.eventType,
 		};
 
 		if (!groupedMap.has(displayMonthKey)) {
 			groupedMap.set(displayMonthKey, []);
 		}
-		groupedMap.get(displayMonthKey)?.push(event);
+		groupedMap.get(displayMonthKey)?.push(displayEvent);
 	});
 
-	// Create array with month dates
 	const groupedMonths: GroupedMonth[] = Array.from(groupedMap.entries()).map(
 		([key, events]) => {
 			const [y, m] = key.split("-").map(Number);
@@ -186,10 +169,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return {
 		siteConfig: SITE_CONFIG,
 		groupedMonths,
+		allEvents: filteredEvents,
 		calendarUrl,
 		languages,
 		filters: { title: titleFilter },
 		hasFilters: !!titleFilter,
+		canWrite,
+		viewMode,
 	};
 }
 
@@ -206,12 +192,17 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 
 		try {
-			const deleted = await deleteCalendarEvent(eventId);
+			const db = getDatabase();
+			const event = await db.getEventById(eventId);
+
+			if (event?.googleEventId) {
+				await deleteCalendarEvent(event.googleEventId);
+			}
+
+			const deleted = await db.deleteEvent(eventId);
 			if (!deleted) {
 				return { error: "Failed to delete event" };
 			}
-			// Force refresh: remove calendar query so loader fetches fresh events
-			await queryClient.removeQueries({ queryKey: queryKeys.calendar });
 			return { success: true, deleted: true };
 		} catch (error) {
 			console.error("[events.action] Delete error:", error);
@@ -226,8 +217,16 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Events({ loaderData }: Route.ComponentProps) {
-	const { groupedMonths, calendarUrl, filters, hasFilters, languages } =
-		loaderData;
+	const {
+		groupedMonths,
+		allEvents,
+		calendarUrl,
+		filters,
+		hasFilters,
+		languages,
+		canWrite,
+		viewMode,
+	} = loaderData;
 	const { isInfoReel } = useLanguage();
 	const { hasPermission } = useUser();
 	const { t, i18n } = useTranslation();
@@ -236,15 +235,12 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	const revalidator = useRevalidator();
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-	// Track if we've revalidated after delete to prevent multiple revalidations
 	const revalidatedRef = useRef(false);
 
-	const canWrite = hasPermission("events:write");
 	const canUpdate = hasPermission("events:update");
 	const canDelete = hasPermission("events:delete");
 	const hasActions = canUpdate || canDelete;
 
-	// Show success toast when redirected after creating or editing event
 	useEffect(() => {
 		const created = searchParams.get("created") === "true";
 		const updated = searchParams.get("updated") === "true";
@@ -270,7 +266,6 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		}
 	}, [searchParams, setSearchParams, t]);
 
-	// Handle delete fetcher response: toast and revalidate once so events list refreshes
 	useEffect(() => {
 		if (deleteFetcher.data?.deleted) {
 			toast.success(t("events.delete.success"), { id: "event-deleted" });
@@ -282,20 +277,27 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		} else if (deleteFetcher.data?.error) {
 			toast.error(t("events.delete.error"), { id: "event-delete-error" });
 		}
-		// Reset revalidation flag when fetcher becomes idle with no data
 		if (deleteFetcher.state === "idle" && !deleteFetcher.data) {
 			revalidatedRef.current = false;
 		}
 	}, [deleteFetcher.data, deleteFetcher.state, t, revalidator]);
 
 	const handleDelete = (eventId: string) => {
-		revalidatedRef.current = false; // Reset for new delete
+		revalidatedRef.current = false;
 		deleteFetcher.submit({ _action: "delete", eventId }, { method: "post" });
 	};
 
-	// Determine current locale for formatting
-	// If language is 'en', force 'en-GB' to avoid 'en-US' (month-first) formatting.
-	// Otherwise use the language code as-is (e.g. 'fi', 'sv') which usually defaults to day-first.
+	const toggleViewMode = () => {
+		const newMode = viewMode === "all" ? "upcoming" : "all";
+		setSearchParams(
+			(prev) => {
+				prev.set("view", newMode);
+				return prev;
+			},
+			{ replace: true },
+		);
+	};
+
 	const currentLocale = i18n.language === "en" ? "en-GB" : i18n.language;
 
 	// Helper to format month name
@@ -327,7 +329,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	};
 
 	// Helper to format event time
-	const formatTime = (event: Event) => {
+	const formatTime = (event: DisplayEvent) => {
 		if (event.isAllDay) {
 			// For info reel, force Finnish (which is default behavior of key lookup if lang is fi)
 			// but if we want specific behavior:
@@ -355,13 +357,13 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	// Filter events client-side based on title filter
 	const filteredMonths: GroupedMonth[] = filters?.title
 		? groupedMonths
-			.map((month: GroupedMonth) => ({
-				...month,
-				events: month.events.filter((event: Event) =>
-					event.title.toLowerCase().includes(filters.title.toLowerCase()),
-				),
-			}))
-			.filter((month: GroupedMonth) => month.events.length > 0)
+				.map((month: GroupedMonth) => ({
+					...month,
+					events: month.events.filter((event: DisplayEvent) =>
+						event.title.toLowerCase().includes(filters.title.toLowerCase()),
+					),
+				}))
+				.filter((month: GroupedMonth) => month.events.length > 0)
 		: groupedMonths;
 
 	// QR Panel only shown in info reel mode
@@ -386,11 +388,25 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		<div className="flex items-center gap-2">
 			<SearchMenu fields={searchFields} />
 			{canWrite && !isInfoReel && (
-				<AddItemButton
-					title={t("events.add_event")}
-					variant="icon"
-					createType="event"
-				/>
+				<>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={toggleViewMode}
+						title={
+							viewMode === "all" ? t("events.upcoming") : t("events.view_all")
+						}
+					>
+						<span className="material-symbols-outlined text-lg">
+							{viewMode === "all" ? "calendar_month" : "table"}
+						</span>
+					</Button>
+					<AddItemButton
+						title={t("events.add_event")}
+						variant="icon"
+						createType="event"
+					/>
+				</>
 			)}
 			{calendarUrl && (
 				<ActionButton
@@ -417,138 +433,157 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 				}}
 			>
 				<ContentArea>
-					{!filteredMonths.length ? (
-						<div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white">
-							<p className="text-xl font-bold leading-none uppercase tracking-widest">
-								{hasFilters ? t("events.no_results") : t("events.upcoming")}
-							</p>
-						</div>
-					) : null}
-
-					<div className="space-y-12">
-						{filteredMonths.map((group: GroupedMonth) => (
-							<div key={group.monthKey} className="relative">
-								<div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white sticky top-0 z-10">
+					{viewMode === "all" && canWrite ? (
+						<EventsTable
+							events={allEvents}
+							hasActions={hasActions}
+							canUpdate={canUpdate}
+							canDelete={canDelete}
+							deleteConfirmId={deleteConfirmId}
+							setDeleteConfirmId={setDeleteConfirmId}
+							handleDelete={handleDelete}
+							deleteFetcher={deleteFetcher}
+							currentLocale={currentLocale}
+							t={t}
+						/>
+					) : (
+						<>
+							{!filteredMonths.length ? (
+								<div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white">
 									<p className="text-xl font-bold leading-none uppercase tracking-widest">
-										{formatMonth(group.monthDate)}
-										{isInfoReel && (
-											<span className="opacity-60 text-lg ml-2">
-												/ {formatMonthEn(group.monthDate)}
-											</span>
-										)}
+										{hasFilters ? t("events.no_results") : t("events.upcoming")}
 									</p>
 								</div>
+							) : null}
 
-								<div className="flex-1 relative flex flex-col">
-									<ul className="divide-y divide-gray-100 dark:divide-gray-800">
-										{group.events.map((event: Event) => (
-											<li
-												key={event.id}
-												className={`flex items-start md:items-center p-4 md:p-6 hover:bg-white dark:hover:bg-gray-800/50 transition-colors ${event.type === "meeting" ? "bg-red-50/50 dark:bg-red-900/10" : ""} ${event.type === "private" ? "opacity-60" : ""}`}
-											>
-												<div
-													className={`w-14 md:w-20 flex flex-col items-center justify-center shrink-0 leading-none mr-4 md:mr-6 pt-1 md:pt-0 ${event.type === "meeting" ? "text-primary dark:text-red-400" : event.type === "private" ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
-												>
-													<span className="text-2xl md:text-4xl font-black tracking-tighter">
-														{formatDateNum(event.startDate)}
+							<div className="space-y-12">
+								{filteredMonths.map((group: GroupedMonth) => (
+									<div key={group.monthKey} className="relative">
+										<div className="bg-primary rounded-xl mb-8 px-8 py-4 flex items-center justify-end text-white sticky top-0 z-10">
+											<p className="text-xl font-bold leading-none uppercase tracking-widest">
+												{formatMonth(group.monthDate)}
+												{isInfoReel && (
+													<span className="opacity-60 text-lg ml-2">
+														/ {formatMonthEn(group.monthDate)}
 													</span>
-													<span className="text-[10px] md:text-xs font-bold uppercase mt-1 tracking-wider">
-														{formatDay(event.startDate)}
-													</span>
-												</div>
-												<div className="flex-1 min-w-0 py-0.5">
-													<h3
-														className={`text-lg md:text-xl font-black uppercase tracking-tight leading-tight md:leading-none ${event.type === "private" ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-white"}`}
-													>
-														{event.title}
-													</h3>
-													<div
-														className={`flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs md:text-sm font-bold uppercase tracking-wide mt-2 md:mt-1.5 ${event.type === "private" ? "text-gray-400 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"}`}
-													>
-														<span className="flex items-center gap-1.5">
-															<span className="material-symbols-outlined text-[16px] md:text-[18px]">
-																schedule
-															</span>{" "}
-															{formatTime(event)}
-														</span>
-														{event.location && (
-															<span className="flex items-center gap-1.5 truncate">
-																<span className="material-symbols-outlined text-[16px] md:text-[18px]">
-																	location_on
-																</span>{" "}
-																{event.location}
-															</span>
-														)}
-													</div>
-												</div>
-												{/* Edit/Delete Actions */}
-												{hasActions && !isInfoReel && (
-													<div className="flex items-center gap-1 ml-2 shrink-0">
-														{deleteConfirmId === event.id ? (
-															<>
-																<Button
-																	variant="destructive"
-																	size="sm"
-																	onClick={() => handleDelete(event.id)}
-																	disabled={deleteFetcher.state !== "idle"}
-																>
-																	{deleteFetcher.state !== "idle" ? (
-																		<span className="material-symbols-outlined animate-spin text-sm">
-																			progress_activity
-																		</span>
-																	) : (
-																		t("common.actions.confirm")
-																	)}
-																</Button>
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() => setDeleteConfirmId(null)}
-																>
-																	{t("common.actions.cancel")}
-																</Button>
-															</>
-														) : (
-															<>
-																{canUpdate && (
-																	<Link
-																		to={`/events/${event.id}/edit`}
-																		className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-																		title={t("common.actions.edit")}
-																	>
-																		<span className="material-symbols-outlined text-lg">
-																			edit
-																		</span>
-																	</Link>
-																)}
-																{canDelete && (
-																	<button
-																		type="button"
-																		onClick={() => setDeleteConfirmId(event.id)}
-																		className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-																		title={t("common.actions.delete")}
-																	>
-																		<span className="material-symbols-outlined text-lg">
-																			delete
-																		</span>
-																	</button>
-																)}
-															</>
-														)}
-													</div>
 												)}
-											</li>
-										))}
-									</ul>
-								</div>
-							</div>
-						))}
-					</div>
+											</p>
+										</div>
 
-					{groupedMonths.length === 0 && (
-						<div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest">
-							{t("events.no_upcoming")}
-						</div>
+										<div className="flex-1 relative flex flex-col">
+											<ul className="divide-y divide-gray-100 dark:divide-gray-800">
+												{group.events.map((event: DisplayEvent) => (
+													<li
+														key={event.id}
+														className={`flex items-start md:items-center p-4 md:p-6 hover:bg-white dark:hover:bg-gray-800/50 transition-colors ${event.type === "meeting" ? "bg-red-50/50 dark:bg-red-900/10" : ""} ${event.type === "private" ? "opacity-60" : ""}`}
+													>
+														<div
+															className={`w-14 md:w-20 flex flex-col items-center justify-center shrink-0 leading-none mr-4 md:mr-6 pt-1 md:pt-0 ${event.type === "meeting" ? "text-primary dark:text-red-400" : event.type === "private" ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
+														>
+															<span className="text-2xl md:text-4xl font-black tracking-tighter">
+																{formatDateNum(event.startDate)}
+															</span>
+															<span className="text-[10px] md:text-xs font-bold uppercase mt-1 tracking-wider">
+																{formatDay(event.startDate)}
+															</span>
+														</div>
+														<div className="flex-1 min-w-0 py-0.5">
+															<h3
+																className={`text-lg md:text-xl font-black uppercase tracking-tight leading-tight md:leading-none ${event.type === "private" ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-white"}`}
+															>
+																{event.title}
+															</h3>
+															<div
+																className={`flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs md:text-sm font-bold uppercase tracking-wide mt-2 md:mt-1.5 ${event.type === "private" ? "text-gray-400 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"}`}
+															>
+																<span className="flex items-center gap-1.5">
+																	<span className="material-symbols-outlined text-[16px] md:text-[18px]">
+																		schedule
+																	</span>{" "}
+																	{formatTime(event)}
+																</span>
+																{event.location && (
+																	<span className="flex items-center gap-1.5 truncate">
+																		<span className="material-symbols-outlined text-[16px] md:text-[18px]">
+																			location_on
+																		</span>{" "}
+																		{event.location}
+																	</span>
+																)}
+															</div>
+														</div>
+														{/* Edit/Delete Actions */}
+														{hasActions && !isInfoReel && (
+															<div className="flex items-center gap-1 ml-2 shrink-0">
+																{deleteConfirmId === event.id ? (
+																	<>
+																		<Button
+																			variant="destructive"
+																			size="sm"
+																			onClick={() => handleDelete(event.id)}
+																			disabled={deleteFetcher.state !== "idle"}
+																		>
+																			{deleteFetcher.state !== "idle" ? (
+																				<span className="material-symbols-outlined animate-spin text-sm">
+																					progress_activity
+																				</span>
+																			) : (
+																				t("common.actions.confirm")
+																			)}
+																		</Button>
+																		<Button
+																			variant="outline"
+																			size="sm"
+																			onClick={() => setDeleteConfirmId(null)}
+																		>
+																			{t("common.actions.cancel")}
+																		</Button>
+																	</>
+																) : (
+																	<>
+																		{canUpdate && (
+																			<Link
+																				to={`/events/${event.id}/edit`}
+																				className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+																				title={t("common.actions.edit")}
+																			>
+																				<span className="material-symbols-outlined text-lg">
+																					edit
+																				</span>
+																			</Link>
+																		)}
+																		{canDelete && (
+																			<button
+																				type="button"
+																				onClick={() =>
+																					setDeleteConfirmId(event.id)
+																				}
+																				className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+																				title={t("common.actions.delete")}
+																			>
+																				<span className="material-symbols-outlined text-lg">
+																					delete
+																				</span>
+																			</button>
+																		)}
+																	</>
+																)}
+															</div>
+														)}
+													</li>
+												))}
+											</ul>
+										</div>
+									</div>
+								))}
+							</div>
+
+							{groupedMonths.length === 0 && (
+								<div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest">
+									{t("events.no_upcoming")}
+								</div>
+							)}
+						</>
 					)}
 				</ContentArea>
 			</SplitLayout>

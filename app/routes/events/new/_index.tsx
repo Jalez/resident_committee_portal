@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { EventType } from "~/db/client";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -14,8 +15,6 @@ import {
 	type CalendarEventInput,
 	createCalendarEvent,
 } from "~/lib/google.server";
-import { queryClient } from "~/lib/query-client";
-import { queryKeys } from "~/lib/query-config";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -68,9 +67,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const attendeesRaw = formData.get("attendees") as string;
 	const attendees = attendeesRaw
 		? attendeesRaw
-			.split(/[,;\n]/)
-			.map((e) => e.trim())
-			.filter((e) => e.includes("@"))
+				.split(/[,;\n]/)
+				.map((e) => e.trim())
+				.filter((e) => e.includes("@"))
 		: undefined;
 
 	// Build the event input
@@ -129,14 +128,55 @@ export async function action({ request }: Route.ActionArgs) {
 	}
 
 	try {
-		const result = await createCalendarEvent(eventInput);
+		const db = getDatabase();
 
-		if (!result) {
-			return { error: "Failed to create event" };
+		let googleEventId: string | null = null;
+		try {
+			const result = await createCalendarEvent(eventInput);
+			if (result?.id) {
+				googleEventId = result.id;
+			}
+		} catch (googleError) {
+			console.warn(
+				"[events.new] Google Calendar sync failed, saving to DB only:",
+				googleError,
+			);
 		}
 
-		// Force refresh: invalidate calendar query so next load fetches fresh events
-		await queryClient.invalidateQueries({ queryKey: queryKeys.calendar });
+		const eventType: EventType =
+			description?.includes("#meeting") ||
+			title.toLowerCase().includes("kokous")
+				? "meeting"
+				: description?.includes("#private")
+					? "private"
+					: "social";
+
+		const startDateTime = isAllDay
+			? new Date(startDate)
+			: new Date(`${startDate}T${startTime || "09:00"}:00`);
+
+		const endDateTime = endDate
+			? isAllDay
+				? new Date(endDate)
+				: new Date(`${endDate}T${endTime || "10:00"}:00`)
+			: null;
+
+		await db.createEvent({
+			title,
+			description,
+			location,
+			isAllDay,
+			startDate: startDateTime,
+			endDate: endDateTime,
+			recurrence: hasRecurrence ? JSON.stringify(eventInput.recurrence) : null,
+			reminders: eventInput.reminders
+				? JSON.stringify(eventInput.reminders)
+				: null,
+			attendees: attendees ? JSON.stringify(attendees) : null,
+			eventType,
+			status: "active",
+			googleEventId,
+		});
 
 		return redirect("/events?created=true");
 	} catch (error) {

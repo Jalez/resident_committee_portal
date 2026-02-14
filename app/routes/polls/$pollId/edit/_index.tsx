@@ -1,12 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
-import { Label } from "~/components/ui/label";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
+import { Label } from "~/components/ui/label";
+import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getAnalyticsSheets } from "~/lib/google.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
-import { z } from "zod";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -100,58 +100,68 @@ export async function action({ request, params }: Route.ActionArgs) {
 export default function EditPoll({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const { poll, analyticsSheets, returnUrl } = loaderData as any;
+	const { poll, analyticsSheets, returnUrl, relationships } = loaderData as any;
 
-	const deadlineIso = poll.deadline ? new Date(poll.deadline).toISOString() : "";
+	const deadlineIso = poll.deadline
+		? new Date(poll.deadline).toISOString()
+		: "";
 	const defaultDate = deadlineIso ? deadlineIso.split("T")[0] : "";
-	const defaultTime = deadlineIso ? deadlineIso.split("T")[1].substring(0, 5) : "";
+	const defaultTime = deadlineIso
+		? deadlineIso.split("T")[1].substring(0, 5)
+		: "";
 
 	const inputFields: Record<string, InputFieldConfig> = {
 		name: poll.type === "linked" ? { hidden: true } : poll.name,
-		description: poll.type === "linked" ? { hidden: true } : poll.description || "",
+		description:
+			poll.type === "linked" ? { hidden: true } : poll.description || "",
 		externalUrl: poll.type === "linked" ? { hidden: true } : poll.externalUrl,
-		_linkedInfo: poll.type === "linked" ? {
-			render: () => (
-				<div className="space-y-4 mb-6 p-4 bg-muted rounded-xl">
-					<div className="space-y-1">
-						<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-							Name
-						</Label>
-						<div className="font-medium">{poll.name}</div>
-					</div>
-					<div className="space-y-1">
-						<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-							Description
-						</Label>
-						<div className="text-sm whitespace-pre-wrap">
-							{poll.description || "-"}
-						</div>
-					</div>
-					<div className="space-y-1">
-						<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-							Google Form URL
-						</Label>
-						<div className="text-sm truncate">
-							<a
-								href={poll.externalUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-blue-600 hover:underline"
-							>
-								{poll.externalUrl}
-							</a>
-						</div>
-					</div>
-				</div>
-			),
-		} : undefined,
+		_linkedInfo:
+			poll.type === "linked"
+				? {
+						render: () => (
+							<div className="space-y-4 mb-6 p-4 bg-muted rounded-xl">
+								<div className="space-y-1">
+									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+										Name
+									</Label>
+									<div className="font-medium">{poll.name}</div>
+								</div>
+								<div className="space-y-1">
+									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+										Description
+									</Label>
+									<div className="text-sm whitespace-pre-wrap">
+										{poll.description || "-"}
+									</div>
+								</div>
+								<div className="space-y-1">
+									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+										Google Form URL
+									</Label>
+									<div className="text-sm truncate">
+										<a
+											href={poll.externalUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-blue-600 hover:underline"
+										>
+											{poll.externalUrl}
+										</a>
+									</div>
+								</div>
+							</div>
+						),
+					}
+				: undefined,
 
 		deadlineDate: {
-			label: t("polls.new.deadline") + " (" + (t("common.date") || "Date") + ")",
+			label:
+				t("polls.new.deadline") + " (" + (t("common.date") || "Date") + ")",
 			value: defaultDate,
 		},
 		deadlineTime: {
-			label: t("polls.new.deadline") + " (" + (t("common.time") || "Time") + ")",
+			label:
+				t("polls.new.deadline") + " (" + (t("common.time") || "Time") + ")",
 			value: defaultTime,
 		},
 		status: {
@@ -162,17 +172,20 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
 				{ value: "closed", label: t("polls.closed") || "Closed" },
 			],
 		},
-		analyticsSheetId: analyticsSheets.length > 0 ? {
-			label: t("polls.new.analytics_sheet"),
-			value: poll.analyticsSheetId || "none",
-			options: [
-				{ value: "none", label: t("polls.new.no_sheet") },
-				...analyticsSheets.map((s: any) => ({
-					value: s.id,
-					label: s.name,
-				})),
-			],
-		} : { hidden: true },
+		analyticsSheetId:
+			analyticsSheets.length > 0
+				? {
+						label: t("polls.new.analytics_sheet"),
+						value: poll.analyticsSheetId || "none",
+						options: [
+							{ value: "none", label: t("polls.new.no_sheet") },
+							...analyticsSheets.map((s: any) => ({
+								value: s.id,
+								label: s.name,
+							})),
+						],
+					}
+				: { hidden: true },
 	};
 
 	return (
@@ -185,10 +198,10 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
 					entityType="poll"
 					entityId={poll.id}
 					returnUrl={returnUrl || "/polls"}
+					relationships={relationships}
 					onCancel={() => navigate(returnUrl || "/polls")}
 					translationNamespace="polls.new"
-				>
-				</EditForm>
+				></EditForm>
 			</div>
 		</PageWrapper>
 	);

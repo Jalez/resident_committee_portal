@@ -3,14 +3,13 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
-import { getCalendarEvent } from "~/lib/google.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 
 export function meta({ data }: { data: any }) {
-	const summary = data?.event?.summary || "Event";
+	const title = data?.event?.title || "Event";
 	return [
-		{ title: `${data?.siteConfig?.name || "Portal"} - ${summary}` },
+		{ title: `${data?.siteConfig?.name || "Portal"} - ${title}` },
 		{ name: "robots", content: "noindex" },
 	];
 }
@@ -28,7 +27,7 @@ export async function loader({
 		permission: "events:read",
 		params,
 		request,
-		fetchEntity: async (db, id) => getCalendarEvent(id),
+		fetchEntity: async (db, id) => db.getEventById(id),
 		extend: async () => ({
 			currentUserId: authUser?.userId || null,
 		}),
@@ -43,22 +42,23 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 		(p) => p === "events:update" || p === "*",
 	);
 
-	const isAllDay = !event.start?.dateTime;
-	const startDate = event.start?.dateTime
-		? event.start.dateTime.split("T")[0]
-		: event.start?.date;
-	const startTime = event.start?.dateTime
-		? event.start.dateTime.split("T")[1]?.substring(0, 5)
-		: null;
-	const endDate = event.end?.dateTime
-		? event.end.dateTime.split("T")[0]
-		: event.end?.date;
-	const endTime = event.end?.dateTime
-		? event.end.dateTime.split("T")[1]?.substring(0, 5)
-		: null;
+	const isAllDay = event.isAllDay;
+	const eventStartDate = new Date(event.startDate);
+	const startDate = eventStartDate.toISOString().split("T")[0];
+	const startTime = isAllDay
+		? null
+		: eventStartDate.toTimeString().substring(0, 5);
+	const eventEndDate = event.endDate ? new Date(event.endDate) : null;
+	const endDate = eventEndDate?.toISOString().split("T")[0];
+	const endTime =
+		isAllDay || !eventEndDate
+			? null
+			: eventEndDate.toTimeString().substring(0, 5);
+
+	const attendees = event.attendees ? JSON.parse(event.attendees) : [];
 
 	const displayFields = {
-		title: event.summary,
+		title: event.title,
 		description: { value: event.description, hide: !event.description },
 		location: { value: event.location, hide: !event.location },
 		startDate,
@@ -67,18 +67,18 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 		endTime: { value: endTime, hide: isAllDay || !endTime },
 		isAllDay: { value: isAllDay, type: "checkbox" },
 		attendees: {
-			value: event.attendees?.map((a: any) => a.email).join(", "),
-			hide: !event.attendees?.length,
+			value: attendees.join(", "),
+			hide: attendees.length === 0,
 		},
 	};
 
 	return (
 		<PageWrapper>
 			<ViewForm
-				title={event.summary || "Event"}
+				title={event.title || "Event"}
 				entityType="event"
 				entityId={event.id}
-				entityName={event.summary}
+				entityName={event.title}
 				displayFields={displayFields}
 				relationships={relationships}
 				returnUrl="/events"
