@@ -4,7 +4,12 @@ import { Form } from "react-router";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { getDatabase, type Submission, type SubmissionStatus } from "~/db/server.server";
+import { EmptyState } from "~/components/ui/empty-state";
+import {
+	getDatabase,
+	type Submission,
+	type SubmissionStatus,
+} from "~/db/server.server";
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
@@ -159,17 +164,15 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 				{/* Submissions List - Card View for Mobile */}
 				<div className="space-y-4 md:hidden mb-8">
 					{submissions.length === 0 ? (
-						<div className="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-							{t("submissions.no_submissions")}
-						</div>
+						<EmptyState message={t("submissions.no_submissions")} icon="mail" />
 					) : (
 						submissions.map((submission) => (
 							<div
 								key={submission.id}
-								className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4"
+								className="bg-card p-4 rounded-xl shadow-sm border border-border space-y-4"
 							>
 								<div className="flex items-center justify-between">
-									<span className="text-xs text-gray-500 font-medium">
+									<span className="text-xs text-muted-foreground font-medium">
 										{new Date(submission.createdAt).toLocaleDateString(
 											i18n.language,
 											{
@@ -184,7 +187,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 										className={cn(
 											"px-2 py-1 rounded-full text-xs font-bold uppercase",
 											TYPE_COLORS[submission.type] ||
-											"bg-gray-100 text-gray-700",
+												"bg-gray-100 text-gray-700",
 										)}
 									>
 										{t(`contact.types.${submission.type}.title`, {
@@ -194,22 +197,24 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 								</div>
 
 								<div>
-									<h3 className="font-bold text-gray-900 dark:text-white">
+									<h3 className="font-bold text-foreground">
 										{submission.name}
 									</h3>
-									<p className="text-sm text-gray-500">{submission.email}</p>
+									<p className="text-sm text-muted-foreground">
+										{submission.email}
+									</p>
 									{submission.apartmentNumber && (
-										<p className="text-xs text-gray-400 mt-0.5">
+										<p className="text-xs text-muted-foreground/70 mt-0.5">
 											{t("submissions.apartment")}: {submission.apartmentNumber}
 										</p>
 									)}
 								</div>
 
-								<div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+								<div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
 									{submission.message}
 								</div>
 
-								<div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+								<div className="flex items-center justify-between pt-2 border-t border-border">
 									<Form method="post" className="flex-1 mr-4">
 										<input type="hidden" name="_action" value="status" />
 										<input
@@ -257,36 +262,36 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				{/* Submissions Table */}
-				<div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+				<div className="hidden md:block bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 					<div className="overflow-x-auto">
 						<table className="w-full">
-							<thead className="bg-gray-50 dark:bg-gray-900">
+							<thead className="bg-muted/50">
 								<tr>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 										{t("submissions.table.time")}
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 										{t("submissions.table.type")}
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 										{t("submissions.table.sender")}
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 										{t("submissions.table.message")}
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
 										{t("submissions.table.status")}
 									</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+							<tbody className="divide-y divide-border">
 								{submissions.length === 0 ? (
 									<tr>
-										<td
-											colSpan={5}
-											className="px-4 py-12 text-center text-gray-500"
-										>
-											{t("submissions.no_submissions")}
+										<td colSpan={5} className="p-0">
+											<EmptyState
+												message={t("submissions.no_submissions")}
+												icon="mail"
+											/>
 										</td>
 									</tr>
 								) : (
@@ -337,8 +342,8 @@ function SubmissionRow({
 	};
 
 	return (
-		<tr className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-			<td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+		<tr className="hover:bg-muted/50 transition-colors">
+			<td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
 				{formattedDate}
 			</td>
 			<td className="px-4 py-4 whitespace-nowrap">
@@ -354,18 +359,16 @@ function SubmissionRow({
 				</span>
 			</td>
 			<td className="px-4 py-4">
-				<p className="font-medium text-gray-900 dark:text-white">
-					{submission.name}
-				</p>
-				<p className="text-sm text-gray-500">{submission.email}</p>
+				<p className="font-medium text-foreground">{submission.name}</p>
+				<p className="text-sm text-muted-foreground">{submission.email}</p>
 				{submission.apartmentNumber && (
-					<p className="text-xs text-gray-400">
+					<p className="text-xs text-muted-foreground/70">
 						{t("submissions.apartment")}: {submission.apartmentNumber}
 					</p>
 				)}
 			</td>
 			<td className="px-4 py-4 max-w-md">
-				<p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+				<p className="text-sm text-muted-foreground line-clamp-2">
 					{submission.message}
 				</p>
 			</td>

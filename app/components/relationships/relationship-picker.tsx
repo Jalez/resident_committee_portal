@@ -369,8 +369,18 @@ export function RelationshipPicker({
 		initialRelationships,
 	});
 
-	const handleLink = onLink || internalPicker.handleLink;
-	const handleUnlink = onUnlink || internalPicker.handleUnlink;
+	const handleLink = (
+		type: RelationshipEntityType,
+		id: string,
+		metadata?: Record<string, unknown>,
+	) => {
+		internalPicker.handleLink(type, id, metadata);
+		onLink?.(type, id, metadata);
+	};
+	const handleUnlink = (type: RelationshipEntityType, id: string) => {
+		internalPicker.handleUnlink(type, id);
+		onUnlink?.(type, id);
+	};
 	const effectiveFormData = formData || internalPicker.toFormData();
 
 	const { visibleSections, hiddenSections } = React.useMemo(() => {

@@ -19,11 +19,6 @@ type MockReceipt = {
 	id: string;
 	name: string;
 	createdBy: string | null;
-};
-
-type MockReceiptContent = {
-	id: string;
-	receiptId: string;
 	purchaseDate: Date | null;
 	totalAmount: number | null;
 	storeName: string | null;
@@ -50,14 +45,12 @@ type MockTransaction = {
 function createMockDatabase() {
 	const relationships: MockRelationship[] = [];
 	const receipts: MockReceipt[] = [];
-	const receiptContents: MockReceiptContent[] = [];
 	const purchases: MockPurchase[] = [];
 	const transactions: MockTransaction[] = [];
 
 	return {
 		relationships,
 		receipts,
-		receiptContents,
 		purchases,
 		transactions,
 
@@ -76,12 +69,6 @@ function createMockDatabase() {
 			return receipts.find((r) => r.id === id) || null;
 		},
 
-		async getReceiptContentByReceiptId(
-			receiptId: string,
-		): Promise<MockReceiptContent | null> {
-			return receiptContents.find((rc) => rc.receiptId === receiptId) || null;
-		},
-
 		async getPurchaseById(id: string): Promise<MockPurchase | null> {
 			return purchases.find((p) => p.id === id) || null;
 		},
@@ -90,27 +77,17 @@ function createMockDatabase() {
 			return transactions.find((t) => t.id === id) || null;
 		},
 
-		addReceipt(
-			receipt: Partial<MockReceipt> & { id: string },
-			content?: Partial<MockReceiptContent>,
-		) {
+		addReceipt(receipt: Partial<MockReceipt> & { id: string }) {
 			receipts.push({
 				name: "Test Receipt",
 				createdBy: null,
+				purchaseDate: null,
+				totalAmount: null,
+				storeName: null,
+				currency: "EUR",
+				items: "[]",
 				...receipt,
 			});
-			if (content) {
-				receiptContents.push({
-					id: `rc-${receipt.id}`,
-					receiptId: receipt.id,
-					purchaseDate: null,
-					totalAmount: null,
-					storeName: null,
-					currency: "EUR",
-					items: "[]",
-					...content,
-				});
-			}
 		},
 
 		addPurchase(purchase: Partial<MockPurchase> & { id: string }) {
@@ -151,7 +128,6 @@ function createMockDatabase() {
 		clear() {
 			relationships.length = 0;
 			receipts.length = 0;
-			receiptContents.length = 0;
 			purchases.length = 0;
 			transactions.length = 0;
 		},
@@ -247,7 +223,11 @@ describe("Relationship Context - Context Resolution", () => {
 
 	describe("empty relationships", () => {
 		it("returns null values when no entity ID provided", async () => {
-			const context = await getRelationshipContext(db as any, "transaction", null);
+			const context = await getRelationshipContext(
+				db as any,
+				"transaction",
+				null,
+			);
 
 			expect(context.date).toBeNull();
 			expect(context.totalAmount).toBeNull();
@@ -258,7 +238,11 @@ describe("Relationship Context - Context Resolution", () => {
 		it("returns null values when entity has no linked entities", async () => {
 			db.addTransaction({ id: "tx-1" });
 
-			const context = await getRelationshipContext(db as any, "transaction", "tx-1");
+			const context = await getRelationshipContext(
+				db as any,
+				"transaction",
+				"tx-1",
+			);
 
 			expect(context.date).toBeNull();
 			expect(context.totalAmount).toBeNull();
@@ -279,11 +263,7 @@ describe("Relationship Context - Context Resolution", () => {
 			});
 			db.addRelationship("transaction", "tx-1", "receipt", "r-1");
 
-			const context = await getRelationshipContext(
-				db as any,
-				"receipt",
-				"r-1",
-			);
+			const context = await getRelationshipContext(db as any, "receipt", "r-1");
 
 			expect(context.date).toEqual(testDate);
 			expect(context.totalAmount).toBe(150.5);
@@ -318,19 +298,18 @@ describe("Relationship Context - Context Resolution", () => {
 
 		it("uses receipt values when only receipt is linked", async () => {
 			const testDate = new Date("2024-01-10");
-			db.addReceipt(
-				{ id: "r-1", createdBy: "user-456" },
-				{
-					purchaseDate: testDate,
-					totalAmount: 42.99,
-					storeName: "K-Market Oulu",
-					currency: "EUR",
-					items: JSON.stringify([
-						{ name: "Milk", quantity: 2, price: 1.5, total: 3.0 },
-						{ name: "Bread", quantity: 1, price: 2.99, total: 2.99 },
-					]),
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				createdBy: "user-456",
+				purchaseDate: testDate,
+				totalAmount: 42.99,
+				storeName: "K-Market Oulu",
+				currency: "EUR",
+				items: JSON.stringify([
+					{ name: "Milk", quantity: 2, price: 1.5, total: 3.0 },
+					{ name: "Bread", quantity: 1, price: 2.99, total: 2.99 },
+				]),
+			});
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 			const context = await getRelationshipContext(
@@ -356,14 +335,12 @@ describe("Relationship Context - Context Resolution", () => {
 			const receiptDate = new Date("2024-03-01");
 			const reimbDate = new Date("2024-02-15");
 
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: receiptDate,
-					totalAmount: 100.0,
-					storeName: "Store from Receipt",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: receiptDate,
+				totalAmount: 100.0,
+				storeName: "Store from Receipt",
+			});
 			db.addPurchase({
 				id: "p-1",
 				amount: 80.0,
@@ -390,14 +367,12 @@ describe("Relationship Context - Context Resolution", () => {
 			const receiptDate = new Date("2024-03-01");
 			const txDate = new Date("2024-02-28");
 
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: receiptDate,
-					totalAmount: 50.0,
-					storeName: "Receipt Store",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: receiptDate,
+				totalAmount: 50.0,
+				storeName: "Receipt Store",
+			});
 			db.addTransaction({
 				id: "tx-1",
 				amount: 45.0,
@@ -446,14 +421,12 @@ describe("Relationship Context - Context Resolution", () => {
 		});
 
 		it("receipt wins when all three types are linked", async () => {
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: new Date("2024-01-01"),
-					totalAmount: 300.0,
-					storeName: "Highest Priority - Receipt",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: new Date("2024-01-01"),
+				totalAmount: 300.0,
+				storeName: "Highest Priority - Receipt",
+			});
 			db.addPurchase({
 				id: "p-1",
 				amount: 250.0,
@@ -485,14 +458,12 @@ describe("Relationship Context - Context Resolution", () => {
 
 	describe("manual overrides", () => {
 		it("manual description overrides entity values", async () => {
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: new Date("2024-01-01"),
-					totalAmount: 100.0,
-					storeName: "Store Name",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: new Date("2024-01-01"),
+				totalAmount: 100.0,
+				storeName: "Store Name",
+			});
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 			const context = await getRelationshipContext(
@@ -581,31 +552,30 @@ describe("Relationship Context - Entity Value Mapping", () => {
 	describe("receipt value mapping", () => {
 		it("maps all receipt fields correctly", async () => {
 			const testDate = new Date("2024-05-15T10:30:00Z");
-			db.addReceipt(
-				{ id: "r-1", createdBy: "user-789" },
-				{
-					purchaseDate: testDate,
-					totalAmount: 156.78,
-					storeName: "Prisma Helsinki",
-					currency: "EUR",
-					items: JSON.stringify([
-						{
-							name: "Coffee",
-							quantity: 2,
-							price: 5.99,
-							total: 11.98,
-							id: "item-1",
-						},
-						{
-							name: "Sugar",
-							quantity: 1,
-							price: 2.5,
-							total: 2.5,
-							id: "item-2",
-						},
-					]),
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				createdBy: "user-789",
+				purchaseDate: testDate,
+				totalAmount: 156.78,
+				storeName: "Prisma Helsinki",
+				currency: "EUR",
+				items: JSON.stringify([
+					{
+						name: "Coffee",
+						quantity: 2,
+						price: 5.99,
+						total: 11.98,
+						id: "item-1",
+					},
+					{
+						name: "Sugar",
+						quantity: 1,
+						price: 2.5,
+						total: 2.5,
+						id: "item-2",
+					},
+				]),
+			});
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 			const context = await getRelationshipContext(
@@ -630,7 +600,7 @@ describe("Relationship Context - Entity Value Mapping", () => {
 			});
 		});
 
-		it("handles receipt without content gracefully", async () => {
+		it("handles receipt without OCR data gracefully", async () => {
 			db.addReceipt({ id: "r-1", createdBy: "user-1" });
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
@@ -640,19 +610,20 @@ describe("Relationship Context - Entity Value Mapping", () => {
 				"tx-1",
 			);
 
-			expect(context.valueSource).toBeNull();
+			expect(context.valueSource).toBe("receipt");
+			expect(context.totalAmount).toBeNull();
+			expect(context.description).toBeNull();
+			expect(context.date).toBeNull();
 		});
 
 		it("handles malformed items JSON", async () => {
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: new Date(),
-					totalAmount: 50.0,
-					storeName: "Store",
-					items: "not valid json",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: new Date(),
+				totalAmount: 50.0,
+				storeName: "Store",
+				items: "not valid json",
+			});
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 			const context = await getRelationshipContext(
@@ -785,14 +756,12 @@ describe("Relationship Context - Direct Links Only", () => {
 	});
 
 	it("only considers directly linked entities for context", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date("2024-01-01"),
-				totalAmount: 100.0,
-				storeName: "Receipt Store",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date("2024-01-01"),
+			totalAmount: 100.0,
+			storeName: "Receipt Store",
+		});
 		db.addPurchase({
 			id: "p-1",
 			amount: 200.0,
@@ -835,14 +804,12 @@ describe("Relationship Context - Direct Links Only", () => {
 	});
 
 	it("indirect relationship does not affect context", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date(),
-				totalAmount: 500.0,
-				storeName: "Expensive Receipt",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date(),
+			totalAmount: 500.0,
+			storeName: "Expensive Receipt",
+		});
 		db.addTransaction({
 			id: "tx-1",
 			amount: 50.0,

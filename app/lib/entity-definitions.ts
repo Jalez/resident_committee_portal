@@ -198,7 +198,11 @@ export const ENTITY_DEFINITIONS: Record<
 			bankAccount: { type: "text", required: true },
 			amount: { type: "currency", required: true },
 			description: { type: "textarea", required: true },
-			notes: { type: "textarea" },
+			year: {
+				type: "select",
+				required: true,
+			},
+			notes: { type: "textarea", required: false },
 			minutesId: { type: "hidden" },
 			minutesName: { type: "hidden" },
 			status: {
@@ -214,7 +218,14 @@ export const ENTITY_DEFINITIONS: Record<
 		relationships: {
 			receipt: {},
 			transaction: { maxItems: 1 },
-			minute: {},
+			minute: { maxItems: 1 },
+			budget: {},
+			inventory: {},
+			news: {},
+			faq: {},
+			poll: {},
+			social: {},
+			event: {},
 			mail: {},
 		},
 		requiredRelationships: [
@@ -234,8 +245,7 @@ export const ENTITY_DEFINITIONS: Record<
 				reasonKey: "treasury.reimbursements.required_minute_reason",
 			},
 		],
-		defaultRedirect: (id) =>
-			`/treasury/reimbursements?year=${new Date().getFullYear()}&success=Reimbursement updated`,
+		defaultRedirect: (id) => `/treasury/reimbursements/${id}?success=updated`,
 		draftAutoPublishFields: [
 			"description",
 			"amount",
@@ -312,6 +322,11 @@ export const ENTITY_DEFINITIONS: Record<
 			deadlineDate: { type: "date" },
 			deadlineTime: { type: "time" },
 			analyticsSheetId: { type: "select" },
+		},
+		relationships: {
+			minute: {},
+			news: {},
+			transaction: {},
 		},
 	},
 

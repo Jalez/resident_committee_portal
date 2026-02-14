@@ -16,7 +16,10 @@ function computeContextStatus(
 		date?: Date | null;
 	},
 	entityType?: "receipt" | "reimbursement" | "transaction",
-): { status: "synced" | "diverged" | "source" | "none"; amountMismatch: boolean } {
+): {
+	status: "synced" | "diverged" | "source" | "none";
+	amountMismatch: boolean;
+} {
 	if (!context) {
 		return { status: "none", amountMismatch: false };
 	}
@@ -24,7 +27,8 @@ function computeContextStatus(
 	const amountMismatch =
 		context.totalAmount !== null &&
 		currentEntityValue?.amount !== undefined &&
-		Math.abs((context.totalAmount || 0) - (currentEntityValue.amount || 0)) > 0.01;
+		Math.abs((context.totalAmount || 0) - (currentEntityValue.amount || 0)) >
+			0.01;
 
 	const isSource = context.valueSource === entityType;
 
@@ -69,7 +73,9 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 
 			const result = encodeRelationshipContext(context);
 
-			expect(result).toBe("reimbursement:p-789:Lunch%20%40%20Caf%C3%A9%20M%C3%B8ller");
+			expect(result).toBe(
+				"reimbursement:p-789:Lunch%20%40%20Caf%C3%A9%20M%C3%B8ller",
+			);
 		});
 
 		it("encodes all entity types correctly", () => {
@@ -77,10 +83,11 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 				"receipt",
 				"transaction",
 				"reimbursement",
-				"purchase",
 				"budget",
 				"inventory",
 				"minute",
+				"news",
+				"event",
 			];
 
 			for (const type of types) {
@@ -103,7 +110,9 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 		});
 
 		it("decodes context with name", () => {
-			const result = decodeRelationshipContext("transaction:tx-456:K-Market%20Purchase");
+			const result = decodeRelationshipContext(
+				"transaction:tx-456:K-Market%20Purchase",
+			);
 
 			expect(result).toEqual({
 				type: "transaction",
@@ -113,7 +122,9 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 		});
 
 		it("decodes context with special characters in name", () => {
-			const result = decodeRelationshipContext("reimbursement:p-789:Lunch%20%40%20Caf%C3%A9%20M%C3%B8ller");
+			const result = decodeRelationshipContext(
+				"reimbursement:p-789:Lunch%20%40%20Caf%C3%A9%20M%C3%B8ller",
+			);
 
 			expect(result).toEqual({
 				type: "reimbursement",
@@ -208,7 +219,9 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 		});
 
 		it("extracts context from URL with source parameter and name", () => {
-			const url = new URL("https://example.com/edit?source=transaction:tx-456:My%20Transaction");
+			const url = new URL(
+				"https://example.com/edit?source=transaction:tx-456:My%20Transaction",
+			);
 
 			const result = getRelationshipContextFromUrl(url);
 
@@ -236,7 +249,9 @@ describe("Relationship Context - URL Encoding/Decoding", () => {
 		});
 
 		it("handles multiple URL parameters", () => {
-			const url = new URL("https://example.com/edit?returnUrl=%2Flist&source=receipt:r-789&mode=edit");
+			const url = new URL(
+				"https://example.com/edit?returnUrl=%2Flist&source=receipt:r-789&mode=edit",
+			);
 
 			const result = getRelationshipContextFromUrl(url);
 
@@ -270,7 +285,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			const result = computeContextStatus(context, { amount: 100.0 }, "receipt");
+			const result = computeContextStatus(
+				context,
+				{ amount: 100.0 },
+				"receipt",
+			);
 
 			expect(result.status).toBe("source");
 			expect(result.amountMismatch).toBe(false);
@@ -288,7 +307,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			const result = computeContextStatus(context, { amount: 50.0 }, "transaction");
+			const result = computeContextStatus(
+				context,
+				{ amount: 50.0 },
+				"transaction",
+			);
 
 			expect(result.status).toBe("synced");
 			expect(result.amountMismatch).toBe(false);
@@ -306,7 +329,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			const result = computeContextStatus(context, { amount: 75.0 }, "transaction");
+			const result = computeContextStatus(
+				context,
+				{ amount: 75.0 },
+				"transaction",
+			);
 
 			expect(result.status).toBe("diverged");
 			expect(result.amountMismatch).toBe(true);
@@ -344,7 +371,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			const result = computeContextStatus(context, { amount: 99.98 }, "transaction");
+			const result = computeContextStatus(
+				context,
+				{ amount: 99.98 },
+				"transaction",
+			);
 			expect(result.amountMismatch).toBe(true);
 		});
 
@@ -360,7 +391,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			const result = computeContextStatus(context, { amount: 99.991 }, "transaction");
+			const result = computeContextStatus(
+				context,
+				{ amount: 99.991 },
+				"transaction",
+			);
 			expect(result.amountMismatch).toBe(false);
 		});
 
@@ -376,7 +411,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "reimbursement",
 			};
 
-			const result = computeContextStatus(context, { amount: 123.45 }, "transaction");
+			const result = computeContextStatus(
+				context,
+				{ amount: 123.45 },
+				"transaction",
+			);
 			expect(result.amountMismatch).toBe(false);
 		});
 
@@ -392,7 +431,11 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "transaction",
 			};
 
-			const result = computeContextStatus(context, { amount: 100.0 }, "receipt");
+			const result = computeContextStatus(
+				context,
+				{ amount: 100.0 },
+				"receipt",
+			);
 			expect(result.amountMismatch).toBe(false);
 		});
 
@@ -426,9 +469,15 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "receipt",
 			};
 
-			expect(computeContextStatus(context, {}, "receipt").status).toBe("source");
-			expect(computeContextStatus(context, {}, "transaction").status).toBe("synced");
-			expect(computeContextStatus(context, {}, "reimbursement").status).toBe("synced");
+			expect(computeContextStatus(context, {}, "receipt").status).toBe(
+				"source",
+			);
+			expect(computeContextStatus(context, {}, "transaction").status).toBe(
+				"synced",
+			);
+			expect(computeContextStatus(context, {}, "reimbursement").status).toBe(
+				"synced",
+			);
 		});
 
 		it("matches reimbursement entity type", () => {
@@ -443,9 +492,15 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "reimbursement",
 			};
 
-			expect(computeContextStatus(context, {}, "reimbursement").status).toBe("source");
-			expect(computeContextStatus(context, {}, "receipt").status).toBe("synced");
-			expect(computeContextStatus(context, {}, "transaction").status).toBe("synced");
+			expect(computeContextStatus(context, {}, "reimbursement").status).toBe(
+				"source",
+			);
+			expect(computeContextStatus(context, {}, "receipt").status).toBe(
+				"synced",
+			);
+			expect(computeContextStatus(context, {}, "transaction").status).toBe(
+				"synced",
+			);
 		});
 
 		it("matches transaction entity type", () => {
@@ -460,9 +515,15 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "transaction",
 			};
 
-			expect(computeContextStatus(context, {}, "transaction").status).toBe("source");
-			expect(computeContextStatus(context, {}, "receipt").status).toBe("synced");
-			expect(computeContextStatus(context, {}, "reimbursement").status).toBe("synced");
+			expect(computeContextStatus(context, {}, "transaction").status).toBe(
+				"source",
+			);
+			expect(computeContextStatus(context, {}, "receipt").status).toBe(
+				"synced",
+			);
+			expect(computeContextStatus(context, {}, "reimbursement").status).toBe(
+				"synced",
+			);
 		});
 
 		it("handles manual valueSource (no entity matches)", () => {
@@ -477,9 +538,15 @@ describe("Relationship Context Status Component Logic", () => {
 				valueSource: "manual",
 			};
 
-			expect(computeContextStatus(context, {}, "receipt").status).toBe("synced");
-			expect(computeContextStatus(context, {}, "transaction").status).toBe("synced");
-			expect(computeContextStatus(context, {}, "reimbursement").status).toBe("synced");
+			expect(computeContextStatus(context, {}, "receipt").status).toBe(
+				"synced",
+			);
+			expect(computeContextStatus(context, {}, "transaction").status).toBe(
+				"synced",
+			);
+			expect(computeContextStatus(context, {}, "reimbursement").status).toBe(
+				"synced",
+			);
 		});
 	});
 });

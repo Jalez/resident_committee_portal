@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { RelationshipEntityType } from "~/db/types";
+import type { RelationshipContextValues } from "~/lib/relationships/relationship-context.server";
 import {
 	getEntityPriority,
 	getRelationshipContext,
 	shouldOverride,
 } from "~/lib/relationships/relationship-context.server";
-import type { RelationshipContextValues } from "~/lib/relationships/relationship-context.server";
 
 type MockRelationship = {
 	id: string;
@@ -20,11 +20,6 @@ type MockReceipt = {
 	id: string;
 	name: string;
 	createdBy: string | null;
-};
-
-type MockReceiptContent = {
-	id: string;
-	receiptId: string;
 	purchaseDate: Date | null;
 	totalAmount: number | null;
 	storeName: string | null;
@@ -51,7 +46,6 @@ type MockTransaction = {
 function createMockDatabase() {
 	const relationships: MockRelationship[] = [];
 	const receipts: MockReceipt[] = [];
-	const receiptContents: MockReceiptContent[] = [];
 	const purchases: MockPurchase[] = [];
 	const transactions: MockTransaction[] = [];
 
@@ -64,7 +58,6 @@ function createMockDatabase() {
 	return {
 		relationships,
 		receipts,
-		receiptContents,
 		purchases,
 		transactions,
 		updateLogs,
@@ -82,12 +75,6 @@ function createMockDatabase() {
 
 		async getReceiptById(id: string): Promise<MockReceipt | null> {
 			return receipts.find((r) => r.id === id) || null;
-		},
-
-		async getReceiptContentByReceiptId(
-			receiptId: string,
-		): Promise<MockReceiptContent | null> {
-			return receiptContents.find((rc) => rc.receiptId === receiptId) || null;
 		},
 
 		async getPurchaseById(id: string): Promise<MockPurchase | null> {
@@ -122,27 +109,17 @@ function createMockDatabase() {
 			return p || null;
 		},
 
-		addReceipt(
-			receipt: Partial<MockReceipt> & { id: string },
-			content?: Partial<MockReceiptContent>,
-		) {
+		addReceipt(receipt: Partial<MockReceipt> & { id: string }) {
 			receipts.push({
 				name: "Test Receipt",
 				createdBy: null,
+				purchaseDate: null,
+				totalAmount: null,
+				storeName: null,
+				currency: "EUR",
+				items: "[]",
 				...receipt,
 			});
-			if (content) {
-				receiptContents.push({
-					id: `rc-${receipt.id}`,
-					receiptId: receipt.id,
-					purchaseDate: null,
-					totalAmount: null,
-					storeName: null,
-					currency: "EUR",
-					items: "[]",
-					...content,
-				});
-			}
 		},
 
 		addPurchase(purchase: Partial<MockPurchase> & { id: string }) {
@@ -205,7 +182,6 @@ function createMockDatabase() {
 		clear() {
 			relationships.length = 0;
 			receipts.length = 0;
-			receiptContents.length = 0;
 			purchases.length = 0;
 			transactions.length = 0;
 			updateLogs.length = 0;
@@ -228,22 +204,30 @@ async function propagateContextToLinkedEntities(
 
 	for (const rel of relationships) {
 		const otherType =
-			rel.relationAType === sourceEntityType && rel.relationId === sourceEntityId
+			rel.relationAType === sourceEntityType &&
+			rel.relationId === sourceEntityId
 				? rel.relationBType
 				: rel.relationAType;
 		const otherId =
-			rel.relationAType === sourceEntityType && rel.relationId === sourceEntityId
+			rel.relationAType === sourceEntityType &&
+			rel.relationId === sourceEntityId
 				? rel.relationBId
 				: rel.relationId;
 
-		if (otherType === "transaction" && shouldOverride(sourceEntityType, "transaction")) {
+		if (
+			otherType === "transaction" &&
+			shouldOverride(sourceEntityType, "transaction")
+		) {
 			await db.updateTransaction(otherId, {
 				amount: context.totalAmount ? -context.totalAmount : null,
 				date: context.date,
 				description: context.description,
 				category: context.category,
 			});
-		} else if (otherType === "reimbursement" && shouldOverride(sourceEntityType, "reimbursement")) {
+		} else if (
+			otherType === "reimbursement" &&
+			shouldOverride(sourceEntityType, "reimbursement")
+		) {
 			await db.updatePurchase(otherId, {
 				amount: context.totalAmount,
 				description: context.description,
@@ -272,14 +256,12 @@ describe("Value Propagation - When Linking Entities", () => {
 				date: new Date("2024-03-01"),
 			});
 
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: new Date("2024-03-01"),
-					totalAmount: 50.0,
-					storeName: "K-Market Oulu",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: new Date("2024-03-01"),
+				totalAmount: 50.0,
+				storeName: "K-Market Oulu",
+			});
 
 			db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
@@ -308,7 +290,12 @@ describe("Value Propagation - When Linking Entities", () => {
 			db.addRelationship("transaction", "tx-1", "receipt", "r-1");
 
 			const context = await getRelationshipContext(db as any, "receipt", "r-1");
-			await propagateContextToLinkedEntities(db, "transaction", "tx-1", context);
+			await propagateContextToLinkedEntities(
+				db,
+				"transaction",
+				"tx-1",
+				context,
+			);
 
 			expect(db.updateLogs).toHaveLength(0);
 		});
@@ -323,14 +310,12 @@ describe("Value Propagation - When Linking Entities", () => {
 				createdAt: new Date("2024-02-15"),
 			});
 
-			db.addReceipt(
-				{ id: "r-1" },
-				{
-					purchaseDate: new Date("2024-02-15"),
-					totalAmount: 75.5,
-					storeName: "S-Market",
-				},
-			);
+			db.addReceipt({
+				id: "r-1",
+				purchaseDate: new Date("2024-02-15"),
+				totalAmount: 75.5,
+				storeName: "S-Market",
+			});
 
 			db.addRelationship("receipt", "r-1", "reimbursement", "p-1");
 
@@ -399,14 +384,12 @@ describe("Value Propagation - When Unlinking Entities", () => {
 	});
 
 	it("context recalculates when higher priority source is unlinked", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date("2024-01-01"),
-				totalAmount: 100.0,
-				storeName: "Receipt Store",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date("2024-01-01"),
+			totalAmount: 100.0,
+			storeName: "Receipt Store",
+		});
 		db.addPurchase({
 			id: "p-1",
 			amount: 90.0,
@@ -437,14 +420,12 @@ describe("Value Propagation - When Unlinking Entities", () => {
 	});
 
 	it("context becomes empty when all sources are unlinked", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date(),
-				totalAmount: 50.0,
-				storeName: "Store",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date(),
+			totalAmount: 50.0,
+			storeName: "Store",
+		});
 		db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 		db.removeRelationship("receipt", "r-1", "transaction", "tx-1");
@@ -471,14 +452,12 @@ describe("Value Propagation - Direct Links Only", () => {
 	});
 
 	it("propagation only affects directly linked entities", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date(),
-				totalAmount: 100.0,
-				storeName: "Receipt Store",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date(),
+			totalAmount: 100.0,
+			storeName: "Receipt Store",
+		});
 		db.addTransaction({
 			id: "tx-1",
 			amount: -80.0,
@@ -511,14 +490,12 @@ describe("Value Propagation - Direct Links Only", () => {
 	});
 
 	it("entity not directly linked to source does not get propagated values", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date(),
-				totalAmount: 200.0,
-				storeName: "High Priority Receipt",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date(),
+			totalAmount: 200.0,
+			storeName: "High Priority Receipt",
+		});
 		db.addPurchase({
 			id: "p-1",
 			amount: 150.0,
@@ -574,14 +551,12 @@ describe("Value Propagation - Manual Overrides", () => {
 	});
 
 	it("manual overrides should set valueSource to manual", async () => {
-		db.addReceipt(
-			{ id: "r-1" },
-			{
-				purchaseDate: new Date(),
-				totalAmount: 100.0,
-				storeName: "Original Store",
-			},
-		);
+		db.addReceipt({
+			id: "r-1",
+			purchaseDate: new Date(),
+			totalAmount: 100.0,
+			storeName: "Original Store",
+		});
 		db.addRelationship("receipt", "r-1", "transaction", "tx-1");
 
 		const contextWithManual = await getRelationshipContext(
