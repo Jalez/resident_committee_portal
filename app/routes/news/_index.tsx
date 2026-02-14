@@ -6,6 +6,7 @@ import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { EmptyState } from "~/components/ui/empty-state";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
@@ -138,11 +139,10 @@ export default function News({ loaderData }: Route.ComponentProps) {
 			>
 				<div className="space-y-4">
 					{items.length === 0 ? (
-						<div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-8 text-center">
-							<p className="text-gray-600 dark:text-gray-400">
-								{searchQ ? t("news.no_results") : t("news.empty")}
-							</p>
-						</div>
+						<EmptyState
+							message={searchQ ? t("news.no_results") : t("news.empty")}
+							icon="article"
+						/>
 					) : (
 						<ul className="divide-y divide-gray-200 dark:divide-gray-700">
 							{items.map((item) => {

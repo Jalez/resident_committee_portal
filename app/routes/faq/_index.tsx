@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher } from "react-router";
+import { Link, useFetcher, useRevalidator } from "react-router";
+import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { EmptyState } from "~/components/ui/empty-state";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
@@ -68,8 +70,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	};
 }
 
-// Deletion is now handled by /api/faq/:faqId/delete
-
 export default function Faq({ loaderData }: Route.ComponentProps) {
 	const { items, searchQ, systemLanguages } = loaderData;
 	const { t, i18n } = useTranslation();
@@ -83,6 +83,24 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 	const _deleteFormRef = useRef<HTMLFormElement>(null);
 
 	const deleteFetcher = useFetcher();
+	const revalidator = useRevalidator();
+	const deleteProcessedRef = useRef(false);
+
+	useEffect(() => {
+		if (
+			deleteFetcher.state === "idle" &&
+			deleteFetcher.data &&
+			!deleteProcessedRef.current
+		) {
+			deleteProcessedRef.current = true;
+			if (deleteFetcher.data.success) {
+				toast.success(t("common.actions.deleted", "Deleted successfully"));
+				revalidator.revalidate();
+			} else if (deleteFetcher.data.error) {
+				toast.error(deleteFetcher.data.error as string);
+			}
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, revalidator, t]);
 
 	return (
 		<PageWrapper>
@@ -96,9 +114,10 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 				variant="destructive"
 				onConfirm={() => {
 					if (deleteConfirmId) {
+						deleteProcessedRef.current = false;
 						deleteFetcher.submit(null, {
 							method: "DELETE",
-							action: `/api/faq/${deleteConfirmId}/delete`,
+							action: `/faq/${deleteConfirmId}/delete`,
 						});
 						setDeleteConfirmId(null);
 					}
@@ -136,11 +155,10 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 			>
 				<div className="space-y-4">
 					{items.length === 0 ? (
-						<div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-8 text-center">
-							<p className="text-gray-600 dark:text-gray-400">
-								{searchQ ? t("faq.no_results") : t("faq.empty")}
-							</p>
-						</div>
+						<EmptyState
+							message={searchQ ? t("faq.no_results") : t("faq.empty")}
+							icon="help"
+						/>
 					) : (
 						<ul className="divide-y divide-gray-200 dark:divide-gray-700">
 							{items.map((item) => {
