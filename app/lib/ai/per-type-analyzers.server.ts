@@ -205,24 +205,23 @@ export async function analyzeReceipt(
 	const result: AnalysisResult = { success: true, created: [], errors: [] };
 
 	try {
-		// Load receipt and its content
+		// Load receipt
 		const receipt = await db.getReceiptById(receiptId);
 		if (!receipt) {
 			throw new Error("Receipt not found");
 		}
 
-		const content = await db.getReceiptContentByReceiptId(receiptId);
-		if (!content) {
-			throw new Error("Receipt content not found - process the receipt first");
+		if (!receipt.ocrProcessed) {
+			throw new Error("Receipt has not been processed - run OCR first");
 		}
 
-		// Build analysis context from receipt content
+		// Build analysis context from receipt fields
 		const context: AnalysisContext = {
-			description: content.storeName,
-			totalAmount: content.totalAmount ? Number(content.totalAmount) : null,
-			date: content.purchaseDate,
-			currency: content.currency || "EUR",
-			lineItems: content.items ? JSON.parse(content.items) : [],
+			description: receipt.storeName,
+			totalAmount: receipt.totalAmount ? Number(receipt.totalAmount) : null,
+			date: receipt.purchaseDate,
+			currency: receipt.currency || "EUR",
+			lineItems: receipt.items ? JSON.parse(receipt.items) : [],
 		};
 
 		// Get AI suggestions
@@ -364,9 +363,8 @@ export async function analyzeReimbursement(
 		// If there are linked receipts, analyze them for inventory items
 		if (receipts.length > 0) {
 			for (const receipt of receipts) {
-				const content = await db.getReceiptContentByReceiptId(receipt.id);
-				if (content?.items) {
-					const items = JSON.parse(content.items);
+				if (receipt.items) {
+					const items = JSON.parse(receipt.items);
 					// Suggest inventory items from durable goods
 					for (const item of items) {
 						const price = item.totalPrice || item.price || 0;
@@ -396,9 +394,9 @@ export async function analyzeReimbursement(
 										value: String(price),
 										quantity: item.quantity || 1,
 										purchasedAt:
-											content.purchaseDate?.toISOString() ||
+											receipt.purchaseDate?.toISOString() ||
 											new Date().toISOString(),
-										description: `From receipt: ${content.storeName}`,
+										description: `From receipt: ${receipt.storeName}`,
 									},
 									confidence: 0.8,
 									reasoning: `Durable item (${price}€) from receipt`,

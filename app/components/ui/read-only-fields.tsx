@@ -1,58 +1,56 @@
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useTranslation } from "react-i18next";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
 import { cn } from "~/lib/utils";
 
 export type ReadOnlyFieldValue = string | number | boolean | null | undefined;
 
-
-
 export interface ReadOnlyFieldsProps {
-    fields: Record<string, ReadOnlyFieldValue>;
-    translationNamespace?: string;
-    title?: string;
-    className?: string;
-    columns?: number;
+	fields: Record<string, ReadOnlyFieldValue>;
+	translationNamespace?: string;
+	title?: string;
+	className?: string;
+	columns?: number;
 }
 
 export function ReadOnlyFields({
-    fields,
-    translationNamespace,
-    title,
-    className,
-    columns = 2,
+	fields,
+	translationNamespace,
+	title,
+	className,
+	columns = 2,
 }: ReadOnlyFieldsProps) {
-    const { t } = useTranslation();
+	const { t } = useTranslation();
 
-    if (Object.keys(fields).length === 0) return null;
+	if (Object.keys(fields).length === 0) return null;
 
-    return (
-        <Card>
+	return (
+		<Card>
+			<CardContent>
+				<div className={cn("flex flex-row justify-between")}>
+					{Object.entries(fields).map(([key, value]) => {
+						if (value === null || value === undefined) return null;
 
-            <CardContent>
-                <div
-                    className={cn(
-                        "flex flex-row justify-between",
+						// Handle boolean display if needed, or non-string
+						const displayValue =
+							typeof value === "boolean" ? (value ? "Yes" : "No") : value;
 
-                    )}
-                >
-                    {Object.entries(fields).map(([key, value]) => {
-                        if (value === null || value === undefined) return null;
+						const displayLabel =
+							key === "id"
+								? "ID"
+								: translationNamespace
+									? t(`${translationNamespace}.${key}`)
+									: key;
 
-                        // Handle boolean display if needed, or non-string
-                        const displayValue = typeof value === "boolean" ? (value ? "Yes" : "No") : value;
-
-                        const displayLabel = translationNamespace ? t(`${translationNamespace}.${key}`) : key;
-
-                        return (
-                            <div key={key}>
-                                <Label className="text-muted-foreground">{displayLabel}</Label>
-                                <div className="font-medium">{displayValue}</div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </CardContent>
-        </Card>
-    );
+						return (
+							<div key={key}>
+								<Label className="text-muted-foreground">{displayLabel}</Label>
+								<div className="font-medium">{displayValue}</div>
+							</div>
+						);
+					})}
+				</div>
+			</CardContent>
+		</Card>
+	);
 }

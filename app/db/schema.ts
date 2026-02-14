@@ -595,12 +595,21 @@ export const receipts = pgTable("receipts", {
 	// Status tracking
 	status: text("status").$type<ReceiptStatus>().notNull().default("draft"),
 	// Receipt metadata
-	name: text("name"), // Optional name (defaults to filename if not provided)
-	description: text("description"), // Optional description
+	name: text("name"),
+	description: text("description"),
 	// File storage info (nullable for drafts)
-	url: text("url"), // Link to actual receipt file in blob storage
-	pathname: text("pathname"), // Storage path for the receipt file
-	// Link to purchase via entity_relationships table (universal relationships)
+	url: text("url"),
+	pathname: text("pathname"),
+	// OCR Content (extracted and parsed from receipt image)
+	rawText: text("raw_text"),
+	storeName: text("store_name"),
+	items: text("items"),
+	totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
+	currency: text("currency").default("EUR"),
+	purchaseDate: timestamp("purchase_date"),
+	aiModel: text("ai_model"),
+	ocrProcessed: boolean("ocr_processed").default(false),
+	ocrProcessedAt: timestamp("ocr_processed_at"),
 	// Creator tracking
 	createdBy: uuid("created_by").references(() => users.id),
 	// Timestamps
@@ -610,37 +619,6 @@ export const receipts = pgTable("receipts", {
 
 export type Receipt = typeof receipts.$inferSelect;
 export type NewReceipt = typeof receipts.$inferInsert;
-
-/**
- * Receipt contents table schema
- * Stores OCR-extracted text and AI-parsed structured data from receipts
- */
-export const receiptContents = pgTable("receipt_contents", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	receiptId: uuid("receipt_id")
-		.references(() => receipts.id, { onDelete: "cascade" })
-		.notNull()
-		.unique(),
-	rawText: text("raw_text"), // Full text extracted by OCR
-	storeName: text("store_name"),
-	// JSON string of {name, quantity, unitPrice, totalPrice}[]
-	items: text("items"),
-	totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
-	currency: text("currency").default("EUR"),
-	purchaseDate: timestamp("purchase_date"),
-	aiModel: text("ai_model"), // Model used for parsing (e.g., "google/gemini-flash-1.5")
-	// Receipt processing tracking
-	processed: boolean("processed").default(false),
-	processedAt: timestamp("processed_at"),
-	reimbursementId: uuid("reimbursement_id").references(() => purchases.id),
-	transactionIds: text("transaction_ids"), // JSON array of created transaction IDs
-	inventoryItemIds: text("inventory_item_ids"), // JSON array of created inventory item IDs
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export type ReceiptContent = typeof receiptContents.$inferSelect;
-export type NewReceiptContent = typeof receiptContents.$inferInsert;
 
 // ============================================
 // MINUTES
@@ -701,7 +679,6 @@ export type NewAppSetting = typeof appSettings.$inferInsert;
 // UNIVERSAL RELATIONSHIPS
 // ============================================
 
-
 export const entityRelationships = pgTable(
 	"entity_relationships",
 	{
@@ -738,3 +715,52 @@ export const entityRelationships = pgTable(
 
 export type EntityRelationship = typeof entityRelationships.$inferSelect;
 export type NewEntityRelationship = typeof entityRelationships.$inferInsert;
+
+// ============================================
+// EVENTS
+// ============================================
+
+/**
+ * Event status values
+ * - draft: Event is being created but not yet finalized
+ * - active: Event is scheduled and visible
+ * - cancelled: Event was cancelled
+ * - completed: Event has passed
+ */
+export type EventStatus = "draft" | "active" | "cancelled" | "completed";
+
+/**
+ * Event type for categorization
+ * - meeting: Committee meeting
+ * - social: Social event
+ * - private: Private event (hidden from non-staff)
+ */
+export type EventType = "meeting" | "social" | "private";
+
+/**
+ * Events table schema
+ * Stores event information synced with Google Calendar
+ * DB is the primary source of truth, Google Calendar is synced for external visibility
+ */
+export const events = pgTable("events", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	title: text("title").notNull(),
+	description: text("description"),
+	location: text("location"),
+	isAllDay: boolean("is_all_day").notNull().default(false),
+	startDate: timestamp("start_date").notNull(),
+	endDate: timestamp("end_date"),
+	recurrence: text("recurrence"),
+	reminders: text("reminders"),
+	attendees: text("attendees"),
+	eventType: text("event_type").$type<EventType>().notNull().default("social"),
+	status: text("status").$type<EventStatus>().notNull().default("active"),
+	googleEventId: text("google_event_id"),
+	googleCalendarId: text("google_calendar_id"),
+	createdBy: uuid("created_by").references(() => users.id),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;

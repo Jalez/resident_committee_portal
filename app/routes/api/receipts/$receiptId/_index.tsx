@@ -24,18 +24,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			return Response.json({ error: "Receipt not found" }, { status: 404 });
 		}
 
-		// Try to get receipt content (OCR data)
-		let receiptContent = null;
-		try {
-			receiptContent = await db.getReceiptContentByReceiptId(receiptId);
-		} catch (_error) {
-			// Receipt content might not exist, that's okay
-			console.log("[API Receipt] No receipt content found for:", receiptId);
-		}
-
 		return Response.json({
 			receipt,
-			receiptContent,
 		});
 	} catch (error) {
 		console.error("[API Receipt] Error fetching receipt:", error);

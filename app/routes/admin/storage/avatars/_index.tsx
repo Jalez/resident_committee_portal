@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { EmptyState } from "~/components/ui/empty-state";
 import { Thumbnail } from "~/components/ui/thumbnail";
 import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
@@ -113,26 +114,22 @@ export default function AdminStorageAvatars() {
 					})}
 				</p>
 
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+				<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 					{blobs.length === 0 ? (
-						<div className="p-8 text-center text-gray-500">
-							<span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">
-								account_circle
-							</span>
-							<p className="mt-2 font-medium">
-								{t("admin.storage.avatars.empty", {
-									defaultValue: "No avatars",
-								})}
-							</p>
-						</div>
+						<EmptyState
+							message={t("admin.storage.avatars.empty", {
+								defaultValue: "No avatars",
+							})}
+							icon="account_circle"
+						/>
 					) : (
 						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 							{blobs.map((blob) => (
 								<li
 									key={blob.pathname}
-									className="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800/50"
+									className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
 								>
-									<div className="relative aspect-square bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-2">
+									<div className="relative aspect-square bg-muted flex items-center justify-center p-2">
 										<Thumbnail
 											src={blob.url}
 											alt=""

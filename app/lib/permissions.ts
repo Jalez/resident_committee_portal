@@ -272,8 +272,8 @@ export const PERMISSIONS = {
 		translationKey: "permissions.minutes.guide",
 		category: "Minutes",
 	},
-	"minutes:create": {
-		translationKey: "permissions.minutes.create",
+	"minutes:write": {
+		translationKey: "permissions.minutes.write",
 		category: "Minutes",
 	},
 	"minutes:update": {

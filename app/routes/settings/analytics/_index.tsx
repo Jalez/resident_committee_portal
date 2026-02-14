@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PageHeader } from "~/components/layout/page-header";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { AiTextAnalyzerSettings } from "~/components/settings/ai-text-analyzer-settings";
 import { handleAiTextAnalyzerAction } from "~/components/settings/ai-text-analyzer-settings.server";
 import { HiddenQuestionsSettings } from "~/components/settings/hidden-questions-settings";
@@ -81,13 +80,9 @@ export default function SettingsAnalytics({
 	const { t } = useTranslation();
 
 	return (
-		<PageWrapper>
-			<PageHeader title={t("settings.analytics.title")} />
-
-			<div className="max-w-2xl space-y-6">
-				<AiTextAnalyzerSettings settings={settings} models={models} />
-				<HiddenQuestionsSettings settings={settings} />
-			</div>
-		</PageWrapper>
+		<SettingsPageLayout title={t("settings.analytics.title")}>
+			<AiTextAnalyzerSettings settings={settings} models={models} />
+			<HiddenQuestionsSettings settings={settings} />
+		</SettingsPageLayout>
 	);
 }

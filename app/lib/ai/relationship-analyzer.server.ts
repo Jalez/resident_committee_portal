@@ -17,7 +17,12 @@ interface RelationshipContext {
 		unitPrice: number;
 		totalPrice: number;
 	}>;
-	valueSource: "manual" | "receipt" | "reimbursement" | "transaction" | "unknown";
+	valueSource:
+		| "manual"
+		| "receipt"
+		| "reimbursement"
+		| "transaction"
+		| "unknown";
 	linkedEntityIds: string[];
 }
 
@@ -130,33 +135,28 @@ Respond ONLY with a JSON object:
 	}
 }
 
-import type { ReceiptContent } from "~/db/schema";
+import type { Receipt } from "~/db/schema";
 
 /**
- * Adapter to analyze a receipt content directly by converting it to a pseudo-RelationshipContext
+ * Adapter to analyze a receipt directly by converting it to a pseudo-RelationshipContext
  */
 export async function analyzeReceiptForTransaction(
 	db: DatabaseAdapter,
-	content: ReceiptContent,
+	receipt: Receipt,
 ): Promise<AIEnrichmentResult | null> {
-	// Convert ReceiptContent to RelationshipContext
-	const _items = content.inventoryItemIds ? [] : []; // We don't have easy access to items here without DB
-	// Actually we can parse lineItems from content if available
-	// content.lineItems is likely JSON
-
 	let lineItems: any[] = [];
 	try {
-		if (content.items) {
-			lineItems = JSON.parse(content.items);
+		if (receipt.items) {
+			lineItems = JSON.parse(receipt.items);
 		}
 	} catch (_e) {}
 
 	const context: RelationshipContext = {
-		id: `virtual-receipt-${content.id}`,
-		date: content.purchaseDate ? new Date(content.purchaseDate) : null,
-		totalAmount: content.totalAmount ? parseFloat(content.totalAmount) : null,
-		description: content.storeName,
-		currency: content.currency || "EUR",
+		id: `virtual-receipt-${receipt.id}`,
+		date: receipt.purchaseDate ? new Date(receipt.purchaseDate) : null,
+		totalAmount: receipt.totalAmount ? parseFloat(receipt.totalAmount) : null,
+		description: receipt.storeName,
+		currency: receipt.currency || "EUR",
 		category: null,
 		purchaserId: null,
 		valueSource: "receipt",

@@ -75,7 +75,7 @@ export async function createViewLoader<
 
 	const relationships = await loadRelationshipsForEntity(
 		db,
-		entityType as any,
+		entityType as RelationshipEntityType,
 		entity.id,
 		typesToLoad,
 	);

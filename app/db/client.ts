@@ -14,13 +14,37 @@ export type RelationshipEntityType =
 
 export type InventoryItemStatus = "draft" | "active" | "removed" | "legacy";
 export type RemovalReason = "broken" | "used_up" | "lost" | "sold" | "other";
-export type PurchaseStatus = "draft" | "pending" | "approved" | "reimbursed" | "rejected";
+export type PurchaseStatus =
+	| "draft"
+	| "pending"
+	| "approved"
+	| "reimbursed"
+	| "rejected";
 export type TransactionType = "income" | "expense";
-export type TransactionStatus = "draft" | "pending" | "complete" | "paused" | "declined";
-export type ReimbursementStatus = "not_requested" | "requested" | "approved" | "declined";
+export type TransactionStatus =
+	| "draft"
+	| "pending"
+	| "complete"
+	| "paused"
+	| "declined";
+export type ReimbursementStatus =
+	| "not_requested"
+	| "requested"
+	| "approved"
+	| "declined";
 export type SubmissionType = "committee" | "events" | "purchases" | "questions";
-export type SubmissionStatus = "Uusi / New" | "Käsittelyssä / In Progress" | "Hyväksytty / Approved" | "Hylätty / Rejected" | "Valmis / Done";
-export type MessageType = "reimbursement_approved" | "reimbursement_declined" | "news_published" | "ai_news_translation_failed" | "ai_faq_translation_failed";
+export type SubmissionStatus =
+	| "Uusi / New"
+	| "Käsittelyssä / In Progress"
+	| "Hyväksytty / Approved"
+	| "Hylätty / Rejected"
+	| "Valmis / Done";
+export type MessageType =
+	| "reimbursement_approved"
+	| "reimbursement_declined"
+	| "news_published"
+	| "ai_news_translation_failed"
+	| "ai_faq_translation_failed";
 export type CommitteeMailDirection = "sent" | "inbox";
 export type MailDraftType = "new" | "reply" | "replyAll" | "forward";
 export type BudgetStatus = "draft" | "open" | "closed";
@@ -28,6 +52,8 @@ export type PollType = "managed" | "linked" | "external";
 export type PollStatus = "active" | "closed" | "draft";
 export type ReceiptStatus = "draft" | "active" | "archived";
 export type MinuteStatus = "draft" | "active" | "archived";
+export type EventStatus = "draft" | "active" | "cancelled" | "completed";
+export type EventType = "meeting" | "social" | "private";
 
 export interface Role {
 	id: string;
@@ -86,7 +112,9 @@ export interface InventoryItem {
 	updatedAt: Date;
 }
 
-export type NewInventoryItem = Partial<Omit<InventoryItem, "id" | "createdAt" | "updatedAt">> & {
+export type NewInventoryItem = Partial<
+	Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
+> & {
 	name: string;
 };
 
@@ -112,7 +140,9 @@ export interface Purchase {
 	updatedAt: Date;
 }
 
-export type NewPurchase = Partial<Omit<Purchase, "id" | "createdAt" | "updatedAt">> & {
+export type NewPurchase = Partial<
+	Omit<Purchase, "id" | "createdAt" | "updatedAt">
+> & {
 	amount: string;
 	purchaserName: string;
 	bankAccount: string;
@@ -135,7 +165,9 @@ export interface Transaction {
 	updatedAt: Date;
 }
 
-export type NewTransaction = Partial<Omit<Transaction, "id" | "createdAt" | "updatedAt">> & {
+export type NewTransaction = Partial<
+	Omit<Transaction, "id" | "createdAt" | "updatedAt">
+> & {
 	year: number;
 	type: TransactionType;
 	amount: string;
@@ -155,7 +187,9 @@ export interface Submission {
 	updatedAt: Date;
 }
 
-export type NewSubmission = Partial<Omit<Submission, "id" | "createdAt" | "updatedAt">> & {
+export type NewSubmission = Partial<
+	Omit<Submission, "id" | "createdAt" | "updatedAt">
+> & {
 	type: SubmissionType;
 	name: string;
 	email: string;
@@ -176,7 +210,9 @@ export interface SocialLink {
 	updatedAt: Date;
 }
 
-export type NewSocialLink = Partial<Omit<SocialLink, "id" | "createdAt" | "updatedAt">> & {
+export type NewSocialLink = Partial<
+	Omit<SocialLink, "id" | "createdAt" | "updatedAt">
+> & {
 	name: string;
 	icon: string;
 	url: string;
@@ -233,7 +269,9 @@ export interface Message {
 	updatedAt: Date;
 }
 
-export type NewMessage = Partial<Omit<Message, "id" | "createdAt" | "updatedAt">> & {
+export type NewMessage = Partial<
+	Omit<Message, "id" | "createdAt" | "updatedAt">
+> & {
 	userId: string;
 	type: MessageType;
 	title: string;
@@ -259,7 +297,9 @@ export interface CommitteeMailMessage {
 	createdAt: Date;
 }
 
-export type NewCommitteeMailMessage = Partial<Omit<CommitteeMailMessage, "id" | "createdAt">> & {
+export type NewCommitteeMailMessage = Partial<
+	Omit<CommitteeMailMessage, "id" | "createdAt">
+> & {
 	direction: CommitteeMailDirection;
 	fromAddress: string;
 	toJson: string;
@@ -282,7 +322,9 @@ export interface MailDraft {
 	createdAt: Date;
 }
 
-export type NewMailDraft = Partial<Omit<MailDraft, "id" | "createdAt" | "updatedAt">> & {
+export type NewMailDraft = Partial<
+	Omit<MailDraft, "id" | "createdAt" | "updatedAt">
+> & {
 	toJson: string;
 };
 
@@ -298,7 +340,9 @@ export interface FundBudget {
 	updatedAt: Date;
 }
 
-export type NewFundBudget = Partial<Omit<FundBudget, "id" | "createdAt" | "updatedAt">> & {
+export type NewFundBudget = Partial<
+	Omit<FundBudget, "id" | "createdAt" | "updatedAt">
+> & {
 	name: string;
 	amount: string;
 	year: number;
@@ -341,16 +385,6 @@ export interface Receipt {
 	description: string | null;
 	url: string | null;
 	pathname: string | null;
-	createdBy: string | null;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
-export type NewReceipt = Partial<Omit<Receipt, "id" | "createdAt" | "updatedAt">>;
-
-export interface ReceiptContent {
-	id: string;
-	receiptId: string;
 	rawText: string | null;
 	storeName: string | null;
 	items: string | null;
@@ -358,18 +392,16 @@ export interface ReceiptContent {
 	currency: string | null;
 	purchaseDate: Date | null;
 	aiModel: string | null;
-	processed: boolean | null;
-	processedAt: Date | null;
-	reimbursementId: string | null;
-	transactionIds: string | null;
-	inventoryItemIds: string | null;
+	ocrProcessed: boolean | null;
+	ocrProcessedAt: Date | null;
+	createdBy: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
 
-export type NewReceiptContent = Partial<Omit<ReceiptContent, "id" | "createdAt" | "updatedAt">> & {
-	receiptId: string;
-};
+export type NewReceipt = Partial<
+	Omit<Receipt, "id" | "createdAt" | "updatedAt">
+>;
 
 export interface Minute {
 	id: string;
@@ -405,7 +437,9 @@ export interface EntityRelationship {
 	createdAt: Date;
 }
 
-export type NewEntityRelationship = Partial<Omit<EntityRelationship, "id" | "createdAt">> & {
+export type NewEntityRelationship = Partial<
+	Omit<EntityRelationship, "id" | "createdAt">
+> & {
 	relationAType: RelationshipEntityType;
 	relationId: string;
 	relationBType: RelationshipEntityType;
@@ -422,4 +456,31 @@ export interface UserRole {
 export type NewUserRole = Partial<Omit<UserRole, "id" | "createdAt">> & {
 	userId: string;
 	roleId: string;
+};
+
+export interface Event {
+	id: string;
+	title: string;
+	description: string | null;
+	location: string | null;
+	isAllDay: boolean;
+	startDate: Date;
+	endDate: Date | null;
+	recurrence: string | null;
+	reminders: string | null;
+	attendees: string | null;
+	eventType: EventType;
+	status: EventStatus;
+	googleEventId: string | null;
+	googleCalendarId: string | null;
+	createdBy: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export type NewEvent = Partial<
+	Omit<Event, "id" | "createdAt" | "updatedAt">
+> & {
+	title: string;
+	startDate: Date;
 };

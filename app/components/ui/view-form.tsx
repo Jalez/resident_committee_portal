@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher } from "react-router";
+import { Link, useFetcher, useRevalidator } from "react-router";
+import { toast } from "sonner";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
@@ -82,6 +83,24 @@ export function ViewForm({
 	const { t, i18n } = useTranslation();
 	const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 	const deleteFetcher = useFetcher();
+	const revalidator = useRevalidator();
+	const deleteProcessedRef = React.useRef(false);
+
+	React.useEffect(() => {
+		if (
+			deleteFetcher.state === "idle" &&
+			deleteFetcher.data &&
+			!deleteProcessedRef.current
+		) {
+			deleteProcessedRef.current = true;
+			if ((deleteFetcher.data as any).success) {
+				toast.success(t("common.actions.deleted", "Deleted successfully"));
+				revalidator.revalidate();
+			} else if ((deleteFetcher.data as any).error) {
+				toast.error((deleteFetcher.data as any).error as string);
+			}
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, revalidator, t]);
 
 	const definition = ENTITY_DEFINITIONS[entityType];
 	const registry = ENTITY_REGISTRY[entityType];
@@ -101,6 +120,11 @@ export function ViewForm({
 			schemaConfig?: any;
 		}> = [];
 
+		list.push({
+			name: "id",
+			config: { value: entityId },
+		});
+
 		const schemaFields = definition?.fields || {};
 		const allKeys = new Set([
 			...Object.keys(schemaFields),
@@ -108,6 +132,8 @@ export function ViewForm({
 		]);
 
 		for (const name of allKeys) {
+			if (name === "id") continue;
+
 			const propConfig = displayFields[name];
 
 			if (propConfig === null || propConfig === undefined) continue;
@@ -137,7 +163,7 @@ export function ViewForm({
 		}
 
 		return list;
-	}, [displayFields, definition]);
+	}, [displayFields, definition, entityId]);
 
 	const renderFieldValue = (
 		field: DisplayFieldConfig,
@@ -205,6 +231,7 @@ export function ViewForm({
 
 	const getLabel = (name: string, field: DisplayFieldConfig): string => {
 		if (field.label) return field.label;
+		if (name === "id") return "ID";
 		if (translationNamespace) {
 			return t(
 				`${translationNamespace}.${name}_label`,
@@ -259,7 +286,7 @@ export function ViewForm({
 					: title;
 
 		const contentFields = fields.filter(
-			(f) => !["title", "titleSecondary", "createdAt"].includes(f.name),
+			(f) => !["id", "title", "titleSecondary", "createdAt"].includes(f.name),
 		);
 		const createdAtField = fields.find((f) => f.name === "createdAt");
 
@@ -412,13 +439,11 @@ export function ViewForm({
 								cancelLabel={t("common.actions.cancel")}
 								variant="destructive"
 								onConfirm={() => {
-									deleteFetcher.submit(
-										{ _method: "DELETE" },
-										{
-											method: "post",
-											action: resolvedDeleteUrl,
-										},
-									);
+									deleteProcessedRef.current = false;
+									deleteFetcher.submit(null, {
+										method: "DELETE",
+										action: resolvedDeleteUrl,
+									});
 									setShowDeleteConfirm(false);
 								}}
 								loading={deleteFetcher.state !== "idle"}

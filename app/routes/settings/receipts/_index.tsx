@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader, PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { ReceiptOCRSettings } from "~/components/settings/receipt-ocr-settings";
 import {
 	action,
@@ -40,24 +40,21 @@ export default function SettingsReceipts({ loaderData }: Route.ComponentProps) {
 	}, [actionData, t]);
 
 	return (
-		<PageWrapper>
-			<PageHeader
-				primary={t("settings.receipt_ocr_title", {
-					defaultValue: "Receipt OCR",
-				})}
-				secondary={t("settings.receipt_ocr_description", {
-					defaultValue: "Configure AI settings for automatic receipt parsing.",
-				})}
-			/>
-			<div className="max-w-2xl space-y-6">
-				{loaderData ? (
-					<ReceiptOCRSettings
-						apiKey={loaderData.apiKey}
-						currentModel={loaderData.currentModel}
-						models={loaderData.models}
-					/>
-				) : null}
-			</div>
-		</PageWrapper>
+		<SettingsPageLayout
+			title={t("settings.receipt_ocr_title", {
+				defaultValue: "Receipt OCR",
+			})}
+			description={t("settings.receipt_ocr_description", {
+				defaultValue: "Configure AI settings for automatic receipt parsing.",
+			})}
+		>
+			{loaderData ? (
+				<ReceiptOCRSettings
+					apiKey={loaderData.apiKey}
+					currentModel={loaderData.currentModel}
+					models={loaderData.models}
+				/>
+			) : null}
+		</SettingsPageLayout>
 	);
 }

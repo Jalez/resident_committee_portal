@@ -99,7 +99,7 @@ export async function createEditLoader<
 
 	const relationships = await loadRelationshipsForEntity(
 		db,
-		entityType as any,
+		entityType as RelationshipEntityType,
 		entity.id,
 		typesToLoad,
 	);
@@ -127,7 +127,7 @@ export async function createEditLoader<
 	// Relationship context values (for autofill)
 	const contextValues = await getRelationshipContext(
 		db,
-		entityType as any,
+		entityType as RelationshipEntityType,
 		entity.id,
 	);
 
@@ -227,9 +227,13 @@ export async function createEditAction<
 
 	const result = schema.safeParse(data);
 	if (!result.success) {
+		const formattedErrors = result.error.flatten().fieldErrors;
+		const errorDetails = Object.entries(formattedErrors)
+			.map(([field, errors]) => `${field}: ${(errors as string[]).join(", ")}`)
+			.join("; ");
 		return {
-			error: "Validation failed",
-			fieldErrors: result.error.flatten().fieldErrors,
+			error: `Validation failed: ${errorDetails}`,
+			fieldErrors: formattedErrors,
 		};
 	}
 
@@ -274,7 +278,7 @@ export async function createEditAction<
 	// Save relationships
 	await saveRelationshipChanges(
 		db,
-		entityType as any,
+		entityType as RelationshipEntityType,
 		entity.id,
 		formData,
 		user?.userId || null,
@@ -285,16 +289,16 @@ export async function createEditAction<
 	const sourceId = formData.get("_sourceId") as string | null;
 	if (sourceType && sourceId) {
 		const exists = await db.entityRelationshipExists(
-			sourceType as any,
+			sourceType as RelationshipEntityType,
 			sourceId,
-			entityType as any,
+			entityType as RelationshipEntityType,
 			entity.id,
 		);
 		if (!exists) {
 			await db.createEntityRelationship({
-				relationAType: sourceType as any,
+				relationAType: sourceType as RelationshipEntityType,
 				relationId: sourceId,
-				relationBType: entityType as any,
+				relationBType: entityType as RelationshipEntityType,
 				relationBId: entity.id,
 				createdBy: user?.userId || null,
 			});

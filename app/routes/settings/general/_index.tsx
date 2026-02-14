@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { ApiKeySettings } from "~/components/settings/api-key-settings";
 import { handleApiKeySettingsAction } from "~/components/settings/api-key-settings.server";
 import { LanguageSettings } from "~/components/settings/language-settings";
@@ -15,7 +15,6 @@ import {
 	getThemePrimaryColor,
 } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
-import { PageHeader } from "~/components/layout/page-header";
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -65,21 +64,16 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 	const { supportedLanguages, languageNames } = useLanguage();
 
 	return (
-		<PageWrapper>
-
-			<PageHeader
-				title={t("settings.general.title", { lng: defaults.primary })}
-
+		<SettingsPageLayout
+			title={t("settings.general.title", { lng: defaults.primary })}
+		>
+			<LanguageSettings
+				defaults={defaults}
+				supportedLanguages={supportedLanguages}
+				languageNames={languageNames}
 			/>
-			<div className="max-w-2xl space-y-6">
-				<LanguageSettings
-					defaults={defaults}
-					supportedLanguages={supportedLanguages}
-					languageNames={languageNames}
-				/>
-				<ApiKeySettings apiKey={apiKey} hasApiKey={hasApiKey} />
-				<ThemeSettings currentPrimary={themePrimary} />
-			</div>
-		</PageWrapper>
+			<ApiKeySettings apiKey={apiKey} hasApiKey={hasApiKey} />
+			<ThemeSettings currentPrimary={themePrimary} />
+		</SettingsPageLayout>
 	);
 }

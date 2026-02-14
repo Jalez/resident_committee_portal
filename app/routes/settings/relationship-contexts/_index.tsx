@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader, PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { DraftCleanupSettings } from "~/components/settings/draft-cleanup-settings";
 import { SourceContextAISettings } from "~/components/settings/source-context-ai-settings";
 import { getDatabase } from "~/db/server.server";
@@ -113,26 +113,23 @@ export default function SettingsRelationshipContext({
 	}, [actionData, t]);
 
 	return (
-		<PageWrapper>
-			<PageHeader
-				primary={t("settings.source.context", {
-					lng: systemLanguages.primary,
-					defaultValue: "Source Contexts",
-				})}
-				secondary={t("settings.source.context_desc", {
-					lng: systemLanguages.secondary ?? systemLanguages.primary,
-					defaultValue:
-						"Configure AI-powered auto-categorization for transactions created from receipts.",
-				})}
+		<SettingsPageLayout
+			title={t("settings.source.context", {
+				lng: systemLanguages.primary,
+				defaultValue: "Source Contexts",
+			})}
+			description={t("settings.source.context_desc", {
+				lng: systemLanguages.secondary ?? systemLanguages.primary,
+				defaultValue:
+					"Configure AI-powered auto-categorization for transactions created from receipts.",
+			})}
+		>
+			<SourceContextAISettings
+				apiKey={apiKey}
+				currentModel={currentModel}
+				models={models}
 			/>
-			<div className="max-w-2xl space-y-6">
-				<SourceContextAISettings
-					apiKey={apiKey}
-					currentModel={currentModel}
-					models={models}
-				/>
-				<DraftCleanupSettings />
-			</div>
-		</PageWrapper>
+			<DraftCleanupSettings />
+		</SettingsPageLayout>
 	);
 }

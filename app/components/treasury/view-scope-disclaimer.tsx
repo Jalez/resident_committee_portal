@@ -30,11 +30,9 @@ export function ViewScopeDisclaimer({
 	const message = t(messageKey, { itemType: itemTypeLabel });
 
 	return (
-		<Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
-			<InfoIcon className="size-4 text-blue-600 dark:text-blue-400" />
-			<AlertDescription className="text-blue-800 dark:text-blue-300">
-				{message}
-			</AlertDescription>
+		<Alert variant="info">
+			<InfoIcon className="size-4" />
+			<AlertDescription>{message}</AlertDescription>
 		</Alert>
 	);
 }

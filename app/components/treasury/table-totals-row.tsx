@@ -74,7 +74,7 @@ export function TableTotalsRow({
 			: null;
 
 		return (
-			<TableRow className="bg-gray-50 dark:bg-gray-900/50 border-t-2 border-gray-200 dark:border-gray-700">
+			<TableRow className="bg-primary/5 border-t-2 border-primary/20">
 				<TableCell colSpan={labelColSpan} className="font-bold">
 					{t("common.total")}
 				</TableCell>
@@ -103,7 +103,7 @@ export function TableTotalsRow({
 	const total = totals;
 
 	return (
-		<TableRow className="bg-gray-50 dark:bg-gray-900/50 border-t-2 border-gray-200 dark:border-gray-700">
+		<TableRow className="bg-primary/5 border-t-2 border-primary/20">
 			<TableCell colSpan={labelColSpan} className="font-bold">
 				{t("common.total")}
 			</TableCell>

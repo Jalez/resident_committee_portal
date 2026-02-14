@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -9,7 +9,9 @@ import {
 	type CommitteeMailMessage,
 	committeeMailMessages,
 	type EntityRelationship,
+	type Event,
 	entityRelationships,
+	events,
 	type Faq,
 	type FundBudget,
 	faq,
@@ -24,6 +26,7 @@ import {
 	minutes,
 	type NewCommitteeMailMessage,
 	type NewEntityRelationship,
+	type NewEvent,
 	type NewFaq,
 	type NewFundBudget,
 	type NewInventoryItem,
@@ -34,7 +37,6 @@ import {
 	type NewPoll,
 	type NewPurchase,
 	type NewReceipt,
-	type NewReceiptContent,
 	type NewRole,
 	type NewSocialLink,
 	type NewSubmission,
@@ -47,9 +49,7 @@ import {
 	polls,
 	purchases,
 	type Receipt,
-	type ReceiptContent,
 	type Role,
-	receiptContents,
 	receipts,
 	roles,
 	type SocialLink,
@@ -63,8 +63,8 @@ import {
 	userRoles,
 	users,
 } from "../schema";
-import type { DatabaseAdapter } from "./types";
 import type { RelationshipEntityType } from "../types";
+import type { DatabaseAdapter } from "./types";
 
 /**
  * Standard PostgreSQL database adapter using Drizzle ORM
@@ -1341,58 +1341,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-	// ==================== Receipt Content Methods ====================
-	async getReceiptContentByReceiptId(
-		receiptId: string,
-	): Promise<ReceiptContent | null> {
-		const result = await this.db
-			.select()
-			.from(receiptContents)
-			.where(eq(receiptContents.receiptId, receiptId))
-			.limit(1);
-		return result[0] ?? null;
-	}
-
-	async getReceiptContentsByReceiptIds(
-		receiptIds: string[],
-	): Promise<ReceiptContent[]> {
-		if (receiptIds.length === 0) return [];
-		return this.db
-			.select()
-			.from(receiptContents)
-			.where(inArray(receiptContents.receiptId, receiptIds));
-	}
-
-	async createReceiptContent(
-		content: NewReceiptContent,
-	): Promise<ReceiptContent> {
-		const result = await this.db
-			.insert(receiptContents)
-			.values(content)
-			.returning();
-		return result[0];
-	}
-
-	async deleteReceiptContent(id: string): Promise<boolean> {
-		const result = await this.db
-			.delete(receiptContents)
-			.where(eq(receiptContents.id, id))
-			.returning();
-		return result.length > 0;
-	}
-
-	async updateReceiptContent(
-		id: string,
-		updates: Partial<Omit<NewReceiptContent, "id" | "receiptId">>,
-	): Promise<ReceiptContent | null> {
-		const result = await this.db
-			.update(receiptContents)
-			.set({ ...updates, updatedAt: new Date() })
-			.where(eq(receiptContents.id, id))
-			.returning();
-		return result[0] ?? null;
-	}
-
 	async getIncompleteInventoryItems(): Promise<InventoryItem[]> {
 		return this.db
 			.select()
@@ -1572,5 +1520,62 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.where(inArray(table.id, ids))
 			.returning();
 		return result.length;
+	}
+
+	async getEvents(): Promise<Event[]> {
+		return this.db.select().from(events).orderBy(asc(events.startDate));
+	}
+
+	async getUpcomingEvents(limit = 20): Promise<Event[]> {
+		const now = new Date();
+		return this.db
+			.select()
+			.from(events)
+			.where(gt(events.startDate, now))
+			.orderBy(asc(events.startDate))
+			.limit(limit);
+	}
+
+	async getEventById(id: string): Promise<Event | null> {
+		const result = await this.db
+			.select()
+			.from(events)
+			.where(eq(events.id, id))
+			.limit(1);
+		return result[0] || null;
+	}
+
+	async getEventByGoogleEventId(googleEventId: string): Promise<Event | null> {
+		const result = await this.db
+			.select()
+			.from(events)
+			.where(eq(events.googleEventId, googleEventId))
+			.limit(1);
+		return result[0] || null;
+	}
+
+	async createEvent(event: NewEvent): Promise<Event> {
+		const result = await this.db.insert(events).values(event).returning();
+		return result[0];
+	}
+
+	async updateEvent(
+		id: string,
+		data: Partial<Omit<NewEvent, "id">>,
+	): Promise<Event | null> {
+		const result = await this.db
+			.update(events)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(events.id, id))
+			.returning();
+		return result[0] || null;
+	}
+
+	async deleteEvent(id: string): Promise<boolean> {
+		const result = await this.db
+			.delete(events)
+			.where(eq(events.id, id))
+			.returning();
+		return result.length > 0;
 	}
 }

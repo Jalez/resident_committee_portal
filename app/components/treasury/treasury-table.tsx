@@ -2,6 +2,7 @@ import {
 	TableTotalsRow,
 	type TableTotalsRowProps,
 } from "~/components/treasury/table-totals-row";
+import { EmptyState } from "~/components/ui/empty-state";
 import {
 	Table,
 	TableBody,
@@ -63,28 +64,12 @@ export function TreasuryTable<T>({
 	if (rowCount === 0 && emptyState) {
 		return (
 			<div className={CONTAINER_CLASS}>
-				<div className="p-8 text-center text-gray-500">
-					{emptyState.icon && (
-						<span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4 block">
-							{emptyState.icon}
-						</span>
-					)}
-					<p
-						className={
-							emptyState.icon
-								? "text-xl font-bold text-gray-500 dark:text-gray-400 mb-2"
-								: "font-medium"
-						}
-					>
-						{emptyState.title}
-					</p>
-					{emptyState.description && (
-						<p className="text-gray-400 dark:text-gray-500 mb-6">
-							{emptyState.description}
-						</p>
-					)}
-					{emptyState.action}
-				</div>
+				<EmptyState
+					message={emptyState.title}
+					description={emptyState.description}
+					icon={emptyState.icon}
+					action={emptyState.action}
+				/>
 			</div>
 		);
 	}
@@ -92,9 +77,7 @@ export function TreasuryTable<T>({
 	if (rowCount === 0) {
 		return (
 			<div className={CONTAINER_CLASS}>
-				<div className="p-8 text-center text-gray-500">
-					{emptyState?.title ?? "No data"}
-				</div>
+				<EmptyState message={emptyState?.title ?? "No data"} />
 			</div>
 		);
 	}

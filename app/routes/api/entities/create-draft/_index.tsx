@@ -164,25 +164,40 @@ export async function action({ request }: Route.ActionArgs) {
 				break;
 			}
 			case "event": {
-				// Calendar integration for drafts
-				const { createCalendarEvent } = await import("~/lib/google.server");
 				const now = new Date();
-				const result = await createCalendarEvent({
+				const localEvent = await db.createEvent({
 					title: "Uusi tapahtuma / New event",
 					description: "#draft",
 					isAllDay: true,
-					startDate: now.toISOString().split("T")[0],
-					// Provide dummy values for mandatory fields to satisfy TS
-					startDateTime: now.toISOString(),
-					endDateTime: now.toISOString(),
+					startDate: now,
+					status: "draft",
+					createdBy: userId,
 				});
-				if (result) {
-					entity = {
-						id: result.id,
-						name: "Uusi tapahtuma / New event",
-						status: "draft",
-					};
+
+				try {
+					const { createCalendarEvent } = await import("~/lib/google.server");
+					const result = await createCalendarEvent({
+						title: "Uusi tapahtuma / New event",
+						description: "#draft",
+						isAllDay: true,
+						startDate: now.toISOString().split("T")[0],
+						startDateTime: now.toISOString(),
+						endDateTime: now.toISOString(),
+					});
+					if (result) {
+						await db.updateEvent(localEvent.id, {
+							googleEventId: result.id,
+						});
+					}
+				} catch (error) {
+					console.error("[create-draft] Failed to create calendar event:", error);
 				}
+
+				entity = {
+					id: localEvent.id,
+					name: localEvent.title,
+					status: localEvent.status,
+				};
 				break;
 			}
 			case "mail": {

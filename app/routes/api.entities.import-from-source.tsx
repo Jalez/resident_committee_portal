@@ -87,10 +87,10 @@ async function importInventoryFromReceipt(
 	relationAId: string,
 	userId: string,
 ) {
-	// Fetch receipt content
-	const receiptContent = await db.getReceiptContentByReceiptId(receiptId);
+	// Fetch receipt
+	const receipt = await db.getReceiptById(receiptId);
 
-	if (!receiptContent || !receiptContent.items) {
+	if (!receipt || !receipt.items) {
 		return new Response(
 			JSON.stringify({
 				success: false,
@@ -111,9 +111,9 @@ async function importInventoryFromReceipt(
 
 	try {
 		items =
-			typeof receiptContent.items === "string"
-				? JSON.parse(receiptContent.items)
-				: receiptContent.items;
+			typeof receipt.items === "string"
+				? JSON.parse(receipt.items)
+				: receipt.items;
 	} catch {
 		return new Response(
 			JSON.stringify({

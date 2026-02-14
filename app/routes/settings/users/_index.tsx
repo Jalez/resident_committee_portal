@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { handleUsersSettingsAction } from "~/components/settings/users-settings.server";
 import {
@@ -100,25 +100,11 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
 		},
 	];
 
-	const footerContent = (
-		<div className="flex items-center gap-2">
-			<SearchMenu fields={searchFields} />
-		</div>
-	);
-
 	return (
-		<PageWrapper>
-			<SplitLayout
-				header={{
-					primary: t("settings.users.title", { lng: systemLanguages.primary }),
-					secondary: t("settings.users.title", {
-						lng: systemLanguages.secondary ?? systemLanguages.primary,
-					}),
-				}}
-				footer={footerContent}
-			>
-				<UsersTable users={users} roles={roles} />
-			</SplitLayout>
-		</PageWrapper>
+		<SettingsPageLayout
+			title={t("settings.users.title", { lng: systemLanguages.primary })}
+		>
+			<UsersTable users={users} roles={roles} />
+		</SettingsPageLayout>
 	);
 }

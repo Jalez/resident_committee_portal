@@ -5,7 +5,7 @@ import { TreasuryField } from "~/components/treasury/treasury-detail-components"
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { FileUpload } from "~/components/ui/file-upload";
-import type { ReceiptContent } from "~/db";
+import type { Receipt } from "~/db";
 import { RECEIPT_ALLOWED_TYPES } from "~/lib/constants";
 
 interface ReceiptFormFieldsProps {
@@ -39,8 +39,18 @@ interface ReceiptFormFieldsProps {
 	existingReceiptUrl?: string;
 	existingFileName?: string;
 
-	// Optional existing receipt content
-	existingReceiptContent?: ReceiptContent | null;
+	// Optional existing receipt with OCR content
+	existingReceipt?: Pick<
+		Receipt,
+		| "rawText"
+		| "storeName"
+		| "items"
+		| "totalAmount"
+		| "currency"
+		| "purchaseDate"
+		| "aiModel"
+		| "ocrProcessed"
+	> | null;
 }
 
 export function ReceiptFormFields({
@@ -61,7 +71,7 @@ export function ReceiptFormFields({
 	selectedFile,
 	existingReceiptUrl,
 	existingFileName,
-	existingReceiptContent,
+	existingReceipt,
 }: ReceiptFormFieldsProps) {
 	const { t } = useTranslation();
 
@@ -250,12 +260,12 @@ export function ReceiptFormFields({
 					)}
 				</div>
 			)}
-			{existingReceiptContent && existingReceiptUrl ? (
+			{existingReceipt && existingReceiptUrl ? (
 				<div className="mt-6">
 					<ReceiptContentsDisplay
 						receiptId={receiptId}
 						receiptUrl={existingReceiptUrl}
-						content={existingReceiptContent}
+						receipt={existingReceipt}
 					/>
 				</div>
 			) : null}

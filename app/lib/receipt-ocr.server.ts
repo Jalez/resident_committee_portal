@@ -1,7 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { getDatabase } from "~/db/server.server";
-import type { NewReceiptContent } from "~/db/schema";
 import { extractTextFromImage } from "~/lib/google-vision.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import { getReceiptStorage } from "~/lib/receipts/server";
@@ -124,14 +123,7 @@ Notes:
 
 	// 4. Save to Database
 	try {
-		// Check if content already exists, delete if so (re-run scenario)
-		const existing = await db.getReceiptContentByReceiptId(receiptId);
-		if (existing) {
-			await db.deleteReceiptContent(existing.id);
-		}
-
-		const content: NewReceiptContent = {
-			receiptId,
+		await db.updateReceipt(receiptId, {
 			rawText,
 			storeName: parsedData?.storeName || null,
 			items: parsedData?.items ? JSON.stringify(parsedData.items) : null,
@@ -141,9 +133,9 @@ Notes:
 				? new Date(parsedData.purchaseDate)
 				: null,
 			aiModel: aiModelUsed,
-		};
-
-		await db.createReceiptContent(content);
+			ocrProcessed: true,
+			ocrProcessedAt: new Date(),
+		});
 		console.log("[OCR] Saved results to database");
 
 		return {

@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader } from "~/components/layout/page-header";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { NewsAiSettings } from "~/components/settings/news-ai-settings";
 import { handleNewsAiSettingsAction } from "~/components/settings/news-ai-settings.server";
 import { getDatabase } from "~/db/server.server";
@@ -73,15 +72,14 @@ export default function SettingsNews({ loaderData }: Route.ComponentProps) {
 	}, [actionData]);
 
 	return (
-		<PageWrapper>
-			<PageHeader
-				title={t("settings.news.title", { lng: systemLanguages.primary })}
-			/>
+		<SettingsPageLayout
+			title={t("settings.news.title", { lng: systemLanguages.primary })}
+		>
 			<NewsAiSettings
 				newsModel={newsModel}
 				hasApiKey={hasApiKey}
 				models={models}
 			/>
-		</PageWrapper>
+		</SettingsPageLayout>
 	);
 }

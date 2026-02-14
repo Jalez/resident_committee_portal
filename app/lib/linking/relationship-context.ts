@@ -3,16 +3,20 @@
  * When navigating to create a new entity from another entity's picker,
  * this context carries information about the source to enable auto-linking.
  */
-//TODO: REFORMAT TO THE NEW VERSION
 
 export type EntityType =
 	| "receipt"
 	| "transaction"
 	| "reimbursement"
-	| "purchase" // alias for reimbursement
 	| "budget"
 	| "inventory"
-	| "minute";
+	| "minute"
+	| "news"
+	| "faq"
+	| "poll"
+	| "social"
+	| "event"
+	| "mail";
 
 export interface SourceContext {
 	/** Type of the source entity */

@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader } from "~/components/layout/page-header";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { FaqAiSettings } from "~/components/settings/faq-ai-settings";
 import { handleFaqAiSettingsAction } from "~/components/settings/faq-ai-settings.server";
 import { getDatabase } from "~/db/server.server";
@@ -73,17 +72,14 @@ export default function SettingsFaqs({ loaderData }: Route.ComponentProps) {
 	}, [actionData]);
 
 	return (
-		<PageWrapper>
-			<PageHeader
-				title={t("settings.faqs.title", { lng: systemLanguages.primary })}
+		<SettingsPageLayout
+			title={t("settings.faqs.title", { lng: systemLanguages.primary })}
+		>
+			<FaqAiSettings
+				faqModel={faqModel}
+				hasApiKey={hasApiKey}
+				models={models}
 			/>
-			<div className="max-w-2xl space-y-6">
-				<FaqAiSettings
-					faqModel={faqModel}
-					hasApiKey={hasApiKey}
-					models={models}
-				/>
-			</div>
-		</PageWrapper>
+		</SettingsPageLayout>
 	);
 }

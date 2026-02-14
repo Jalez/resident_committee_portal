@@ -192,11 +192,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 						</Select>
 					</div>
 					<div className="flex items-center gap-2">
-						<Button
-							size="sm"
-							onClick={() => setShowNewRoleForm(true)}
-							className="bg-blue-600 hover:bg-blue-700"
-						>
+						<Button size="sm" onClick={() => setShowNewRoleForm(true)}>
 							<span className="material-symbols-outlined text-sm mr-1">
 								add
 							</span>

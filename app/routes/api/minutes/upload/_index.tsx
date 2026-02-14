@@ -28,7 +28,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			});
 		}
 
-		await requireAnyPermission(request, ["minutes:create"], getDatabase);
+		await requireAnyPermission(request, ["minutes:write"], getDatabase);
 
 		const formData = await request.formData();
 		const file = formData.get("file") as File | null;

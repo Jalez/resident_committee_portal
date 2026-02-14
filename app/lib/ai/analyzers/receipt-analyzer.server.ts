@@ -15,7 +15,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
-import type { Receipt, ReceiptContent } from "~/db/schema";
+import type { Receipt } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import type {
 	AnalysisResult,
@@ -45,14 +45,10 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 		const errors: string[] = [];
 
 		try {
-			// Get receipt content (OCR data)
-			const content = await db.getReceiptContentByReceiptId(receipt.id);
-			if (!content) {
+			if (!receipt.ocrProcessed) {
 				return {
 					suggestions: [],
-					errors: [
-						"No receipt content found (OCR may not have been processed)",
-					],
+					errors: ["Receipt has not been processed (OCR not run)"],
 				};
 			}
 
@@ -64,16 +60,16 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 				price?: number;
 				total?: number;
 			}> = [];
-			if (content.items) {
+			if (receipt.items) {
 				try {
-					items = JSON.parse(content.items);
+					items = JSON.parse(receipt.items);
 				} catch (_e) {
 					errors.push("Failed to parse receipt items");
 				}
 			}
 
 			// Run AI analysis
-			const aiAnalysis = await this.analyzeWithAI(content, items, db);
+			const aiAnalysis = await this.analyzeWithAI(receipt, items, db);
 			if (!aiAnalysis) {
 				return {
 					suggestions: [],
@@ -96,24 +92,24 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 					entityType: "transaction",
 					name:
 						aiAnalysis.transactionDescription ||
-						content.storeName ||
+						receipt.storeName ||
 						"Transaction",
 					data: {
-						amount: content.totalAmount || "0",
-						date: content.purchaseDate || new Date(),
+						amount: receipt.totalAmount || "0",
+						date: receipt.purchaseDate || new Date(),
 						description:
 							aiAnalysis.transactionDescription ||
-							content.storeName ||
+							receipt.storeName ||
 							"Transaction from receipt",
 						category: aiAnalysis.category,
 						type: "expense",
-						year: content.purchaseDate
-							? new Date(content.purchaseDate).getFullYear()
+						year: receipt.purchaseDate
+							? new Date(receipt.purchaseDate).getFullYear()
 							: new Date().getFullYear(),
 						status: "draft",
 					},
 					confidence: 0.95,
-					reasoning: `Transaction for receipt from ${content.storeName}. Category: ${aiAnalysis.category}`,
+					reasoning: `Transaction for receipt from ${receipt.storeName}. Category: ${aiAnalysis.category}`,
 				});
 			}
 
@@ -136,8 +132,8 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 						name: candidate.name,
 						value:
 							itemData?.total?.toString() || itemData?.price?.toString() || "0",
-						purchasedAt: content.purchaseDate || new Date(),
-						description: `From ${content.storeName || "receipt"}`,
+						purchasedAt: receipt.purchaseDate || new Date(),
+						description: `From ${receipt.storeName || "receipt"}`,
 						location: candidate.suggestedLocation || "storage",
 						status: "draft",
 					},
@@ -156,16 +152,16 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 			if (!hasReimbursement && aiAnalysis.shouldCreateReimbursement) {
 				suggestions.push({
 					entityType: "reimbursement",
-					name: `Reimbursement for ${content.storeName || "purchase"}`,
+					name: `Reimbursement for ${receipt.storeName || "purchase"}`,
 					data: {
-						amount: content.totalAmount || "0",
-						year: content.purchaseDate
-							? new Date(content.purchaseDate).getFullYear()
+						amount: receipt.totalAmount || "0",
+						year: receipt.purchaseDate
+							? new Date(receipt.purchaseDate).getFullYear()
 							: new Date().getFullYear(),
-						purchaserName: "Unknown", // Would ideally get from current user
+						purchaserName: "Unknown",
 						bankAccount: "",
 						minutesId: "draft",
-						description: `Purchase from ${content.storeName || "receipt"}`,
+						description: `Purchase from ${receipt.storeName || "receipt"}`,
 						status: "draft",
 					},
 					confidence: 0.65,
@@ -192,7 +188,7 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 	}
 
 	private async analyzeWithAI(
-		content: ReceiptContent,
+		receipt: Receipt,
 		items: Array<{
 			name?: string;
 			description?: string;
@@ -224,9 +220,9 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 
 			const prompt = `Analyze this receipt and suggest entities to create:
 
-Store: ${content.storeName || "Unknown"}
-Total Amount: €${content.totalAmount || 0}
-Purchase Date: ${content.purchaseDate ? new Date(content.purchaseDate).toLocaleDateString() : "Unknown"}
+Store: ${receipt.storeName || "Unknown"}
+Total Amount: €${receipt.totalAmount || 0}
+Purchase Date: ${receipt.purchaseDate ? new Date(receipt.purchaseDate).toLocaleDateString() : "Unknown"}
 
 Line Items:
 ${itemsList || "No items"}

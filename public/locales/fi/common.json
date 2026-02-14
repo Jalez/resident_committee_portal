@@ -394,6 +394,7 @@
 			"status": "Tila",
 			"year": "Vuosi",
 			"statuses": {
+				"draft": "Luonnos",
 				"pending": "Odottaa",
 				"approved": "Hyväksytty",
 				"reimbursed": "Maksettu",
@@ -453,7 +454,8 @@
 				"title": "Näytä transaktio"
 			},
 			"edit": {
-				"title": "Muokkaa transaktiota"
+				"title": "Muokkaa transaktiota",
+				"delete_confirm": "Haluatko varmasti poistaa tämän transaktion?"
 			}
 		},
 		"receipts": {
@@ -1009,6 +1011,19 @@
 		"no_results": "Ei tuloksia",
 		"open_calendar": "Avaa kalenteri",
 		"add_event": "Lisää tapahtuma",
+		"type": "Tyyppi",
+		"view_all": "Näytä kaikki",
+		"types": {
+			"meeting": "Kokous",
+			"social": "Sosiaalinen",
+			"private": "Yksityinen"
+		},
+		"statuses": {
+			"draft": "Luonnos",
+			"active": "Aktiivinen",
+			"cancelled": "Peruutettu",
+			"completed": "Päättynyt"
+		},
 		"new": {
 			"header": "Uusi tapahtuma",
 			"recurrence": "Toistuvuus",

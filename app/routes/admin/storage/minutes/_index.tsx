@@ -6,6 +6,7 @@ import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { EmptyState } from "~/components/ui/empty-state";
 import { Thumbnail } from "~/components/ui/thumbnail";
 import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
@@ -168,24 +169,20 @@ export default function AdminStorageMinutes() {
 					)}
 				</p>
 
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+				<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 					{items.length === 0 ? (
-						<div className="p-8 text-center text-gray-500">
-							<span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">
-								description
-							</span>
-							<p className="mt-2 font-medium">
-								{t("admin.storage.minutes.empty", "No minutes found")}
-							</p>
-						</div>
+						<EmptyState
+							message={t("admin.storage.minutes.empty", "No minutes found")}
+							icon="description"
+						/>
 					) : (
 						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 							{items.map((item) => (
 								<li
 									key={item.pathname}
-									className="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800/50"
+									className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
 								>
-									<div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-2">
+									<div className="relative aspect-[4/3] bg-muted flex items-center justify-center p-2">
 										{item.url.toLowerCase().endsWith(".pdf") ? (
 											<a
 												href={item.url}

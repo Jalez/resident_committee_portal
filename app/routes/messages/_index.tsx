@@ -11,6 +11,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { EmptyState } from "~/components/ui/empty-state";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -295,9 +296,7 @@ export default function Messages({ loaderData }: Route.ComponentProps) {
 				{/* Messages: card list */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
 					{messages.length === 0 ? (
-						<div className="p-8 text-center text-gray-500">
-							{t("messages.empty")}
-						</div>
+						<EmptyState message={t("messages.empty")} icon="mail" />
 					) : (
 						<div className="divide-y divide-gray-200 dark:divide-gray-700">
 							{/* Select all checkbox header */}

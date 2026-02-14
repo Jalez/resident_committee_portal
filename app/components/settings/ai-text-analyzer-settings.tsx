@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
 import { MissingApiKeyWarning } from "~/components/missing-api-key-warning";
@@ -49,13 +49,14 @@ export function AiTextAnalyzerSettings({
 		}
 	}, [fetcher.data]);
 
-	// Sort models
-	const sortedModels = [...models].sort((a, b) => {
-		if (sortBy === "price") {
-			return a.pricing.prompt - b.pricing.prompt;
-		}
-		return a.name.localeCompare(b.name);
-	});
+	const sortedModels = useMemo(() => {
+		return [...models].sort((a, b) => {
+			if (sortBy === "price") {
+				return a.pricing.prompt - b.pricing.prompt;
+			}
+			return a.name.localeCompare(b.name);
+		});
+	}, [models, sortBy]);
 
 	const formatPrice = (price: number) => {
 		if (price === 0) return "Free";
@@ -86,52 +87,62 @@ export function AiTextAnalyzerSettings({
 					<input type="hidden" name="intent" value="save-analytics-settings" />
 					<input type="hidden" name="analyticsModel" value={model} />
 
-					{settings.hasApiKey && models.length > 0 && (
+					{settings.hasApiKey && (
 						<>
-							<div className="flex items-center gap-2 mb-2">
-								<Label>Sort models by</Label>
-								<Button
-									type="button"
-									variant={sortBy === "price" ? "default" : "outline"}
-									size="sm"
-									onClick={() => setSortBy("price")}
-								>
-									Price
-								</Button>
-								<Button
-									type="button"
-									variant={sortBy === "name" ? "default" : "outline"}
-									size="sm"
-									onClick={() => setSortBy("name")}
-								>
-									Name
-								</Button>
-							</div>
+							{models.length > 0 && (
+								<div className="flex items-center gap-2 mb-2">
+									<Label>Sort models by</Label>
+									<Button
+										type="button"
+										variant={sortBy === "price" ? "default" : "outline"}
+										size="sm"
+										onClick={() => setSortBy("price")}
+									>
+										Price
+									</Button>
+									<Button
+										type="button"
+										variant={sortBy === "name" ? "default" : "outline"}
+										size="sm"
+										onClick={() => setSortBy("name")}
+									>
+										Name
+									</Button>
+								</div>
+							)}
 
 							<div className="space-y-2">
 								<Label>Select Model</Label>
-								<Select value={model} onValueChange={setModel}>
-									<SelectTrigger>
-										<SelectValue placeholder="Select a model..." />
-									</SelectTrigger>
-									<SelectContent className="max-h-64">
-										{sortedModels.slice(0, 50).map((m) => (
-											<SelectItem key={m.id} value={m.id}>
-												<div className="flex items-center gap-2">
-													<span className="truncate max-w-[200px]">
-														{m.name}
-													</span>
-													<Badge variant="secondary" className="text-xs">
-														{formatPrice(m.pricing.prompt)}/1M
-													</Badge>
-												</div>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<p className="text-xs text-muted-foreground">
-									Showing top {Math.min(50, sortedModels.length)} models
-								</p>
+								{models.length > 0 ? (
+									<>
+										<Select value={model} onValueChange={setModel}>
+											<SelectTrigger>
+												<SelectValue placeholder="Select a model..." />
+											</SelectTrigger>
+											<SelectContent className="max-h-64">
+												{sortedModels.slice(0, 50).map((m) => (
+													<SelectItem key={m.id} value={m.id}>
+														<div className="flex items-center gap-2">
+															<span className="truncate max-w-[200px]">
+																{m.name}
+															</span>
+															<Badge variant="secondary" className="text-xs">
+																{formatPrice(m.pricing.prompt)}/1M
+															</Badge>
+														</div>
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-muted-foreground">
+											Showing top {Math.min(50, sortedModels.length)} models
+										</p>
+									</>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										Loading available models...
+									</p>
+								)}
 							</div>
 						</>
 					)}

@@ -1,6 +1,8 @@
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigation } from "react-router";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -10,6 +12,13 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
 
 interface OpenRouterModel {
 	id: string;
@@ -35,6 +44,22 @@ export function ReceiptOCRSettings({
 	const { t } = useTranslation();
 	const navigation = useNavigation();
 	const isSaving = navigation.state === "submitting";
+
+	const [model, setModel] = useState(currentModel || "");
+	const [sortBy, setSortBy] = useState<"price" | "name">("price");
+
+	const sortedModels = [...models].sort((a, b) => {
+		if (sortBy === "price") {
+			return a.pricing.prompt - b.pricing.prompt;
+		}
+		return a.name.localeCompare(b.name);
+	});
+
+	const formatPrice = (price: number) => {
+		if (price === 0) return t("common.fields.free", "Free");
+		if (price < 0.01) return `$${price.toFixed(4)}`;
+		return `$${price.toFixed(2)}`;
+	};
 
 	if (!apiKey) {
 		return (
@@ -81,35 +106,73 @@ export function ReceiptOCRSettings({
 			</CardHeader>
 			<CardContent>
 				<Form method="post" className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="receipt_ai_model">
-							{t("settings.ai_model", { defaultValue: "AI Model" })}
-						</Label>
-						<select
-							id="receipt_ai_model"
-							name="receipt_ai_model"
-							className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-							defaultValue={currentModel || ""}
-						>
-							<option value="">
-								{t("settings.select_model", {
-									defaultValue: "Select a model...",
-								})}
-							</option>
-							{models.map((model) => (
-								<option key={model.id} value={model.id}>
-									{model.name} (${model.pricing.prompt.toFixed(2)}/1M in, $
-									{model.pricing.completion.toFixed(2)}/1M out)
-								</option>
-							))}
-						</select>
-						<p className="text-sm text-muted-foreground">
-							{t("settings.receipt_ai_model_help", {
-								defaultValue:
-									"Select a capable model (e.g. Gemini Flash 1.5, GPT-4o-mini) for best results.",
-							})}
-						</p>
-					</div>
+					<input type="hidden" name="receipt_ai_model" value={model} />
+
+					{models.length > 0 && (
+						<>
+							<div className="flex items-center gap-2 mb-2">
+								<Label>{t("common.actions.sort", "Sort by")}</Label>
+								<Button
+									type="button"
+									variant={sortBy === "price" ? "default" : "outline"}
+									size="sm"
+									onClick={() => setSortBy("price")}
+								>
+									{t("common.fields.price", "Price")}
+								</Button>
+								<Button
+									type="button"
+									variant={sortBy === "name" ? "default" : "outline"}
+									size="sm"
+									onClick={() => setSortBy("name")}
+								>
+									{t("common.fields.name", "Name")}
+								</Button>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="receipt_ai_model">
+									{t("settings.ai_model", { defaultValue: "AI Model" })}
+								</Label>
+								<Select value={model} onValueChange={setModel}>
+									<SelectTrigger id="receipt_ai_model">
+										<SelectValue
+											placeholder={t("settings.select_model", {
+												defaultValue: "Select a model...",
+											})}
+										/>
+									</SelectTrigger>
+									<SelectContent className="max-h-64">
+										{sortedModels.slice(0, 50).map((m) => (
+											<SelectItem key={m.id} value={m.id}>
+												<div className="flex items-center gap-2">
+													<span className="truncate max-w-[200px]">
+														{m.name}
+													</span>
+													<Badge variant="secondary" className="text-xs">
+														{formatPrice(m.pricing.prompt)}/1M
+													</Badge>
+												</div>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-muted-foreground">
+									{t("settings.receipt_ai_model_help", {
+										defaultValue:
+											"Select a capable model (e.g. Gemini Flash 1.5, GPT-4o-mini) for best results.",
+									})}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{t("settings.showing_models", {
+										count: Math.min(50, sortedModels.length),
+										total: sortedModels.length,
+										defaultValue: `Showing top ${Math.min(50, sortedModels.length)} models`,
+									})}
+								</p>
+							</div>
+						</>
+					)}
 
 					<div className="flex justify-end">
 						<Button type="submit" disabled={isSaving}>

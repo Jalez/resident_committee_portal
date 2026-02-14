@@ -360,12 +360,13 @@ export function EditForm({
 			<Card>
 				<CardContent className="space-y-4">
 					{/* ReadOnly Fields */}
-					{readOnlyFields && (
-						<ReadOnlyFields
-							fields={readOnlyFields}
-							translationNamespace="treasury.budgets"
-						/>
-					)}
+					<ReadOnlyFields
+						fields={{
+							id: entityId || null,
+							...readOnlyFields,
+						}}
+						translationNamespace={translationNamespace}
+					/>
 					{/* Main Edit Form */}
 
 					<Form

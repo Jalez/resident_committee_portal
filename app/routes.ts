@@ -78,8 +78,8 @@ export default [
 	route("api/receipts/thumbnail", "routes/api/receipts/thumbnail/_index.tsx"),
 	route("api/receipts/upload", "routes/api/receipts/upload/_index.tsx"),
 	route(
-		"treasury/reimbursements/:purchaseId/delete",
-		"routes/treasury/reimbursements/$purchaseId/delete/_index.tsx",
+		"treasury/reimbursements/:reimbursementId/delete",
+		"routes/treasury/reimbursements/$reimbursementId/delete/_index.tsx",
 	),
 	route(
 		"api/reimbursements/:reimbursementId/update",
@@ -192,12 +192,12 @@ export default [
 	),
 	route("treasury/reimbursements", "routes/treasury/reimbursements/_index.tsx"),
 	route(
-		"treasury/reimbursements/:purchaseId",
-		"routes/treasury/reimbursements/$purchaseId/_index.tsx",
+		"treasury/reimbursements/:reimbursementId",
+		"routes/treasury/reimbursements/$reimbursementId/_index.tsx",
 	),
 	route(
-		"treasury/reimbursements/:purchaseId/edit",
-		"routes/treasury/reimbursements/$purchaseId/edit/_index.tsx",
+		"treasury/reimbursements/:reimbursementId/edit",
+		"routes/treasury/reimbursements/$reimbursementId/edit/_index.tsx",
 	),
 	route("treasury/transactions", "routes/treasury/transactions/_index.tsx"),
 	route(

@@ -16,12 +16,22 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { Textarea } from "~/components/ui/textarea";
-import type { ReceiptContent } from "~/db";
+import type { Receipt } from "~/db";
 
 interface ReceiptContentsDisplayProps {
 	receiptId: string;
 	receiptUrl: string;
-	content: ReceiptContent | null;
+	receipt: Pick<
+		Receipt,
+		| "rawText"
+		| "storeName"
+		| "items"
+		| "totalAmount"
+		| "currency"
+		| "purchaseDate"
+		| "aiModel"
+		| "ocrProcessed"
+	> | null;
 }
 
 interface OCRResult {
@@ -33,20 +43,20 @@ interface OCRResult {
 export function ReceiptContentsDisplay({
 	receiptId,
 	receiptUrl,
-	content,
+	receipt,
 }: ReceiptContentsDisplayProps) {
 	const { t, i18n } = useTranslation();
 	const fetcher = useFetcher();
 	const isAnalyzing = fetcher.state === "submitting";
 	const fetcherData = fetcher.data as OCRResult | undefined;
-	const [rawText, setRawText] = useState(content?.rawText || "");
+	const [rawText, setRawText] = useState(receipt?.rawText || "");
 	const lastErrorRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (content?.rawText && !rawText) {
-			setRawText(content.rawText);
+		if (receipt?.rawText && !rawText) {
+			setRawText(receipt.rawText);
 		}
-	}, [content?.rawText, rawText]);
+	}, [receipt?.rawText, rawText]);
 
 	useEffect(() => {
 		if (fetcherData?.rawText) {
@@ -84,7 +94,7 @@ export function ReceiptContentsDisplay({
 		});
 	};
 
-	if (!content) {
+	if (!receipt?.ocrProcessed) {
 		return (
 			<Card>
 				<CardHeader>
@@ -129,8 +139,8 @@ export function ReceiptContentsDisplay({
 	// Parse items if JSON string
 	let items: any[] = [];
 	try {
-		if (content.items) {
-			items = JSON.parse(content.items);
+		if (receipt.items) {
+			items = JSON.parse(receipt.items);
 		}
 	} catch (e) {
 		console.error("Failed to parse items JSON", e);
@@ -150,8 +160,8 @@ export function ReceiptContentsDisplay({
 					<CardTitle>
 						{t("treasury.receipts.ai_results", { defaultValue: "AI Results" })}
 					</CardTitle>
-					{content.aiModel && (
-						<Badge variant="outline">{content.aiModel}</Badge>
+					{receipt.aiModel && (
+						<Badge variant="outline">{receipt.aiModel}</Badge>
 					)}
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -160,14 +170,14 @@ export function ReceiptContentsDisplay({
 							<span className="text-sm font-medium text-gray-500 dark:text-gray-400">
 								{t("treasury.receipts.store", { defaultValue: "Store" })}
 							</span>
-							<p className="font-medium text-lg">{content.storeName || "-"}</p>
+							<p className="font-medium text-lg">{receipt.storeName || "-"}</p>
 						</div>
 						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
 							<span className="text-sm font-medium text-gray-500 dark:text-gray-400">
 								{t("treasury.receipts.date", { defaultValue: "Date" })}
 							</span>
 							<p className="font-medium text-lg">
-								{formatDate(content.purchaseDate)}
+								{formatDate(receipt.purchaseDate)}
 							</p>
 						</div>
 						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -175,7 +185,7 @@ export function ReceiptContentsDisplay({
 								{t("treasury.receipts.total", { defaultValue: "Total" })}
 							</span>
 							<p className="font-medium text-lg">
-								{content.totalAmount} {content.currency}
+								{receipt.totalAmount} {receipt.currency}
 							</p>
 						</div>
 					</div>
@@ -208,14 +218,14 @@ export function ReceiptContentsDisplay({
 								</TableHeader>
 								<TableBody>
 									{items.map((item: any, idx: number) => (
-										<TableRow key={idx}>
+										<TableRow key={item.name || idx}>
 											<TableCell>{item.name}</TableCell>
 											<TableCell className="text-right">
 												{item.quantity}
 											</TableCell>
 											<TableCell className="text-right">
 												{item.totalPrice?.toFixed(2)}{" "}
-												{content.currency || "EUR"}
+												{receipt.currency || "EUR"}
 											</TableCell>
 										</TableRow>
 									))}

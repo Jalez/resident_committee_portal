@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
-import { PageHeader, PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { AiParsingSettings } from "~/components/settings/ai-parsing-settings";
 import { handleAiParsingSettingsAction } from "~/components/settings/ai-parsing-settings.server";
 import { KeywordSettings } from "~/components/settings/keyword-settings";
@@ -145,67 +145,63 @@ export default function SettingsReimbursements({
 	}, [recipientEmailFetcher.data]);
 
 	return (
-		<PageWrapper>
-			<PageHeader
-				primary={t("settings.reimbursements.title")}
-				secondary={t("settings.reimbursements.description")}
+		<SettingsPageLayout
+			title={t("settings.reimbursements.title")}
+			description={t("settings.reimbursements.description")}
+		>
+			<Card>
+				<CardHeader>
+					<CardTitle>
+						{t("settings.reimbursements.recipient_email_title")}
+					</CardTitle>
+					<CardDescription>
+						{t("settings.reimbursements.recipient_email_desc")}
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<recipientEmailFetcher.Form method="post" className="space-y-4">
+						<input type="hidden" name="intent" value="save-recipient-email" />
+						<div className="space-y-2">
+							<Label htmlFor="recipientEmail">
+								{t("settings.reimbursements.recipient_email_label")}
+							</Label>
+							<Input
+								id="recipientEmail"
+								name="recipientEmail"
+								type="email"
+								defaultValue={settings.recipientEmail}
+								placeholder={
+									recipientEmailFallback ||
+									t("settings.reimbursements.recipient_email_placeholder")
+								}
+							/>
+							{recipientEmailFallback && !settings.recipientEmail && (
+								<p className="text-xs text-muted-foreground">
+									{t("settings.reimbursements.recipient_email_fallback", {
+										email: recipientEmailFallback,
+									})}
+								</p>
+							)}
+						</div>
+						<Button
+							type="submit"
+							disabled={recipientEmailFetcher.state !== "idle"}
+						>
+							{recipientEmailFetcher.state === "idle"
+								? t("common.actions.save")
+								: t("common.status.saving")}
+						</Button>
+					</recipientEmailFetcher.Form>
+				</CardContent>
+			</Card>
+			<AiParsingSettings settings={settings} models={models} />
+			<KeywordSettings
+				settings={{
+					approvalKeywords: settings.customApproval,
+					rejectionKeywords: settings.customRejection,
+				}}
+				defaultKeywords={defaultKeywords}
 			/>
-
-			<div className="max-w-2xl space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle>
-							{t("settings.reimbursements.recipient_email_title")}
-						</CardTitle>
-						<CardDescription>
-							{t("settings.reimbursements.recipient_email_desc")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<recipientEmailFetcher.Form method="post" className="space-y-4">
-							<input type="hidden" name="intent" value="save-recipient-email" />
-							<div className="space-y-2">
-								<Label htmlFor="recipientEmail">
-									{t("settings.reimbursements.recipient_email_label")}
-								</Label>
-								<Input
-									id="recipientEmail"
-									name="recipientEmail"
-									type="email"
-									defaultValue={settings.recipientEmail}
-									placeholder={
-										recipientEmailFallback ||
-										t("settings.reimbursements.recipient_email_placeholder")
-									}
-								/>
-								{recipientEmailFallback && !settings.recipientEmail && (
-									<p className="text-xs text-muted-foreground">
-										{t("settings.reimbursements.recipient_email_fallback", {
-											email: recipientEmailFallback,
-										})}
-									</p>
-								)}
-							</div>
-							<Button
-								type="submit"
-								disabled={recipientEmailFetcher.state !== "idle"}
-							>
-								{recipientEmailFetcher.state === "idle"
-									? t("common.actions.save")
-									: t("common.status.saving")}
-							</Button>
-						</recipientEmailFetcher.Form>
-					</CardContent>
-				</Card>
-				<AiParsingSettings settings={settings} models={models} />
-				<KeywordSettings
-					settings={{
-						approvalKeywords: settings.customApproval,
-						rejectionKeywords: settings.customRejection,
-					}}
-					defaultKeywords={defaultKeywords}
-				/>
-			</div>
-		</PageWrapper>
+		</SettingsPageLayout>
 	);
 }

@@ -163,39 +163,31 @@ async function populateContextFromEntity(
 			case "receipt": {
 				const receipt = await db.getReceiptById(entityId);
 				if (receipt) {
-					// Load line items and metadata from receipt content
-					const receiptContent = await db.getReceiptContentByReceiptId(
-						receipt.id,
-					);
+					context.date = receipt.purchaseDate;
+					context.totalAmount = receipt.totalAmount
+						? Number(receipt.totalAmount)
+						: null;
+					context.description = receipt.storeName;
+					context.currency = receipt.currency || "EUR";
+					context.purchaserId = receipt.createdBy;
+					context.valueSource = "receipt";
 
-					if (receiptContent) {
-						context.date = receiptContent.purchaseDate;
-						context.totalAmount = receiptContent.totalAmount
-							? Number(receiptContent.totalAmount)
-							: null;
-						context.description = receiptContent.storeName;
-						context.currency = receiptContent.currency || "EUR";
-						context.purchaserId = receipt.createdBy;
-						context.valueSource = "receipt";
-
-						// Parse line items from receipt content
-						if (receiptContent.items) {
-							try {
-								// items is stored as JSON string
-								const items =
-									typeof receiptContent.items === "string"
-										? JSON.parse(receiptContent.items)
-										: receiptContent.items;
-								context.lineItems = (items || []).map((item: any) => ({
-									name: item.name || item.description || "",
-									quantity: item.quantity || 1,
-									unitPrice: item.price || 0,
-									totalPrice: item.total || item.price || 0,
-									sourceItemId: item.id,
-								}));
-							} catch {
-								context.lineItems = [];
-							}
+					// Parse line items from receipt
+					if (receipt.items) {
+						try {
+							const items =
+								typeof receipt.items === "string"
+									? JSON.parse(receipt.items)
+									: receipt.items;
+							context.lineItems = (items || []).map((item: any) => ({
+								name: item.name || item.description || "",
+								quantity: item.quantity || 1,
+								unitPrice: item.price || 0,
+								totalPrice: item.total || item.price || 0,
+								sourceItemId: item.id,
+							}));
+						} catch {
+							context.lineItems = [];
 						}
 					}
 				}

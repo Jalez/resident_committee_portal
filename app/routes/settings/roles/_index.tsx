@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useActionData } from "react-router";
 import { toast } from "sonner";
-import { PageHeader } from "~/components/layout/page-header";
-import { PageWrapper } from "~/components/layout/page-layout";
+import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { PermissionsTable } from "~/components/settings/permissions-table";
 import { RoleList } from "~/components/settings/role-list";
 import { getDatabase } from "~/db/server.server";
@@ -187,21 +186,18 @@ export default function AdminRoles({ loaderData }: Route.ComponentProps) {
 	);
 
 	return (
-		<PageWrapper>
-			<PageHeader title={t("settings.roles.title", "Role Management")} />
-			<div className="space-y-6">
-				<RoleList
-					roles={roles}
-					selectedRole={selectedRole}
-					onRoleSelect={handleRoleChange}
-				/>
-				<PermissionsTable
-					selectedRoleData={selectedRoleData}
-					checkedPermissions={checkedPermissions}
-					onTogglePermission={handlePermissionToggle}
-					onSelectAllVisible={handleSelectAllVisible}
-				/>
-			</div>
-		</PageWrapper>
+		<SettingsPageLayout title={t("settings.roles.title", "Role Management")}>
+			<RoleList
+				roles={roles}
+				selectedRole={selectedRole}
+				onRoleSelect={handleRoleChange}
+			/>
+			<PermissionsTable
+				selectedRoleData={selectedRoleData}
+				checkedPermissions={checkedPermissions}
+				onTogglePermission={handlePermissionToggle}
+				onSelectAllVisible={handleSelectAllVisible}
+			/>
+		</SettingsPageLayout>
 	);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
@@ -40,10 +40,16 @@ export function TreasuryActionCell({
 	const revalidator = useRevalidator();
 	const { t } = useTranslation();
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const deleteProcessedRef = useRef(false);
 
 	// Revalidate when delete succeeds and show toast notifications
 	useEffect(() => {
-		if (deleteFetcher.state === "idle" && deleteFetcher.data) {
+		if (
+			deleteFetcher.state === "idle" &&
+			deleteFetcher.data &&
+			!deleteProcessedRef.current
+		) {
+			deleteProcessedRef.current = true;
 			if (deleteFetcher.data.success) {
 				toast.success(t("common.actions.deleted", "Deleted successfully"));
 				setShowDeleteConfirm(false);
@@ -56,16 +62,10 @@ export function TreasuryActionCell({
 
 	const doDelete = () => {
 		if (!deleteProps) return;
-		console.log(
-			"[TreasuryActionCell] Submitting delete action:",
-			deleteProps.action,
-			"method: DELETE",
-		);
-		const data = { ...deleteProps.hiddenFields };
-		deleteFetcher.submit(data, {
+		deleteProcessedRef.current = false;
+		deleteFetcher.submit(deleteProps.hiddenFields, {
 			method: "DELETE",
 			action: deleteProps.action,
-			encType: "application/json",
 		});
 	};
 

@@ -41,37 +41,23 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			);
 		}
 
-		// Get OCR content
-		const receiptContent = await db.getReceiptContentByReceiptId(receiptId);
-		if (!receiptContent) {
+		// Check if receipt has been OCR processed
+		if (!receipt.ocrProcessed) {
 			return Response.json(
 				{ error: "No OCR data available for this receipt" },
 				{ status: 400 },
 			);
 		}
 
-		// Check if already processed
-		if (receiptContent.processed) {
-			return Response.json(
-				{
-					error: "Receipt has already been processed",
-					inventoryItemIds: receiptContent.inventoryItemIds
-						? JSON.parse(receiptContent.inventoryItemIds)
-						: [],
-				},
-				{ status: 400 },
-			);
-		}
-
 		// Parse items from OCR data
-		if (!receiptContent.items) {
+		if (!receipt.items) {
 			return Response.json(
 				{ error: "No items found in OCR data" },
 				{ status: 400 },
 			);
 		}
 
-		const items = JSON.parse(receiptContent.items) as Array<{
+		const items = JSON.parse(receipt.items) as Array<{
 			name: string;
 			quantity?: number;
 			unitPrice?: number;
@@ -91,7 +77,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			try {
 				const categorization = await categorizePurchase(
 					item.name,
-					receiptContent.storeName || undefined,
+					receipt.storeName || undefined,
 					item.totalPrice,
 				);
 
@@ -109,26 +95,25 @@ export async function action({ request, params }: ActionFunctionArgs) {
 						needsCompletion: !categorization.suggestedLocation,
 						completionNotes: `Auto-created from receipt: ${receipt.name || "Unnamed receipt"}. ${categorization.reasoning}`,
 						value: item.totalPrice ? String(item.totalPrice) : "0",
-						purchasedAt: receiptContent.purchaseDate || new Date(),
+						purchasedAt: receipt.purchaseDate || new Date(),
 						category: categorization.category,
 					});
 					createdInventoryIds.push(inventoryItem.id);
+
+					// Create relationship between receipt and inventory item
+					await db.createEntityRelationship({
+						relationAType: "receipt",
+						relationId: receipt.id,
+						relationBType: "inventory",
+						relationBId: inventoryItem.id,
+						createdBy: user.userId,
+					});
 				}
 			} catch (error) {
 				console.error(`Error processing item ${item.name}:`, error);
 				// Continue processing other items even if one fails
 			}
 		}
-
-		// Update receipt content with processing metadata
-		await db.updateReceiptContent(receiptContent.id, {
-			processed: true,
-			processedAt: new Date(),
-			inventoryItemIds:
-				createdInventoryIds.length > 0
-					? JSON.stringify(createdInventoryIds)
-					: null,
-		});
 
 		return Response.json({
 			success: true,

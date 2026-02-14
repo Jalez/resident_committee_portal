@@ -11,11 +11,15 @@ import {
 	TREASURY_TABLE_STYLES,
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
-import { type EntityRelationship, getDatabase, type Minute } from "~/db/server.server";
 import {
+	type EntityRelationship,
+	getDatabase,
+	type Minute,
+} from "~/db/server.server";
+import {
+	hasAnyPermission,
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
-	hasAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
@@ -77,9 +81,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const years = [
 		...new Set(
-			allMinutes
-				.map((m) => m.year)
-				.filter((y): y is number => Boolean(y)),
+			allMinutes.map((m) => m.year).filter((y): y is number => Boolean(y)),
 		),
 	].sort((a, b) => b - a);
 
@@ -163,8 +165,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 		{
 			key: "date",
 			header: t("common.fields.date"),
-			cell: (row: Minute) =>
-				row.date ? formatDate(row.date) : "—",
+			cell: (row: Minute) => (row.date ? formatDate(row.date) : "—"),
 			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
 		},
 		{
@@ -191,7 +192,9 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 						rel="noreferrer"
 						className="text-primary hover:underline flex items-center gap-1"
 					>
-						<span className="material-symbols-outlined text-sm">description</span>
+						<span className="material-symbols-outlined text-sm">
+							description
+						</span>
 						{row.fileKey?.split("/").pop() || "PDF"}
 					</a>
 				);
@@ -228,21 +231,17 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 							<TreasuryActionCell
 								viewTo={`/minutes/${minute.id}`}
 								viewTitle={t("minutes.view")}
-								editTo={
-									canUpdate
-										? `/minutes/${minute.id}/edit`
-										: undefined
-								}
+								editTo={canUpdate ? `/minutes/${minute.id}/edit` : undefined}
 								editTitle={t("common.actions.edit")}
 								canEdit={canUpdate}
 								deleteProps={
 									canDelete
 										? {
-											action: `/api/minutes/${minute.id}/delete`,
-											hiddenFields: {},
-											confirmMessage: t("minutes.delete_confirm"),
-											title: t("common.actions.delete"),
-										}
+												action: `/minutes/${minute.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t("minutes.delete_confirm"),
+												title: t("common.actions.delete"),
+											}
 										: undefined
 								}
 							/>

@@ -2,6 +2,7 @@ import type {
 	AppSetting,
 	CommitteeMailMessage,
 	EntityRelationship,
+	Event,
 	Faq,
 	FundBudget,
 	InventoryItem,
@@ -10,6 +11,7 @@ import type {
 	Minute,
 	NewCommitteeMailMessage,
 	NewEntityRelationship,
+	NewEvent,
 	NewFaq,
 	NewFundBudget,
 	NewInventoryItem,
@@ -20,7 +22,6 @@ import type {
 	NewPoll,
 	NewPurchase,
 	NewReceipt,
-	NewReceiptContent,
 	NewRole,
 	NewSocialLink,
 	NewSubmission,
@@ -30,7 +31,7 @@ import type {
 	Poll,
 	Purchase,
 	Receipt,
-	ReceiptContent,
+	RelationshipEntityType,
 	Role,
 	SocialLink,
 	Submission,
@@ -38,7 +39,6 @@ import type {
 	Transaction,
 	User,
 } from "../client";
-import type { RelationshipEntityType } from "../client";
 
 /**
  * Database adapter interface
@@ -298,25 +298,6 @@ export interface DatabaseAdapter {
 	/** Delete a receipt */
 	deleteReceipt(id: string): Promise<boolean>;
 
-	// ==================== Receipt Content Methods (OCR) ====================
-	/** Get OCR/AI content for a receipt */
-	getReceiptContentByReceiptId(
-		receiptId: string,
-	): Promise<ReceiptContent | null>;
-	/** Get OCR/AI content for multiple receipts */
-	getReceiptContentsByReceiptIds(
-		receiptIds: string[],
-	): Promise<ReceiptContent[]>;
-	/** Save OCR/AI content */
-	createReceiptContent(content: NewReceiptContent): Promise<ReceiptContent>;
-	/** Update receipt content (for processing status) */
-	updateReceiptContent(
-		id: string,
-		updates: Partial<Omit<NewReceiptContent, "id" | "receiptId">>,
-	): Promise<ReceiptContent | null>;
-	/** Delete receipt content */
-	deleteReceiptContent(id: string): Promise<boolean>;
-
 	/** Get incomplete inventory items (needs_completion = true) */
 	getIncompleteInventoryItems(): Promise<InventoryItem[]>;
 	/** Get app setting by key */
@@ -359,4 +340,16 @@ export interface DatabaseAdapter {
 		type: RelationshipEntityType,
 		ids: string[],
 	): Promise<number>;
+
+	// ==================== Event Methods ====================
+	getEvents(): Promise<Event[]>;
+	getUpcomingEvents(limit?: number): Promise<Event[]>;
+	getEventById(id: string): Promise<Event | null>;
+	getEventByGoogleEventId(googleEventId: string): Promise<Event | null>;
+	createEvent(event: NewEvent): Promise<Event>;
+	updateEvent(
+		id: string,
+		data: Partial<Omit<NewEvent, "id">>,
+	): Promise<Event | null>;
+	deleteEvent(id: string): Promise<boolean>;
 }

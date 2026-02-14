@@ -101,7 +101,7 @@ export function HiddenQuestionsSettings({
 								/>
 							</div>
 
-							<div className="border rounded-lg max-h-80 overflow-y-auto">
+							<div className="border border-border rounded-lg max-h-80 overflow-y-auto">
 								<div className="p-2 space-y-1">
 									{availableQuestions
 										.filter((q) =>

@@ -132,10 +132,8 @@ async function fetchEntityById(
 			return db.getSocialLinkById(id);
 		case "mail":
 			return db.getCommitteeMailMessageById(id);
-		case "event": {
-			const { getCalendarEvent } = await import("~/lib/google.server");
-			return getCalendarEvent(id);
-		}
+		case "event":
+			return db.getEventById(id);
 		default:
 			return null;
 	}
@@ -185,11 +183,9 @@ async function fetchAvailableEntities(
 		case "mail":
 			allEntities = await db.getCommitteeMailMessages("inbox", 50); // Get recent inbox messages
 			break;
-		case "event": {
-			const { getCalendarEvents } = await import("~/lib/google.server");
-			allEntities = await getCalendarEvents();
+		case "event":
+			allEntities = await db.getEvents();
 			break;
-		}
 	}
 
 	// Filter out archived entities and already linked ones
