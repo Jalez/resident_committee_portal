@@ -6,9 +6,9 @@ import {
 
 export const loader = genericDeleteLoader;
 export const action = createGenericDeleteAction("reimbursement", {
-	idParam: "purchaseId",
-	beforeDelete: async (db, purchase) => {
-		if (purchase.emailSent && purchase.status !== "rejected") {
+	idParam: "reimbursementId",
+	beforeDelete: async (db, reimbursement) => {
+		if (reimbursement.emailSent && reimbursement.status !== "rejected") {
 			throw new Error(
 				"Cannot delete a reimbursement request that has already been sent. Reject it first if needed.",
 			);

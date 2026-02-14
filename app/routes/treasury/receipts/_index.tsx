@@ -12,7 +12,11 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
-import { type EntityRelationship, getDatabase, type Receipt } from "~/db/server.server";
+import {
+	type EntityRelationship,
+	getDatabase,
+	type Receipt,
+} from "~/db/server.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
@@ -337,11 +341,11 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDelete
 										? {
-											action: `/api/receipts/${receipt.id}/delete`,
-											hiddenFields: {},
-											confirmMessage: t("treasury.receipts.delete_confirm"),
-											title: t("common.actions.delete"),
-										}
+												action: `/treasury/receipts/${receipt.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t("treasury.receipts.delete_confirm"),
+												title: t("common.actions.delete"),
+											}
 										: undefined
 								}
 							/>

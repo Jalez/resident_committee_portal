@@ -12,9 +12,9 @@ import { useFileUpload } from "~/hooks/use-file-upload";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import {
-	handleFileUpload,
 	deleteOldFile,
 	extractYearFromPath,
+	handleFileUpload,
 } from "~/lib/file-upload.server";
 import type { Route } from "./+types/_index";
 
@@ -35,9 +35,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getReceiptById(id),
-		extend: async ({ db, entity }) => ({
-			receiptContent: await db.getReceiptContentByReceiptId(entity.id),
-		}),
 	});
 }
 
@@ -97,7 +94,7 @@ export default function TreasuryReceiptsEdit({
 	loaderData,
 }: Route.ComponentProps) {
 	const actionData = useActionData<any>();
-	const { receipt, receiptContent, relationships, returnUrl, sourceContext } =
+	const { receipt, relationships, returnUrl, sourceContext } =
 		loaderData as any;
 	const { t } = useTranslation();
 	const navigate = useNavigate();
@@ -112,7 +109,8 @@ export default function TreasuryReceiptsEdit({
 		}
 	}, [actionData]);
 
-	const year = receipt.pathname?.split("/")[1] || new Date().getFullYear().toString();
+	const year =
+		receipt.pathname?.split("/")[1] || new Date().getFullYear().toString();
 
 	const {
 		isUploading,
@@ -192,7 +190,7 @@ export default function TreasuryReceiptsEdit({
 						selectedFile={selectedFile}
 						existingReceiptUrl={receipt.url || undefined}
 						existingFileName={currentFileName}
-						existingReceiptContent={receiptContent}
+						existingReceipt={receipt}
 					/>
 				</EditForm>
 			</div>

@@ -1,5 +1,5 @@
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher } from "react-router";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import {
@@ -8,7 +8,6 @@ import {
 } from "~/components/treasury/transaction-details-form";
 import { EditForm } from "~/components/ui/edit-form";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
-import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -53,11 +52,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 const transactionSchema = z.object({
 	description: z.string().min(1, "Description is required"),
 	category: z.string().min(1, "Category is required"),
-	amount: z.string().regex(/^\d+([,.]\d{1,2})?$/, "Invalid amount"),
+	amount: z.string().regex(/^[\d.,]+$/, "Invalid amount"),
 	status: z.string().optional(),
 	reimbursementStatus: z.string().optional(),
 	notes: z.string().optional(),
-	type: z.enum(["income", "expense"]).optional(),
+	type: z.enum(["income", "expense"]),
+	year: z.string().or(z.number()),
 });
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -73,6 +73,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			return db.updateTransaction(id, {
 				...data,
 				amount: data.amount.replace(",", "."),
+				year: typeof data.year === "string" ? parseInt(data.year, 10) : data.year,
 				status: (newStatus as any) || (data.status as any),
 			});
 		},
@@ -85,37 +86,62 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		loaderData as any;
 	const { t } = useTranslation();
 
-	const isExpense = transaction.type === "expense";
-	const categories = isExpense ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+	const currentYear = new Date().getFullYear();
+	const [currentType, setCurrentType] = useState<"income" | "expense">(
+		transaction.type,
+	);
 
-	const inputFields = {
+	const yearOptions = useMemo(() => {
+		return [
+			{ label: String(currentYear - 1), value: String(currentYear - 1) },
+			{ label: String(currentYear), value: String(currentYear) },
+			{ label: String(currentYear + 1), value: String(currentYear + 1) },
+		];
+	}, [currentYear]);
+
+	const categories = currentType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+
+	const inputFields = useMemo(() => ({
 		description: transaction.description,
 		amount: transaction.amount,
+		type: {
+			type: "select",
+			value: currentType,
+			options: [
+				{ label: t("treasury.transactions.types.income"), value: "income" },
+				{ label: t("treasury.transactions.types.expense"), value: "expense" },
+			],
+		},
+		year: {
+			type: "select",
+			value: String(transaction.year),
+			options: yearOptions,
+		},
 		category: {
+			type: "select",
 			value: transaction.category,
 			options: categories.map((c) => ({
-				label: t(`treasury.categories.${c}`),
-				value: c,
+				label: t(`treasury.categories.${c.labelKey}`),
+				value: c.value,
 			})),
 		},
 		status: transaction.status,
 		notes: transaction.notes,
 		reimbursementStatus: transaction.reimbursementStatus,
-	};
+	}), [transaction, currentType, yearOptions, categories, t]);
 
-	const readOnlyFields = {
-		type: t(`treasury.transactions.types.${transaction.type}`),
-		year: String(transaction.year),
+	const handleFieldChange = (name: string, value: any) => {
+		if (name === "type" && (value === "income" || value === "expense")) {
+			setCurrentType(value);
+		}
 	};
 
 	const hiddenFields = {
 		_sourceType: sourceContext?.type,
 		_sourceId: sourceContext?.id,
 		_returnUrl: returnUrl,
-		type: transaction.type,
 	};
 
-	// Override available budgets with enriched open budgets
 	const relationshipsData = {
 		...relationships,
 		budget: {
@@ -131,13 +157,13 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 				action=""
 				inputFields={inputFields as any}
 				hiddenFields={hiddenFields as any}
-				readOnlyFields={readOnlyFields}
 				entityType="transaction"
 				entityId={transaction.id}
 				entityName={transaction.description}
 				returnUrl={returnUrl || `/treasury/breakdown?year=${transaction.year}`}
 				relationships={relationshipsData}
 				translationNamespace="treasury.transactions"
+				onFieldChange={handleFieldChange}
 			/>
 		</PageWrapper>
 	);

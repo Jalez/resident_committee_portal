@@ -37,22 +37,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 			const creator = receipt.createdBy
 				? await db.findUserById(receipt.createdBy)
 				: null;
-			const receiptContent = await db.getReceiptContentByReceiptId(receipt.id);
-			let createdInventoryItems: any[] = [];
-			if (receiptContent?.inventoryItemIds) {
-				try {
-					const itemIds = JSON.parse(receiptContent.inventoryItemIds);
-					createdInventoryItems = await Promise.all(
-						itemIds.map((id: string) => db.getInventoryItemById(id)),
-					);
-					createdInventoryItems = createdInventoryItems.filter(Boolean);
-				} catch (error) {
-					console.error("Error parsing inventory item IDs:", error);
-				}
-			}
+
+			// Get linked inventory items via relationships
+			const inventoryRels = (
+				await db.getEntityRelationships("receipt", receipt.id)
+			).filter(
+				(r) =>
+					r.relationBType === "inventory" || r.relationAType === "inventory",
+			);
+
+			const inventoryIds = inventoryRels.map((r) =>
+				r.relationBType === "inventory" ? r.relationBId : r.relationId,
+			);
+
+			const createdInventoryItems = (
+				await Promise.all(
+					inventoryIds.map((id: string) => db.getInventoryItemById(id)),
+				)
+			).filter(Boolean);
+
 			return {
 				creatorName: creator?.name || null,
-				receiptContent,
 				createdInventoryItems,
 			};
 		},
@@ -60,13 +65,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
-	const {
-		receipt,
-		relationships,
-		creatorName,
-		receiptContent,
-		createdInventoryItems,
-	} = loaderData as any;
+	const { receipt, relationships, creatorName, createdInventoryItems } =
+		loaderData as any;
 	const hasLinkedReimbursement =
 		(relationships.reimbursement?.linked.length || 0) > 0;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
@@ -128,7 +128,7 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 					<ReceiptContentsDisplay
 						receiptId={receipt.id}
 						receiptUrl={receipt.url}
-						content={receiptContent}
+						receipt={receipt}
 					/>
 				)}
 
@@ -162,7 +162,7 @@ export default function ViewReceipt({ loaderData }: Route.ComponentProps) {
 					</TreasuryDetailCard>
 				)}
 
-				{receiptContent && !hasLinkedReimbursement && (
+				{receipt.ocrProcessed && !hasLinkedReimbursement && (
 					<Link
 						to={`/treasury/reimbursements/new?source=${encodeRelationshipContext(
 							{

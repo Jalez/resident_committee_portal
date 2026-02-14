@@ -72,7 +72,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;
 
-	const purchase = await db.getPurchaseById(params.purchaseId);
+	const purchase = await db.getPurchaseById(params.reimbursementId);
 	if (!purchase) {
 		throw new Response("Not Found", { status: 404 });
 	}

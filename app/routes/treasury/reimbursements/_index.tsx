@@ -218,9 +218,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const db = getDatabase();
 	const formData = await request.formData();
 	const actionType = formData.get("_action");
-	const purchaseId = formData.get("purchaseId") as string;
+	const reimbursementId = formData.get("reimbursementId") as string;
 
-	if (actionType === "updateStatus" && purchaseId) {
+	if (actionType === "updateStatus" && reimbursementId) {
 		// Updating status requires update permission
 		await requirePermission(
 			request,
@@ -229,10 +229,10 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 
 		const newStatus = formData.get("status") as PurchaseStatus;
-		await db.updatePurchase(purchaseId, { status: newStatus });
+		await db.updatePurchase(reimbursementId, { status: newStatus });
 
 		// Get purchase to check createdBy for notification
-		const purchase = await db.getPurchaseById(purchaseId);
+		const purchase = await db.getPurchaseById(reimbursementId);
 		if (purchase) {
 			// Send notification if status changed to approved/rejected/reimbursed
 			if (
@@ -254,7 +254,7 @@ export async function action({ request }: Route.ActionArgs) {
 		// Also update the linked transaction's reimbursementStatus and status
 		const txRelationships = await db.getEntityRelationships(
 			"reimbursement",
-			purchaseId,
+			reimbursementId,
 		);
 		const txRel = txRelationships.find(
 			(r) =>
@@ -262,10 +262,10 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 		const linkedTransaction = txRel
 			? await db.getTransactionById(
-				txRel.relationBType === "transaction"
-					? txRel.relationBId
-					: txRel.relationId,
-			)
+					txRel.relationBType === "transaction"
+						? txRel.relationBId
+						: txRel.relationId,
+				)
 			: null;
 		if (linkedTransaction) {
 			// Map purchase status to transaction reimbursementStatus and status
@@ -441,7 +441,7 @@ export default function BudgetReimbursements({
 					return (
 						<Form method="post" className="inline-block">
 							<input type="hidden" name="_action" value="updateStatus" />
-							<input type="hidden" name="purchaseId" value={row.id} />
+							<input type="hidden" name="reimbursementId" value={row.id} />
 							<select
 								name="status"
 								defaultValue={row.status}
@@ -449,16 +449,16 @@ export default function BudgetReimbursements({
 								className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer border-0 ${statusColor}`}
 							>
 								<option value="pending">
-									{t("treasury.reimbursements.status.pending")}
+									{t("treasury.reimbursements.statuses.pending")}
 								</option>
 								<option value="approved">
-									{t("treasury.reimbursements.status.approved")}
+									{t("treasury.reimbursements.statuses.approved")}
 								</option>
 								<option value="reimbursed">
-									{t("treasury.reimbursements.status.reimbursed")}
+									{t("treasury.reimbursements.statuses.reimbursed")}
 								</option>
 								<option value="rejected">
-									{t("treasury.reimbursements.status.rejected")}
+									{t("treasury.reimbursements.statuses.rejected")}
 								</option>
 							</select>
 						</Form>
@@ -468,7 +468,7 @@ export default function BudgetReimbursements({
 					<TreasuryStatusPill
 						value={row.status}
 						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
-						label={t(`treasury.reimbursements.status.${row.status}`)}
+						label={t(`treasury.reimbursements.statuses.${row.status}`)}
 					/>
 				);
 			},
@@ -658,13 +658,13 @@ export default function BudgetReimbursements({
 									deleteProps={
 										canDelete
 											? {
-												action: `/treasury/reimbursements/${purchase.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t(
-													"treasury.reimbursements.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+													action: `/treasury/reimbursements/${purchase.id}/delete`,
+													hiddenFields: {},
+													confirmMessage: t(
+														"treasury.reimbursements.delete_confirm",
+													),
+													title: t("common.actions.delete"),
+												}
 											: undefined
 									}
 								/>

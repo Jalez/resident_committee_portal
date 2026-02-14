@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getDatabase, type NewReceiptContent, type Receipt } from "~/db/server.server";
+import { getDatabase, type Receipt } from "~/db/server.server";
 
 const updateReceiptSchema = z.object({
 	name: z.string().optional(),
@@ -30,13 +30,7 @@ export async function saveReceiptOCRContent(
 	const db = getDatabase();
 
 	try {
-		const existingContent = await db.getReceiptContentByReceiptId(receipt.id);
-		if (existingContent) {
-			await db.deleteReceiptContent(existingContent.id);
-		}
-
-		const content: NewReceiptContent = {
-			receiptId: receipt.id,
+		await db.updateReceipt(receipt.id, {
 			rawText: ocrData.rawText,
 			storeName: ocrData.parsedData?.storeName || null,
 			items: ocrData.parsedData?.items
@@ -48,8 +42,9 @@ export async function saveReceiptOCRContent(
 				? new Date(ocrData.parsedData.purchaseDate)
 				: null,
 			aiModel: "OpenRouter via analyze API",
-		};
-		await db.createReceiptContent(content);
+			ocrProcessed: true,
+			ocrProcessedAt: new Date(),
+		});
 	} catch (error) {
 		console.error("[Receipt Edit] Failed to save OCR content:", error);
 	}

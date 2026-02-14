@@ -29,7 +29,7 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
-export async function action({ request }: Route.ActionArgs) { }
+export async function action({ request }: Route.ActionArgs) {}
 
 export async function loader({ request }: Route.LoaderArgs) {
 	// Require either treasury:breakdown:read or treasury:breakdown:read-self permission
@@ -378,9 +378,10 @@ export default function TreasuryBreakdown({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
-					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
+					row.type === "expense"
+						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -413,13 +414,13 @@ export default function TreasuryBreakdown({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-											action: `/treasury/transactions/${transaction.id}/edit`,
-											hiddenFields: { _action: "delete" },
-											confirmMessage: t(
-												"treasury.breakdown.edit.delete_confirm",
-											),
-											title: t("common.actions.delete"),
-										}
+												action: `/treasury/transactions/${transaction.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t(
+													"treasury.breakdown.edit.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
 										: undefined
 								}
 							/>

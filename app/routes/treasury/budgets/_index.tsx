@@ -324,7 +324,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 				<TreasuryStatusPill
 					value={row.status}
 					variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
-					label={t(`treasury.budgets.status.${row.status}`)}
+					label={t(`treasury.budgets.statuses.${row.status}`)}
 				/>
 			),
 		},
@@ -376,9 +376,10 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 			header: t("treasury.budgets.remaining"),
 			cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
 			cellClassName: (row: BudgetRow) =>
-				`font-semibold ${row.remainingAmount > 0
-					? "text-green-600 dark:text-green-400"
-					: "text-gray-500"
+				`font-semibold ${
+					row.remainingAmount > 0
+						? "text-green-600 dark:text-green-400"
+						: "text-gray-500"
 				}`,
 		},
 		{
@@ -418,11 +419,11 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDeleteBudget(budget)
 										? {
-											action: `/treasury/budgets/${budget.id}/delete`,
-											hiddenFields: {},
-											confirmMessage: t("treasury.budgets.delete_confirm"),
-											title: t("common.actions.delete"),
-										}
+												action: `/treasury/budgets/${budget.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t("treasury.budgets.delete_confirm"),
+												title: t("common.actions.delete"),
+											}
 										: undefined
 								}
 							/>

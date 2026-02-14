@@ -169,6 +169,27 @@
 			"when": 1770600636150,
 			"tag": "0023_nice_the_executioner",
 			"breakpoints": true
+		},
+		{
+			"idx": 24,
+			"version": "7",
+			"when": 1739500000000,
+			"tag": "0024_add_entity_relationships",
+			"breakpoints": true
+		},
+		{
+			"idx": 25,
+			"version": "7",
+			"when": 1739600000000,
+			"tag": "0025_remove_legacy_relationships",
+			"breakpoints": true
+		},
+		{
+			"idx": 26,
+			"version": "7",
+			"when": 1739700000000,
+			"tag": "0026_merge_receipt_contents",
+			"breakpoints": true
 		}
 	]
 }
