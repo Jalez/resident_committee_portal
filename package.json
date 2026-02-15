@@ -101,5 +101,8 @@
 		"vite": "^7.1.7",
 		"vite-tsconfig-paths": "^5.1.4",
 		"vitest": "^4.0.18"
+	},
+	"optionalDependencies": {
+		"@rollup/rollup-linux-x64-gnu": "*"
 	}
 }

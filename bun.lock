@@ -51,6 +51,7 @@
         "nodemailer": "^7.0.13",
         "postgres": "^3.4.8",
         "react": "^19.2.3",
+        "react-colorful": "^5.6.1",
         "react-dom": "^19.2.3",
         "react-i18next": "^16.5.3",
         "react-qr-code": "^2.0.18",
@@ -85,6 +86,9 @@
         "vite": "^7.1.7",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^4.0.18",
+      },
+      "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "*",
       },
     },
   },
@@ -432,6 +436,8 @@
     "@remix-run/node-fetch-server": ["@remix-run/node-fetch-server@0.9.0", "", {}, ""],
 
     "@rollup/rollup-darwin-arm64": ["@rollup/rollup-darwin-arm64@4.55.1", "", { "os": "darwin", "cpu": "arm64" }, ""],
+
+    "@rollup/rollup-linux-x64-gnu": ["@rollup/rollup-linux-x64-gnu@4.57.1", "", { "os": "linux", "cpu": "x64" }, "sha512-ABca4ceT4N+Tv/GtotnWAeXZUZuM/9AQyCyKYyKnpk4yoA7QIAuBt6Hkgpw8kActYlew2mvckXkvx0FfoInnLg=="],
 
     "@selderee/plugin-htmlparser2": ["@selderee/plugin-htmlparser2@0.11.0", "", { "dependencies": { "domhandler": "^5.0.3", "selderee": "^0.11.0" } }, ""],
 
@@ -1218,6 +1224,8 @@
     "raw-body": ["raw-body@2.5.3", "", { "dependencies": { "bytes": "~3.1.2", "http-errors": "~2.0.1", "iconv-lite": "~0.4.24", "unpipe": "~1.0.0" } }, ""],
 
     "react": ["react@19.2.3", "", {}, ""],
+
+    "react-colorful": ["react-colorful@5.6.1", "", { "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-1exovf0uGTGyq5mXQT0zgQ80uvj2PCwvF8zY1RN9/vbJVSjSo3fsB/4L3ObbF7u70NduSiK4xu4Y6q1MHoUGEw=="],
 
     "react-dom": ["react-dom@19.2.3", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.3" } }, ""],
 

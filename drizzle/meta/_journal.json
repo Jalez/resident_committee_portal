@@ -1,195 +1,202 @@
 {
-	"version": "7",
-	"dialect": "postgresql",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "7",
-			"when": 1737305909000,
-			"tag": "0000_initial",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "7",
-			"when": 1737305910000,
-			"tag": "0001_add_user_languages",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "7",
-			"when": 1737305911000,
-			"tag": "0002_add_created_by_to_transactions_purchases",
-			"breakpoints": true
-		},
-		{
-			"idx": 3,
-			"version": "7",
-			"when": 1737305912000,
-			"tag": "0003_add_messages_table",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "7",
-			"when": 1737305913000,
-			"tag": "0004_add_news_faq_and_message_news",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "7",
-			"when": 1737305914000,
-			"tag": "0005_add_news_faq_secondary_language",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "7",
-			"when": 1737305915000,
-			"tag": "0006_add_local_ollama_settings",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "7",
-			"when": 1737305916000,
-			"tag": "0007_add_user_secondary_roles",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "7",
-			"when": 1737305917000,
-			"tag": "0008_add_committee_mail_messages",
-			"breakpoints": true
-		},
-		{
-			"idx": 9,
-			"version": "7",
-			"when": 1737305918000,
-			"tag": "0008_add_social_primary",
-			"breakpoints": true
-		},
-		{
-			"idx": 10,
-			"version": "7",
-			"when": 1737305919000,
-			"tag": "0009_add_fund_reservations",
-			"breakpoints": true
-		},
-		{
-			"idx": 11,
-			"version": "7",
-			"when": 1737305920000,
-			"tag": "0009_add_mail_drafts",
-			"breakpoints": true
-		},
-		{
-			"idx": 12,
-			"version": "7",
-			"when": 1737305921000,
-			"tag": "0010_add_polls",
-			"breakpoints": true
-		},
-		{
-			"idx": 13,
-			"version": "7",
-			"when": 1737305922000,
-			"tag": "0011_add_polls_form_integration",
-			"breakpoints": true
-		},
-		{
-			"idx": 14,
-			"version": "7",
-			"when": 1737305923000,
-			"tag": "0012_add_user_description_and_picture",
-			"breakpoints": true
-		},
-		{
-			"idx": 15,
-			"version": "7",
-			"when": 1737305924000,
-			"tag": "0013_abandoned_snowbird",
-			"breakpoints": true
-		},
-		{
-			"idx": 16,
-			"version": "7",
-			"when": 1737305925000,
-			"tag": "0014_consolidate_user_roles",
-			"breakpoints": true
-		},
-		{
-			"idx": 17,
-			"version": "7",
-			"when": 1737305926000,
-			"tag": "0015_rename_treasury_permissions",
-			"breakpoints": true
-		},
-		{
-			"idx": 18,
-			"version": "7",
-			"when": 1737305927000,
-			"tag": "0016_add_receipts_table",
-			"breakpoints": true
-		},
-		{
-			"idx": 19,
-			"version": "7",
-			"when": 1737305928000,
-			"tag": "0018_add_receipt_contents",
-			"breakpoints": true
-		},
-		{
-			"idx": 20,
-			"version": "7",
-			"when": 1737305929000,
-			"tag": "0017_make_location_nullable",
-			"breakpoints": true
-		},
-		{
-			"idx": 21,
-			"version": "7",
-			"when": 1737305930000,
-			"tag": "0021_solid_mad_thinker",
-			"breakpoints": true
-		},
-		{
-			"idx": 22,
-			"version": "7",
-			"when": 1738964000000,
-			"tag": "0022_add_draft_status",
-			"breakpoints": true
-		},
-		{
-			"idx": 23,
-			"version": "7",
-			"when": 1770600636150,
-			"tag": "0023_nice_the_executioner",
-			"breakpoints": true
-		},
-		{
-			"idx": 24,
-			"version": "7",
-			"when": 1739500000000,
-			"tag": "0024_add_entity_relationships",
-			"breakpoints": true
-		},
-		{
-			"idx": 25,
-			"version": "7",
-			"when": 1739600000000,
-			"tag": "0025_remove_legacy_relationships",
-			"breakpoints": true
-		},
-		{
-			"idx": 26,
-			"version": "7",
-			"when": 1739700000000,
-			"tag": "0026_merge_receipt_contents",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1737305909000,
+      "tag": "0000_initial",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1737305910000,
+      "tag": "0001_add_user_languages",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1737305911000,
+      "tag": "0002_add_created_by_to_transactions_purchases",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1737305912000,
+      "tag": "0003_add_messages_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1737305913000,
+      "tag": "0004_add_news_faq_and_message_news",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1737305914000,
+      "tag": "0005_add_news_faq_secondary_language",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1737305915000,
+      "tag": "0006_add_local_ollama_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1737305916000,
+      "tag": "0007_add_user_secondary_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1737305917000,
+      "tag": "0008_add_committee_mail_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1737305918000,
+      "tag": "0008_add_social_primary",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1737305919000,
+      "tag": "0009_add_fund_reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1737305920000,
+      "tag": "0009_add_mail_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1737305921000,
+      "tag": "0010_add_polls",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1737305922000,
+      "tag": "0011_add_polls_form_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1737305923000,
+      "tag": "0012_add_user_description_and_picture",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1737305924000,
+      "tag": "0013_abandoned_snowbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1737305925000,
+      "tag": "0014_consolidate_user_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1737305926000,
+      "tag": "0015_rename_treasury_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1737305927000,
+      "tag": "0016_add_receipts_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1737305928000,
+      "tag": "0018_add_receipt_contents",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1737305929000,
+      "tag": "0017_make_location_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1737305930000,
+      "tag": "0021_solid_mad_thinker",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1738964000000,
+      "tag": "0022_add_draft_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1770600636150,
+      "tag": "0023_nice_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1739500000000,
+      "tag": "0024_add_entity_relationships",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1739600000000,
+      "tag": "0025_remove_legacy_relationships",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1739700000000,
+      "tag": "0026_merge_receipt_contents",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1771155548511,
+      "tag": "0027_chemical_the_santerians",
+      "breakpoints": true
+    }
+  ]
 }

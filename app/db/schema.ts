@@ -696,7 +696,7 @@ export const entityRelationships = pgTable(
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
 	(t) => ({
-		pairUnique: unique().on(
+		pairUnique: unique("entity_rel_pair_unique").on(
 			t.relationAType,
 			t.relationId,
 			t.relationBType,
