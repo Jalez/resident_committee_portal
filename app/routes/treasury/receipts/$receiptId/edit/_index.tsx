@@ -132,6 +132,9 @@ export default function TreasuryReceiptsEdit({
 	});
 
 	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
+	const displayReceiptUrl = tempUrl || receipt.url || undefined;
+	const displayFileName =
+		tempPathname?.split("/").pop() || currentFileName;
 
 	return (
 		<PageWrapper>
@@ -172,6 +175,14 @@ export default function TreasuryReceiptsEdit({
 							: undefined,
 					}}
 					translationNamespace="treasury.receipts"
+					onFieldChange={(fieldName, value) => {
+						if (fieldName === "name") {
+							setName(String(value || ""));
+						}
+						if (fieldName === "description") {
+							setDescription(String(value || ""));
+						}
+					}}
 				>
 					<ReceiptFormFields
 						receiptId={receipt.id}
@@ -188,8 +199,8 @@ export default function TreasuryReceiptsEdit({
 						tempUrl={tempUrl}
 						onReanalyze={handleReanalyze}
 						selectedFile={selectedFile}
-						existingReceiptUrl={receipt.url || undefined}
-						existingFileName={currentFileName}
+						existingReceiptUrl={displayReceiptUrl}
+						existingFileName={displayFileName}
 						existingReceipt={receipt}
 					/>
 				</EditForm>

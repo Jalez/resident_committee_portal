@@ -112,6 +112,7 @@ export function EditForm({
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const formId = React.useId();
+	const formRef = React.useRef<HTMLFormElement | null>(null);
 
 	const resolvedDeleteUrl = React.useMemo(() => {
 		if (deleteUrl) return deleteUrl;
@@ -254,6 +255,7 @@ export function EditForm({
 							next[key] = String(value).replace(".", ",");
 						}
 					}
+					onFieldChange?.(key, next[key]);
 				}
 			}
 			return next;
@@ -312,13 +314,14 @@ export function EditForm({
 
 			if (sections.length === 0) return null;
 
-			const currentPath = returnUrl
-				? returnUrl.startsWith("http")
-					? new URL(returnUrl).pathname
+			const currentPath =
+				typeof window !== "undefined"
+					? `${window.location.pathname}${window.location.search}`
 					: returnUrl
-				: typeof window !== "undefined"
-					? window.location.pathname
-					: "";
+						? returnUrl.startsWith("http")
+							? new URL(returnUrl).pathname + new URL(returnUrl).search
+							: returnUrl
+						: "";
 
 			return {
 				relationAType: entityType as RelationshipEntityType,
@@ -347,7 +350,27 @@ export function EditForm({
 						<SmartAutofillButton
 							entityType={entityType as any}
 							entityId={entityId}
-							getCurrentValues={() => values}
+							getCurrentValues={() => {
+								const currentValues = {
+									...Object.fromEntries(
+										Object.entries(values).map(([key, value]) => [
+											key,
+											value == null ? "" : String(value),
+										]),
+									),
+								};
+
+								if (formRef.current) {
+									const formData = new FormData(formRef.current);
+									for (const [key, value] of formData.entries()) {
+										if (typeof value === "string") {
+											currentValues[key] = value;
+										}
+									}
+								}
+
+								return currentValues;
+							}}
 							onSuggestions={handleAutofillSuggestions}
 							localModel={localModel}
 							onLocalModelChange={setLocalModel}
@@ -370,6 +393,7 @@ export function EditForm({
 					{/* Main Edit Form */}
 
 					<Form
+						ref={formRef}
 						id={formId}
 						method={method}
 						action={action}

@@ -87,6 +87,7 @@ export async function action({ request }: Route.ActionArgs) {
 		request,
 		[
 			"treasury:transactions:update",
+			"treasury:receipts:update",
 			"treasury:budgets:update",
 			"treasury:reimbursements:update",
 			"inventory:write",
@@ -135,6 +136,45 @@ export async function action({ request }: Route.ActionArgs) {
 	// 2. Build suggestions based on entity type field mapping
 	const fieldMap = ENTITY_FIELD_MAPS[entityType] || {};
 	const suggestions: Record<string, string | number | null> = {};
+	const isEmptyValue = (value: string | undefined) =>
+		!value || value.trim() === "";
+
+	if (entityType === "receipt") {
+		const receipt = await db.getReceiptById(entityId);
+
+		if (receipt) {
+			const currentName = currentValues.name;
+			const currentDescription = currentValues.description;
+
+			if (isEmptyValue(currentName)) {
+				if (receipt.storeName?.trim()) {
+					suggestions.name = receipt.storeName.trim();
+				} else if (receipt.pathname) {
+					const filename = receipt.pathname.split("/").pop();
+					if (filename) {
+						suggestions.name = filename.replace(/\.[^.]+$/, "");
+					}
+				}
+			}
+
+			if (isEmptyValue(currentDescription)) {
+				const descriptionParts: string[] = [];
+				if (receipt.totalAmount) {
+					descriptionParts.push(
+						`${receipt.totalAmount} ${receipt.currency || "EUR"}`,
+					);
+				}
+				if (receipt.purchaseDate) {
+					descriptionParts.push(
+						new Date(receipt.purchaseDate).toISOString().split("T")[0],
+					);
+				}
+				if (descriptionParts.length > 0) {
+					suggestions.description = descriptionParts.join(" • ");
+				}
+			}
+		}
+	}
 
 	if (contextValues) {
 		for (const [formField, contextField] of Object.entries(fieldMap)) {
