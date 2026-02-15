@@ -19,11 +19,13 @@ import {
 	QRPanel,
 	SplitLayout,
 } from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
 import { useLanguage } from "~/contexts/language-context";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	getAuthenticatedUser,
 	getGuestContext,
@@ -31,6 +33,7 @@ import {
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { deleteCalendarEvent, getCalendarUrl } from "~/lib/google.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -129,8 +132,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 			hasFilters: !!titleFilter,
 			canWrite,
 			viewMode,
+			relationsMap: new Map<string, RelationBadgeData[]>(),
 		};
 	}
+
+	const eventIds = filteredEvents.map((e) => e.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"event",
+		eventIds,
+	);
 
 	const groupedMap = new Map<string, DisplayEvent[]>();
 
@@ -176,6 +187,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		hasFilters: !!titleFilter,
 		canWrite,
 		viewMode,
+		relationsMap,
 	};
 }
 
@@ -226,6 +238,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		languages,
 		canWrite,
 		viewMode,
+		relationsMap,
 	} = loaderData;
 	const { isInfoReel } = useLanguage();
 	const { hasPermission } = useUser();
@@ -445,6 +458,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 							deleteFetcher={deleteFetcher}
 							currentLocale={currentLocale}
 							t={t}
+							relationsMap={relationsMap}
 						/>
 					) : (
 						<>

@@ -1,7 +1,9 @@
 import { Link, type useFetcher } from "react-router";
+import { RelationsColumn } from "~/components/relations-column";
 import { Button } from "~/components/ui/button";
 import { EmptyState } from "~/components/ui/empty-state";
 import type { EventStatus, EventType } from "~/db/client";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 
 export interface EventTableRow {
 	id: string;
@@ -26,6 +28,7 @@ interface EventsTableProps {
 	deleteFetcher: ReturnType<typeof useFetcher>;
 	currentLocale: string;
 	t: (key: string) => string;
+	relationsMap: Map<string, RelationBadgeData[]>;
 }
 
 export function EventsTable({
@@ -39,6 +42,7 @@ export function EventsTable({
 	deleteFetcher,
 	currentLocale,
 	t,
+	relationsMap,
 }: EventsTableProps) {
 	return (
 		<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
@@ -60,6 +64,9 @@ export function EventsTable({
 							</th>
 							<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
 								{t("common.fields.status")}
+							</th>
+							<th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+								{t("common.relations.title")}
 							</th>
 							{hasActions && (
 								<th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 w-20">
@@ -127,6 +134,9 @@ export function EventsTable({
 									>
 										{t(`events.statuses.${event.status}`)}
 									</span>
+								</td>
+								<td className="px-4 py-3 text-center">
+									<RelationsColumn relations={relationsMap.get(event.id) || []} />
 								</td>
 								{hasActions && (
 									<td className="px-4 py-3 text-right">

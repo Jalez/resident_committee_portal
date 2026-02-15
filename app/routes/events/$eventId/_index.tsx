@@ -1,10 +1,8 @@
 import { useRouteLoaderData } from "react-router";
-import { RelationsColumn } from "~/components/relations-column";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
-import { loadRelationsForTableColumn } from "~/lib/relations-column.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 
@@ -30,15 +28,14 @@ export async function loader({
 		params,
 		request,
 		fetchEntity: async (db, id) => db.getEventById(id),
-		extend: async ({ db, entity }) => ({
+		extend: async () => ({
 			currentUserId: authUser?.userId || null,
-			relationBadges: await loadRelationsForTableColumn(db, "event", entity.id),
 		}),
 	});
 }
 
 export default function ViewEvent({ loaderData }: { loaderData: any }) {
-	const { event, relationships, relationBadges } = loaderData;
+	const { event, relationships } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 
 	const canUpdate = rootData?.user?.permissions?.some(
@@ -72,16 +69,6 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 		attendees: {
 			value: attendees.join(", "),
 			hide: attendees.length === 0,
-		},
-		relations: {
-			value: relationBadges || [],
-			hide: !relationBadges?.length,
-			render: (value: any[]) =>
-				value.length > 0 ? (
-					<div className="flex flex-wrap gap-1">
-						<RelationsColumn relations={value} />
-					</div>
-				) : null,
 		},
 	};
 
