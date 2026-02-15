@@ -1,6 +1,5 @@
 import {
 	index,
-	layout,
 	type RouteConfig,
 	route,
 } from "@react-router/dev/routes";
@@ -132,7 +131,7 @@ export default [
 	),
 	route("inventory/:itemId/edit", "routes/inventory/$itemId/edit/_index.tsx"),
 	route("inventory/incomplete", "routes/inventory/incomplete/_index.tsx"),
-	layout("routes/mail.tsx", [
+	route("mail", "routes/mail.tsx", [
 		index("routes/mail/_index.tsx"),
 		route("inbox", "routes/mail/inbox/_index.tsx"),
 		route("messages/:messageId", "routes/mail/messages/$messageId/_index.tsx"),
