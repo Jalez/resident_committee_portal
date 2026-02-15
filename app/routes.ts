@@ -81,6 +81,7 @@ export default [
 		"routes/api/receipts/$receiptId/process/_index.tsx",
 	),
 	route("api/receipts/analyze", "routes/api/receipts/analyze/_index.tsx"),
+	route("api/receipts/delete", "routes/api/receipts/delete/_index.tsx"),
 	route("api/receipts/ocr", "routes/api/receipts/ocr/_index.tsx"),
 	route("api/receipts/rename", "routes/api/receipts/rename/_index.tsx"),
 	route("api/receipts/thumbnail", "routes/api/receipts/thumbnail/_index.tsx"),

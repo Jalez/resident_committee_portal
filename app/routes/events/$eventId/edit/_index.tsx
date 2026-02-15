@@ -37,7 +37,7 @@ const eventSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
 	location: z.string().optional(),
-	isAllDay: z.coerce.boolean().optional(),
+	isAllDay: z.string().optional().transform((val) => val === "on"),
 	startDate: z.string().min(1, "Start date is required"),
 	startTime: z.string().optional(),
 	endDate: z.string().optional(),
@@ -174,8 +174,8 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 			value: isAllDay,
 			render: (field, value, onChange) => (
 				<div className="flex items-center space-x-2 mb-4">
+					<input type="hidden" name="isAllDay" value={value ? "on" : "off"} />
 					<Switch
-						name="isAllDay"
 						id="isAllDay"
 						checked={!!value}
 						onCheckedChange={(checked) => {

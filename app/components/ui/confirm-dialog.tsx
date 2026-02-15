@@ -3,6 +3,7 @@ import { Button } from "~/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -41,10 +42,8 @@ export function ConfirmDialog({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
-				<div className="py-4">
-					<div className="text-gray-600 dark:text-gray-400">{description}</div>
-				</div>
 				<DialogFooter>
 					{cancelLabel != null && (
 						<Button
