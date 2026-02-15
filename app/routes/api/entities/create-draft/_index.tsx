@@ -2,6 +2,7 @@ import { data, redirect } from "react-router";
 import type { RelationshipEntityType } from "~/db";
 import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
+import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import type { Route } from "./+types/_index";
 
 // Handle GET requests - redirect to home
@@ -243,6 +244,51 @@ export async function action({ request }: Route.ActionArgs) {
 					relError,
 				);
 				// Non-fatal, continue with creation
+			}
+		}
+
+		// Apply source-derived defaults for certain draft types.
+		// For transactions created from a relationship picker, pull dominant values
+		// (e.g. receipt content) immediately so the new draft is prefilled.
+		if (type === "transaction" && sourceType && sourceId) {
+			try {
+				const contextValues = await getRelationshipContext(
+					db as any,
+					"transaction",
+					entity.id,
+				);
+
+				const updates: {
+					description?: string;
+					amount?: string;
+					date?: Date;
+					category?: string;
+				} = {};
+
+				if (contextValues.description?.trim()) {
+					updates.description = contextValues.description.trim();
+				}
+				if (contextValues.totalAmount !== null) {
+					updates.amount = contextValues.totalAmount.toString();
+				}
+				if (contextValues.date) {
+					updates.date = contextValues.date;
+				}
+				if (contextValues.category?.trim()) {
+					updates.category = contextValues.category.trim();
+				}
+
+				if (Object.keys(updates).length > 0) {
+					const updatedTransaction = await db.updateTransaction(entity.id, updates);
+					if (updatedTransaction) {
+						entity = updatedTransaction;
+					}
+				}
+			} catch (contextError) {
+				console.error(
+					"[CreateDraft] Failed to apply source context to transaction draft:",
+					contextError,
+				);
 			}
 		}
 

@@ -83,19 +83,9 @@ export function useFileUpload({
 		}
 	}, [isHydrated, draft, onNameSuggestion, onDescriptionSuggestion, selectedFile]);
 
-	useEffect(() => {
-		return () => {
-			if (tempPathname) {
-				const formData = new FormData();
-				formData.append("pathname", tempPathname);
-				formData.append("entityType", entityType);
-				fetch("/api/files/delete-temp", {
-					method: "POST",
-					body: formData,
-				}).catch((err) => console.error("Failed to delete temp file:", err));
-			}
-		};
-	}, [tempPathname, entityType]);
+	// Intentionally do not auto-delete temp files on unmount.
+	// Users may navigate away (e.g. via relationship picker) and return,
+	// and draft state should remain recoverable until explicit cancel/save flow.
 
 	const analyzeFile = useCallback(
 		async (file: File) => {
@@ -202,6 +192,78 @@ export function useFileUpload({
 			let uploadResult: any = null;
 
 			try {
+				if (entityType === "receipt") {
+					const ingestFormData = new FormData();
+					ingestFormData.append("file", file);
+					ingestFormData.append(
+						"analyzeWithAI",
+						enableAI ? "true" : "false",
+					);
+
+					const ingestResponse = await fetch(
+						`/api/receipts/${entityId}/ingest`,
+						{
+							method: "POST",
+							body: ingestFormData,
+						},
+					);
+
+					uploadResult = await ingestResponse.json();
+
+					if (!(ingestResponse.ok && uploadResult.success)) {
+						throw new Error(uploadResult?.error || "Upload failed");
+					}
+
+					setTempUrl(uploadResult.url || null);
+					setTempPathname(uploadResult.pathname || null);
+
+					const newOcrData = {
+						rawText: uploadResult.rawText || "",
+						parsedData: uploadResult.parsedData || {},
+						suggestedName: uploadResult.suggestedName || "",
+						suggestedDescription: uploadResult.suggestedDescription || "",
+					};
+					setOcrData(newOcrData);
+					if (newOcrData.suggestedName && onNameSuggestion) {
+						onNameSuggestion(newOcrData.suggestedName);
+					}
+					if (newOcrData.suggestedDescription && onDescriptionSuggestion) {
+						onDescriptionSuggestion(newOcrData.suggestedDescription);
+					}
+
+					saveDraft({
+						tempUrl: uploadResult.url,
+						tempPathname: uploadResult.pathname,
+						fileName: file.name,
+						ocrData: uploadResult.rawText
+							? {
+									rawText: uploadResult.rawText || "",
+									parsedData: uploadResult.parsedData || {},
+									suggestedName: uploadResult.suggestedName || "",
+									suggestedDescription:
+										uploadResult.suggestedDescription || "",
+							  }
+							: undefined,
+					});
+
+					toast.success(t("files.upload_complete", "File uploaded"), {
+						id: uploadToastId,
+					});
+
+					if (onUploadComplete) {
+						onUploadComplete({
+							url: uploadResult.url,
+							pathname: uploadResult.pathname,
+						});
+					}
+
+					if (uploadResult.error && enableAI) {
+						toast.error(uploadResult.error);
+					}
+
+					return;
+				}
+
 				const uploadFormData = new FormData();
 				uploadFormData.append("file", file);
 				uploadFormData.append("entityType", entityType);
@@ -273,7 +335,7 @@ export function useFileUpload({
 	}, [selectedFile, analyzeFile]);
 
 	const handleCancel = useCallback(async () => {
-		if (tempPathname) {
+			if (tempPathname && entityType !== "receipt") {
 			const formData = new FormData();
 			formData.append("pathname", tempPathname);
 			formData.append("entityType", entityType);
