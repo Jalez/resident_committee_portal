@@ -12,6 +12,23 @@
 			"news": "Uutiset",
 			"faq": "UKK"
 		},
+		"relations": {
+			"title": "Liittyvät"
+		},
+		"relation_types": {
+			"receipt": "Kuitti",
+			"transaction": "Tapahtuma",
+			"reimbursement": "Kulukorvauspyyntö",
+			"budget": "Budjetti",
+			"inventory": "Varusteesine",
+			"minute": "Pöytäkirja",
+			"news": "Uutinen",
+			"faq": "UKK",
+			"poll": "Äänestys",
+			"social": "Sosiaalinen linkki",
+			"mail": "Sähköposti",
+			"event": "Tapahtuma"
+		},
 		"actions": {
 			"delete": "Poista",
 			"edit": "Muokkaa",

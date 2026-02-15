@@ -1,4 +1,9 @@
-import { index, type RouteConfig, route } from "@react-router/dev/routes";
+import {
+	index,
+	layout,
+	type RouteConfig,
+	route,
+} from "@react-router/dev/routes";
 
 export default [
 	index("routes/_index.tsx"),
@@ -127,19 +132,19 @@ export default [
 	),
 	route("inventory/:itemId/edit", "routes/inventory/$itemId/edit/_index.tsx"),
 	route("inventory/incomplete", "routes/inventory/incomplete/_index.tsx"),
-	route("mail", "routes/mail/_index.tsx"),
-	route(
-		"mail/messages/:messageId",
-		"routes/mail/messages/$messageId/_index.tsx",
-	),
-	route("mail/compose", "routes/mail/compose/_index.tsx"),
-	route("mail/drafts", "routes/mail/drafts/_index.tsx"),
-	route(
-		"mail/drafts/:draftId/edit",
-		"routes/mail/drafts/$draftId/edit/_index.tsx",
-	),
-	route("mail/new", "routes/mail/new/_index.tsx"),
-	route("mail/thread/:threadId", "routes/mail/thread/$threadId/_index.tsx"),
+	layout("routes/mail.tsx", [
+		index("routes/mail/_index.tsx"),
+		route("inbox", "routes/mail/inbox/_index.tsx"),
+		route("messages/:messageId", "routes/mail/messages/$messageId/_index.tsx"),
+		route("compose", "routes/mail/compose/_index.tsx"),
+		route("drafts", "routes/mail/drafts/_index.tsx"),
+		route(
+			"drafts/:draftId/edit",
+			"routes/mail/drafts/$draftId/edit/_index.tsx",
+		),
+		route("new", "routes/mail/new/_index.tsx"),
+		route("thread/:threadId", "routes/mail/thread/$threadId/_index.tsx"),
+	]),
 	route("messages", "routes/messages/_index.tsx"),
 	route("minutes", "routes/minutes/_index.tsx"),
 	route("minutes/:minuteId", "routes/minutes/$minuteId/_index.tsx"),

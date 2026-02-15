@@ -12,6 +12,23 @@
 			"news": "News",
 			"faq": "FAQ"
 		},
+		"relations": {
+			"title": "Relations"
+		},
+		"relation_types": {
+			"receipt": "Receipt",
+			"transaction": "Transaction",
+			"reimbursement": "Reimbursement Request",
+			"budget": "Budget",
+			"inventory": "Inventory Item",
+			"minute": "Meeting Minutes",
+			"news": "News",
+			"faq": "FAQ",
+			"poll": "Poll",
+			"social": "Social Link",
+			"mail": "Email",
+			"event": "Event"
+		},
 		"actions": {
 			"save": "Save",
 			"cancel": "Cancel",

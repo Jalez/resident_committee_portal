@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
-import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
@@ -12,17 +12,15 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
-import {
-	type EntityRelationship,
-	getDatabase,
-	type Receipt,
-} from "~/db/server.server";
+import { getDatabase, type Receipt } from "~/db/server.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
@@ -36,7 +34,6 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// DatabaseAdapter implements all RBACDatabaseAdapter methods needed
 	const user = await requireAnyPermission(
 		request,
 		[
@@ -50,7 +47,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
 
-	// Check if user can read all receipts or only their own
 	const canReadAll = hasAnyPermission(user, [
 		"treasury:receipts:read",
 		"treasury:read",
@@ -86,34 +82,27 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const currentYear = new Date().getFullYear();
 	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
 
-	// Fetch receipts from database
 	let allReceipts = await db.getReceipts();
 
-	// Filter receipts: if user only has read-self, show only their own receipts
 	if (!canReadAll) {
 		allReceipts = allReceipts.filter((r) => r.createdBy === user.userId);
 	}
 
-	// Filter by year if specified (extract year from pathname or createdAt)
 	let receipts = allReceipts;
 	if (yearParam && yearParam !== "all") {
 		receipts = receipts.filter((r) => {
-			// Try to extract year from pathname first (format: receipts/YYYY/...)
 			const yearMatch = r.pathname?.match(/receipts\/(\d{4})/);
 			if (yearMatch) {
 				return parseInt(yearMatch[1], 10) === year;
 			}
-			// Fallback to createdAt year
 			return new Date(r.createdAt).getFullYear() === year;
 		});
 	}
 
-	// Sort by date descending
 	const sortedReceipts = receipts.sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
-	// Batch resolve creator names
 	const creatorIds = [
 		...new Set(
 			sortedReceipts
@@ -129,37 +118,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	// Fetch reimbursement status for receipts via entity relationships
-	const purchaseStatusMap = new Map<string, string>();
-	const receiptReimbursementMap = new Map<string, string>(); // receiptId -> reimbursementId
-
-	// Get relationships for all receipts in parallel
-	await Promise.all(
-		sortedReceipts.map(async (receipt) => {
-			const relationships = await db.getEntityRelationships(
-				"receipt",
-				receipt.id,
-			);
-			const reimbursementRel = relationships.find(
-				(r: EntityRelationship) =>
-					r.relationAType === "reimbursement" ||
-					r.relationBType === "reimbursement",
-			);
-			if (reimbursementRel) {
-				const reimbursementId =
-					reimbursementRel.relationAType === "reimbursement"
-						? reimbursementRel.relationId
-						: reimbursementRel.relationBId;
-				receiptReimbursementMap.set(receipt.id, reimbursementId);
-				const purchase = await db.getPurchaseById(reimbursementId);
-				if (purchase) {
-					purchaseStatusMap.set(reimbursementId, purchase.status);
-				}
-			}
-		}),
+	const receiptIds = sortedReceipts.map((r) => r.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"receipt",
+		receiptIds,
+		["reimbursement"],
 	);
 
-	// Get unique years from receipts for filter
 	const years = [
 		...new Set(
 			allReceipts.map((r) => {
@@ -172,6 +138,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		),
 	].sort((a, b) => b - a);
 
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		canWrite,
@@ -183,8 +154,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		years,
 		currentYear: year,
 		creatorsMap: Object.fromEntries(creatorsMap),
-		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
-		receiptReimbursementMap: Object.fromEntries(receiptReimbursementMap),
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -198,17 +168,13 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 		canUpdate,
 		canDelete,
 		canReadAll,
-		purchaseStatusMap: purchaseStatusMapRaw,
-		receiptReimbursementMap: receiptReimbursementMapRaw,
+		relationsMap: relationsMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
-	const purchaseStatusMap = new Map(
-		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
-	);
-	const receiptReimbursementMap = new Map(
-		Object.entries(receiptReimbursementMapRaw ?? {}) as [string, string][],
+	const relationsMap = new Map(
+		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
@@ -231,7 +197,6 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 			i18n.language === "fi" ? "fi-FI" : "en-US",
 		);
 
-	// Configure search fields
 	const searchFields: SearchField[] = [
 		{
 			name: "year",
@@ -258,7 +223,6 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 		</div>
 	);
 
-	// Canonical treasury column order: Date, Name/Description, [route-specific], Created by
 	const columns = [
 		{
 			key: "date",
@@ -279,32 +243,20 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 			cellClassName: "text-gray-500",
 		},
 		{
-			key: "purchase",
-			header: t("treasury.receipts.reimbursement_request"),
-			cell: (row: Receipt) => {
-				const reimbursementId = receiptReimbursementMap.get(row.id);
-				if (!reimbursementId) {
-					return <span className="text-gray-400">—</span>;
-				}
-				const purchaseStatus =
-					purchaseStatusMap.get(reimbursementId) || "pending";
-				return (
-					<ColoredStatusLinkBadge
-						to={`/treasury/reimbursements/${reimbursementId}`}
-						title={t("treasury.receipts.reimbursement_request")}
-						status={purchaseStatus}
-						id={reimbursementId}
-						icon="link"
-					/>
-				);
-			},
-		},
-		{
 			key: "createdBy",
 			header: t("common.fields.created_by"),
 			cell: (row: Receipt) =>
 				row.createdBy ? (creatorsMap.get(row.createdBy) ?? "—") : "—",
 			cellClassName: "text-gray-500",
+		},
+		{
+			key: "relations",
+			header: t("common.relations.title"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: Receipt) => (
+				<RelationsColumn relations={relationsMap.get(row.id) || []} />
+			),
 		},
 	];
 

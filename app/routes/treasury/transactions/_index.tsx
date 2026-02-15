@@ -4,12 +4,11 @@ import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import {
-	ColoredStatusLinkBadge,
-	TREASURY_PURCHASE_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_TYPE_VARIANTS,
 } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
@@ -19,14 +18,15 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
-import { getDatabase, type Purchase, type Transaction } from "~/db/server.server";
+import { getDatabase, type Transaction } from "~/db/server.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
-import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
@@ -43,14 +43,12 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	// Require either treasury:transactions:read or treasury:transactions:read-self permission
 	const user = await requireAnyPermission(
 		request,
 		["treasury:transactions:read", "treasury:transactions:read-self"],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
 
-	// Check if user can read all transactions or only their own
 	const canReadAll = hasAnyPermission(user, ["treasury:transactions:read"]);
 
 	const db = getDatabase();
@@ -66,38 +64,31 @@ export async function loader({ request }: Route.LoaderArgs) {
 		throw new Response("Invalid year", { status: 400 });
 	}
 
-	// Get ALL transactions for the year (no filtering by reimbursement status)
 	let allTransactions = await db.getTransactionsByYear(year);
 
-	// Filter transactions: if user only has read-self, show only their own transactions
 	if (!canReadAll) {
 		allTransactions = allTransactions.filter(
 			(t) => t.createdBy === user.userId,
 		);
 	}
 
-	// Filter by status if specified
 	let transactions = allTransactions;
 	if (statusParam && statusParam !== "all") {
 		transactions = transactions.filter((t) => t.status === statusParam);
 	}
 
-	// Filter by category if specified
 	if (categoryParam && categoryParam !== "all") {
 		transactions = transactions.filter((t) => t.category === categoryParam);
 	}
 
-	// Filter by type if specified
 	if (typeParam && typeParam !== "all") {
 		transactions = transactions.filter((t) => t.type === typeParam);
 	}
 
-	// Sort by date descending
 	const sortedTransactions = transactions.sort(
 		(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 	);
 
-	// Calculate totals (from all transactions, not filtered)
 	const totalExpenses = allTransactions
 		.filter((t) => t.type === "expense")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
@@ -106,16 +97,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 		.filter((t) => t.type === "income")
 		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-	// Get all years with transactions for navigation
 	const allYearTransactions = await db.getAllTransactions();
 	const years = [...new Set(allYearTransactions.map((t) => t.year))].sort(
 		(a, b) => b - a,
 	);
 
-	// Get unique status for filter
 	const status = [...new Set(allTransactions.map((t) => t.status))];
 
-	// Get unique categories for filter (excluding null/empty)
 	const categories = [
 		...new Set(
 			allTransactions
@@ -124,7 +112,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		),
 	];
 
-	// Batch resolve creator names
 	const creatorIds = [
 		...new Set(
 			sortedTransactions
@@ -140,81 +127,33 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
-	// Fetch budgets for each transaction using entity relationships
-	const budgetMap = new Map<
-		string,
-		{ id: string; name: string; status: string }
-	>();
-	for (const transaction of sortedTransactions) {
-		const relationships = await loadRelationshipsForEntity(
-			db,
-			"transaction",
-			transaction.id,
-			["budget"],
-		);
-		const linkedBudgets = relationships.budget?.linked || [];
-		if (linkedBudgets.length > 0) {
-			const budget = linkedBudgets[0] as {
-				id: string;
-				name: string;
-				status: string;
-			};
-			budgetMap.set(transaction.id, {
-				id: budget.id,
-				name: budget.name,
-				status: budget.status,
-			});
-		}
-	}
+	const transactionIds = sortedTransactions.map((t) => t.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"transaction",
+		transactionIds,
+		["budget", "reimbursement", "inventory"],
+	);
 
-	// Track edit lock for transactions linked to sent reimbursements
 	const transactionLockMap = new Map<string, boolean>();
-	const purchaseStatusMap = new Map<string, string>();
-	const purchaseIds = new Map<string, string>(); // transactionId -> purchaseId
-
 	for (const transaction of sortedTransactions) {
-		const relationships = await loadRelationshipsForEntity(
-			db,
-			"transaction",
-			transaction.id,
-			["reimbursement"],
-		);
-		const linkedReimbursements = relationships.reimbursement?.linked || [];
-		if (linkedReimbursements.length > 0) {
-			const purchase = linkedReimbursements[0] as Purchase;
-			purchaseIds.set(transaction.id, purchase.id);
-			purchaseStatusMap.set(purchase.id, purchase.status);
-			const isLocked = purchase.emailSent && purchase.status !== "rejected";
-			transactionLockMap.set(transaction.id, isLocked || false);
-		}
-	}
-
-	// Fetch inventory items for each transaction using entity relationships
-	const inventoryItemsMap = new Map<
-		string,
-		Array<{ id: string; name: string; quantity: number }>
-	>();
-	for (const transaction of sortedTransactions) {
-		const relationships = await loadRelationshipsForEntity(
-			db,
-			"transaction",
-			transaction.id,
-			["inventory"],
-		);
-		const linkedItems = relationships.inventory?.linked || [];
-		if (linkedItems.length > 0) {
-			inventoryItemsMap.set(
-				transaction.id,
-				linkedItems.map((item) => ({
-					id: (item as { id: string; name: string }).id,
-					name: (item as { id: string; name: string }).name,
-					quantity: 1,
-				})),
-			);
+		const relations = relationsMap.get(transaction.id) || [];
+		const reimbursementRel = relations.find((r) => r.type === "reimbursement");
+		if (reimbursementRel) {
+			const purchase = await db.getPurchaseById(reimbursementRel.id);
+			if (purchase && purchase.emailSent && purchase.status !== "rejected") {
+				transactionLockMap.set(transaction.id, true);
+			}
 		}
 	}
 
 	const systemLanguages = await getSystemLanguageDefaults();
+
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		year,
@@ -227,13 +166,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
 		canReadAll,
-		budgetMap: Object.fromEntries(budgetMap),
-		purchaseIds: Object.fromEntries(purchaseIds),
-		purchaseStatusMap: Object.fromEntries(purchaseStatusMap),
 		transactionLockMap: Object.fromEntries(transactionLockMap),
-		inventoryItemsMap: Object.fromEntries(inventoryItemsMap),
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -248,35 +184,17 @@ export default function TreasuryTransactions({
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
-		budgetMap: budgetMapRaw,
-		purchaseIds: purchaseIdsRaw,
-		purchaseStatusMap: purchaseStatusMapRaw,
 		transactionLockMap: transactionLockMapRaw,
-		inventoryItemsMap: inventoryItemsMapRaw,
+		relationsMap: relationsMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
-	const budgetMap = new Map(
-		Object.entries(budgetMapRaw ?? {}) as [
-			string,
-			{ id: string; name: string; status: string },
-		][],
-	);
-	const purchaseIds = new Map(
-		Object.entries(purchaseIdsRaw ?? {}) as [string, string][],
-	);
-	const purchaseStatusMap = new Map(
-		Object.entries(purchaseStatusMapRaw ?? {}) as [string, string][],
-	);
 	const transactionLockMap = new Map(
 		Object.entries(transactionLockMapRaw ?? {}) as [string, boolean][],
 	);
-	const inventoryItemsMap = new Map(
-		Object.entries(inventoryItemsMapRaw ?? {}) as [
-			string,
-			Array<{ id: string; name: string; quantity: number }>,
-		][],
+	const relationsMap = new Map(
+		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { hasPermission, user } = useUser();
@@ -284,7 +202,6 @@ export default function TreasuryTransactions({
 	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canWrite = hasPermission("treasury:transactions:write");
 
-	// Helper to check if user can edit a specific transaction
 	const canEditTransaction = (transaction: Transaction) => {
 		if (canEditGeneral) return true;
 		if (
@@ -327,7 +244,6 @@ export default function TreasuryTransactions({
 		});
 	}, [searchParams, setSearchParams, t]);
 
-	// Configure search fields
 	const statusOptions = ["all", ...status];
 	const searchFields: SearchField[] = [
 		{
@@ -376,7 +292,6 @@ export default function TreasuryTransactions({
 		</div>
 	);
 
-	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
 	const columns = [
 		{
 			key: "date",
@@ -430,73 +345,13 @@ export default function TreasuryTransactions({
 			cellClassName: "text-gray-500",
 		},
 		{
-			key: "inventory",
-			header: t("inventory.title"),
-			cell: (row: Transaction) => {
-				const items = inventoryItemsMap.get(row.id);
-				if (!items || items.length === 0) {
-					return <span className="text-gray-400">—</span>;
-				}
-				return (
-					<div className="flex flex-wrap gap-1">
-						{items.map((item) => (
-							<ColoredStatusLinkBadge
-								key={item.id}
-								to={`/inventory/${item.id}`}
-								title={`${item.name} (${item.quantity} kpl)`}
-								status="linked"
-								id={item.id}
-								icon="inventory_2"
-								variantMap={{
-									linked:
-										"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-								}}
-							/>
-						))}
-					</div>
-				);
-			},
-		},
-		{
-			key: "budget",
-			header: t("treasury.actions.budgets"),
-			cell: (row: Transaction) => {
-				const budget = budgetMap.get(row.id);
-				if (!budget) {
-					return <span className="text-gray-400">—</span>;
-				}
-				return (
-					<ColoredStatusLinkBadge
-						to={`/treasury/budgets/${budget.id}`}
-						title={budget.name}
-						status={budget.status}
-						id={budget.id}
-						icon="bookmark"
-						variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
-					/>
-				);
-			},
-		},
-		{
-			key: "reimbursement",
-			header: t("treasury.receipts.reimbursement_request"),
-			cell: (row: Transaction) => {
-				const purchaseId = purchaseIds.get(row.id);
-				if (!purchaseId) {
-					return <span className="text-gray-400">—</span>;
-				}
-				const purchaseStatus = purchaseStatusMap.get(purchaseId) || "pending";
-				return (
-					<ColoredStatusLinkBadge
-						to={`/treasury/reimbursements/${purchaseId}`}
-						title={t("treasury.receipts.reimbursement_request")}
-						status={purchaseStatus}
-						id={purchaseId}
-						icon="link"
-						variantMap={TREASURY_PURCHASE_STATUS_VARIANTS}
-					/>
-				);
-			},
+			key: "relations",
+			header: t("common.relations.title"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: Transaction) => (
+				<RelationsColumn relations={relationsMap.get(row.id) || []} />
+			),
 		},
 		{
 			key: "amount",
@@ -567,7 +422,7 @@ export default function TreasuryTransactions({
 							title: t("treasury.breakdown.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 10,
+							labelColSpan: 7,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {
