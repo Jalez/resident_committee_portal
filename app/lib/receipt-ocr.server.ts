@@ -1,6 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { getDatabase } from "~/db/server.server";
+import { extractTextFromPDF } from "~/lib/google-documentai.server";
 import { extractTextFromImage } from "~/lib/google-vision.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import { getReceiptStorage } from "~/lib/receipts/server";
@@ -40,20 +41,44 @@ export async function processReceiptOCR(
 	let rawText = rawTextOverride?.trim() || "";
 
 	if (!rawText) {
-		// 1. Fetch Image
+		// 1. Fetch receipt content
 		const storage = getReceiptStorage();
-		const imageBase64 = await storage.getReceiptContentBase64(receiptUrl);
+		const contentBase64 = await storage.getReceiptContentBase64(receiptUrl);
 
-		if (!imageBase64) {
-			console.error("[OCR] Failed to retrieve image content");
-			return { success: false, error: "Failed to retrieve image content" };
+		if (!contentBase64) {
+			console.error("[OCR] Failed to retrieve receipt content");
+			return { success: false, error: "Failed to retrieve receipt content" };
 		}
 
-		// 2. Extract Text (OCR)
-		const extractedText = await extractTextFromImage(imageBase64);
+		// 2. Extract text with the right OCR backend
+		const isPdf = /\.pdf(?:$|[?#])/i.test(receiptUrl);
+
+		let extractedText: string | null = null;
+		if (isPdf) {
+			console.log("[OCR] Detected PDF receipt, using Document AI");
+			extractedText = await extractTextFromPDF(
+				Buffer.from(contentBase64, "base64"),
+			);
+		} else {
+			console.log("[OCR] Using Google Vision for image receipt");
+			extractedText = await extractTextFromImage(contentBase64);
+
+			if (!extractedText) {
+				console.warn(
+					"[OCR] Vision extraction failed; retrying with Document AI as fallback",
+				);
+				extractedText = await extractTextFromPDF(
+					Buffer.from(contentBase64, "base64"),
+				);
+			}
+		}
+
 		if (!extractedText) {
-			console.error("[OCR] Failed to extract text from image");
-			return { success: false, error: "Cloud Vision API returned no text" };
+			console.error("[OCR] Failed to extract text from receipt content");
+			return {
+				success: false,
+				error: "OCR returned no text (Vision/Document AI)",
+			};
 		}
 		rawText = extractedText;
 	} else {
