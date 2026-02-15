@@ -65,6 +65,10 @@ export default [
 	route("api/news/:newsId/update", "routes/api/news/$newsId/update/_index.tsx"),
 	route("api/receipts/:receiptId", "routes/api/receipts/$receiptId/_index.tsx"),
 	route(
+		"api/receipts/:receiptId/ingest",
+		"routes/api/receipts/$receiptId/ingest/_index.tsx",
+	),
+	route(
 		"treasury/receipts/:receiptId/delete",
 		"routes/treasury/receipts/$receiptId/delete/_index.tsx",
 	),
