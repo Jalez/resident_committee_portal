@@ -391,6 +391,17 @@
 		"transactions": {
 			"title": "Transaktionen",
 			"type": "Typ"
+		},
+		"reimbursements": {
+			"title": "Erstattungsanträge",
+			"send_request": "Antrag senden",
+			"resend_request": "Erneut senden",
+			"email_sent_success": "E-Mail erfolgreich gesendet",
+			"missing_requirements": "Kann nicht senden: {{requirements}}",
+			"missing_purchaser_info": "Käufername oder Bankkonto fehlt",
+			"minutes_file_missing": "Protokolldatei fehlt",
+			"view_email_thread": "E-Mail-Thread anzeigen",
+			"resend_confirm_desc": "Sind Sie sicher, dass Sie diesen Erstattungsantrag erneut senden möchten? Eine neue E-Mail wird gesendet."
 		}
 	},
 	"permissions": {

@@ -199,7 +199,15 @@
 			"edit": {
 				"title": "Redigera utlägg",
 				"reimbursement_details": "Utläggsdetaljer"
-			}
+			},
+			"send_request": "Skicka begäran",
+			"resend_request": "Skicka igen",
+			"email_sent_success": "E-post skickad",
+			"missing_requirements": "Kan inte skicka: {{requirements}}",
+			"missing_purchaser_info": "Saknar köparens namn eller bankkonto",
+			"minutes_file_missing": "Protokollfil saknas",
+			"view_email_thread": "Visa e-posttråd",
+			"resend_confirm_desc": "Är du säker på att du vill skicka denna utläggsbegäran igen? Ett nytt e-postmeddelande skickas."
 		},
 		"new_reimbursement": {
 			"title": "Nytt utlägg",

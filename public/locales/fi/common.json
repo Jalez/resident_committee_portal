@@ -409,7 +409,15 @@
 			},
 			"link_existing": "Liitä kulukorvaus",
 			"select_placeholder": "Valitse kulukorvaus...",
-			"no_link": "Älä liitä"
+			"no_link": "Älä liitä",
+			"send_request": "Lähetä pyyntö",
+			"resend_request": "Lähetä uudelleen",
+			"email_sent_success": "Sähköposti lähetetty onnistuneesti",
+			"missing_requirements": "Ei voida lähettää: {{requirements}}",
+			"missing_purchaser_info": "Ostajan nimi tai tilinumero puuttuu",
+			"minutes_file_missing": "Pöytäkirjatiedosto ei ole liitteenä",
+			"view_email_thread": "Näytä sähköpostiviestit",
+			"resend_confirm_desc": "Haluatko varmasti lähettää kulukorvauspyynnön uudelleen? Uusi sähköposti lähetetään."
 		},
 		"new_reimbursement": {
 			"title": "Uusi kulukorvaus",

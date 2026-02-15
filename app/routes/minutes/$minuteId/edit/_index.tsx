@@ -9,12 +9,12 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useFileUpload } from "~/hooks/use-file-upload";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
+import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import {
-	handleFileUpload,
 	deleteOldFile,
 	extractYearFromPath,
+	handleFileUpload,
 } from "~/lib/file-upload.server";
-import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -51,10 +51,12 @@ export async function action({ request, params }: Route.ActionArgs) {
 		request,
 		schema: minuteSchema,
 		fetchEntity: (db, id) => db.getMinuteById(id),
-		onUpdate: async ({ db, id, data, formData, entity }) => {
+		onUpdate: async ({ db, id, data, formData, entity, newStatus }) => {
 			const date = data.date ? new Date(data.date) : null;
 			const extractedYear = extractYearFromPath(entity.fileKey);
-			const year: number | undefined = date?.getFullYear() || (extractedYear ? parseInt(extractedYear, 10) : undefined);
+			const year: number | undefined =
+				date?.getFullYear() ||
+				(extractedYear ? parseInt(extractedYear, 10) : undefined);
 
 			const uploadResult = await handleFileUpload({
 				formData,
@@ -83,7 +85,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 				description: data.description || null,
 				fileUrl: uploadResult.url || entity.fileUrl,
 				fileKey: uploadResult.pathname || entity.fileKey,
-				status: (data as any).status || entity.status,
+				status: (newStatus as any) || (data as any).status || entity.status,
 			});
 		},
 		successRedirect: () => `/minutes?success=minute_updated`,
@@ -156,8 +158,11 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 						)}
 						{tempUrl && selectedFile && (
 							<div className="flex items-center gap-2 text-sm text-green-600">
-								<span className="material-symbols-outlined text-sm">check_circle</span>
-								{t("files.new_file_selected", "New file selected")}: {selectedFile.name}
+								<span className="material-symbols-outlined text-sm">
+									check_circle
+								</span>
+								{t("files.new_file_selected", "New file selected")}:{" "}
+								{selectedFile.name}
 							</div>
 						)}
 						<Input
@@ -173,7 +178,9 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 						/>
 						{isUploading && (
 							<div className="flex items-center gap-2 text-sm text-gray-500">
-								<span className="material-symbols-outlined animate-spin">progress_activity</span>
+								<span className="material-symbols-outlined animate-spin">
+									progress_activity
+								</span>
 								{t("files.uploading", "Uploading...")}
 							</div>
 						)}
@@ -181,7 +188,19 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 				),
 			},
 		}),
-		[date, title, description, minute.fileUrl, minute.fileKey, tempUrl, tempPathname, selectedFile, isUploading, handleFileChange, t],
+		[
+			date,
+			title,
+			description,
+			minute.fileUrl,
+			minute.fileKey,
+			tempUrl,
+			tempPathname,
+			selectedFile,
+			isUploading,
+			handleFileChange,
+			t,
+		],
 	);
 
 	return (

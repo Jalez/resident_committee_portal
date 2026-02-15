@@ -380,6 +380,17 @@
 		"transactions": {
 			"title": "Transacciones",
 			"type": "Tipo"
+		},
+		"reimbursements": {
+			"title": "Solicitudes de reembolso",
+			"send_request": "Enviar solicitud",
+			"resend_request": "Reenviar",
+			"email_sent_success": "Correo enviado exitosamente",
+			"missing_requirements": "No se puede enviar: {{requirements}}",
+			"missing_purchaser_info": "Falta el nombre del comprador o cuenta bancaria",
+			"minutes_file_missing": "Archivo de actas faltante",
+			"view_email_thread": "Ver hilo de correo",
+			"resend_confirm_desc": "¿Está seguro de que desea reenviar esta solicitud de reembolso? Se enviará un nuevo correo electrónico."
 		}
 	},
 	"permissions": {

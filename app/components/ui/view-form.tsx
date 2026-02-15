@@ -298,7 +298,7 @@ export function ViewForm({
 						secondary: "",
 					}}
 				>
-					<div className={cn("max-w-2xl space-y-6", className)}>
+					<div className={cn("w-full space-y-6", className)}>
 						<div className="bg-card rounded-2xl p-8 shadow-sm border border-border space-y-6">
 							{contentFields.map((field) => {
 								const isContent =
@@ -368,7 +368,7 @@ export function ViewForm({
 
 	return (
 		<PageWrapper>
-			<div className={cn("w-full max-w-2xl mx-auto px-4 pb-12", className)}>
+			<div className={cn("w-full mx-auto px-4 pb-12", className)}>
 				<div className="flex items-center justify-between mb-4">
 					<PageHeader title={title} />
 					<div className="flex gap-2">

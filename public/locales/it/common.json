@@ -1,100 +1,113 @@
 {
-    "common": {
-        "date": "",
-        "time": "",
-        "entity_types": {
-            "receipt": "",
-            "transaction": "",
-            "reimbursement": "",
-            "budget": "",
-            "inventory": "",
-            "minute": "",
-            "news": "",
-            "faq": ""
-        },
-        "actions": {
-            "delete": "",
-            "edit": "",
-            "add": "",
-            "create": "",
-            "remove": "",
-            "search": "",
-            "view": "",
-            "confirm": "",
-            "delete_confirm": "",
-            "sort": "",
-            "back": "",
-            "all": "",
-            "loading": "",
-            "update": "",
-            "link_existing": "",
-            "create_new": "",
-            "save": "",
-            "cancel": ""
-        },
-        "filters": {
-            "all": ""
-        },
-        "no_results": "",
-        "total": "",
-        "fields": {
-            "name": "",
-            "description": "",
-            "amount": "",
-            "price": "",
-            "free": "",
-            "date": "",
-            "status": "",
-            "type": "",
-            "title": "",
-            "search": "",
-            "year": "",
-            "category": "",
-            "created_by": "",
-            "location": "",
-            "quantity": "",
-            "value": "",
-            "url": "",
-            "icon": "",
-            "color": "",
-            "order": "",
-            "active": "",
-            "all_day": "",
-            "start_date": "",
-            "end_date": "",
-            "start_time": "",
-            "end_time": "",
-            "primary": "",
-            "hidden": "",
-            "none": "",
-            "attendees": ""
-        },
-        "file_upload": {
-            "drag_drop": "",
-            "drop_file": ""
-        },
-        "placeholders": {
-            "search": "",
-            "select": "",
-            "title": "",
-            "description": ""
-        },
-        "sections": {
-            "basic_info": "",
-            "date_time": "",
-            "attendees": ""
-        },
-        "status": {
-            "error": "",
-            "saved": "",
-            "saving": "",
-            "draft": ""
-        },
-        "success": {
-            "generic": "",
-            "updated": "",
-            "sent": "",
-            "deleted": ""
-        }
-    }
+	"common": {
+		"date": "",
+		"time": "",
+		"entity_types": {
+			"receipt": "",
+			"transaction": "",
+			"reimbursement": "",
+			"budget": "",
+			"inventory": "",
+			"minute": "",
+			"news": "",
+			"faq": ""
+		},
+		"actions": {
+			"delete": "",
+			"edit": "",
+			"add": "",
+			"create": "",
+			"remove": "",
+			"search": "",
+			"view": "",
+			"confirm": "",
+			"delete_confirm": "",
+			"sort": "",
+			"back": "",
+			"all": "",
+			"loading": "",
+			"update": "",
+			"link_existing": "",
+			"create_new": "",
+			"save": "",
+			"cancel": ""
+		},
+		"filters": {
+			"all": ""
+		},
+		"no_results": "",
+		"total": "",
+		"fields": {
+			"name": "",
+			"description": "",
+			"amount": "",
+			"price": "",
+			"free": "",
+			"date": "",
+			"status": "",
+			"type": "",
+			"title": "",
+			"search": "",
+			"year": "",
+			"category": "",
+			"created_by": "",
+			"location": "",
+			"quantity": "",
+			"value": "",
+			"url": "",
+			"icon": "",
+			"color": "",
+			"order": "",
+			"active": "",
+			"all_day": "",
+			"start_date": "",
+			"end_date": "",
+			"start_time": "",
+			"end_time": "",
+			"primary": "",
+			"hidden": "",
+			"none": "",
+			"attendees": ""
+		},
+		"file_upload": {
+			"drag_drop": "",
+			"drop_file": ""
+		},
+		"placeholders": {
+			"search": "",
+			"select": "",
+			"title": "",
+			"description": ""
+		},
+		"sections": {
+			"basic_info": "",
+			"date_time": "",
+			"attendees": ""
+		},
+		"status": {
+			"error": "",
+			"saved": "",
+			"saving": "",
+			"draft": ""
+		},
+		"success": {
+			"generic": "",
+			"updated": "",
+			"sent": "",
+			"deleted": ""
+		}
+	},
+	"treasury": {
+		"reimbursements": {
+			"title": "",
+			"send_request": "",
+			"resend_request": "",
+			"email_sent_success": "",
+			"missing_requirements": "",
+			"missing_purchaser_info": "",
+			"minutes_file_missing": "",
+			"view_email_thread": "",
+			"resend_confirm_desc": ""
+		}
+	}
 }

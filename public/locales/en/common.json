@@ -403,7 +403,15 @@
 			"link_existing": "Link Reimbursement",
 			"select_placeholder": "Select reimbursement...",
 			"no_link": "Don't link",
-			"status_placeholder": "Select status..."
+			"status_placeholder": "Select status...",
+			"send_request": "Send Request",
+			"resend_request": "Resend Request",
+			"email_sent_success": "Email sent successfully",
+			"missing_requirements": "Cannot send: {{requirements}}",
+			"missing_purchaser_info": "Missing purchaser name or bank account",
+			"minutes_file_missing": "Minutes file not attached",
+			"view_email_thread": "View Email Thread",
+			"resend_confirm_desc": "Are you sure you want to resend this reimbursement request? A new email will be sent."
 		},
 		"new_reimbursement": {
 			"title": "New Reimbursement",

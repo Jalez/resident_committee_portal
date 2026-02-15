@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useRouteLoaderData } from "react-router";
+import { Link, useFetcher, useRouteLoaderData } from "react-router";
 import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { ViewForm } from "~/components/ui/view-form";
 import {
 	buildMinutesAttachment,
@@ -58,9 +59,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 					}
 				}
 			}
+
+			let hasMinutesFile = true;
+			if (purchase.minutesId) {
+				const minute = await db.getMinuteById(purchase.minutesId);
+				hasMinutesFile = !!(minute?.fileUrl && minute.fileKey);
+			}
+
 			return {
 				mailThread,
 				emailConfigured: await isEmailConfigured(),
+				hasMinutesFile,
 			};
 		},
 	});
@@ -77,17 +86,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	if (actionType === "sendRequest") {
-		// Validate required relationships before sending
+	if (actionType === "sendRequest" || actionType === "resendRequest") {
 		const allRelationships = await db.getEntityRelationships(
 			"reimbursement",
 			purchase.id,
 		);
 
-		// Build relationships object for validation
 		const relationshipsForValidation: Record<string, { linked: any[] }> = {};
 
-		// Extract linked entities by type
 		for (const rel of allRelationships) {
 			let linkedType: string | null = null;
 			let linkedId: string | null = null;
@@ -132,7 +138,24 @@ export async function action({ request, params }: Route.ActionArgs) {
 			};
 		}
 
-		// Get receipt attachments
+		const linkedMinuteIds = allRelationships
+			.filter(
+				(r) => r.relationBType === "minute" || r.relationAType === "minute",
+			)
+			.map((r) =>
+				r.relationBType === "minute" ? r.relationBId : r.relationId,
+			);
+
+		if (linkedMinuteIds.length > 0) {
+			const minute = await db.getMinuteById(linkedMinuteIds[0]);
+			if (!minute?.fileUrl || !minute.fileKey) {
+				return {
+					success: false,
+					error: "treasury.reimbursements.minutes_file_missing",
+				};
+			}
+		}
+
 		const linkedReceiptIds = allRelationships
 			.filter(
 				(r) => r.relationBType === "receipt" || r.relationAType === "receipt",
@@ -176,6 +199,13 @@ export async function action({ request, params }: Route.ActionArgs) {
 				receiptAttachmentsPromise,
 			]);
 
+			if (!minutesAttachment) {
+				return {
+					success: false,
+					error: "treasury.reimbursements.minutes_file_missing",
+				};
+			}
+
 			const emailResult = await sendReimbursementEmail(
 				{
 					itemName: purchase.description || "Reimbursement request",
@@ -190,7 +220,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
 				},
 				purchase.id,
-				minutesAttachment || undefined,
+				minutesAttachment,
 				receiptAttachments,
 				db,
 			);
@@ -249,10 +279,12 @@ export default function ViewReimbursement({
 		relationships,
 		mailThread,
 		emailConfigured,
+		hasMinutesFile,
 	} = loaderData as any;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 	const fetcher = useFetcher();
+	const [showResendConfirm, setShowResendConfirm] = useState(false);
 
 	useEffect(() => {
 		if (fetcher.data?.success) {
@@ -283,7 +315,6 @@ export default function ViewReimbursement({
 
 	const linkedReceipts = relationships.receipt?.linked || [];
 
-	// Validate required relationships for sending email
 	const requiredValidation = useMemo(() => {
 		return validateRequiredRelationships("reimbursement", relationships);
 	}, [relationships]);
@@ -292,15 +323,30 @@ export default function ViewReimbursement({
 		canUpdate &&
 		purchase.purchaserName &&
 		purchase.bankAccount &&
-		requiredValidation.valid;
+		requiredValidation.valid &&
+		hasMinutesFile;
 
 	const missingRequirementsMessage = useMemo(() => {
-		if (requiredValidation.valid) return null;
-		return formatMissingRelationshipsMessage(
-			requiredValidation.missing,
-			t.bind(null),
-		);
-	}, [requiredValidation, t]);
+		if (!hasMinutesFile) {
+			return t("treasury.reimbursements.minutes_file_missing");
+		}
+		if (!requiredValidation.valid) {
+			return formatMissingRelationshipsMessage(
+				requiredValidation.missing,
+				t.bind(null),
+			);
+		}
+		if (!purchase.purchaserName || !purchase.bankAccount) {
+			return t("treasury.reimbursements.missing_purchaser_info");
+		}
+		return null;
+	}, [
+		requiredValidation,
+		t,
+		hasMinutesFile,
+		purchase.purchaserName,
+		purchase.bankAccount,
+	]);
 
 	const displayFields = {
 		description: purchase.description || "—",
@@ -332,6 +378,15 @@ export default function ViewReimbursement({
 			? { mail: relationships.mail }
 			: {};
 
+	const handleSendRequest = () => {
+		fetcher.submit({ _action: "sendRequest" }, { method: "post" });
+	};
+
+	const handleResendConfirm = () => {
+		setShowResendConfirm(false);
+		fetcher.submit({ _action: "resendRequest" }, { method: "post" });
+	};
+
 	return (
 		<PageWrapper>
 			<ViewForm
@@ -346,22 +401,22 @@ export default function ViewReimbursement({
 				canDelete={canUpdate && !purchase.emailSent}
 				translationNamespace="treasury.reimbursements"
 			>
-				{!purchase.emailSent && emailConfigured && (
+				{emailConfigured && (
 					<div className="space-y-2">
-						{canSendRequest ? (
-							<fetcher.Form method="post">
-								<Button
-									type="submit"
-									name="_action"
-									value="sendRequest"
-									variant="default"
-									disabled={fetcher.state === "submitting"}
-								>
-									<span className="material-symbols-outlined mr-2">send</span>
-									{t("treasury.reimbursements.send_request")}
-								</Button>
-							</fetcher.Form>
-						) : (
+						{!purchase.emailSent && canSendRequest && (
+							<Button
+								type="button"
+								variant="default"
+								disabled={fetcher.state === "submitting"}
+								onClick={handleSendRequest}
+							>
+								<span className="material-symbols-outlined mr-2">send</span>
+								{t("treasury.reimbursements.send_request")}
+							</Button>
+						)}
+
+						{!purchase.emailSent &&
+							!canSendRequest &&
 							missingRequirementsMessage && (
 								<div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm">
 									<span className="material-symbols-outlined text-sm">
@@ -369,24 +424,65 @@ export default function ViewReimbursement({
 									</span>
 									<span>
 										{t("treasury.reimbursements.missing_requirements", {
+											requirements: missingRequirementsMessage,
 											defaultValue: `Cannot send: ${missingRequirementsMessage}`,
 										})}
 									</span>
 								</div>
-							)
+							)}
+
+						{purchase.emailSent && (
+							<div className="space-y-3">
+								<div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+									<span className="material-symbols-outlined text-sm">
+										check_circle
+									</span>
+									{t("treasury.reimbursements.email_sent")}
+								</div>
+								{canSendRequest && (
+									<Button
+										type="button"
+										variant="outline"
+										disabled={fetcher.state === "submitting"}
+										onClick={() => setShowResendConfirm(true)}
+									>
+										<span className="material-symbols-outlined mr-2">
+											refresh
+										</span>
+										{t("treasury.reimbursements.resend_request")}
+									</Button>
+								)}
+							</div>
+						)}
+
+						{mailThread && (
+							<Link
+								to={`/mail/thread/${encodeURIComponent(mailThread.id)}`}
+								className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+							>
+								<span className="material-symbols-outlined text-sm">mail</span>
+								{t("treasury.reimbursements.view_email_thread")} (
+								{mailThread.messageCount}{" "}
+								{t("mail.messages_in_thread", {
+									count: mailThread.messageCount,
+								})}
+								)
+							</Link>
 						)}
 					</div>
 				)}
-
-				{purchase.emailSent && (
-					<div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-						<span className="material-symbols-outlined text-sm">
-							check_circle
-						</span>
-						{t("treasury.reimbursements.email_sent")}
-					</div>
-				)}
 			</ViewForm>
+
+			<ConfirmDialog
+				open={showResendConfirm}
+				onOpenChange={setShowResendConfirm}
+				title={t("treasury.reimbursements.resend_request")}
+				description={t("treasury.reimbursements.resend_confirm_desc")}
+				confirmLabel={t("treasury.reimbursements.resend_request")}
+				cancelLabel={t("common.actions.cancel")}
+				onConfirm={handleResendConfirm}
+				loading={fetcher.state === "submitting"}
+			/>
 		</PageWrapper>
 	);
 }
