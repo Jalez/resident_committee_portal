@@ -60,10 +60,40 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				}
 			}
 
+			const allRelationships = await db.getEntityRelationships(
+				"reimbursement",
+				purchase.id,
+			);
+			const linkedMinuteIds = Array.from(
+				new Set(
+					allRelationships
+						.filter((r) => {
+							const isReimbursementA =
+								r.relationAType === "reimbursement" &&
+								r.relationId === purchase.id;
+							const isReimbursementB =
+								r.relationBType === "reimbursement" &&
+								r.relationBId === purchase.id;
+							if (!isReimbursementA && !isReimbursementB) return false;
+							const otherType = isReimbursementA
+								? r.relationBType
+								: r.relationAType;
+							return otherType === "minute";
+						})
+						.map((r) =>
+							r.relationAType === "minute" ? r.relationId : r.relationBId,
+						),
+				),
+			);
+
 			let hasMinutesFile = true;
-			if (purchase.minutesId) {
-				const minute = await db.getMinuteById(purchase.minutesId);
-				hasMinutesFile = !!(minute?.fileUrl && minute.fileKey);
+			if (linkedMinuteIds.length > 0) {
+				const linkedMinutes = await Promise.all(
+					linkedMinuteIds.map((minuteId) => db.getMinuteById(minuteId)),
+				);
+				hasMinutesFile = linkedMinutes.every(
+					(minute) => !!(minute?.fileUrl && minute?.fileKey),
+				);
 			}
 
 			return {
@@ -138,30 +168,56 @@ export async function action({ request, params }: Route.ActionArgs) {
 			};
 		}
 
-		const linkedMinuteIds = allRelationships
-			.filter(
-				(r) => r.relationBType === "minute" || r.relationAType === "minute",
-			)
-			.map((r) =>
-				r.relationBType === "minute" ? r.relationBId : r.relationId,
-			);
+		const linkedMinuteIds = Array.from(
+			new Set(
+				allRelationships
+					.filter((r) => {
+						const isReimbursementA =
+							r.relationAType === "reimbursement" && r.relationId === purchase.id;
+						const isReimbursementB =
+							r.relationBType === "reimbursement" && r.relationBId === purchase.id;
+						if (!isReimbursementA && !isReimbursementB) return false;
+						const otherType = isReimbursementA ? r.relationBType : r.relationAType;
+						return otherType === "minute";
+					})
+					.map((r) =>
+						r.relationAType === "minute" ? r.relationId : r.relationBId,
+					),
+			),
+		);
 
-		if (linkedMinuteIds.length > 0) {
-			const minute = await db.getMinuteById(linkedMinuteIds[0]);
-			if (!minute?.fileUrl || !minute.fileKey) {
-				return {
-					success: false,
-					error: "treasury.reimbursements.minutes_file_missing",
-				};
-			}
+		const linkedMinutes =
+			linkedMinuteIds.length > 0
+				? await Promise.all(
+						linkedMinuteIds.map((id) => db.getMinuteById(id)),
+					).then((minutes) =>
+						minutes.filter((m): m is NonNullable<typeof m> => m !== null),
+					)
+				: [];
+
+		if (
+			linkedMinuteIds.length > 0 &&
+			(linkedMinutes.length !== linkedMinuteIds.length ||
+				linkedMinutes.some((minute) => !minute.fileUrl || !minute.fileKey))
+		) {
+			return {
+				success: false,
+				error: "treasury.reimbursements.minutes_file_missing",
+			};
 		}
 
 		const linkedReceiptIds = allRelationships
-			.filter(
-				(r) => r.relationBType === "receipt" || r.relationAType === "receipt",
-			)
+			.filter((r) => {
+				const isReimbursementA =
+					r.relationAType === "reimbursement" && r.relationId === purchase.id;
+				const isReimbursementB =
+					r.relationBType === "reimbursement" && r.relationBId === purchase.id;
+				if (!isReimbursementA && !isReimbursementB) return false;
+				const otherType = isReimbursementA ? r.relationBType : r.relationAType;
+				return otherType === "receipt";
+			})
 			.map((r) =>
-				r.relationBType === "receipt" ? r.relationBId : r.relationId,
+				r.relationAType === "receipt" ? r.relationId : r.relationBId,
 			);
 		const linkedReceipts =
 			linkedReceiptIds.length > 0
@@ -188,18 +244,24 @@ export async function action({ request, params }: Route.ActionArgs) {
 			}));
 
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			purchase.minutesId,
-			purchase.minutesName || undefined,
+		const minutesAttachmentsPromise = Promise.all(
+			linkedMinutes.map((minute) =>
+				buildMinutesAttachment(minute.id, minute.title || undefined),
+			),
 		);
 
 		try {
-			const [minutesAttachment, receiptAttachments] = await Promise.all([
-				minutesAttachmentPromise,
+			const [minutesAttachments, receiptAttachments] = await Promise.all([
+				minutesAttachmentsPromise,
 				receiptAttachmentsPromise,
 			]);
 
-			if (!minutesAttachment) {
+			const filteredMinuteAttachments = minutesAttachments.filter(
+				(attachment): attachment is NonNullable<typeof attachment> =>
+					attachment !== null,
+			);
+
+			if (filteredMinuteAttachments.length !== linkedMinutes.length) {
 				return {
 					success: false,
 					error: "treasury.reimbursements.minutes_file_missing",
@@ -213,14 +275,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 					purchaserName: purchase.purchaserName,
 					bankAccount: purchase.bankAccount,
 					minutesReference:
-						purchase.minutesName ||
-						purchase.minutesId ||
-						"Ei määritetty / Not specified",
+						linkedMinutes
+							.map((minute) => minute.title?.trim() || minute.id)
+							.join(", ") || "Ei määritetty / Not specified",
 					notes: purchase.notes || undefined,
 					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
 				},
 				purchase.id,
-				minutesAttachment,
+				filteredMinuteAttachments,
 				receiptAttachments,
 				db,
 			);

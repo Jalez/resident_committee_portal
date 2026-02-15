@@ -9,8 +9,8 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getDatabase } from "~/db/server.server";
 import type { DatabaseAdapter } from "~/db/adapters/types";
+import { getDatabase } from "~/db/server.server";
 import { getFileAsBase64 } from "./google.server";
 import {
 	type CommitteeMailAttachment,
@@ -262,7 +262,7 @@ export async function parseReimbursementReply(
 export async function sendReimbursementEmail(
 	data: ReimbursementEmailData,
 	purchaseId: string,
-	minutesFile?: EmailAttachment,
+	minutesFile?: EmailAttachment | EmailAttachment[],
 	receiptFiles?: EmailAttachment[],
 	db?: DatabaseAdapter,
 ): Promise<SendEmailResult> {
@@ -299,11 +299,11 @@ export async function sendReimbursementEmail(
                 <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;"><strong>${t("email.reimbursement.receipts")}:</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">
                     ${data.receiptLinks
-					.map(
-						(r) =>
-							`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
-					)
-					.join("")}
+											.map(
+												(r) =>
+													`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
+											)
+											.join("")}
                 </td>
                </tr>`
 				: "";
@@ -332,11 +332,17 @@ export async function sendReimbursementEmail(
 
 		const attachments: CommitteeMailAttachment[] = [];
 
-		if (minutesFile) {
+		const minutesFiles = Array.isArray(minutesFile)
+			? minutesFile
+			: minutesFile
+				? [minutesFile]
+				: [];
+
+		for (const minuteFile of minutesFiles) {
 			attachments.push({
-				filename: minutesFile.name,
-				content: minutesFile.content,
-				contentType: minutesFile.type,
+				filename: minuteFile.name,
+				content: minuteFile.content,
+				contentType: minuteFile.type,
 			});
 		}
 
@@ -573,7 +579,6 @@ export async function buildMinutesAttachment(
 				const storage = getMinuteStorage();
 				const content = await storage.getMinuteContentBase64(minute.fileUrl);
 				if (content) {
-					// Determine mime type from extension or minute data?
 					const filename = minute.fileKey.split("/").pop() || "minute.pdf";
 					const type = filename.endsWith(".pdf")
 						? "application/pdf"
@@ -594,7 +599,6 @@ export async function buildMinutesAttachment(
 	}
 
 	try {
-		// Fallback to Google Drive
 		const content = await getFileAsBase64(minutesId);
 		if (!content) {
 			console.warn(

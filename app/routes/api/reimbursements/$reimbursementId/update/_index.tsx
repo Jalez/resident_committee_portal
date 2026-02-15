@@ -54,17 +54,72 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			return { success: false, error: receiptError, action: "sendRequest" };
 		}
 
+		const allRelationships = await db.getEntityRelationships(
+			"reimbursement",
+			purchase.id,
+		);
+
+		const linkedMinuteIds = allRelationships
+			.filter((r) => {
+				const isReimbursementA =
+					r.relationAType === "reimbursement" && r.relationId === purchase.id;
+				const isReimbursementB =
+					r.relationBType === "reimbursement" && r.relationBId === purchase.id;
+				if (!isReimbursementA && !isReimbursementB) return false;
+				const otherType = isReimbursementA ? r.relationBType : r.relationAType;
+				return otherType === "minute";
+			})
+			.map((r) =>
+				r.relationAType === "minute" ? r.relationId : r.relationBId,
+			);
+
+		const uniqueLinkedMinuteIds = Array.from(new Set(linkedMinuteIds));
+		const linkedMinutes =
+			uniqueLinkedMinuteIds.length > 0
+				? await Promise.all(
+						uniqueLinkedMinuteIds.map((id) => db.getMinuteById(id)),
+					).then((minutes) =>
+						minutes.filter((m): m is NonNullable<typeof m> => m !== null),
+					)
+				: [];
+
+		if (
+			uniqueLinkedMinuteIds.length > 0 &&
+			(linkedMinutes.length !== uniqueLinkedMinuteIds.length ||
+				linkedMinutes.some((minute) => !minute.fileUrl || !minute.fileKey))
+		) {
+			return {
+				success: false,
+				error: "treasury.reimbursements.minutes_file_missing",
+				action: "sendRequest",
+			};
+		}
+
 		const receiptAttachmentsPromise = buildReceiptAttachments(receiptLinks);
-		const minutesAttachmentPromise = buildMinutesAttachment(
-			purchase.minutesId,
-			purchase.minutesName || undefined,
+		const minutesAttachmentsPromise = Promise.all(
+			linkedMinutes.map((minute) =>
+				buildMinutesAttachment(minute.id, minute.title || undefined),
+			),
 		);
 
 		try {
-			const [minutesAttachment, receiptAttachments] = await Promise.all([
-				minutesAttachmentPromise,
+			const [minutesAttachments, receiptAttachments] = await Promise.all([
+				minutesAttachmentsPromise,
 				receiptAttachmentsPromise,
 			]);
+
+			const filteredMinuteAttachments = minutesAttachments.filter(
+				(attachment): attachment is NonNullable<typeof attachment> =>
+					attachment !== null,
+			);
+
+			if (filteredMinuteAttachments.length !== linkedMinutes.length) {
+				return {
+					success: false,
+					error: "treasury.reimbursements.minutes_file_missing",
+					action: "sendRequest",
+				};
+			}
 
 			const emailResult = await sendReimbursementEmail(
 				{
@@ -73,14 +128,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
 					purchaserName: purchase.purchaserName,
 					bankAccount: purchase.bankAccount,
 					minutesReference:
-						purchase.minutesName ||
-						purchase.minutesId ||
-						"Ei määritetty / Not specified",
+						linkedMinutes
+							.map((minute) => minute.title?.trim() || minute.id)
+							.join(", ") || "Ei määritetty / Not specified",
 					notes: purchase.notes || undefined,
 					receiptLinks: receiptLinks.length > 0 ? receiptLinks : undefined,
 				},
 				purchase.id,
-				minutesAttachment || undefined,
+				filteredMinuteAttachments,
 				receiptAttachments,
 				db,
 			);
