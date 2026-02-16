@@ -296,6 +296,7 @@ export interface CalendarEventInput {
 	startDate?: string; // YYYY-MM-DD for all-day events
 	endDate?: string; // YYYY-MM-DD for all-day events (exclusive)
 	isAllDay?: boolean;
+	timeZone?: string; // IANA timezone identifier (e.g., "Europe/Helsinki")
 	// Recurrence
 	recurrence?: {
 		frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
@@ -377,13 +378,14 @@ export async function createCalendarEvent(
 		eventBody.start = { date: event.startDate };
 		eventBody.end = { date: event.endDate || event.startDate };
 	} else {
+		const timeZone = event.timeZone || "UTC";
 		eventBody.start = {
 			dateTime: event.startDateTime,
-			timeZone: "Europe/Helsinki",
+			timeZone,
 		};
 		eventBody.end = {
 			dateTime: event.endDateTime,
-			timeZone: "Europe/Helsinki",
+			timeZone,
 		};
 	}
 
@@ -485,13 +487,14 @@ export async function updateCalendarEvent(
 		eventBody.start = { date: event.startDate };
 		eventBody.end = { date: event.endDate || event.startDate };
 	} else if (event.startDateTime) {
+		const timeZone = event.timeZone || "UTC";
 		eventBody.start = {
 			dateTime: event.startDateTime,
-			timeZone: "Europe/Helsinki",
+			timeZone,
 		};
 		eventBody.end = {
 			dateTime: event.endDateTime,
-			timeZone: "Europe/Helsinki",
+			timeZone,
 		};
 	}
 

@@ -469,6 +469,7 @@ export interface Event {
 	recurrence: string | null;
 	reminders: string | null;
 	attendees: string | null;
+	timezone: string | null;
 	eventType: EventType;
 	status: EventStatus;
 	googleEventId: string | null;

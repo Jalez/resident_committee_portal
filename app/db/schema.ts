@@ -753,6 +753,7 @@ export const events = pgTable("events", {
 	recurrence: text("recurrence"),
 	reminders: text("reminders"),
 	attendees: text("attendees"),
+	timezone: text("timezone"),
 	eventType: text("event_type").$type<EventType>().notNull().default("social"),
 	status: text("status").$type<EventStatus>().notNull().default("active"),
 	googleEventId: text("google_event_id"),

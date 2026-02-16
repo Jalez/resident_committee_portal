@@ -43,6 +43,7 @@ const eventSchema = z.object({
 	endDate: z.string().optional(),
 	endTime: z.string().optional(),
 	attendees: z.string().optional(),
+	timezone: z.string().optional(),
 });
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -64,6 +65,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 				endDate,
 				endTime,
 				attendees: attendeesRaw,
+				timezone,
 			} = data;
 
 			const attendees = attendeesRaw
@@ -94,6 +96,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 						? "private"
 						: existingEvent.eventType;
 
+			const eventTimezone = isAllDay ? null : (timezone || existingEvent.timezone);
+
 			if (existingEvent.googleEventId) {
 				try {
 					const eventUpdate: Partial<CalendarEventInput> = {
@@ -101,6 +105,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 						description,
 						location,
 						isAllDay,
+						timeZone: eventTimezone || undefined,
 					};
 
 					if (isAllDay) {
@@ -133,6 +138,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 				isAllDay,
 				startDate: startDateTime,
 				endDate: endDateTime,
+				timezone: eventTimezone,
 				attendees: attendees ? JSON.stringify(attendees) : null,
 				eventType,
 			});
@@ -151,17 +157,41 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 	const { event, relationships, sourceContext, returnUrl } = loaderData as any;
 
 	const existingIsAllDay = event.isAllDay;
+	const eventTimezone = event.timezone;
 	const eventStartDate = new Date(event.startDate);
 	const existingStartDate = eventStartDate.toISOString().split("T")[0];
-	const existingStartTime = eventStartDate.toTimeString().substring(0, 5);
+	const existingStartTime = eventTimezone
+		? eventStartDate.toLocaleTimeString("sv-SE", {
+				timeZone: eventTimezone,
+				hour: "2-digit",
+				minute: "2-digit",
+			})
+		: eventStartDate.toLocaleTimeString("sv-SE", {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
 	const eventEndDate = event.endDate ? new Date(event.endDate) : eventStartDate;
 	const existingEndDate = eventEndDate.toISOString().split("T")[0];
-	const existingEndTime = eventEndDate.toTimeString().substring(0, 5);
+	const existingEndTime = eventTimezone
+		? eventEndDate.toLocaleTimeString("sv-SE", {
+				timeZone: eventTimezone,
+				hour: "2-digit",
+				minute: "2-digit",
+			})
+		: eventEndDate.toLocaleTimeString("sv-SE", {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
 	const existingAttendees = event.attendees
 		? JSON.parse(event.attendees).join(", ")
 		: "";
 
 	const [isAllDay, setIsAllDay] = useState(existingIsAllDay);
+	
+	const userTimezone =
+		typeof window !== "undefined"
+			? Intl.DateTimeFormat().resolvedOptions().timeZone
+			: eventTimezone || "UTC";
 
 	const inputFields: Record<string, InputFieldConfig> = {
 		title: {
@@ -229,6 +259,7 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 						_sourceType: sourceContext?.type,
 						_sourceId: sourceContext?.id,
 						_returnUrl: returnUrl,
+						timezone: isAllDay ? "" : (eventTimezone || userTimezone),
 					}}
 				/>
 			</div>

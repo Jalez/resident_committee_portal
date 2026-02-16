@@ -845,7 +845,14 @@
 			"languages_title": "Oletuskielet",
 			"languages_desc": "Määritä oletuskielet uusille käyttäjille ja vierailijoille. Käyttäjät voivat muuttaa näitä omassa profiilissaan.",
 			"primary_language": "Ensisijainen kieli",
-			"secondary_language": "Toissijainen kieli"
+			"secondary_language": "Toissijainen kieli",
+			"timezone_title": "Oletusaikavyöhyke",
+			"timezone_desc": "Määritä oletusaikavyöhyke tapahtumille. Tapahtumien luojat voivat valita eri aikavyöhykkeen.",
+			"default_timezone": "Oletusaikavyöhyke",
+			"other_timezone": "Muu aikavyöhyke...",
+			"use_detected": "Käytä havaittua: {{timezone}}",
+			"show_common": "Näytä yleiset",
+			"enter_custom": "Syötä aikavyöhyke manuaalisesti"
 		},
 		"reimbursements": {
 			"title": "Korvausasetukset",

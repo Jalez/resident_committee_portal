@@ -11,6 +11,7 @@ import type { EventType } from "~/db/client";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getDefaultTimezone } from "~/lib/settings.server";
 import {
 	type CalendarEventInput,
 	createCalendarEvent,
@@ -28,7 +29,8 @@ export function meta({ data }: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "events:write", getDatabase);
-	return { siteConfig: SITE_CONFIG };
+	const defaultTimezone = await getDefaultTimezone();
+	return { siteConfig: SITE_CONFIG, defaultTimezone };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -44,6 +46,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const startTime = formData.get("startTime") as string;
 	const endDate = formData.get("endDate") as string;
 	const endTime = formData.get("endTime") as string;
+	const timezone = (formData.get("timezone") as string) || undefined;
 
 	// Recurrence options
 	const hasRecurrence = formData.get("hasRecurrence") === "on";
@@ -78,6 +81,7 @@ export async function action({ request }: Route.ActionArgs) {
 		description,
 		location,
 		isAllDay,
+		timeZone: isAllDay ? undefined : timezone,
 		startDateTime: "",
 		endDateTime: "",
 	};
@@ -168,6 +172,7 @@ export async function action({ request }: Route.ActionArgs) {
 			isAllDay,
 			startDate: startDateTime,
 			endDate: endDateTime,
+			timezone: isAllDay ? null : timezone,
 			recurrence: hasRecurrence ? JSON.stringify(eventInput.recurrence) : null,
 			reminders: eventInput.reminders
 				? JSON.stringify(eventInput.reminders)
@@ -196,7 +201,7 @@ const REMINDER_PRESETS = [
 	{ minutes: 10080, labelKey: "1week" },
 ];
 
-export default function EventsNew({ actionData }: Route.ComponentProps) {
+export default function EventsNew({ actionData, loaderData }: Route.ComponentProps) {
 	const navigate = useNavigate();
 	const navigation = useNavigation();
 	const { t } = useTranslation();
@@ -207,6 +212,11 @@ export default function EventsNew({ actionData }: Route.ComponentProps) {
 	>([]);
 
 	const isSubmitting = navigation.state === "submitting";
+	
+	const userTimezone =
+		typeof window !== "undefined"
+			? Intl.DateTimeFormat().resolvedOptions().timeZone
+			: loaderData?.defaultTimezone || "UTC";
 
 	// Show error toast when action fails
 	useEffect(() => {
@@ -594,6 +604,8 @@ export default function EventsNew({ actionData }: Route.ComponentProps) {
 							</p>
 						</div>
 					</div>
+
+					<input type="hidden" name="timezone" value={userTimezone} />
 
 					{/* Actions */}
 					<div className="flex gap-4">

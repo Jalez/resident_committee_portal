@@ -15,6 +15,7 @@ export interface EventTableRow {
 	endDate: Date | null;
 	eventType: EventType;
 	status: EventStatus;
+	timezone: string | null;
 }
 
 interface EventsTableProps {
@@ -100,6 +101,7 @@ export function EventsTable({
 											{event.startDate.toLocaleTimeString(currentLocale, {
 												hour: "2-digit",
 												minute: "2-digit",
+												timeZone: event.timezone || undefined,
 											})}
 										</span>
 									)}

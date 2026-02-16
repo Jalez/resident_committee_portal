@@ -43,17 +43,30 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 	);
 
 	const isAllDay = event.isAllDay;
+	const eventTimezone = event.timezone;
 	const eventStartDate = new Date(event.startDate);
 	const startDate = eventStartDate.toISOString().split("T")[0];
 	const startTime = isAllDay
 		? null
-		: eventStartDate.toTimeString().substring(0, 5);
+		: eventTimezone
+			? eventStartDate.toLocaleTimeString("sv-SE", {
+					timeZone: eventTimezone,
+					hour: "2-digit",
+					minute: "2-digit",
+				})
+			: eventStartDate.toTimeString().substring(0, 5);
 	const eventEndDate = event.endDate ? new Date(event.endDate) : null;
 	const endDate = eventEndDate?.toISOString().split("T")[0];
 	const endTime =
 		isAllDay || !eventEndDate
 			? null
-			: eventEndDate.toTimeString().substring(0, 5);
+			: eventTimezone
+				? eventEndDate.toLocaleTimeString("sv-SE", {
+						timeZone: eventTimezone,
+						hour: "2-digit",
+						minute: "2-digit",
+					})
+				: eventEndDate.toTimeString().substring(0, 5);
 
 	const attendees = event.attendees ? JSON.parse(event.attendees) : [];
 

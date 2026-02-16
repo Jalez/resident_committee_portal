@@ -50,6 +50,7 @@ interface DisplayEvent {
 	location: string;
 	startDate: string;
 	isAllDay: boolean;
+	timezone: string | null;
 }
 
 interface GroupedMonth {
@@ -103,6 +104,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		endDate: event.endDate ? new Date(event.endDate) : null,
 		eventType: event.eventType,
 		status: event.status,
+		timezone: event.timezone,
 	}));
 
 	const filteredEvents = allEvents.filter((event) => {
@@ -156,6 +158,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			title: event.title,
 			location: event.location || "",
 			type: event.eventType,
+			timezone: event.timezone,
 		};
 
 		if (!groupedMap.has(displayMonthKey)) {
@@ -344,16 +347,17 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	// Helper to format event time
 	const formatTime = (event: DisplayEvent) => {
 		if (event.isAllDay) {
-			// For info reel, force Finnish (which is default behavior of key lookup if lang is fi)
-			// but if we want specific behavior:
 			if (i18n.language === "fi") {
 				return t("common.fields.all_day", { lng: "fi" });
 			}
 			return t("common.fields.all_day");
 		}
-		return new Date(event.startDate).toLocaleTimeString(currentLocale, {
+		const date = new Date(event.startDate);
+		const tz = event.timezone || undefined;
+		return date.toLocaleTimeString(currentLocale, {
 			hour: "2-digit",
 			minute: "2-digit",
+			timeZone: tz,
 		});
 	};
 

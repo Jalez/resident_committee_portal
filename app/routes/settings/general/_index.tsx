@@ -5,12 +5,15 @@ import { handleApiKeySettingsAction } from "~/components/settings/api-key-settin
 import { LanguageSettings } from "~/components/settings/language-settings";
 import { handleLanguageSettingsAction } from "~/components/settings/language-settings.server";
 import { ThemeSettings } from "~/components/settings/theme-settings";
+import { TimezoneSettings } from "~/components/settings/timezone-settings";
+import { handleTimezoneSettingsAction } from "~/components/settings/timezone-settings.server";
 import { useLanguage } from "~/contexts/language-context";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import {
+	getDefaultTimezone,
 	getSystemLanguageDefaults,
 	getThemePrimaryColor,
 } from "~/lib/settings.server";
@@ -29,18 +32,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "settings:general", getDatabase);
 
 	const db = getDatabase();
-	const [defaults, apiKey, themePrimary] = await Promise.all([
+	const [defaults, apiKey, themePrimary, defaultTimezone] = await Promise.all([
 		getSystemLanguageDefaults(),
 		db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
 		getThemePrimaryColor(),
+		getDefaultTimezone(),
 	]);
 
 	return {
 		siteConfig: SITE_CONFIG,
 		defaults,
-		apiKey: apiKey ? "••••••••" : "", // Mask API key
+		apiKey: apiKey ? "••••••••" : "",
 		hasApiKey: !!apiKey,
 		themePrimary,
+		defaultTimezone,
 	};
 }
 
@@ -55,13 +60,22 @@ export async function action({ request }: Route.ActionArgs) {
 		return await handleApiKeySettingsAction(db, formData);
 	}
 
+	if (intent === "save-timezone") {
+		return await handleTimezoneSettingsAction(formData);
+	}
+
 	return await handleLanguageSettingsAction(formData);
 }
 
 export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
-	const { defaults, apiKey, hasApiKey, themePrimary } = loaderData;
+	const { defaults, apiKey, hasApiKey, themePrimary, defaultTimezone } = loaderData;
 	const { t } = useTranslation();
 	const { supportedLanguages, languageNames } = useLanguage();
+
+	const detectedTimezone =
+		typeof window !== "undefined"
+			? Intl.DateTimeFormat().resolvedOptions().timeZone
+			: undefined;
 
 	return (
 		<SettingsPageLayout
@@ -71,6 +85,10 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 				defaults={defaults}
 				supportedLanguages={supportedLanguages}
 				languageNames={languageNames}
+			/>
+			<TimezoneSettings
+				currentTimezone={defaultTimezone}
+				detectedTimezone={detectedTimezone}
 			/>
 			<ApiKeySettings apiKey={apiKey} hasApiKey={hasApiKey} />
 			<ThemeSettings currentPrimary={themePrimary} />

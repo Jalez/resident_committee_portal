@@ -845,7 +845,14 @@
 			"languages_title": "Default Languages",
 			"languages_desc": "Set the default languages for new users and guests. These can be overridden by users in their profile.",
 			"primary_language": "Primary Language",
-			"secondary_language": "Secondary Language"
+			"secondary_language": "Secondary Language",
+			"timezone_title": "Default Timezone",
+			"timezone_desc": "Set the default timezone for events. Event creators can choose a different timezone.",
+			"default_timezone": "Default Timezone",
+			"other_timezone": "Other timezone...",
+			"use_detected": "Use detected: {{timezone}}",
+			"show_common": "Show common",
+			"enter_custom": "Enter timezone manually"
 		},
 		"reimbursements": {
 			"title": "Reimbursement Settings",

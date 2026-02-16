@@ -7,6 +7,7 @@ import { getDatabase } from "~/db/server.server";
 export const SETTINGS_KEYS = {
 	DEFAULT_PRIMARY_LANGUAGE: "default_primary_language",
 	DEFAULT_SECONDARY_LANGUAGE: "default_secondary_language",
+	DEFAULT_TIMEZONE: "default_timezone",
 	THEME_PRIMARY_COLOR: "theme_primary_color",
 } as const;
 
@@ -61,5 +62,20 @@ export async function setThemePrimaryColor(color: string): Promise<void> {
 		SETTINGS_KEYS.THEME_PRIMARY_COLOR,
 		color,
 		"Primary color for theme (hex)",
+	);
+}
+
+export async function getDefaultTimezone(): Promise<string> {
+	const db = getDatabase();
+	const timezone = await db.getSetting(SETTINGS_KEYS.DEFAULT_TIMEZONE);
+	return timezone || "UTC";
+}
+
+export async function setDefaultTimezone(timezone: string): Promise<void> {
+	const db = getDatabase();
+	await db.setSetting(
+		SETTINGS_KEYS.DEFAULT_TIMEZONE,
+		timezone,
+		"Default timezone for events (IANA timezone identifier)",
 	);
 }
