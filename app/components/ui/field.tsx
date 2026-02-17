@@ -44,6 +44,7 @@ export interface FieldProps {
 	required?: boolean;
 	placeholder?: string;
 	disabled?: boolean;
+	readOnly?: boolean;
 	description?: string;
 	className?: string; // Wrapper class
 	valueClassName?: string; // Class for the input itself
@@ -67,6 +68,7 @@ export function Field({
 	required,
 	placeholder,
 	disabled,
+	readOnly,
 	description,
 	className,
 	valueClassName,
@@ -229,30 +231,39 @@ export function Field({
 
 			<div className="relative">
 				{type === "select" && options ? (
-					<Select
-						name={name}
-						value={String(value)}
-						onValueChange={onChange}
-						disabled={disabled}
-						required={required}
-					>
-						<SelectTrigger
-							id={name}
-							className={cn(error && "border-destructive", valueClassName)}
+					<>
+						{readOnly && (
+							<input type="hidden" name={name} value={String(value ?? "")} />
+						)}
+						<Select
+							name={readOnly ? undefined : name}
+							value={String(value)}
+							onValueChange={onChange}
+							disabled={disabled || readOnly}
+							required={required}
 						>
-							<SelectValue placeholder={placeholder} />
-						</SelectTrigger>
-						<SelectContent>
-							{options.map((opt) => {
-								const val = getOptionValue(opt);
-								return (
-									<SelectItem key={val} value={val}>
-										{getOptionLabel(opt)}
-									</SelectItem>
-								);
-							})}
-						</SelectContent>
-					</Select>
+							<SelectTrigger
+								id={name}
+								className={cn(
+									readOnly && "bg-muted/60 border-dashed",
+									error && "border-destructive",
+									valueClassName,
+								)}
+							>
+								<SelectValue placeholder={placeholder} />
+							</SelectTrigger>
+							<SelectContent>
+								{options.map((opt) => {
+									const val = getOptionValue(opt);
+									return (
+										<SelectItem key={val} value={val}>
+											{getOptionLabel(opt)}
+										</SelectItem>
+									);
+								})}
+							</SelectContent>
+						</Select>
+					</>
 				) : type === "textarea" ? (
 					<Textarea
 						id={name}
@@ -262,8 +273,13 @@ export function Field({
 						required={required}
 						placeholder={placeholder}
 						disabled={disabled}
+						readOnly={readOnly}
 						rows={3}
-						className={cn(error && "border-destructive", valueClassName)}
+						className={cn(
+							readOnly && "bg-muted/60 border-dashed",
+							error && "border-destructive",
+							valueClassName,
+						)}
 					/>
 				) : type === "currency" ? (
 					<div className="relative">
@@ -277,8 +293,10 @@ export function Field({
 							required={required}
 							placeholder={placeholder || "0,00"}
 							disabled={disabled}
+							readOnly={readOnly}
 							className={cn(
 								"pr-8",
+								readOnly && "bg-muted/60 border-dashed font-medium",
 								error && "border-destructive",
 								valueClassName,
 							)}
@@ -305,10 +323,15 @@ export function Field({
 						required={required}
 						placeholder={placeholder}
 						disabled={disabled}
+						readOnly={readOnly}
 						min={min}
 						max={max}
 						step={step}
-						className={cn(error && "border-destructive", valueClassName)}
+						className={cn(
+							readOnly && "bg-muted/60 border-dashed",
+							error && "border-destructive",
+							valueClassName,
+						)}
 					/>
 				)}
 			</div>

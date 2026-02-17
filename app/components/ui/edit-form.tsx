@@ -31,6 +31,7 @@ export interface EditFormField {
 	className?: string;
 	valueClassName?: string; // For read-only/custom display
 	disabled?: boolean;
+	readOnly?: boolean;
 	step?: string;
 	min?: string;
 	max?: string;
@@ -457,6 +458,7 @@ export function EditForm({
 										className={field.hidden ? "hidden" : field.className}
 										valueClassName={field.valueClassName}
 										disabled={field.disabled}
+										readOnly={field.readOnly}
 										min={field.min}
 										max={field.max}
 										step={field.step}
@@ -472,11 +474,9 @@ export function EditForm({
 
 						{/* Relationship Picker */}
 						{relationshipPickerProps && (
-							<>
-								<div className="space-y-4">
-									<RelationshipPicker {...relationshipPickerProps} />
-								</div>
-							</>
+							<div className="space-y-4">
+								<RelationshipPicker {...relationshipPickerProps} />
+							</div>
 						)}
 					</Form>
 

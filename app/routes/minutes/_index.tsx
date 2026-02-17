@@ -35,11 +35,15 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+
+
+	console.log("loader for minutes");
 	const user = await requireAnyPermission(
 		request,
 		["minutes:read", "minutes:write"],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
+	console.log("user", user);
 
 	const canWrite = hasAnyPermission(user, ["minutes:write"]);
 	const canUpdate = hasAnyPermission(user, ["minutes:update"]);
@@ -237,11 +241,11 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDelete
 										? {
-												action: `/minutes/${minute.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("minutes.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/minutes/${minute.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("minutes.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

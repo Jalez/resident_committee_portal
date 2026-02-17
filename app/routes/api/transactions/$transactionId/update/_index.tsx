@@ -1,9 +1,11 @@
 import { type ActionFunctionArgs, redirect } from "react-router";
 import { handleUpdateTransaction } from "~/actions/transaction-actions";
 import { getDatabase } from "~/db/server.server";
+import type { RelationshipEntityType } from "~/db/types";
 import { requirePermissionOrSelf } from "~/lib/auth.server";
 import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getControlledTransactionFields } from "~/lib/relationships/transaction-control.server";
 
 export async function action({ request, params }: ActionFunctionArgs) {
 	const { transactionId } = params;
@@ -60,20 +62,38 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const sourceId = formData.get("_sourceId") as string | null;
 	if (sourceType && sourceId) {
 		const exists = await db.entityRelationshipExists(
-			sourceType as any,
+			sourceType as RelationshipEntityType,
 			sourceId,
 			"transaction",
 			transaction.id,
 		);
 		if (!exists) {
 			await db.createEntityRelationship({
-				relationAType: sourceType as any,
+				relationAType: sourceType as RelationshipEntityType,
 				relationId: sourceId,
 				relationBType: "transaction",
 				relationBId: transaction.id,
 				createdBy: user?.userId || null,
 			});
 		}
+	}
+
+	// Relationship-controlled fields always override submitted values.
+	const controlled = await getControlledTransactionFields(db, transaction.id);
+	if (controlled.amount !== undefined) {
+		formData.set("amount", controlled.amount);
+	}
+	if (controlled.description !== undefined) {
+		formData.set("description", controlled.description);
+	}
+	if (controlled.type !== undefined) {
+		formData.set("type", controlled.type);
+	}
+	if (controlled.status !== undefined) {
+		formData.set("status", controlled.status);
+	}
+	if (controlled.reimbursementStatus !== undefined) {
+		formData.set("reimbursementStatus", controlled.reimbursementStatus);
 	}
 
 	// Handle returnUrl redirect (from source entity picker)

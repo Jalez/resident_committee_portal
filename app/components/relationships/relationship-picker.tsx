@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
@@ -122,6 +122,15 @@ function RelationshipSectionComponent({
 
 	const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
+	const clearRemovedId = useCallback((id: string) => {
+		setRemovedIds((prev) => {
+			if (!prev.has(id)) return prev;
+			const next = new Set(prev);
+			next.delete(id);
+			return next;
+		});
+	}, []);
+
 	const onLinkRef = useRef(onLink);
 	onLinkRef.current = onLink;
 	const processedDraftRef = useRef<string | null>(null);
@@ -136,6 +145,7 @@ function RelationshipSectionComponent({
 		) {
 			const entity = fetcher.data.entity;
 			processedDraftRef.current = entity.id;
+			clearRemovedId(entity.id);
 
 			// Track the link for form submission
 			onLinkRef.current?.(section.relationBType, entity.id);
@@ -156,7 +166,7 @@ function RelationshipSectionComponent({
 				}),
 			);
 		}
-	}, [fetcher.data, section.relationBType, revalidator, t]);
+	}, [fetcher.data, section.relationBType, revalidator, t, clearRemovedId]);
 
 	// When entities are imported, track them and revalidate
 	useEffect(() => {
@@ -170,6 +180,7 @@ function RelationshipSectionComponent({
 
 			// Track the links for form submission
 			for (const entity of importFetcher.data.entities) {
+				clearRemovedId(entity.id);
 				onLinkRef.current?.(section.relationBType, entity.id);
 			}
 
@@ -190,7 +201,13 @@ function RelationshipSectionComponent({
 				}),
 			);
 		}
-	}, [importFetcher.data, section.relationBType, revalidator, t]);
+	}, [
+		importFetcher.data,
+		section.relationBType,
+		revalidator,
+		t,
+		clearRemovedId,
+	]);
 
 	const config = ENTITY_REGISTRY[section.relationBType];
 	const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
@@ -308,6 +325,7 @@ function RelationshipSectionComponent({
 			currentPath={currentPath}
 			onRemove={handleRemove}
 			onSelectionChange={(id) => {
+				clearRemovedId(id);
 				onLink?.(section.relationBType, id);
 				toast.success(
 					t("common.relationships.linked", {
@@ -369,6 +387,46 @@ export function RelationshipPicker({
 		initialRelationships,
 	});
 
+	const sectionsWithPending = React.useMemo(() => {
+		return sections.map((section) => {
+			const pendingLinkIds = new Set(
+				internalPicker.pendingLinks
+					.filter((link) => link.relationBType === section.relationBType)
+					.map((link) => link.relationBId),
+			);
+
+			const pendingUnlinkIds = new Set(
+				internalPicker.pendingUnlinks
+					.filter((unlink) => unlink.relationBType === section.relationBType)
+					.map((unlink) => unlink.relationBId),
+			);
+
+			const effectiveLinked = new Map<string, AnyEntity>();
+
+			for (const entity of section.linkedEntities) {
+				if (!pendingUnlinkIds.has(entity.id)) {
+					effectiveLinked.set(entity.id, entity);
+				}
+			}
+
+			for (const entity of section.availableEntities) {
+				if (pendingLinkIds.has(entity.id)) {
+					effectiveLinked.set(entity.id, entity);
+				}
+			}
+
+			const linkedIds = new Set(effectiveLinked.keys());
+
+			return {
+				...section,
+				linkedEntities: Array.from(effectiveLinked.values()),
+				availableEntities: section.availableEntities.filter(
+					(entity) => !linkedIds.has(entity.id),
+				),
+			};
+		});
+	}, [sections, internalPicker.pendingLinks, internalPicker.pendingUnlinks]);
+
 	const handleLink = (
 		type: RelationshipEntityType,
 		id: string,
@@ -387,7 +445,7 @@ export function RelationshipPicker({
 		const visible: RelationshipSection[] = [];
 		const hidden: RelationshipSection[] = [];
 
-		for (const section of sections) {
+		for (const section of sectionsWithPending) {
 			if (section.linkedEntities.length > 0) {
 				visible.push(section);
 			} else {
@@ -396,7 +454,7 @@ export function RelationshipPicker({
 		}
 
 		return { visibleSections: visible, hiddenSections: hidden };
-	}, [sections]);
+	}, [sectionsWithPending]);
 
 	const handleCancelNewType = () => {
 		setIsAddingNewType(false);

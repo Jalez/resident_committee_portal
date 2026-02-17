@@ -7,7 +7,10 @@ import {
 	INCOME_CATEGORIES,
 } from "~/components/treasury/transaction-details-form";
 import { EditForm } from "~/components/ui/edit-form";
+import type { PurchaseStatus } from "~/db/schema";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
+import { mapPurchaseStatusToTransactionControl } from "~/lib/relationships/transaction-control";
+import { getControlledTransactionFields } from "~/lib/relationships/transaction-control.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -73,17 +76,74 @@ export async function action({ request, params }: Route.ActionArgs) {
 			return db.updateTransaction(id, {
 				...data,
 				amount: data.amount.replace(",", "."),
-				year: typeof data.year === "string" ? parseInt(data.year, 10) : data.year,
+				year:
+					typeof data.year === "string" ? parseInt(data.year, 10) : data.year,
 				status: (newStatus as any) || (data.status as any),
 			});
+		},
+		afterUpdate: async ({ db, entity }) => {
+			const transaction = await db.getTransactionById(entity.id);
+			if (!transaction) return;
+
+			const controlled = await getControlledTransactionFields(db, entity.id);
+			const updates: Record<string, string> = {};
+
+			if (controlled.amount !== undefined) {
+				const currentAmount = Number.parseFloat(transaction.amount || "0");
+				const controlledAmount = Number.parseFloat(controlled.amount);
+				const amountMismatch =
+					Number.isNaN(currentAmount) ||
+					Math.abs(currentAmount - controlledAmount) > 0.00001;
+				if (amountMismatch) {
+					updates.amount = controlled.amount;
+				}
+			}
+
+			if (
+				controlled.description !== undefined &&
+				transaction.description !== controlled.description
+			) {
+				updates.description = controlled.description;
+			}
+
+			if (
+				controlled.type !== undefined &&
+				transaction.type !== controlled.type
+			) {
+				updates.type = controlled.type;
+			}
+
+			if (
+				controlled.status !== undefined &&
+				transaction.status !== controlled.status
+			) {
+				updates.status = controlled.status;
+			}
+
+			if (
+				controlled.reimbursementStatus !== undefined &&
+				transaction.reimbursementStatus !== controlled.reimbursementStatus
+			) {
+				updates.reimbursementStatus = controlled.reimbursementStatus;
+			}
+
+			if (Object.keys(updates).length > 0) {
+				await db.updateTransaction(entity.id, updates as any);
+			}
 		},
 		successRedirect: (entity) => `/treasury/breakdown?year=${entity.year}`,
 	});
 }
 
 export default function EditTransaction({ loaderData }: Route.ComponentProps) {
-	const { transaction, relationships, openBudgets, returnUrl, sourceContext } =
-		loaderData as any;
+	const {
+		transaction,
+		relationships,
+		openBudgets,
+		returnUrl,
+		sourceContext,
+		contextValues,
+	} = loaderData as any;
 	const { t } = useTranslation();
 
 	const currentYear = new Date().getFullYear();
@@ -99,36 +159,173 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		];
 	}, [currentYear]);
 
-	const categories = currentType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+	const linkedReimbursement = relationships?.reimbursement?.linked?.[0] as
+		| { status?: PurchaseStatus; description?: string; id?: string }
+		| undefined;
+	const reimbursementControl = linkedReimbursement?.status
+		? mapPurchaseStatusToTransactionControl(linkedReimbursement.status)
+		: null;
+	const hasReimbursementControl = Boolean(linkedReimbursement);
+	const effectiveType: "income" | "expense" = hasReimbursementControl
+		? "expense"
+		: currentType;
 
-	const inputFields = useMemo(() => ({
-		description: transaction.description,
-		amount: transaction.amount,
-		type: {
-			type: "select",
-			value: currentType,
-			options: [
-				{ label: t("treasury.transactions.types.income"), value: "income" },
-				{ label: t("treasury.transactions.types.expense"), value: "expense" },
-			],
-		},
-		year: {
-			type: "select",
-			value: String(transaction.year),
-			options: yearOptions,
-		},
-		category: {
-			type: "select",
-			value: transaction.category,
-			options: categories.map((c) => ({
-				label: t(`treasury.categories.${c.labelKey}`),
-				value: c.value,
-			})),
-		},
-		status: transaction.status,
-		notes: transaction.notes,
-		reimbursementStatus: transaction.reimbursementStatus,
-	}), [transaction, currentType, yearOptions, categories, t]);
+	const categories =
+		effectiveType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+
+	const sourceControl = useMemo(() => {
+		const source = contextValues?.valueSource;
+		if (source !== "receipt" && source !== "reimbursement") return null;
+
+		const sourceLabel =
+			source === "receipt"
+				? t("common.relationships.receipt", { defaultValue: "receipt" })
+				: t("common.relationships.reimbursement", {
+						defaultValue: "reimbursement request",
+					});
+
+		const sourceEntities =
+			source === "receipt"
+				? relationships?.receipt?.linked || []
+				: relationships?.reimbursement?.linked || [];
+
+		const sourceEntity = sourceEntities[0] as
+			| Record<string, unknown>
+			| undefined;
+		const sourceNameCandidates = [
+			sourceEntity?.name,
+			sourceEntity?.description,
+			sourceEntity?.storeName,
+			sourceEntity?.purchaserName,
+			sourceEntity?.title,
+			sourceEntity?.id,
+		];
+		const sourceName = sourceNameCandidates.find(
+			(value) => typeof value === "string" && value.trim().length > 0,
+		) as string | undefined;
+
+		return {
+			source,
+			sourceLabel,
+			sourceName,
+		};
+	}, [contextValues?.valueSource, relationships, t]);
+
+	const amountControl = useMemo(() => {
+		const totalAmount = contextValues?.totalAmount;
+		if (!sourceControl || typeof totalAmount !== "number") return null;
+
+		const description = sourceControl.sourceName
+			? t("treasury.transactions.amount_controlled_named", {
+					defaultValue:
+						"Amount is controlled by linked {{sourceLabel}}: {{sourceName}}. Unlink it to edit manually.",
+					sourceLabel: sourceControl.sourceLabel,
+					sourceName: sourceControl.sourceName,
+				})
+			: t("treasury.transactions.amount_controlled", {
+					defaultValue:
+						"Amount is controlled by linked {{sourceLabel}}. Unlink it to edit manually.",
+					sourceLabel: sourceControl.sourceLabel,
+				});
+
+		return {
+			amountValue: totalAmount.toFixed(2),
+			description,
+		};
+	}, [contextValues?.totalAmount, sourceControl, t]);
+
+	const descriptionControl = useMemo(() => {
+		const controlledDescription = contextValues?.description?.trim();
+		if (!sourceControl || !controlledDescription) return null;
+
+		const description = sourceControl.sourceName
+			? t("treasury.transactions.description_controlled_named", {
+					defaultValue:
+						"Description is controlled by linked {{sourceLabel}}: {{sourceName}}.",
+					sourceLabel: sourceControl.sourceLabel,
+					sourceName: sourceControl.sourceName,
+				})
+			: t("treasury.transactions.description_controlled", {
+					defaultValue: "Description is controlled by linked {{sourceLabel}}.",
+					sourceLabel: sourceControl.sourceLabel,
+				});
+
+		return {
+			value: controlledDescription,
+			description,
+		};
+	}, [contextValues?.description, sourceControl, t]);
+
+	const inputFields = useMemo(
+		() => ({
+			description: {
+				value: descriptionControl?.value ?? transaction.description,
+				readOnly: Boolean(descriptionControl),
+				description: descriptionControl?.description,
+			},
+			amount: {
+				type: "currency",
+				value: amountControl?.amountValue ?? transaction.amount,
+				readOnly: Boolean(amountControl),
+				description: amountControl?.description,
+				valueClassName: amountControl ? "font-semibold" : undefined,
+			},
+			type: {
+				type: "select",
+				value: effectiveType,
+				readOnly: hasReimbursementControl,
+				description: hasReimbursementControl
+					? t("treasury.transactions.type_controlled_by_reimbursement", {
+							defaultValue:
+								"Type is locked to Expense while linked to a reimbursement request.",
+						})
+					: undefined,
+				options: [
+					{ label: t("treasury.transactions.types.income"), value: "income" },
+					{ label: t("treasury.transactions.types.expense"), value: "expense" },
+				],
+			},
+			year: {
+				type: "select",
+				value: String(transaction.year),
+				options: yearOptions,
+			},
+			category: {
+				type: "select",
+				value: transaction.category,
+				options: categories.map((c) => ({
+					label: t(`treasury.categories.${c.labelKey}`),
+					value: c.value,
+				})),
+			},
+			status: {
+				value: reimbursementControl?.status ?? transaction.status,
+				readOnly: hasReimbursementControl,
+				description: hasReimbursementControl
+					? t("treasury.transactions.status_controlled_by_reimbursement", {
+							defaultValue:
+								"Status follows the linked reimbursement request state.",
+						})
+					: undefined,
+			},
+			notes: transaction.notes,
+			reimbursementStatus:
+				reimbursementControl?.reimbursementStatus ||
+				transaction.reimbursementStatus,
+		}),
+		[
+			transaction,
+			effectiveType,
+			yearOptions,
+			categories,
+			t,
+			amountControl,
+			descriptionControl,
+			hasReimbursementControl,
+			reimbursementControl?.status,
+			reimbursementControl?.reimbursementStatus,
+		],
+	);
 
 	const handleFieldChange = (name: string, value: any) => {
 		if (name === "type" && (value === "income" || value === "expense")) {

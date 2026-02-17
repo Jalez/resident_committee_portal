@@ -240,47 +240,74 @@ export function hasAllPermissions(
 }
 
 /**
- * Require user to have a specific permission
- * Throws 401 if not authenticated, 403 if missing permission
+ * Get authenticated user, falling back to a guest user if no session exists.
+ * The guest user gets permissions from the "Guest" role in the database.
+ */
+async function getOrGuestUser(
+	request: Request,
+	getDatabase: () => RBACDatabaseAdapter,
+): Promise<AuthenticatedUser> {
+	const user = await getAuthenticatedUser(request, getDatabase);
+	if (user) return user;
+
+	const { permissions, languages } = await getGuestContext(getDatabase);
+	return {
+		userId: "guest",
+		email: "",
+		name: "Guest",
+		roleName: "Guest",
+		permissions,
+		primaryLanguage: languages.primary,
+		secondaryLanguage: languages.secondary,
+		localOllamaEnabled: false,
+		localOllamaUrl: "",
+	};
+}
+
+/**
+ * Require user to have a specific permission.
+ * Guests (unauthenticated) are checked against the "Guest" role permissions.
+ * Throws 401 if a guest lacks permission (to redirect to login), 403 if an authenticated user lacks permission.
  */
 export async function requirePermission(
 	request: Request,
 	permission: string,
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
-	const user = await getAuthenticatedUser(request, getDatabase);
-
-	if (!user) {
-		throw new Response("Unauthorized", { status: 401 });
-	}
+	const user = await getOrGuestUser(request, getDatabase);
 
 	if (!hasPermission(user, permission)) {
-		throw new Response(`Forbidden - Missing permission: ${permission}`, {
-			status: 403,
-		});
+		const isGuest = user.userId === "guest";
+		throw new Response(
+			isGuest
+				? "Unauthorized"
+				: `Forbidden - Missing permission: ${permission}`,
+			{ status: isGuest ? 401 : 403 },
+		);
 	}
 
 	return user;
 }
 
 /**
- * Require user to have any of the specified permissions
+ * Require user to have any of the specified permissions.
+ * Guests (unauthenticated) are checked against the "Guest" role permissions.
+ * Throws 401 if a guest lacks permission, 403 if an authenticated user lacks permission.
  */
 export async function requireAnyPermission(
 	request: Request,
 	permissions: string[],
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
-	const user = await getAuthenticatedUser(request, getDatabase);
-
-	if (!user) {
-		throw new Response("Unauthorized", { status: 401 });
-	}
+	const user = await getOrGuestUser(request, getDatabase);
 
 	if (!hasAnyPermission(user, permissions)) {
+		const isGuest = user.userId === "guest";
 		throw new Response(
-			`Forbidden - Requires one of: ${permissions.join(", ")}`,
-			{ status: 403 },
+			isGuest
+				? "Unauthorized"
+				: `Forbidden - Requires one of: ${permissions.join(", ")}`,
+			{ status: isGuest ? 401 : 403 },
 		);
 	}
 
@@ -320,7 +347,8 @@ export function canDeleteSelf(
 }
 
 /**
- * Require user to have either general permission OR self permission with ownership
+ * Require user to have either general permission OR self permission with ownership.
+ * Guests (unauthenticated) are checked against the "Guest" role permissions.
  */
 export async function requirePermissionOrSelf(
 	request: Request,
@@ -329,11 +357,7 @@ export async function requirePermissionOrSelf(
 	itemCreatedBy: string | null | undefined,
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
-	const user = await getAuthenticatedUser(request, getDatabase);
-
-	if (!user) {
-		throw new Response("Unauthorized", { status: 401 });
-	}
+	const user = await getOrGuestUser(request, getDatabase);
 
 	// Check general permission first
 	if (hasPermission(user, generalPermission)) {
@@ -345,14 +369,18 @@ export async function requirePermissionOrSelf(
 		return user;
 	}
 
+	const isGuest = user.userId === "guest";
 	throw new Response(
-		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
-		{ status: 403 },
+		isGuest
+			? "Unauthorized"
+			: `Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
+		{ status: isGuest ? 401 : 403 },
 	);
 }
 
 /**
- * Require user to have either general delete permission OR self delete permission with ownership
+ * Require user to have either general delete permission OR self delete permission with ownership.
+ * Guests (unauthenticated) are checked against the "Guest" role permissions.
  */
 export async function requireDeletePermissionOrSelf(
 	request: Request,
@@ -361,11 +389,7 @@ export async function requireDeletePermissionOrSelf(
 	itemCreatedBy: string | null | undefined,
 	getDatabase: () => RBACDatabaseAdapter,
 ): Promise<AuthenticatedUser> {
-	const user = await getAuthenticatedUser(request, getDatabase);
-
-	if (!user) {
-		throw new Response("Unauthorized", { status: 401 });
-	}
+	const user = await getOrGuestUser(request, getDatabase);
 
 	// Check general permission first
 	if (hasPermission(user, generalPermission)) {
@@ -377,9 +401,12 @@ export async function requireDeletePermissionOrSelf(
 		return user;
 	}
 
+	const isGuest = user.userId === "guest";
 	throw new Response(
-		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
-		{ status: 403 },
+		isGuest
+			? "Unauthorized"
+			: `Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
+		{ status: isGuest ? 401 : 403 },
 	);
 }
 
