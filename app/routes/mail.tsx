@@ -103,57 +103,62 @@ export default function MailLayout({ loaderData }: Route.ComponentProps) {
 
 	const currentDirection =
 		new URLSearchParams(location.search).get("direction") || "inbox";
+	const isComposeLikePage =
+		location.pathname.startsWith("/mail/drafts/") ||
+		location.pathname.startsWith("/mail/compose");
 
 	return (
 		<PageWrapper>
 			<div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 md:flex-row">
-				<aside className="w-full shrink-0 md:w-48">
-					<nav className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0.5">
-						<Link
-							to="/mail/inbox"
-							className={navLinkClassName({
-								isActive:
-									location.pathname === "/mail/inbox" &&
-									currentDirection === "inbox",
-							})}
-						>
-							<span className="material-symbols-outlined size-5 text-base">
-								inbox
-							</span>
-							{t("mail.inbox")}
-						</Link>
-						<Link
-							to="/mail/inbox?direction=sent"
-							className={navLinkClassName({
-								isActive: currentDirection === "sent",
-							})}
-						>
-							<span className="material-symbols-outlined size-5 text-base">
-								send
-							</span>
-							{t("mail.sent")}
-						</Link>
-						<Link
-							to="/mail/drafts"
-							className={navLinkClassName({
-								isActive: location.pathname.startsWith("/mail/drafts"),
-							})}
-						>
-							<span className="material-symbols-outlined size-5 text-base">
-								draft
-							</span>
-							{t("mail.drafts")}
-						</Link>
-						<div className="mt-2 hidden md:block">
-							<Button variant="outline" size="sm" asChild className="w-full">
-								<Link to="/mail/compose">
-									<Plus className="mr-1 size-4" />
-									{t("mail.compose")}
-								</Link>
-							</Button>
-						</div>
-					</nav>
-				</aside>
+				{!isComposeLikePage && (
+					<aside className="w-full shrink-0 md:w-48">
+						<nav className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0.5">
+							<Link
+								to="/mail/inbox"
+								className={navLinkClassName({
+									isActive:
+										location.pathname === "/mail/inbox" &&
+										currentDirection === "inbox",
+								})}
+							>
+								<span className="material-symbols-outlined size-5 text-base">
+									inbox
+								</span>
+								{t("mail.inbox")}
+							</Link>
+							<Link
+								to="/mail/inbox?direction=sent"
+								className={navLinkClassName({
+									isActive: currentDirection === "sent",
+								})}
+							>
+								<span className="material-symbols-outlined size-5 text-base">
+									send
+								</span>
+								{t("mail.sent")}
+							</Link>
+							<Link
+								to="/mail/drafts"
+								className={navLinkClassName({
+									isActive: location.pathname.startsWith("/mail/drafts"),
+								})}
+							>
+								<span className="material-symbols-outlined size-5 text-base">
+									draft
+								</span>
+								{t("mail.drafts")}
+							</Link>
+							<div className="mt-2 hidden md:block">
+								<Button variant="outline" size="sm" asChild className="w-full">
+									<Link to="/mail/compose">
+										<Plus className="mr-1 size-4" />
+										{t("mail.compose")}
+									</Link>
+								</Button>
+							</div>
+						</nav>
+					</aside>
+				)}
 
 				<main className="min-w-0 flex-1">
 					<Outlet />

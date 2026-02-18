@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { CommitteeMemberCard } from "~/components/committee/committee-member-card";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -113,27 +117,29 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 					}),
 				}}
 			>
-				<p className="mt-2 mb-8 text-gray-600 dark:text-gray-400">
-					{t("committee.members")}
-				</p>
+				<ContentArea>
+					<p className="mt-2 mb-8 text-gray-600 dark:text-gray-400">
+						{t("committee.members")}
+					</p>
 
-				{members.length === 0 ? (
-					<div className="text-center py-12">
-						<p className="text-gray-500 dark:text-gray-400">
-							{t("committee.no_members")}
-						</p>
-					</div>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-						{members.map((member) => (
-							<CommitteeMemberCard
-								key={member.id}
-								member={member}
-								noDescriptionLabel={t("committee.no_description")}
-							/>
-						))}
-					</div>
-				)}
+					{members.length === 0 ? (
+						<div className="text-center py-12">
+							<p className="text-gray-500 dark:text-gray-400">
+								{t("committee.no_members")}
+							</p>
+						</div>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+							{members.map((member) => (
+								<CommitteeMemberCard
+									key={member.id}
+									member={member}
+									noDescriptionLabel={t("committee.no_description")}
+								/>
+							))}
+						</div>
+					)}
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

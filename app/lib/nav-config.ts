@@ -1,5 +1,6 @@
 // Shared navigation configuration used by both Navigation component and InfoReelProvider
 // This ensures info reel cycles through routes that match what guests can see in navigation
+import { ENTITY_REGISTRY } from "./entity-registry";
 
 export interface NavItemChild {
 	path: string;
@@ -24,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
 	{ path: "/", icon: "volunteer_activism", i18nKey: "nav.get_involved" },
 	{
 		path: "/events",
-		icon: "event",
+		icon: ENTITY_REGISTRY.event.icon,
 		i18nKey: "nav.events",
 		permission: "events:read",
 	},
@@ -47,25 +48,25 @@ export const NAV_ITEMS: NavItem[] = [
 			},
 			{
 				path: "/treasury/transactions",
-				icon: "list_alt",
+				icon: ENTITY_REGISTRY.transaction.icon,
 				i18nKey: "treasury.actions.transactions",
 				permission: "treasury:transactions:read",
 			},
 			{
 				path: "/treasury/receipts",
-				icon: "receipt_long",
+				icon: ENTITY_REGISTRY.receipt.icon,
 				i18nKey: "treasury.actions.receipts",
 				permission: "treasury:receipts:read",
 			},
 			{
 				path: "/treasury/reimbursements",
-				icon: "request_quote",
+				icon: ENTITY_REGISTRY.reimbursement.icon,
 				i18nKey: "treasury.actions.reimbursements",
 				permission: "treasury:reimbursements:read",
 			},
 			{
 				path: "/treasury/budgets",
-				icon: "bookmark",
+				icon: ENTITY_REGISTRY.budget.icon,
 				i18nKey: "treasury.actions.budgets",
 				permission: "treasury:budgets:read",
 			},
@@ -73,42 +74,46 @@ export const NAV_ITEMS: NavItem[] = [
 	},
 	{
 		path: "/minutes",
-		icon: "description",
+		icon: ENTITY_REGISTRY.minute.icon,
 		i18nKey: "nav.minutes",
 		permission: "minutes:read",
 	},
 	{
 		path: "/news",
-		icon: "newspaper",
+		icon: ENTITY_REGISTRY.news.icon,
 		i18nKey: "nav.news",
 		permission: "news:read",
 	},
 	{
 		path: "/faq",
-		icon: "help",
+		icon: ENTITY_REGISTRY.faq.icon,
 		i18nKey: "nav.faq",
 		permission: "faq:read",
 	},
 	{
 		path: "/inventory",
-		icon: "inventory_2",
+		icon: ENTITY_REGISTRY.inventory.icon,
 		i18nKey: "nav.inventory",
 		permission: "inventory:read",
 	},
 	{
 		path: "/social",
-		icon: "forum",
+		icon: ENTITY_REGISTRY.social.icon,
 		i18nKey: "nav.social",
 		permission: "social:read",
 		infoReelDuration: 16000,
 	},
 	{
 		path: "/polls",
-		icon: "ballot",
+		icon: ENTITY_REGISTRY.poll.icon,
 		i18nKey: "nav.polls",
 		permission: "polls:read",
 		children: [
-			{ path: "/polls", icon: "ballot", i18nKey: "polls.title" },
+			{
+				path: "/polls",
+				icon: ENTITY_REGISTRY.poll.icon,
+				i18nKey: "polls.title",
+			},
 			{
 				path: "/polls/analytics",
 				icon: "analytics",

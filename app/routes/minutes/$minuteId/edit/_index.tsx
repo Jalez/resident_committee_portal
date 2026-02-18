@@ -1,7 +1,8 @@
 import * as React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { useActionData, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
@@ -71,7 +72,16 @@ export async function action({ request, params }: Route.ActionArgs) {
 			});
 
 			if ("error" in uploadResult) {
-				return { error: uploadResult.error };
+				const errorMessage =
+					uploadResult.error === "invalid_file_type"
+						? `Invalid file type. Allowed: ${uploadResult.allowedTypes || ".pdf, .doc, .docx, .txt"}`
+						: uploadResult.error === "storage_not_available"
+							? "File storage is not available right now. Please try again later."
+							: uploadResult.error === "upload_failed"
+								? uploadResult.message || "File upload failed. Please try again."
+								: uploadResult.message ||
+									"Could not process the selected file. Please try again.";
+				return { error: errorMessage };
 			}
 
 			if (uploadResult.pathname && uploadResult.pathname !== entity.fileKey) {
@@ -96,6 +106,8 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { minute, relationships, sourceContext, returnUrl } = loaderData as any;
 	const navigate = useNavigate();
+	const actionData = useActionData<typeof action>();
+	const lastActionSignatureRef = useRef<string | null>(null);
 
 	const [date, setDate] = useState(
 		minute.date
@@ -121,6 +133,23 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 		entityId: minute.id,
 		year,
 	});
+
+	useEffect(() => {
+		if (!actionData) return;
+
+		const signature = JSON.stringify(actionData);
+		if (signature === lastActionSignatureRef.current) return;
+		lastActionSignatureRef.current = signature;
+
+		if ((actionData as any).error) {
+			toast.error((actionData as any).error as string);
+		} else if ((actionData as any).fieldErrors) {
+			const errorMessages = Object.values((actionData as any).fieldErrors)
+				.flat()
+				.join(", ");
+			toast.error(errorMessages || t("common.error.validation_failed"));
+		}
+	}, [actionData, t]);
 
 	const inputFields = React.useMemo(
 		() => ({
