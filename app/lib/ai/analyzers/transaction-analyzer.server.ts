@@ -3,8 +3,8 @@
  * Priority Level 3 (Low) - Mechanical proof of payment
  *
  * Analyzes transactions to suggest:
- * 1. Budget linkage (match category/description to budgets)
- * 2. Inventory items (if category suggests inventory)
+ * 1. Budget linkage (match description to budgets)
+ * 2. Inventory items
  *
  * AI Enrichment:
  * - Suggests budget match
@@ -53,7 +53,6 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 			return {
 				suggestions, // Empty - transactions don't generate other entities
 				enrichment: {
-					category: transaction.category || undefined,
 					tags: aiAnalysis?.suggestedBudgetId
 						? [`budget:${aiAnalysis.suggestedBudgetId}`]
 						: [],
@@ -97,13 +96,12 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 
 Description: ${transaction.description}
 Amount: €${transaction.amount}
-Category: ${transaction.category || "Unknown"}
 Date: ${new Date(transaction.date).toLocaleDateString()}
 
 Available Budgets for ${transaction.year}:
 ${budgetList || "No budgets available"}
 
-Determine if this transaction matches any of the available budgets (match by keywords, category, description).
+Determine if this transaction matches any of the available budgets (match by keywords and description).
 
 Return ONLY valid JSON (no markdown):
 {

@@ -78,7 +78,6 @@ async function createDraftEntity(
 					type: (suggestion.data.type as "income" | "expense") || "expense",
 					amount: String(suggestion.data.amount || "0"),
 					description: String(suggestion.data.description || suggestion.name),
-					category: suggestion.data.category as string | undefined,
 					date: suggestion.data.date
 						? new Date(suggestion.data.date as string)
 						: new Date(),
@@ -504,7 +503,6 @@ TRANSACTION:
 Description: ${transaction.description}
 Amount: ${transaction.amount}€
 Type: ${transaction.type}
-Category: ${transaction.category || "Uncategorized"}
 
 OPEN BUDGETS:
 ${budgets.map((b) => `- ${b.name}: ${b.amount}€ (${b.description || "No description"})`).join("\n")}
@@ -517,7 +515,7 @@ Should this transaction be linked to a budget? Respond with JSON:
   "reasoning": "explanation"
 }
 
-Link only if the transaction description/category clearly matches the budget purpose.`;
+Link only if the transaction description clearly matches the budget purpose.`;
 
 			const { text } = await generateText({
 				model: openrouter("google/gemini-flash-1.5"),

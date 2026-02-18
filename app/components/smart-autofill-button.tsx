@@ -6,9 +6,12 @@ import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
 	DropdownMenu,
+	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
+	DropdownMenuLabel,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import {
@@ -24,6 +27,7 @@ import { cn } from "~/lib/utils";
 import type { SmartAutofillSuggestions } from "~/routes/api/entities/smart-autofill/_index";
 
 const LOCAL_MODEL_STORAGE_KEY = "local-ollama-model";
+const EXPAND_RELATIONS_STORAGE_KEY = "smart-autofill-expand-relations";
 
 export interface SmartAutofillButtonProps {
 	/** Entity type being edited */
@@ -48,6 +52,8 @@ export interface SmartAutofillButtonProps {
 	sourceLanguage?: string;
 	/** Target language for translation/autofill */
 	targetLanguage?: string;
+	/** Additional fields to send with autofill request (e.g. pending relationship changes) */
+	getExtraFormData?: () => Record<string, string>;
 }
 
 /**
@@ -66,6 +72,7 @@ export function SmartAutofillButton({
 	onLocalModelChange,
 	sourceLanguage,
 	targetLanguage,
+	getExtraFormData,
 }: SmartAutofillButtonProps) {
 	const { t } = useTranslation();
 	const { user } = useUser();
@@ -78,6 +85,12 @@ export function SmartAutofillButton({
 		string | null
 	>(null);
 	const [loadingModels, setLoadingModels] = useState(false);
+	const [expandRelatedRelations, setExpandRelatedRelations] =
+		useState<boolean>(() => {
+			if (typeof window === "undefined") return true;
+			const raw = localStorage.getItem(EXPAND_RELATIONS_STORAGE_KEY);
+			return raw == null ? true : raw === "true";
+		});
 
 	const selectedModel =
 		propLocalModel !== undefined ? propLocalModel : internalSelectedModel;
@@ -144,14 +157,38 @@ export function SmartAutofillButton({
 		formData.append("entityId", entityId);
 		formData.append("useAI", String(useAI));
 		formData.append("localModel", selectedModel || "");
+		formData.append(
+			"expandLinkedRelations",
+			String(expandRelatedRelations),
+		);
 		formData.append("currentValues", JSON.stringify(currentValues));
+		if (currentValues._relationship_links) {
+			formData.append("_relationship_links", currentValues._relationship_links);
+		}
+		if (currentValues._relationship_unlinks) {
+			formData.append(
+				"_relationship_unlinks",
+				currentValues._relationship_unlinks,
+			);
+		}
 		if (sourceLanguage) formData.append("sourceLanguage", sourceLanguage);
 		if (targetLanguage) formData.append("targetLanguage", targetLanguage);
+		if (getExtraFormData) {
+			const extra = getExtraFormData();
+			for (const [key, value] of Object.entries(extra)) {
+				formData.append(key, value);
+			}
+		}
 
 		fetcher.submit(formData, {
 			method: "POST",
 			action: "/api/entities/smart-autofill",
 		});
+	};
+
+	const handleExpandRelationsToggle = (checked: boolean) => {
+		setExpandRelatedRelations(checked);
+		localStorage.setItem(EXPAND_RELATIONS_STORAGE_KEY, String(checked));
 	};
 
 	// Handle response
@@ -184,6 +221,8 @@ export function SmartAutofillButton({
 		}
 	}, [fetcher.data, fetcher.state, applied, onSuggestions, t]);
 
+	const hasOptionsMenu = true;
+
 	return (
 		<div className="flex items-center">
 			<TooltipProvider>
@@ -197,7 +236,7 @@ export function SmartAutofillButton({
 							disabled={isLoading}
 							className={cn(
 								"gap-1.5",
-								isLocalEnabled && "rounded-r-none border-r-0",
+								hasOptionsMenu && "rounded-r-none border-r-0",
 							)}
 						>
 							{isLoading ? (
@@ -225,7 +264,7 @@ export function SmartAutofillButton({
 				</Tooltip>
 			</TooltipProvider>
 
-			{isLocalEnabled && (
+			{hasOptionsMenu && (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -241,24 +280,47 @@ export function SmartAutofillButton({
 							<ChevronDown className="w-4 h-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-[200px]">
-						<DropdownMenuRadioGroup
-							value={selectedModel || "none"}
-							onValueChange={handleModelChange}
+					<DropdownMenuContent align="end" className="w-[260px]">
+						<DropdownMenuLabel>
+							{t("smart_autofill.options", { defaultValue: "Autofill options" })}
+						</DropdownMenuLabel>
+						<DropdownMenuCheckboxItem
+							checked={expandRelatedRelations}
+							onCheckedChange={(checked) =>
+								handleExpandRelationsToggle(Boolean(checked))
+							}
 						>
-							<DropdownMenuRadioItem value="none">
-								<span className="text-gray-500">
-									{t("local_ai.model_selector.disabled", {
-										defaultValue: "Disabled",
+							{t("smart_autofill.expand_relations", {
+								defaultValue: "Also link relations of linked items",
+							})}
+						</DropdownMenuCheckboxItem>
+						{isLocalEnabled && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuLabel>
+									{t("local_ai.model_selector.title", {
+										defaultValue: "Local model",
 									})}
-								</span>
-							</DropdownMenuRadioItem>
-							{models.map((model) => (
-								<DropdownMenuRadioItem key={model.name} value={model.name}>
-									{model.name}
-								</DropdownMenuRadioItem>
-							))}
-						</DropdownMenuRadioGroup>
+								</DropdownMenuLabel>
+								<DropdownMenuRadioGroup
+									value={selectedModel || "none"}
+									onValueChange={handleModelChange}
+								>
+									<DropdownMenuRadioItem value="none">
+										<span className="text-gray-500">
+											{t("local_ai.model_selector.disabled", {
+												defaultValue: "Disabled",
+											})}
+										</span>
+									</DropdownMenuRadioItem>
+									{models.map((model) => (
+										<DropdownMenuRadioItem key={model.name} value={model.name}>
+											{model.name}
+										</DropdownMenuRadioItem>
+									))}
+								</DropdownMenuRadioGroup>
+							</>
+						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			)}
