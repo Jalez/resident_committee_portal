@@ -250,7 +250,6 @@ export const transactions = pgTable("transactions", {
 	type: text("type").$type<TransactionType>().notNull(),
 	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
 	description: text("description").notNull(),
-	category: text("category"),
 	date: timestamp("date").notNull(),
 	// Status tracking
 	status: text("status")

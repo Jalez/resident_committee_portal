@@ -156,7 +156,6 @@ export interface Transaction {
 	type: TransactionType;
 	amount: string;
 	description: string;
-	category: string | null;
 	date: Date;
 	status: TransactionStatus;
 	reimbursementStatus: ReimbursementStatus | null;

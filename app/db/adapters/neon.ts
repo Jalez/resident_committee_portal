@@ -1279,10 +1279,19 @@ export class NeonAdapter implements DatabaseAdapter {
 		const relationships = await this.getEntityRelationships("budget", budgetId);
 		let total = 0;
 		for (const rel of relationships) {
+			const isBudgetTransactionRel =
+				(rel.relationAType === "budget" &&
+					rel.relationId === budgetId &&
+					rel.relationBType === "transaction") ||
+				(rel.relationBType === "budget" &&
+					rel.relationBId === budgetId &&
+					rel.relationAType === "transaction");
+			if (!isBudgetTransactionRel) continue;
+
 			const txId =
 				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
 			const tx = await this.getTransactionById(txId);
-			if (tx && tx.status === "complete") {
+			if (tx && tx.type === "expense" && tx.status === "complete") {
 				total += parseFloat(tx.amount);
 			}
 		}
@@ -1293,10 +1302,25 @@ export class NeonAdapter implements DatabaseAdapter {
 		const relationships = await this.getEntityRelationships("budget", budgetId);
 		let total = 0;
 		for (const rel of relationships) {
+			const isBudgetTransactionRel =
+				(rel.relationAType === "budget" &&
+					rel.relationId === budgetId &&
+					rel.relationBType === "transaction") ||
+				(rel.relationBType === "budget" &&
+					rel.relationBId === budgetId &&
+					rel.relationAType === "transaction");
+			if (!isBudgetTransactionRel) continue;
+
 			const txId =
 				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
 			const tx = await this.getTransactionById(txId);
-			if (tx && tx.status === "pending") {
+			if (
+				tx &&
+				tx.type === "expense" &&
+				(tx.status === "pending" ||
+					tx.status === "paused" ||
+					tx.status === "draft")
+			) {
 				total += parseFloat(tx.amount);
 			}
 		}

@@ -1112,24 +1112,29 @@ export class PostgresAdapter implements DatabaseAdapter {
 	async getBudgetTransactions(
 		budgetId: string,
 	): Promise<{ transaction: Transaction; amount: string }[]> {
-		const links = await this.db
-			.select()
-			.from(budgetTransactions)
-			.where(eq(budgetTransactions.budgetId, budgetId));
-
-		if (links.length === 0) return [];
-
 		const result: { transaction: Transaction; amount: string }[] = [];
-		for (const link of links) {
+		const relationships = await this.getEntityRelationships("budget", budgetId);
+		for (const rel of relationships) {
+			const isBudgetTransactionRel =
+				(rel.relationAType === "budget" &&
+					rel.relationId === budgetId &&
+					rel.relationBType === "transaction") ||
+				(rel.relationBType === "budget" &&
+					rel.relationBId === budgetId &&
+					rel.relationAType === "transaction");
+			if (!isBudgetTransactionRel) continue;
+
+			const transactionId =
+				rel.relationAType === "transaction" ? rel.relationId : rel.relationBId;
 			const txResult = await this.db
 				.select()
 				.from(transactions)
-				.where(eq(transactions.id, link.transactionId))
+				.where(eq(transactions.id, transactionId))
 				.limit(1);
 			if (txResult[0]) {
 				result.push({
 					transaction: txResult[0],
-					amount: link.amount,
+					amount: txResult[0].amount,
 				});
 			}
 		}
@@ -1138,39 +1143,30 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async getBudgetUsedAmount(budgetId: string): Promise<number> {
-		const links = await this.db
-			.select({ amount: budgetTransactions.amount })
-			.from(budgetTransactions)
-			.innerJoin(
-				transactions,
-				eq(budgetTransactions.transactionId, transactions.id),
-			)
-			.where(
-				and(
-					eq(budgetTransactions.budgetId, budgetId),
-					eq(transactions.status, "complete"),
-				),
-			);
-
-		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
+		const links = await this.getBudgetTransactions(budgetId);
+		return links.reduce((sum, link) => {
+			const tx = link.transaction;
+			if (tx.type === "expense" && tx.status === "complete") {
+				return sum + parseFloat(link.amount);
+			}
+			return sum;
+		}, 0);
 	}
 
 	async getBudgetReservedAmount(budgetId: string): Promise<number> {
-		const links = await this.db
-			.select({ amount: budgetTransactions.amount })
-			.from(budgetTransactions)
-			.innerJoin(
-				transactions,
-				eq(budgetTransactions.transactionId, transactions.id),
-			)
-			.where(
-				and(
-					eq(budgetTransactions.budgetId, budgetId),
-					eq(transactions.status, "pending"),
-				),
-			);
-
-		return links.reduce((sum, link) => sum + parseFloat(link.amount), 0);
+		const links = await this.getBudgetTransactions(budgetId);
+		return links.reduce((sum, link) => {
+			const tx = link.transaction;
+			if (
+				tx.type === "expense" &&
+				(tx.status === "pending" ||
+					tx.status === "paused" ||
+					tx.status === "draft")
+			) {
+				return sum + parseFloat(link.amount);
+			}
+			return sum;
+		}, 0);
 	}
 
 	async getAvailableFundsForYear(year: number): Promise<number> {

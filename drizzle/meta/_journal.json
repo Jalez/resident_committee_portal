@@ -204,6 +204,13 @@
       "when": 1771182111985,
       "tag": "0028_modern_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1771370105293,
+      "tag": "0029_low_loki",
+      "breakpoints": true
     }
   ]
 }
