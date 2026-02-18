@@ -14,7 +14,6 @@ interface Transaction {
 	description: string;
 	date: Date;
 	amount: string;
-	category: string | null;
 }
 
 interface TransactionSelectorModalProps {
@@ -41,11 +40,6 @@ export function TransactionSelectorModal({
 		}
 	};
 
-	// Filter to inventory category transactions
-	const inventoryTransactions = transactions.filter(
-		(t) => t.category === "inventory",
-	);
-
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="w-full h-full max-w-none md:max-w-xl p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
@@ -61,7 +55,7 @@ export function TransactionSelectorModal({
 							{t("inventory.modals.transaction_selector.desc")}
 						</p>
 
-						{inventoryTransactions.length === 0 ? (
+						{transactions.length === 0 ? (
 							<div className="text-center py-8 text-gray-500">
 								<span className="material-symbols-outlined text-4xl mb-2">
 									inbox
@@ -70,7 +64,7 @@ export function TransactionSelectorModal({
 							</div>
 						) : (
 							<div className="space-y-2 max-h-[calc(100vh-250px)] md:max-h-[300px] overflow-y-auto pb-4">
-								{inventoryTransactions.map((transaction) => (
+								{transactions.map((transaction) => (
 									<button
 										key={transaction.id}
 										type="button"

@@ -241,28 +241,32 @@ export async function loader({ request }: Route.LoaderArgs) {
 		transactionLinksMap[item.id] = links;
 	}
 
-	// Fetch inventory-category transactions for "Add to Existing" feature
+	// Fetch transactions already linked to inventory items for "Add to Existing" feature
 	const allTransactions = await db.getAllTransactions();
-	const inventoryTransactions = allTransactions
-		.filter(
-			(t: { category: string | null; status: string }) =>
-				t.category === "inventory" && t.status !== "cancelled",
-		)
-		.map(
-			(t: {
-				id: string;
-				description: string;
-				date: Date;
-				amount: string;
-				category: string | null;
-			}) => ({
-				id: t.id,
-				description: t.description,
-				date: t.date,
-				amount: t.amount,
-				category: t.category,
-			}),
-		)
+	const candidateTransactions = allTransactions.filter(
+		(t: { status: string }) => t.status !== "declined",
+	);
+	const inventoryTransactionsWithLinks: Array<{
+		id: string;
+		description: string;
+		date: Date;
+		amount: string;
+	}> = [];
+	for (const transaction of candidateTransactions) {
+		const rels = await db.getEntityRelationships("transaction", transaction.id);
+		const hasInventoryLink = rels.some(
+			(rel) =>
+				rel.relationBType === "inventory" || rel.relationAType === "inventory",
+		);
+		if (!hasInventoryLink) continue;
+		inventoryTransactionsWithLinks.push({
+			id: transaction.id,
+			description: transaction.description,
+			date: transaction.date,
+			amount: transaction.amount,
+		});
+	}
+	const recentInventoryTransactions = inventoryTransactionsWithLinks
 		.sort(
 			(a: { date: Date }, b: { date: Date }) =>
 				new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -284,7 +288,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		uniqueLocations,
 		uniqueCategories,
 		transactionLinksMap,
-		inventoryTransactions,
+		inventoryTransactions: recentInventoryTransactions,
 		languages,
 	};
 }
@@ -765,7 +769,6 @@ function InventoryTablePage({
 		description: string;
 		date: Date;
 		amount: string;
-		category: string | null;
 	}) => {
 		// Set items in context for the edit page
 		const transactionItems = pendingItemSelections.map((sel) => {
@@ -845,7 +848,6 @@ function InventoryTablePage({
 			description: string;
 			date: Date;
 			amount: string;
-			category: string | null;
 		},
 	) => {
 		fetcher.submit(

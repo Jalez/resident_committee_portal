@@ -50,7 +50,6 @@ interface InventoryContextValue {
 		description: string;
 		date: Date;
 		amount: string;
-		category: string | null;
 	}[];
 
 	// UI State
@@ -128,7 +127,6 @@ interface InventoryProviderProps {
 		description: string;
 		date: Date;
 		amount: string;
-		category: string | null;
 	}[];
 }
 
@@ -321,7 +319,6 @@ export function InventoryProvider({
 			amount: totalValue.toFixed(2),
 			description: `Hankinta: ${itemNames}`,
 			type: "expense",
-			category: "inventory",
 		});
 		navigate(`/treasury/transactions/new?${params.toString()}`);
 	}, [selectedIds, items, navigate]);

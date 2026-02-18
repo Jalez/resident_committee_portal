@@ -40,7 +40,6 @@ interface UseInventoryColumnsProps {
 			description: string;
 			date: Date;
 			amount: string;
-			category: string | null;
 		},
 	) => void;
 	onCreateNewTransaction?: (item: InventoryItem, quantity: number) => void;
@@ -50,7 +49,6 @@ interface UseInventoryColumnsProps {
 		description: string;
 		date: Date;
 		amount: string;
-		category: string | null;
 	}[];
 	// Props for combobox options
 	uniqueLocations: string[];
@@ -95,9 +93,6 @@ export function useInventoryColumns({
 	transactionLinksMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
 	const { t, i18n } = useTranslation();
-	const inventoryOnly = inventoryTransactions.filter(
-		(tr) => tr.category === "inventory",
-	);
 
 	// Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
 	const columns: ColumnDef<InventoryItem>[] = [];
@@ -386,14 +381,14 @@ export function useInventoryColumns({
 													{t("inventory.badge_connect_existing")}
 												</DropdownMenuSubTrigger>
 												<DropdownMenuSubContent className="max-h-[min(320px,50vh)] overflow-y-auto min-w-[220px]">
-													{inventoryOnly.length === 0 ? (
+													{inventoryTransactions.length === 0 ? (
 														<div className="px-2 py-3 text-sm text-muted-foreground">
 															{t(
 																"inventory.modals.transaction_selector.no_suitable",
 															)}
 														</div>
 													) : (
-														inventoryOnly.map((transaction) => (
+														inventoryTransactions.map((transaction) => (
 															<DropdownMenuItem
 																key={transaction.id}
 																onClick={(e) => {
