@@ -77,7 +77,7 @@ export function TreasuryField(props: TreasuryFieldProps) {
 
 	if (props.mode === "edit") {
 		return (
-			<div className={cn("space-y-1", className)}>
+			<div className={cn("space-y-1 min-w-0", className)}>
 				<Label htmlFor={props.name}>{label}</Label>
 				<TreasuryFieldInput {...props} />
 			</div>
@@ -87,7 +87,7 @@ export function TreasuryField(props: TreasuryFieldProps) {
 	return (
 		<div className={cn("space-y-1", className)}>
 			<Label>{label}</Label>
-			<div className={cn("text-sm text-muted-foreground", valueClassName)}>
+			<div className={cn("min-w-0 text-sm text-muted-foreground", valueClassName)}>
 				{props.children}
 			</div>
 		</div>

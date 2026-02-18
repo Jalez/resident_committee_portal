@@ -3,12 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
-import {
-	ColoredStatusLinkBadge,
-	TREASURY_BUDGET_STATUS_VARIANTS,
-	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/colored-status-link-badge";
+import { TREASURY_BUDGET_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
@@ -26,6 +23,9 @@ import {
 	hasAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { ENTITY_REGISTRY } from "~/lib/entity-registry";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -106,39 +106,26 @@ export async function loader({ request }: Route.LoaderArgs) {
 		budgets = budgets.filter((r) => r.status === statusParam);
 	}
 
-	// Calculate used/reserved amounts and fetch linked transactions for each budget
+	// Calculate used/reserved amounts for each budget
 	const budgetsWithUsage = await Promise.all(
 		budgets.map(async (budget) => {
 			const usedAmount = await db.getBudgetUsedAmount(budget.id);
 			const reservedAmount = await db.getBudgetReservedAmount(budget.id);
-			// Get linked transactions via entity relationships
-			const budgetRelationships = await db.getEntityRelationships(
-				"budget",
-				budget.id,
-			);
-			const linkedTransactionIds = budgetRelationships
-				.filter((r) => r.relationBType === "transaction")
-				.map((r) => r.relationBId);
-			const linkedTransactions = await Promise.all(
-				linkedTransactionIds.map(async (id) => {
-					const transaction = await db.getTransactionById(id);
-					return transaction ? { transaction } : null;
-				}),
-			).then((results) =>
-				results.filter(
-					(t): t is { transaction: NonNullable<typeof t>["transaction"] } =>
-						t !== null,
-				),
-			);
 			return {
 				...budget,
 				usedAmount,
 				reservedAmount,
 				remainingAmount:
 					Number.parseFloat(budget.amount) - usedAmount - reservedAmount,
-				linkedTransactions,
 			};
 		}),
+	);
+
+	const budgetIds = budgetsWithUsage.map((b) => b.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"budget",
+		budgetIds,
 	);
 
 	// Get all years with budgets for the dropdown
@@ -172,6 +159,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
 
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
+
 	return {
 		siteConfig: SITE_CONFIG,
 		selectedYear,
@@ -182,6 +174,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		userId,
 		canReadAll,
 		creatorsMap: Object.fromEntries(creatorsMap),
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -193,10 +186,14 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 		status,
 		languages,
 		creatorsMap: creatorsMapRaw,
+		relationsMap: relationsMapRaw,
 		canReadAll,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
+	const relationsMap = new Map(
+		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
 	);
 	const { hasPermission, user } = useUser();
 	const canWrite = hasPermission("treasury:budgets:write");
@@ -336,28 +333,13 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 			cellClassName: "text-gray-500 dark:text-gray-400",
 		},
 		{
-			key: "transaction",
-			header: t("treasury.reimbursements.transaction"),
-			cell: (row: BudgetRow) =>
-				row.linkedTransactions && row.linkedTransactions.length > 0 ? (
-					<div className="flex flex-col gap-0.5">
-						{row.linkedTransactions
-							.filter(({ transaction }) => transaction.status !== "declined")
-							.map(({ transaction }) => (
-								<ColoredStatusLinkBadge
-									key={transaction.id}
-									to={`/treasury/transactions/${transaction.id}`}
-									title={t("treasury.reimbursements.view_transaction")}
-									status={transaction.status}
-									id={transaction.id}
-									icon="link"
-									variantMap={TREASURY_TRANSACTION_STATUS_VARIANTS}
-								/>
-							))}
-					</div>
-				) : (
-					<span className="text-gray-400">—</span>
-				),
+			key: "relations",
+			header: t("common.relations.title"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: BudgetRow) => (
+				<RelationsColumn relations={relationsMap.get(row.id) || []} />
+			),
 		},
 		{
 			key: "used",
@@ -429,7 +411,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 							/>
 						)}
 						emptyState={{
-							icon: "savings",
+							icon: ENTITY_REGISTRY.budget.icon,
 							title: t("treasury.budgets.no_budgets"),
 							description: t("treasury.budgets.no_budgets_desc", {
 								year: selectedYear,

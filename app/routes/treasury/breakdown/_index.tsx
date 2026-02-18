@@ -1,8 +1,16 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { TREASURY_TRANSACTION_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	TREASURY_BUDGET_STATUS_VARIANTS,
+	TREASURY_TRANSACTION_STATUS_VARIANTS,
+} from "~/components/colored-status-link-badge";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import { TreasuryStatusPill } from "~/components/treasury/treasury-status-pill";
@@ -17,6 +25,8 @@ import {
 	requireAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
@@ -43,7 +53,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const db = getDatabase();
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
-	const categoryParam = url.searchParams.get("category");
 	const typeParam = url.searchParams.get("type");
 	const currentYear = new Date().getFullYear();
 	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
@@ -62,17 +71,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 	// Exclude:
 	// - requested: waiting for approval
 	// - declined: rejected, won't be paid
-	let transactions = allTransactionsForYear.filter(
-		(t) =>
-			!t.reimbursementStatus ||
+	const isIncludedInBreakdown = (t: Transaction) =>
+		t.status !== "draft" &&
+		(!t.reimbursementStatus ||
 			t.reimbursementStatus === "not_requested" ||
-			t.reimbursementStatus === "approved",
-	);
+			t.reimbursementStatus === "approved");
 
-	// Filter by category if specified
-	if (categoryParam && categoryParam !== "all") {
-		transactions = transactions.filter((t) => t.category === categoryParam);
-	}
+	let transactions = allTransactionsForYear.filter(isIncludedInBreakdown);
 
 	// Filter by type if specified
 	if (typeParam && typeParam !== "all") {
@@ -81,10 +86,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	// Calculate totals from transactions before category/type filtering (for summary cards)
 	const transactionsForTotals = allTransactionsForYear.filter(
-		(t) =>
-			!t.reimbursementStatus ||
-			t.reimbursementStatus === "not_requested" ||
-			t.reimbursementStatus === "approved",
+		isIncludedInBreakdown,
 	);
 
 	const totalExpenses = transactionsForTotals
@@ -97,9 +99,104 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const balance = totalIncome - totalExpenses;
 
+	const yearBudgets = (await db.getFundBudgetsByYear(year)).filter(
+		(budget) => budget.status !== "draft",
+	);
+	const budgetLinkedTransactionIds = new Set<string>();
+	const excludedTransactionIds = new Set(
+		allTransactionsForYear
+			.filter((t) => !isIncludedInBreakdown(t))
+			.map((t) => t.id),
+	);
+	const transactionsById = new Map(
+		allTransactionsForYear.map((transaction) => [transaction.id, transaction]),
+	);
+	const budgetSummaries = await Promise.all(
+		yearBudgets.map(async (budget) => {
+			const relationships = await db.getEntityRelationships(
+				"budget",
+				budget.id,
+			);
+			const linkedTransactionIds = relationships
+				.filter(
+					(rel) =>
+						(rel.relationAType === "budget" &&
+							rel.relationId === budget.id &&
+							rel.relationBType === "transaction") ||
+						(rel.relationBType === "budget" &&
+							rel.relationBId === budget.id &&
+							rel.relationAType === "transaction"),
+				)
+				.map((rel) =>
+					rel.relationAType === "transaction"
+						? rel.relationId
+						: rel.relationBId,
+				);
+
+			for (const transactionId of linkedTransactionIds) {
+				budgetLinkedTransactionIds.add(transactionId);
+			}
+
+			const linkedTransactions = linkedTransactionIds
+				.map((id) => transactionsById.get(id))
+				.filter((transaction): transaction is Transaction =>
+					Boolean(transaction && isIncludedInBreakdown(transaction)),
+				);
+			const usedAmount = linkedTransactions.reduce((sum, transaction) => {
+				if (transaction.type === "expense" && transaction.status === "complete") {
+					return sum + parseFloat(transaction.amount);
+				}
+				return sum;
+			}, 0);
+			const reservedAmount = linkedTransactions.reduce((sum, transaction) => {
+				if (
+					transaction.type === "expense" &&
+					(transaction.status === "pending" || transaction.status === "paused")
+				) {
+					return sum + parseFloat(transaction.amount);
+				}
+				return sum;
+			}, 0);
+			const remainingAmount =
+				Number.parseFloat(budget.amount) - usedAmount - reservedAmount;
+
+			return {
+				...budget,
+				usedAmount,
+				reservedAmount,
+				remainingAmount,
+				linkedTransactionCount: linkedTransactionIds.length,
+			};
+		}),
+	);
+	const budgetIds = budgetSummaries.map((budget) => budget.id);
+	const budgetRelationsMap = await loadRelationsMapForEntities(
+		db,
+		"budget",
+		budgetIds,
+	);
+
+	const budgetedTransactions = transactionsForTotals
+		.filter((t) => budgetLinkedTransactionIds.has(t.id))
+		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+	const budgetLinkedExpenses = transactionsForTotals
+		.filter((t) => t.type === "expense" && budgetLinkedTransactionIds.has(t.id))
+		.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+	const unbudgetedTransactions = totalExpenses - budgetLinkedExpenses;
+	const totalReserved = budgetSummaries
+		.filter((budget) => budget.status === "open")
+		.reduce((sum, budget) => sum + Math.max(0, budget.remainingAmount), 0);
+	const available = balance - totalReserved;
+
 	// Sort by date descending
 	const sortedTransactions = transactions.sort(
 		(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+	);
+	const transactionIds = sortedTransactions.map((transaction) => transaction.id);
+	const transactionRelationsMap = await loadRelationsMapForEntities(
+		db,
+		"transaction",
+		transactionIds,
 	);
 
 	// Get all years with transactions for navigation
@@ -108,20 +205,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		(a, b) => b - a,
 	);
 
-	// Get unique categories for filter (excluding null/empty)
-	const categories = [
-		...new Set(
-			allTransactionsForYear
-				.map((t) => t.category)
-				.filter((c): c is string => Boolean(c)),
-		),
-	];
-
 	// Batch resolve creator names
 	const creatorIds = [
 		...new Set(
-			sortedTransactions
-				.map((t) => t.createdBy)
+			[...sortedTransactions, ...budgetSummaries]
+				.map((entity) => entity.createdBy)
 				.filter((id): id is string => Boolean(id)),
 		),
 	];
@@ -132,6 +220,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 	creatorIds.forEach((id, i) => {
 		if (creatorUsers[i]) creatorsMap.set(id, creatorUsers[i].name);
 	});
+	const serializedBudgetRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of budgetRelationsMap) {
+		serializedBudgetRelationsMap[id] = relations.filter(
+			(relation) =>
+				!(
+					relation.type === "transaction" &&
+					excludedTransactionIds.has(relation.id)
+				),
+		);
+	}
+	const serializedTransactionRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of transactionRelationsMap) {
+		serializedTransactionRelationsMap[id] = relations;
+	}
 
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
@@ -141,8 +243,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalExpenses,
 		totalIncome,
 		balance,
+		budgetedTransactions,
+		unbudgetedTransactions,
+		totalReserved,
+		available,
+		budgetSummaries,
+		budgetRelationsMap: serializedBudgetRelationsMap,
+		transactionRelationsMap: serializedTransactionRelationsMap,
 		years,
-		categories,
 		systemLanguages,
 		creatorsMap: Object.fromEntries(creatorsMap),
 	};
@@ -228,17 +336,36 @@ export default function TreasuryBreakdown({
 	const {
 		year,
 		transactions,
+		totalIncome,
+		totalExpenses,
+		balance,
+		budgetedTransactions,
+		unbudgetedTransactions,
+		totalReserved,
+		available,
+		budgetSummaries,
+		budgetRelationsMap: budgetRelationsMapRaw,
+		transactionRelationsMap: transactionRelationsMapRaw,
 		years,
-		categories,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
 	);
+	const budgetRelationsMap = new Map(
+		Object.entries(budgetRelationsMapRaw ?? {}) as [
+			string,
+			RelationBadgeData[],
+		][],
+	);
+	const transactionRelationsMap = new Map(
+		Object.entries(transactionRelationsMapRaw ?? {}) as [
+			string,
+			RelationBadgeData[],
+		][],
+	);
 	const { hasPermission, user } = useUser();
-	const canEditGeneral = hasPermission("treasury:transactions:update");
-	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canExport = hasPermission("treasury:export");
 	const canImport = hasPermission("treasury:import");
 
@@ -248,27 +375,11 @@ export default function TreasuryBreakdown({
 		(hasPermission("treasury:transactions:read-self") &&
 			transaction.createdBy &&
 			user?.userId === transaction.createdBy);
-	const canEditTransaction = (transaction: Transaction) => {
-		if (canEditGeneral) return true;
-		if (
-			canEditSelf &&
-			transaction.createdBy &&
-			user &&
-			transaction.createdBy === user.userId
-		) {
-			return true;
-		}
-		return false;
-	};
-
-	const canDeleteTransaction = (transaction: Transaction) => {
-		const canDeleteGeneral = hasPermission("treasury:transactions:delete");
-		const canDeleteSelf =
-			hasPermission("treasury:transactions:delete-self") &&
-			transaction.createdBy &&
-			user?.userId === transaction.createdBy;
-		return canDeleteGeneral || canDeleteSelf;
-	};
+	const canViewBudget = (budget: (typeof budgetSummaries)[number]) =>
+		hasPermission("treasury:budgets:read") ||
+		(hasPermission("treasury:budgets:read-self") &&
+			budget.createdBy &&
+			user?.userId === budget.createdBy);
 	const { t, i18n } = useTranslation();
 
 	const formatCurrency = (value: number | string) => {
@@ -291,13 +402,6 @@ export default function TreasuryBreakdown({
 				years.length > 0
 					? years.map(String)
 					: [String(new Date().getFullYear())],
-		},
-		{
-			name: "category",
-			label: t("treasury.breakdown.category"),
-			type: "select",
-			placeholder: t("common.actions.all"),
-			options: categories.length > 0 ? ["all", ...categories] : ["all"],
 		},
 		{
 			name: "type",
@@ -325,7 +429,7 @@ export default function TreasuryBreakdown({
 		</div>
 	);
 
-	// Canonical treasury column order: Date, Name/Description, Category, Type, Status, Created by, [route-specific], Amount
+	// Canonical treasury column order: Date, Name/Description, Status, Created by, Amount
 	const columns = [
 		{
 			key: "date",
@@ -339,12 +443,6 @@ export default function TreasuryBreakdown({
 			header: t("treasury.breakdown.description"),
 			cell: (row: Transaction) => row.description,
 			cellClassName: "font-medium",
-		},
-		{
-			key: "category",
-			header: t("treasury.breakdown.category"),
-			cell: (row: Transaction) => row.category || "—",
-			cellClassName: "text-gray-500",
 		},
 		{
 			key: "status",
@@ -367,6 +465,15 @@ export default function TreasuryBreakdown({
 			cellClassName: "text-gray-500",
 		},
 		{
+			key: "relations",
+			header: t("common.relations.title"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: Transaction) => (
+				<RelationsColumn relations={transactionRelationsMap.get(row.id) || []} />
+			),
+		},
+		{
 			key: "amount",
 			header: t("treasury.breakdown.amount"),
 			headerClassName: "text-right",
@@ -385,6 +492,91 @@ export default function TreasuryBreakdown({
 				}`,
 		},
 	];
+	type BudgetRow = (typeof budgetSummaries)[number];
+	const budgetColumns = [
+		{
+			key: "date",
+			header: t("common.fields.date"),
+			cell: (row: BudgetRow) => formatDate(row.createdAt),
+			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
+		},
+		{
+			key: "name",
+			header: t("treasury.budgets.name"),
+			cell: (row: BudgetRow) => <p className="font-medium">{row.name}</p>,
+		},
+		{
+			key: "description",
+			header: t("treasury.budgets.description"),
+			cell: (row: BudgetRow) =>
+				row.description ? (
+					<p className="text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
+						{row.description}
+					</p>
+				) : (
+					"—"
+				),
+			cellClassName: "text-gray-500 dark:text-gray-400",
+		},
+		{
+			key: "status",
+			header: t("common.fields.status"),
+			cell: (row: BudgetRow) => (
+				<TreasuryStatusPill
+					value={row.status}
+					variantMap={TREASURY_BUDGET_STATUS_VARIANTS}
+					label={t(`treasury.budgets.statuses.${row.status}`)}
+				/>
+			),
+		},
+		{
+			key: "createdBy",
+			header: t("treasury.budgets.created_by"),
+			cell: (row: BudgetRow) =>
+				row.createdBy ? (creatorsMap.get(row.createdBy) ?? "—") : "—",
+			cellClassName: "text-gray-500 dark:text-gray-400",
+		},
+		{
+			key: "relations",
+			header: t("common.relations.title"),
+			headerClassName: "text-center",
+			cellClassName: "text-center",
+			cell: (row: BudgetRow) => (
+				<RelationsColumn relations={budgetRelationsMap.get(row.id) || []} />
+			),
+		},
+		{
+			key: "used",
+			header: t("treasury.budgets.used"),
+			cell: (row: BudgetRow) => formatCurrency(row.usedAmount),
+			cellClassName: "text-gray-600 dark:text-gray-400",
+		},
+		{
+			key: "reserved",
+			header: t("treasury.budgets.reserved"),
+			cell: (row: BudgetRow) => formatCurrency(row.reservedAmount),
+			cellClassName: "text-yellow-600 dark:text-yellow-400",
+		},
+		{
+			key: "remaining",
+			header: t("treasury.budgets.remaining"),
+			cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
+			cellClassName: (row: BudgetRow) =>
+				`font-semibold ${
+					row.remainingAmount > 0
+						? "text-green-600 dark:text-green-400"
+						: "text-gray-500"
+				}`,
+		},
+		{
+			key: "amount",
+			header: t("treasury.budgets.amount"),
+			headerClassName: "text-right",
+			align: "right" as const,
+			cell: (row: BudgetRow) => formatCurrency(Number.parseFloat(row.amount)),
+			cellClassName: TREASURY_TABLE_STYLES.AMOUNT_CELL,
+		},
+	];
 
 	return (
 		<PageWrapper>
@@ -395,41 +587,162 @@ export default function TreasuryBreakdown({
 				}}
 				footer={footerContent}
 			>
-				<div className="space-y-6">
-					<TreasuryTable<Transaction>
-						data={transactions}
-						columns={columns}
-						getRowKey={(row) => row.id}
-						renderActions={(transaction) => (
-							<TreasuryActionCell
-								viewTo={
-									canViewTransaction(transaction)
-										? `/treasury/transactions/${transaction.id}`
-										: undefined
-								}
-								viewTitle={t("common.actions.view")}
-								editTo={`/treasury/transactions/${transaction.id}/edit`}
-								editTitle={t("common.actions.edit")}
-								canEdit={canEditTransaction(transaction)}
-								deleteProps={
-									canDeleteTransaction(transaction)
-										? {
-												action: `/treasury/transactions/${transaction.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
-										: undefined
-								}
-							/>
-						)}
+				<ContentArea className="space-y-6">
+					<div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+						<div>
+							<p className="text-sm font-semibold text-muted-foreground">
+								{t("treasury.available", { defaultValue: "Available" })}
+							</p>
+							<p
+								className={`text-3xl font-black ${
+									available >= 0
+										? "text-blue-600 dark:text-blue-400"
+										: "text-red-600 dark:text-red-400"
+								}`}
+							>
+								{formatCurrency(available)}
+							</p>
+						</div>
+						<div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.income", { defaultValue: "Income" })}
+								</p>
+								<p className="font-semibold text-green-600 dark:text-green-400">
+									+{formatCurrency(totalIncome)}
+								</p>
+							</div>
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.expenses", { defaultValue: "Expenses" })}
+								</p>
+								<p className="font-semibold text-red-600 dark:text-red-400">
+									-{formatCurrency(totalExpenses)}
+								</p>
+							</div>
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.balance", { defaultValue: "Balance" })}
+								</p>
+								<p className="font-semibold">{formatCurrency(balance)}</p>
+							</div>
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.unbudgeted_transactions", {
+										defaultValue: "Unbudgeted transactions",
+									})}
+								</p>
+								<p className="font-semibold text-red-600 dark:text-red-400">
+									-{formatCurrency(unbudgetedTransactions)}
+								</p>
+							</div>
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.budgeted_transactions", {
+										defaultValue: "Budgeted transactions",
+									})}
+								</p>
+								<p className="font-semibold text-amber-600 dark:text-amber-400">
+									-{formatCurrency(budgetedTransactions)}
+								</p>
+							</div>
+							<div>
+								<p className="text-muted-foreground">
+									{t("treasury.budget_costs", { defaultValue: "Budget costs" })}
+								</p>
+								<p className="font-semibold text-amber-600 dark:text-amber-400">
+									{formatCurrency(totalReserved)}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div className="space-y-3">
+						<div>
+							<h2 className="text-lg font-semibold">
+								{t("treasury.budgets.title", { defaultValue: "Budgets" })}
+							</h2>
+						</div>
+						<TreasuryTable<BudgetRow>
+							data={budgetSummaries}
+							columns={budgetColumns}
+							getRowKey={(row) => row.id}
+							renderActions={(budget) => (
+								<TreasuryActionCell
+									viewTo={
+										canViewBudget(budget)
+											? `/treasury/budgets/${budget.id}`
+											: undefined
+									}
+									viewTitle={t("common.actions.view")}
+								/>
+							)}
+							emptyState={{
+								title: t("treasury.budgets.no_budgets", {
+									defaultValue: "No budgets",
+							}),
+						}}
+							totals={{
+								labelColSpan: 7,
+							columns: [
+								{
+									value: budgetSummaries.reduce(
+										(sum, r) => sum + r.usedAmount,
+										0,
+									),
+								},
+								{
+									value: budgetSummaries.reduce(
+										(sum, r) => sum + r.reservedAmount,
+										0,
+									),
+								},
+								{
+									value: budgetSummaries.reduce(
+										(sum, r) => sum + r.remainingAmount,
+										0,
+									),
+								},
+								{
+									value: budgetSummaries.reduce(
+										(sum, r) => sum + Number.parseFloat(r.amount),
+										0,
+									),
+								},
+								],
+								trailingColSpan: 1,
+								formatCurrency,
+							}}
+						/>
+					</div>
+
+					<div className="space-y-3">
+						<div>
+							<h2 className="text-lg font-semibold">
+								{t("treasury.transactions.title", {
+									defaultValue: "Transactions",
+								})}
+							</h2>
+						</div>
+						<TreasuryTable<Transaction>
+							data={transactions}
+							columns={columns}
+							getRowKey={(row) => row.id}
+							renderActions={(transaction) => (
+								<TreasuryActionCell
+									viewTo={
+										canViewTransaction(transaction)
+											? `/treasury/transactions/${transaction.id}`
+											: undefined
+									}
+									viewTitle={t("common.actions.view")}
+								/>
+							)}
 						emptyState={{
 							title: t("treasury.breakdown.no_transactions"),
 						}}
-						totals={{
-							labelColSpan: 6,
+							totals={{
+								labelColSpan: 6,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {
@@ -438,11 +751,13 @@ export default function TreasuryBreakdown({
 									}, 0),
 								},
 							],
-							trailingColSpan: 1,
-							formatCurrency,
-						}}
-					/>
-				</div>
+								trailingColSpan: 1,
+								formatCurrency,
+							}}
+							actionsColumnWidth="w-16"
+						/>
+					</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

@@ -1,11 +1,11 @@
 import { redirect } from "react-router";
-import { getDatabase } from "~/db/server.server";
 import type {
 	ReimbursementStatus,
 	Transaction,
 	TransactionStatus,
 	TransactionType,
 } from "~/db/schema";
+import { getDatabase } from "~/db/server.server";
 
 export async function handleDeleteTransaction(
 	transaction: Transaction,
@@ -62,20 +62,25 @@ export async function handleUpdateTransaction(
 	}
 
 	const description = formData.get("description") as string;
-	const category = (formData.get("category") as string) || null;
 	const amountStr = formData.get("amount") as string;
 	const amount = amountStr
 		? amountStr.replace(",", ".")
 		: transaction.amount.toString();
 	const type = (formData.get("type") as TransactionType) || transaction.type;
+	const yearInput = formData.get("year");
+	const parsedYear =
+		typeof yearInput === "string" && yearInput.trim().length > 0
+			? parseInt(yearInput, 10)
+			: transaction.year;
+	const nextYear = Number.isNaN(parsedYear) ? transaction.year : parsedYear;
 
 	await db.updateTransaction(transaction.id, {
 		status,
 		reimbursementStatus,
 		description,
-		category,
 		amount: amount || "0",
 		type,
+		year: nextYear,
 	});
 
 	return redirect(`/treasury/breakdown?year=${year}`);

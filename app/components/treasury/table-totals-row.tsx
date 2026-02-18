@@ -80,8 +80,13 @@ export function TableTotalsRow({
 				</TableCell>
 				{firstColumns.map((total, index) => {
 					const cellKey = `total-col-${index}`;
+					const isLastVisibleTotal =
+						!hasMiddleGap && index === firstColumns.length - 1;
 					return (
-						<TableCell key={cellKey} className="font-bold">
+						<TableCell
+							key={cellKey}
+							className={isLastVisibleTotal ? "text-right font-bold" : "font-bold"}
+						>
 							{formatCurrency(total)}
 						</TableCell>
 					);

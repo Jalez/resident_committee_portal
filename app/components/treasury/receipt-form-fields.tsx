@@ -99,16 +99,25 @@ export function ReceiptFormFields({
 						label={t("treasury.receipts.receipt_file", "Receipt File")}
 						valueClassName="text-foreground"
 					>
-						<Button asChild variant="outline" size="sm">
+						<Button
+							asChild
+							variant="outline"
+							size="sm"
+							className="w-full max-w-full h-auto justify-start py-2"
+						>
 							<a
 								href={tempUrl || existingReceiptUrl}
 								target="_blank"
 								rel="noopener noreferrer"
+								className="w-full min-w-0 justify-start items-start gap-2"
+								title={existingFileName}
 							>
-								<span className="material-symbols-outlined text-base">
+								<span className="material-symbols-outlined text-base shrink-0">
 									open_in_new
 								</span>
-								{existingFileName}
+								<span className="block min-w-0 text-left whitespace-normal break-all">
+									{existingFileName}
+								</span>
 							</a>
 						</Button>
 					</TreasuryField>

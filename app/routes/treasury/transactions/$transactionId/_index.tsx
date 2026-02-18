@@ -78,7 +78,6 @@ export default function ViewTransaction({ loaderData }: Route.ComponentProps) {
 		type: transaction.type,
 		amount: { value: transaction.amount, valueClassName: "font-bold" },
 		description: transaction.description || "—",
-		category: transaction.category || "—",
 		date: transaction.date,
 		year: transaction.year,
 		status: transaction.status,

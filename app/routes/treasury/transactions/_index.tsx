@@ -19,13 +19,13 @@ import {
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase, type Transaction } from "~/db/server.server";
-import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
@@ -55,7 +55,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const url = new URL(request.url);
 	const yearParam = url.searchParams.get("year");
 	const statusParam = url.searchParams.get("status");
-	const categoryParam = url.searchParams.get("category");
 	const typeParam = url.searchParams.get("type");
 	const currentYear = new Date().getFullYear();
 	const year = yearParam ? parseInt(yearParam, 10) : currentYear;
@@ -75,10 +74,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	let transactions = allTransactions;
 	if (statusParam && statusParam !== "all") {
 		transactions = transactions.filter((t) => t.status === statusParam);
-	}
-
-	if (categoryParam && categoryParam !== "all") {
-		transactions = transactions.filter((t) => t.category === categoryParam);
 	}
 
 	if (typeParam && typeParam !== "all") {
@@ -103,14 +98,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	);
 
 	const status = [...new Set(allTransactions.map((t) => t.status))];
-
-	const categories = [
-		...new Set(
-			allTransactions
-				.map((t) => t.category)
-				.filter((c): c is string => Boolean(c)),
-		),
-	];
 
 	const creatorIds = [
 		...new Set(
@@ -162,7 +149,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		totalIncome,
 		years,
 		status,
-		categories,
 		currentStatus: statusParam || "all",
 		totalCount: allTransactions.length,
 		canReadAll,
@@ -180,7 +166,6 @@ export default function TreasuryTransactions({
 		transactions,
 		years,
 		status,
-		categories,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
@@ -264,13 +249,6 @@ export default function TreasuryTransactions({
 			options: statusOptions,
 		},
 		{
-			name: "category",
-			label: t("treasury.breakdown.category"),
-			type: "select",
-			placeholder: t("common.actions.all"),
-			options: categories.length > 0 ? ["all", ...categories] : ["all"],
-		},
-		{
 			name: "type",
 			label: t("treasury.transactions.type"),
 			type: "select",
@@ -304,12 +282,6 @@ export default function TreasuryTransactions({
 			header: t("treasury.breakdown.description"),
 			cell: (row: Transaction) => row.description,
 			cellClassName: "font-medium",
-		},
-		{
-			key: "category",
-			header: t("treasury.breakdown.category"),
-			cell: (row: Transaction) => row.category || "—",
-			cellClassName: "text-gray-500",
 		},
 		{
 			key: "type",
@@ -365,9 +337,10 @@ export default function TreasuryTransactions({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
-					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
+					row.type === "expense"
+						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -407,13 +380,13 @@ export default function TreasuryTransactions({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-											action: `/treasury/transactions/${transaction.id}/delete`,
-											hiddenFields: {},
-											confirmMessage: t(
-												"treasury.breakdown.edit.delete_confirm",
-											),
-											title: t("common.actions.delete"),
-										}
+												action: `/treasury/transactions/${transaction.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t(
+													"treasury.breakdown.edit.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
 										: undefined
 								}
 							/>
@@ -422,7 +395,7 @@ export default function TreasuryTransactions({
 							title: t("treasury.breakdown.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 7,
+							labelColSpan: 6,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {

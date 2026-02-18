@@ -2,17 +2,13 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Form,
-	Link,
 	useNavigate,
 	useRouteLoaderData,
 	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
-import {
-	TREASURY_PURCHASE_STATUS_VARIANTS,
-	TREASURY_TRANSACTION_STATUS_VARIANTS,
-} from "~/components/colored-status-link-badge";
+import { TREASURY_PURCHASE_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
@@ -30,7 +26,6 @@ import {
 	type Purchase,
 	type PurchaseStatus,
 } from "~/db/server.server";
-import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	hasAnyPermission,
 	type RBACDatabaseAdapter,
@@ -39,6 +34,7 @@ import {
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { createReimbursementStatusNotification } from "~/lib/notifications.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { loader as rootLoader } from "~/root";
@@ -106,26 +102,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 		["transaction", "receipt"],
 	);
 
-	const purchaseMailLinkMap = new Map<
-		string,
-		{ threadId?: string; messageId?: string }
-	>();
-	for (const purchase of purchases) {
-		if (!purchase.emailMessageId) continue;
-		const mailMessage = await db.getCommitteeMailMessageByMessageId(
-			purchase.emailMessageId,
-		);
-		if (!mailMessage) continue;
-		purchaseMailLinkMap.set(purchase.id, {
-			threadId: mailMessage.threadId || undefined,
-			messageId: mailMessage.id,
-		});
-	}
-
 	const enrichedPurchases = purchases.map((p) => ({
 		...p,
 		inventoryItem: p.inventoryItemId ? itemsMap.get(p.inventoryItemId) : null,
-		mailLink: purchaseMailLinkMap.get(p.id),
 	}));
 
 	const allPurchases = await db.getPurchases();
@@ -346,7 +325,6 @@ export default function BudgetReimbursements({
 
 	type PurchaseRow = Purchase & {
 		inventoryItem?: InventoryItem | null;
-		mailLink?: { threadId?: string; messageId?: string };
 	};
 
 	const columns = [
@@ -434,64 +412,6 @@ export default function BudgetReimbursements({
 			),
 		},
 		{
-			key: "email",
-			header: "📧",
-			headerClassName: "text-center",
-			cell: (row: PurchaseRow) => {
-				const mailHref = row.mailLink?.threadId
-					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
-					: row.mailLink?.messageId
-						? `/mail/messages/${row.mailLink.messageId}`
-						: null;
-				if (row.emailSent) {
-					const icon = (
-						<span
-							className="text-green-600"
-							title={t("treasury.reimbursements.email_sent")}
-						>
-							✓
-						</span>
-					);
-					return mailHref ? <Link to={mailHref}>{icon}</Link> : icon;
-				}
-				if (row.emailError) {
-					return (
-						<span className="text-red-600" title={row.emailError}>
-							✗
-						</span>
-					);
-				}
-				return <span className="text-gray-400">—</span>;
-			},
-		},
-		{
-			key: "reply",
-			header: "💬",
-			headerClassName: "text-center",
-			cell: (row: PurchaseRow) => {
-				const mailHref = row.mailLink?.threadId
-					? `/mail/thread/${encodeURIComponent(row.mailLink.threadId)}`
-					: row.mailLink?.messageId
-						? `/mail/messages/${row.mailLink.messageId}`
-						: null;
-				if (!row.emailReplyReceived) {
-					return <span className="text-gray-400">—</span>;
-				}
-				const replyIcon = (
-					<span
-						className="text-blue-600 cursor-help"
-						title={
-							row.emailReplyContent ||
-							t("treasury.reimbursements.reply_received")
-						}
-					>
-						💬
-					</span>
-				);
-				return mailHref ? <Link to={mailHref}>{replyIcon}</Link> : replyIcon;
-			},
-		},
-		{
 			key: "amount",
 			header: t("common.fields.amount"),
 			headerClassName: "text-right",
@@ -577,7 +497,7 @@ export default function BudgetReimbursements({
 							title: t("treasury.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 9,
+							labelColSpan: 7,
 							columns: [
 								{
 									value: purchases.reduce(

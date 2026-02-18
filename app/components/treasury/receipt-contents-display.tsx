@@ -105,7 +105,7 @@ export function ReceiptContentsDisplay({
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<p className="text-gray-500 mb-4">
+					<p className="mb-4 text-muted-foreground">
 						{t("treasury.receipts.no_analysis_yet", {
 							defaultValue: "No AI analysis performed yet for this receipt.",
 						})}
@@ -165,26 +165,28 @@ export function ReceiptContentsDisplay({
 					)}
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-							<span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+						<div className="rounded-lg border border-border bg-muted/40 p-3">
+							<span className="text-sm font-medium text-muted-foreground">
 								{t("treasury.receipts.store", { defaultValue: "Store" })}
 							</span>
-							<p className="font-medium text-lg">{receipt.storeName || "-"}</p>
+							<p className="text-lg font-medium text-foreground">
+								{receipt.storeName || "-"}
+							</p>
 						</div>
-						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-							<span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+						<div className="rounded-lg border border-border bg-muted/40 p-3">
+							<span className="text-sm font-medium text-muted-foreground">
 								{t("treasury.receipts.date", { defaultValue: "Date" })}
 							</span>
-							<p className="font-medium text-lg">
+							<p className="text-lg font-medium text-foreground">
 								{formatDate(receipt.purchaseDate)}
 							</p>
 						</div>
-						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-							<span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+						<div className="rounded-lg border border-border bg-muted/40 p-3">
+							<span className="text-sm font-medium text-muted-foreground">
 								{t("treasury.receipts.total", { defaultValue: "Total" })}
 							</span>
-							<p className="font-medium text-lg">
+							<p className="text-lg font-medium text-foreground">
 								{receipt.totalAmount} {receipt.currency}
 							</p>
 						</div>
@@ -192,9 +194,9 @@ export function ReceiptContentsDisplay({
 
 					{/* Items Table */}
 					{items.length > 0 && (
-						<div className="mt-4 border rounded-lg overflow-hidden">
-							<div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b">
-								<h4 className="font-medium text-sm">
+						<div className="mt-4 overflow-hidden rounded-lg border border-border">
+							<div className="border-b border-border bg-muted/40 px-4 py-2">
+								<h4 className="text-sm font-medium text-foreground">
 									{t("treasury.receipts.extracted_items", {
 										defaultValue: "Extracted Items",
 									})}

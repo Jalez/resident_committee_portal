@@ -4,7 +4,6 @@ import { useActionData, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { saveReceiptOCRContent } from "~/actions/receipt-actions.server";
-import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ReceiptFormFields } from "~/components/treasury/receipt-form-fields";
 import { EditForm } from "~/components/ui/edit-form";
@@ -138,73 +137,71 @@ export default function TreasuryReceiptsEdit({
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<EditForm
-					title={t("treasury.receipts.edit")}
-					action=""
-					encType="multipart/form-data"
-					inputFields={{
-						name: null,
-						description: null,
-					}}
-					entityType="receipt"
-					entityId={receipt.id}
-					relationships={relationships}
-					returnUrl={returnUrl || "/treasury/receipts"}
-					onCancel={() => {
-						handleCancel();
-						if (window.history.length > 1) {
-							navigate(-1);
-						} else {
-							navigate("/treasury/receipts");
-						}
-					}}
-					deleteUrl={ENTITY_REGISTRY.receipt.deleteUrl(receipt.id)}
-					submitDisabled={isAnalyzing || isUploading}
-					hiddenFields={{
-						_sourceType: sourceContext?.type,
-						_sourceId: sourceContext?.id,
-						_returnUrl: returnUrl,
-						tempUrl: tempUrl,
-						tempPathname: tempPathname,
-						ocr_data: ocrData
-							? JSON.stringify({
-									rawText: ocrData.rawText,
-									parsedData: ocrData.parsedData,
-								})
-							: undefined,
-					}}
-					translationNamespace="treasury.receipts"
-					onFieldChange={(fieldName, value) => {
-						if (fieldName === "name") {
-							setName(String(value || ""));
-						}
-						if (fieldName === "description") {
-							setDescription(String(value || ""));
-						}
-					}}
-				>
-					<ReceiptFormFields
-						receiptId={receipt.id}
-						analyzeWithAI={analyzeWithAI}
-						onAnalyzeChange={setAnalyzeWithAI}
-						onFileChange={handleFileChange}
-						isUploading={isUploading}
-						isAnalyzing={isAnalyzing}
-						name={name}
-						onNameChange={setName}
-						description={description || ""}
-						onDescriptionChange={setDescription}
-						ocrData={ocrData}
-						tempUrl={tempUrl}
-						onReanalyze={handleReanalyze}
-						selectedFile={selectedFile}
-						existingReceiptUrl={displayReceiptUrl}
-						existingFileName={displayFileName}
-						existingReceipt={receipt}
-					/>
-				</EditForm>
-			</div>
+			<EditForm
+				title={t("treasury.receipts.edit")}
+				action=""
+				encType="multipart/form-data"
+				inputFields={{
+					name: null,
+					description: null,
+				}}
+				entityType="receipt"
+				entityId={receipt.id}
+				relationships={relationships}
+				returnUrl={returnUrl || "/treasury/receipts"}
+				onCancel={() => {
+					handleCancel();
+					if (window.history.length > 1) {
+						navigate(-1);
+					} else {
+						navigate("/treasury/receipts");
+					}
+				}}
+				deleteUrl={ENTITY_REGISTRY.receipt.deleteUrl(receipt.id)}
+				submitDisabled={isAnalyzing || isUploading}
+				hiddenFields={{
+					_sourceType: sourceContext?.type,
+					_sourceId: sourceContext?.id,
+					_returnUrl: returnUrl,
+					tempUrl: tempUrl,
+					tempPathname: tempPathname,
+					ocr_data: ocrData
+						? JSON.stringify({
+								rawText: ocrData.rawText,
+								parsedData: ocrData.parsedData,
+							})
+						: undefined,
+				}}
+				translationNamespace="treasury.receipts"
+				onFieldChange={(fieldName, value) => {
+					if (fieldName === "name") {
+						setName(String(value || ""));
+					}
+					if (fieldName === "description") {
+						setDescription(String(value || ""));
+					}
+				}}
+			>
+				<ReceiptFormFields
+					receiptId={receipt.id}
+					analyzeWithAI={analyzeWithAI}
+					onAnalyzeChange={setAnalyzeWithAI}
+					onFileChange={handleFileChange}
+					isUploading={isUploading}
+					isAnalyzing={isAnalyzing}
+					name={name}
+					onNameChange={setName}
+					description={description || ""}
+					onDescriptionChange={setDescription}
+					ocrData={ocrData}
+					tempUrl={tempUrl}
+					onReanalyze={handleReanalyze}
+					selectedFile={selectedFile}
+					existingReceiptUrl={displayReceiptUrl}
+					existingFileName={displayFileName}
+					existingReceipt={receipt}
+				/>
+			</EditForm>
 		</PageWrapper>
 	);
 }

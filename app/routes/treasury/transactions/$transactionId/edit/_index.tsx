@@ -2,10 +2,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
-import {
-	EXPENSE_CATEGORIES,
-	INCOME_CATEGORIES,
-} from "~/components/treasury/transaction-details-form";
 import { EditForm } from "~/components/ui/edit-form";
 import type { PurchaseStatus } from "~/db/schema";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
@@ -54,7 +50,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 const transactionSchema = z.object({
 	description: z.string().min(1, "Description is required"),
-	category: z.string().min(1, "Category is required"),
 	amount: z.string().regex(/^[\d.,]+$/, "Invalid amount"),
 	status: z.string().optional(),
 	reimbursementStatus: z.string().optional(),
@@ -86,7 +81,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			if (!transaction) return;
 
 			const controlled = await getControlledTransactionFields(db, entity.id);
-			const updates: Record<string, string> = {};
+			const updates: Record<string, string | number> = {};
 
 			if (controlled.amount !== undefined) {
 				const currentAmount = Number.parseFloat(transaction.amount || "0");
@@ -125,6 +120,12 @@ export async function action({ request, params }: Route.ActionArgs) {
 				transaction.reimbursementStatus !== controlled.reimbursementStatus
 			) {
 				updates.reimbursementStatus = controlled.reimbursementStatus;
+			}
+			if (
+				controlled.year !== undefined &&
+				transaction.year !== controlled.year
+			) {
+				updates.year = controlled.year;
 			}
 
 			if (Object.keys(updates).length > 0) {
@@ -169,9 +170,6 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 	const effectiveType: "income" | "expense" = hasReimbursementControl
 		? "expense"
 		: currentType;
-
-	const categories =
-		effectiveType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
 	const sourceControl = useMemo(() => {
 		const source = contextValues?.valueSource;
@@ -256,6 +254,32 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		};
 	}, [contextValues?.description, sourceControl, t]);
 
+	const yearControl = useMemo(() => {
+		if (!sourceControl || !contextValues?.date) return null;
+		const parsedDate =
+			contextValues.date instanceof Date
+				? contextValues.date
+				: new Date(contextValues.date);
+		if (Number.isNaN(parsedDate.getTime())) return null;
+		const controlledYear = parsedDate.getFullYear();
+		const description = sourceControl.sourceName
+			? t("treasury.transactions.year_controlled_named", {
+					defaultValue:
+						"Year is controlled by linked {{sourceLabel}}: {{sourceName}}.",
+					sourceLabel: sourceControl.sourceLabel,
+					sourceName: sourceControl.sourceName,
+				})
+			: t("treasury.transactions.year_controlled", {
+					defaultValue: "Year is controlled by linked {{sourceLabel}}.",
+					sourceLabel: sourceControl.sourceLabel,
+				});
+
+		return {
+			value: String(controlledYear),
+			description,
+		};
+	}, [contextValues?.date, sourceControl, t]);
+
 	const inputFields = useMemo(
 		() => ({
 			description: {
@@ -287,16 +311,10 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 			},
 			year: {
 				type: "select",
-				value: String(transaction.year),
+				value: yearControl?.value ?? String(transaction.year),
+				readOnly: Boolean(yearControl),
+				description: yearControl?.description,
 				options: yearOptions,
-			},
-			category: {
-				type: "select",
-				value: transaction.category,
-				options: categories.map((c) => ({
-					label: t(`treasury.categories.${c.labelKey}`),
-					value: c.value,
-				})),
 			},
 			status: {
 				value: reimbursementControl?.status ?? transaction.status,
@@ -317,10 +335,10 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 			transaction,
 			effectiveType,
 			yearOptions,
-			categories,
 			t,
 			amountControl,
 			descriptionControl,
+			yearControl,
 			hasReimbursementControl,
 			reimbursementControl?.status,
 			reimbursementControl?.reimbursementStatus,

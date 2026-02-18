@@ -9,25 +9,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 
-// Category options for transactions with keys
-export const EXPENSE_CATEGORIES = [
-	{ value: "inventory", labelKey: "inventory" },
-	{ value: "snacks", labelKey: "snacks" },
-	{ value: "event", labelKey: "event" },
-	{ value: "other", labelKey: "other" },
-] as const;
-
-export const INCOME_CATEGORIES = [
-	{ value: "grant", labelKey: "grant" },
-	{ value: "sales", labelKey: "sales" },
-	{ value: "event_income", labelKey: "event_income" },
-	{ value: "membership", labelKey: "membership" },
-	{ value: "other", labelKey: "other" },
-] as const;
-
 export type TransactionType = "income" | "expense";
-export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]["value"];
-export type IncomeCategory = (typeof INCOME_CATEGORIES)[number]["value"];
 
 export interface TransactionDetailsFormProps {
 	/** Current transaction type */
@@ -42,10 +24,6 @@ export interface TransactionDetailsFormProps {
 	description: string;
 	/** Callback when description changes */
 	onDescriptionChange: (description: string) => void;
-	/** Current category value */
-	category: string;
-	/** Callback when category changes */
-	onCategoryChange: (category: string) => void;
 	/** Current date value (YYYY-MM-DD format) */
 	date: string;
 	/** Callback when date changes */
@@ -80,8 +58,6 @@ export function TransactionDetailsForm({
 	onAmountChange,
 	description,
 	onDescriptionChange,
-	category,
-	onCategoryChange,
 	date,
 	onDateChange,
 	year,
@@ -94,10 +70,6 @@ export function TransactionDetailsForm({
 	className = "",
 }: TransactionDetailsFormProps) {
 	const { t } = useTranslation();
-
-	// Update category options based on type
-	const categoryOptions =
-		transactionType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
 	const cardClasses = showCard
 		? "bg-card rounded-2xl p-6 shadow-sm border border-border space-y-4"
@@ -172,38 +144,16 @@ export function TransactionDetailsForm({
 				/>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<div className="space-y-2">
-					<Label htmlFor="category">{t("common.fields.category")} *</Label>
-					<Select
-						name="category"
-						value={category}
-						onValueChange={onCategoryChange}
-						required
-					>
-						<SelectTrigger>
-							<SelectValue placeholder={t("common.placeholders.select")} />
-						</SelectTrigger>
-						<SelectContent>
-							{categoryOptions.map((opt) => (
-								<SelectItem key={opt.value} value={opt.value}>
-									{t(`treasury.categories.${opt.labelKey}`)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor="date">{t("common.fields.date")} *</Label>
-					<Input
-						id="date"
-						name="date"
-						type="date"
-						required
-						value={date}
-						onChange={(e) => onDateChange(e.target.value)}
-					/>
-				</div>
+			<div className="space-y-2">
+				<Label htmlFor="date">{t("common.fields.date")} *</Label>
+				<Input
+					id="date"
+					name="date"
+					type="date"
+					required
+					value={date}
+					onChange={(e) => onDateChange(e.target.value)}
+				/>
 			</div>
 
 			{showYearSelector && (
