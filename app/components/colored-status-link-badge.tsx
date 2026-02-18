@@ -5,6 +5,14 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
+const TITLE_MAX_CHARS = 42;
+const SUBTITLE_MAX_CHARS = 28;
+
+function truncateText(value: string, maxChars: number): string {
+	if (value.length <= maxChars) return value;
+	return `${value.slice(0, Math.max(0, maxChars - 3))}...`;
+}
+
 export const TREASURY_PURCHASE_STATUS_VARIANTS: Record<string, string> = {
 	pending:
 		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
@@ -78,6 +86,10 @@ export function ColoredStatusLinkBadge({
 		status &&
 		(variantMap[status] || variantMap.pending || "bg-gray-100 text-gray-800");
 	const _extraClass = className ? ` ${className}` : "";
+	const displayTitle = truncateText(title || id.slice(0, 8), TITLE_MAX_CHARS);
+	const displaySubtitle = subtitle
+		? truncateText(subtitle, SUBTITLE_MAX_CHARS)
+		: null;
 
 	// Wrapper component to handle conditional linking - unused now, logic moved to main return
 	// const Wrapper = ...
@@ -86,7 +98,7 @@ export function ColoredStatusLinkBadge({
 		<Badge
 			variant="outline"
 			className={cn(
-				"inline-flex items-center gap-1 hover:underline text-sm font-medium border-0 px-2 py-1 h-8 cursor-pointer select-none",
+				"inline-flex items-center gap-1 hover:underline text-sm font-medium border-0 px-2 py-1 h-8 cursor-pointer select-none max-w-full",
 				statusVariant,
 				className,
 				onCheck && "cursor-pointer select-none",
@@ -102,20 +114,22 @@ export function ColoredStatusLinkBadge({
 				to={to}
 				title={title}
 				onClick={(e) => e.stopPropagation()}
-				className="flex items-center gap-1"
+				className="flex items-center gap-1 min-w-0 max-w-[240px] overflow-hidden"
 			>
 				{icon ? (
-					<span className="material-symbols-outlined text-base">{icon}</span>
+					<span className="material-symbols-outlined text-base shrink-0">
+						{icon}
+					</span>
 				) : null}
-				{title || id.slice(0, 8)}
+				<span className="min-w-0 truncate whitespace-nowrap">{displayTitle}</span>
 			</Link>
 
-			{subtitle && (
+			{displaySubtitle && (
 				<span
 					className="text-[10px] font-normal opacity-70 truncate max-w-[140px]"
-					title={subtitle}
+					title={subtitle ?? undefined}
 				>
-					{subtitle}
+					{displaySubtitle}
 				</span>
 			)}
 

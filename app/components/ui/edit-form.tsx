@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Save, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigate } from "react-router";
 import { PageHeader } from "~/components/layout/page-header";
@@ -77,7 +78,7 @@ export interface EditFormProps {
 	relationshipPicker?: RelationshipPickerProps;
 	relationships?: Record<
 		string,
-		{ linked: AnyEntity[]; available: AnyEntity[] }
+		{ linked: AnyEntity[]; available: AnyEntity[]; canWrite?: boolean }
 	>;
 	translationNamespace?: string; // e.g. "treasury.budgets" for auto-labels
 	onFieldChange?: (name: string, value: any) => void;
@@ -300,17 +301,19 @@ export function EditForm({
 
 			const sections: RelationshipSection[] = allEntityTypes
 				.filter((type) => type !== entityType)
-				.map((type) => {
+				.flatMap((type) => {
 					const relData = relationships[type];
+					if (!relData) return [];
 					const config = configuredRelationships[type];
 
-					return {
+					return [{
 						relationBType: type,
 						linkedEntities: relData?.linked || [],
 						availableEntities: relData?.available || [],
+						canWrite: relData?.canWrite ?? false,
 						maxItems: config?.maxItems,
 						label: config?.labelKey ? t(config.labelKey) : undefined,
-					};
+					}];
 				});
 
 			if (sections.length === 0) return null;
@@ -343,44 +346,98 @@ export function EditForm({
 		]);
 
 	return (
-		<div className={cn("w-full max-w-2xl mx-auto px-4 pb-12", className)}>
-			<PageHeader
-				title={title}
-				actions={
-					entityType && entityId ? (
-						<SmartAutofillButton
-							entityType={entityType as any}
-							entityId={entityId}
-							getCurrentValues={() => {
-								const currentValues = {
-									...Object.fromEntries(
-										Object.entries(values).map(([key, value]) => [
-											key,
-											value == null ? "" : String(value),
-										]),
-									),
-								};
+		<div className={cn("w-full max-w-7xl mx-auto px-4 md:px-6 pb-12", className)}>
+			<div className="py-3 sticky top-0 z-30 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur border-b">
+				<PageHeader
+					title={title}
+					className="mb-0"
+					actions={
+						<div className="flex w-full sm:w-auto min-w-0 items-center justify-between sm:justify-end gap-3 flex-nowrap">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+								onClick={handleCancel}
+							>
+								<X className="size-4 sm:mr-1.5" />
+								<span className="hidden sm:inline truncate max-w-full">
+									{t("common.actions.cancel")}
+								</span>
+							</Button>
+							{entityType && entityId ? (
+								<SmartAutofillButton
+									entityType={entityType as any}
+									entityId={entityId}
+									getCurrentValues={() => {
+										const currentValues = {
+											...Object.fromEntries(
+												Object.entries(values).map(([key, value]) => [
+													key,
+													value == null ? "" : String(value),
+												]),
+											),
+										};
 
-								if (formRef.current) {
-									const formData = new FormData(formRef.current);
-									for (const [key, value] of formData.entries()) {
-										if (typeof value === "string") {
-											currentValues[key] = value;
+										if (formRef.current) {
+											const formData = new FormData(formRef.current);
+											for (const [key, value] of formData.entries()) {
+												if (typeof value === "string") {
+													currentValues[key] = value;
+												}
+											}
 										}
-									}
-								}
 
-								return currentValues;
-							}}
-							onSuggestions={handleAutofillSuggestions}
-							localModel={localModel}
-							onLocalModelChange={setLocalModel}
-							sourceLanguage={sourceLanguage}
-							targetLanguage={targetLanguage}
-						/>
-					) : null
-				}
-			/>
+										return currentValues;
+									}}
+									onSuggestions={handleAutofillSuggestions}
+									localModel={localModel}
+									onLocalModelChange={setLocalModel}
+									sourceLanguage={sourceLanguage}
+									targetLanguage={targetLanguage}
+									iconOnlyOnMobile
+								/>
+							) : null}
+							{resolvedDeleteUrl && (
+								<Form
+									action={resolvedDeleteUrl}
+									method="post"
+									onSubmit={(e) => {
+										if (!confirm(t("common.actions.delete_confirm"))) {
+											e.preventDefault();
+										}
+									}}
+								>
+									<input type="hidden" name="_method" value="DELETE" />
+									<Button
+										variant="destructive"
+										type="submit"
+										size="sm"
+										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+									>
+										<Trash2 className="size-4 sm:mr-1.5" />
+										<span className="hidden sm:inline truncate max-w-full">
+											{t("common.actions.delete")}
+										</span>
+									</Button>
+								</Form>
+							)}
+							<Button
+								type="submit"
+								form={formId}
+								size="sm"
+								className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+								disabled={submitDisabled}
+							>
+								<Save className="size-4 sm:mr-1.5" />
+								<span className="hidden sm:inline truncate max-w-full">
+									{t("common.actions.save")}
+								</span>
+							</Button>
+						</div>
+					}
+				/>
+			</div>
 			<Card>
 				<CardContent className="space-y-4">
 					{/* ReadOnly Fields */}
@@ -398,7 +455,7 @@ export function EditForm({
 						id={formId}
 						method={method}
 						action={action}
-						className="space-y-6 min-w-0"
+						className="min-w-0"
 						encType={encType}
 					>
 						{/* Hidden Fields */}
@@ -415,101 +472,81 @@ export function EditForm({
 								/>
 							))}
 
-						{fields
-							.filter((f) => f.type !== "hidden")
-							.map((field) => {
-								const val = values[field.name] ?? "";
+						<div
+							className={cn(
+								"grid gap-6 min-w-0",
+								relationshipPickerProps
+									? "xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]"
+									: "grid-cols-1",
+							)}
+						>
+							<div className="space-y-6 min-w-0">
+								{fields
+									.filter((f) => f.type !== "hidden")
+									.map((field) => {
+										const val = values[field.name] ?? "";
 
-								// Infer label and placeholder
-								const displayLabel =
-									field.label ||
-									(translationNamespace
-										? t(`${translationNamespace}.${field.name}`)
-										: field.name);
-								const displayPlaceholder =
-									field.placeholder ||
-									(translationNamespace
-										? t(`${translationNamespace}.${field.name}_placeholder`)
-										: undefined);
+										// Infer label and placeholder
+										const displayLabel =
+											field.label ||
+											(translationNamespace
+												? t(`${translationNamespace}.${field.name}`)
+												: field.name);
+										const displayPlaceholder =
+											field.placeholder ||
+											(translationNamespace
+												? t(`${translationNamespace}.${field.name}_placeholder`)
+												: undefined);
 
-								if (field.render) {
-									return (
-										<React.Fragment key={field.name}>
-											{field.render(field, val, (v) =>
-												handleChange(field.name, v),
-											)}
-										</React.Fragment>
-									);
-								}
-
-								return (
-									<Field
-										key={field.name}
-										name={field.name}
-										label={displayLabel}
-										type={field.type || inferFieldType(field.name)}
-										required={field.required !== false}
-										placeholder={displayPlaceholder}
-										value={val}
-										onChange={(v) => handleChange(field.name, v)}
-										options={field.options}
-										description={field.description}
-										translationNamespace={translationNamespace}
-										className={field.hidden ? "hidden" : field.className}
-										valueClassName={field.valueClassName}
-										disabled={field.disabled}
-										readOnly={field.readOnly}
-										min={field.min}
-										max={field.max}
-										step={field.step}
-										localModel={localModel}
-										sourceLanguage={sourceLanguage}
-										targetLanguage={targetLanguage}
-									/>
-								);
-							})}
-
-						{/* In-Form Children */}
-						{children}
-
-						{/* Relationship Picker */}
-						{relationshipPickerProps && (
-							<div className="space-y-4">
-								<RelationshipPicker {...relationshipPickerProps} />
-							</div>
-						)}
-					</Form>
-
-					{/* Actions */}
-					<div className="flex items-center justify-between gap-2 pt-4 border-t mt-6">
-						<div>
-							{resolvedDeleteUrl && (
-								<Form
-									action={resolvedDeleteUrl}
-									method="post"
-									onSubmit={(e) => {
-										if (!confirm(t("common.actions.delete_confirm"))) {
-											e.preventDefault();
+										if (field.render) {
+											return (
+												<React.Fragment key={field.name}>
+													{field.render(field, val, (v) =>
+														handleChange(field.name, v),
+													)}
+												</React.Fragment>
+											);
 										}
-									}}
-								>
-									<input type="hidden" name="_method" value="DELETE" />
-									<Button variant="destructive" type="submit">
-										{t("common.actions.delete")}
-									</Button>
-								</Form>
+
+										return (
+											<Field
+												key={field.name}
+												name={field.name}
+												label={displayLabel}
+												type={field.type || inferFieldType(field.name)}
+												required={field.required !== false}
+												placeholder={displayPlaceholder}
+												value={val}
+												onChange={(v) => handleChange(field.name, v)}
+												options={field.options}
+												description={field.description}
+												translationNamespace={translationNamespace}
+												className={field.hidden ? "hidden" : field.className}
+												valueClassName={field.valueClassName}
+												disabled={field.disabled}
+												readOnly={field.readOnly}
+												min={field.min}
+												max={field.max}
+												step={field.step}
+												localModel={localModel}
+												sourceLanguage={sourceLanguage}
+												targetLanguage={targetLanguage}
+											/>
+										);
+									})}
+
+								{/* In-Form Children */}
+								{children}
+							</div>
+
+							{/* Relationship Picker */}
+							{relationshipPickerProps && (
+								<div className="space-y-4 min-w-0 xl:sticky xl:top-24 self-start">
+									<RelationshipPicker {...relationshipPickerProps} />
+								</div>
 							)}
 						</div>
-						<div className="flex gap-2">
-							<Button type="button" variant="outline" onClick={handleCancel}>
-								{t("common.actions.cancel")}
-							</Button>
-
-							<Button type="submit" form={formId} disabled={submitDisabled}>
-								{t("common.actions.save")}
-							</Button>
-						</div>
-					</div>
+					</Form>
 				</CardContent>
 			</Card>
 		</div>

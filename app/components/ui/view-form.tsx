@@ -2,7 +2,6 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
-import { AddItemButton } from "~/components/add-item-button";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
@@ -58,6 +57,7 @@ export interface ViewFormProps {
 	translationNamespace?: string;
 	systemLanguages?: { primary: string; secondary: string | null };
 	useSecondary?: boolean;
+	headerActionButtons?: React.ReactNode;
 	children?: React.ReactNode;
 	className?: string;
 }
@@ -78,6 +78,7 @@ export function ViewForm({
 	translationNamespace,
 	systemLanguages,
 	useSecondary,
+	headerActionButtons,
 	children,
 	className,
 }: ViewFormProps) {
@@ -373,21 +374,69 @@ export function ViewForm({
 	return (
 		<PageWrapper>
 			<div className={cn("w-full mx-auto px-4 pb-12", className)}>
-				<PageHeader
-					title={title}
-					className="mt-3 mb-2"
-					actions={
-						canEdit && resolvedEditUrl ? (
-							<AddItemButton
-								to={resolvedEditUrl}
-								title={t("common.actions.edit")}
-								label={t("common.actions.edit")}
-								variant="button"
-								icon="edit"
-							/>
-						) : undefined
-					}
-				/>
+				<div className="py-3 sticky top-0 z-30 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur border-b">
+					<PageHeader
+						title={title}
+						className="mb-0"
+						actions={
+							<div className="flex w-full sm:w-auto min-w-0 items-center justify-between sm:justify-end gap-3 flex-nowrap">
+								<Button
+									variant="outline"
+									size="sm"
+									className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+									asChild
+								>
+									<Link to={resolvedReturnUrl}>
+										<span className="material-symbols-outlined text-base sm:mr-1.5">
+											arrow_back
+										</span>
+										<span className="hidden sm:inline truncate max-w-full">
+											{t("common.actions.back_to_list", "Back")}
+										</span>
+									</Link>
+								</Button>
+
+								{headerActionButtons}
+
+								{canDelete && resolvedDeleteUrl && (
+									<Button
+										type="button"
+										variant="destructive"
+										size="sm"
+										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+										onClick={() => setShowDeleteConfirm(true)}
+										disabled={deleteFetcher.state !== "idle"}
+									>
+										<span className="material-symbols-outlined text-base sm:mr-1.5">
+											delete
+										</span>
+										<span className="hidden sm:inline truncate max-w-full">
+											{t("common.actions.delete")}
+										</span>
+									</Button>
+								)}
+
+								{canEdit && resolvedEditUrl && (
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+										asChild
+									>
+										<Link to={resolvedEditUrl}>
+											<span className="material-symbols-outlined text-base sm:mr-1.5">
+												edit
+											</span>
+											<span className="hidden sm:inline truncate max-w-full">
+												{t("common.actions.edit")}
+											</span>
+										</Link>
+									</Button>
+								)}
+							</div>
+						}
+					/>
+				</div>
 
 				<div className="space-y-6">
 					<div
@@ -416,21 +465,6 @@ export function ViewForm({
 							))}
 						</div>
 
-						{canDelete && resolvedDeleteUrl && (
-							<div className="flex gap-2 pt-4">
-								<Button
-									type="button"
-									variant="destructive"
-									onClick={() => setShowDeleteConfirm(true)}
-									disabled={deleteFetcher.state !== "idle"}
-								>
-									<span className="material-symbols-outlined mr-2 text-sm">
-										delete
-									</span>
-									{t("common.actions.delete")}
-								</Button>
-							</div>
-						)}
 						{canDelete && resolvedDeleteUrl && (
 							<ConfirmDialog
 								open={showDeleteConfirm}
@@ -471,16 +505,6 @@ export function ViewForm({
 
 					{children}
 
-					<div className="flex gap-3">
-						<Link to={resolvedReturnUrl}>
-							<Button variant="outline">
-								<span className="material-symbols-outlined mr-2">
-									arrow_back
-								</span>
-								{t("common.actions.back_to_list", "Back")}
-							</Button>
-						</Link>
-					</div>
 				</div>
 			</div>
 		</PageWrapper>

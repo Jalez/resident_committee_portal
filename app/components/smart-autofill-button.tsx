@@ -54,6 +54,8 @@ export interface SmartAutofillButtonProps {
 	targetLanguage?: string;
 	/** Additional fields to send with autofill request (e.g. pending relationship changes) */
 	getExtraFormData?: () => Record<string, string>;
+	/** Show icon-only on mobile widths */
+	iconOnlyOnMobile?: boolean;
 }
 
 /**
@@ -73,6 +75,7 @@ export function SmartAutofillButton({
 	sourceLanguage,
 	targetLanguage,
 	getExtraFormData,
+	iconOnlyOnMobile = false,
 }: SmartAutofillButtonProps) {
 	const { t } = useTranslation();
 	const { user } = useUser();
@@ -224,7 +227,7 @@ export function SmartAutofillButton({
 	const hasOptionsMenu = true;
 
 	return (
-		<div className="flex items-center">
+		<div className="flex items-center min-w-0 sm:shrink">
 			<TooltipProvider>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -236,6 +239,8 @@ export function SmartAutofillButton({
 							disabled={isLoading}
 							className={cn(
 								"gap-1.5",
+								iconOnlyOnMobile &&
+									"h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:gap-1.5 sm:max-w-[9rem] md:max-w-[11rem] lg:max-w-[12rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0",
 								hasOptionsMenu && "rounded-r-none border-r-0",
 							)}
 						>
@@ -246,7 +251,15 @@ export function SmartAutofillButton({
 							) : (
 								<Sparkles className="w-4 h-4" />
 							)}
-							{t("smart_autofill.button", { defaultValue: "Smart Autofill" })}
+							<span
+								className={
+									iconOnlyOnMobile
+										? "hidden sm:inline sm:truncate max-w-full"
+										: ""
+								}
+							>
+								{t("smart_autofill.button", { defaultValue: "Smart Autofill" })}
+							</span>
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>
@@ -274,7 +287,13 @@ export function SmartAutofillButton({
 							disabled={loadingModels}
 							className={cn(
 								"w-8 px-0 rounded-l-none border-l-gray-200 dark:border-l-gray-700",
-								size === "sm" ? "h-8" : "h-9",
+								iconOnlyOnMobile
+									? "h-10 w-10 p-0 sm:w-8"
+									: size === "sm"
+										? "h-8"
+										: "h-9",
+								iconOnlyOnMobile &&
+									(size === "sm" ? "sm:h-8" : "sm:h-9"),
 							)}
 						>
 							<ChevronDown className="w-4 h-4" />
