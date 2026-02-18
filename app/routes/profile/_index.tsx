@@ -1,5 +1,5 @@
 import { upload } from "@vercel/blob/client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { data, Form, redirect, useRevalidator } from "react-router";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { FILE_TYPE_CONFIGS } from "~/lib/file-upload-types";
+import { hasPermission } from "~/lib/auth.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -38,6 +39,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const roleIds = await db.getUserRoleIds(user.id);
 	const roles = await Promise.all(roleIds.map((id) => db.getRoleById(id)));
 	const role = roles.find((r) => r !== null) || null;
+	const canManageReimbursementDefaults = hasPermission(
+		authUser,
+		"treasury:reimbursements:write",
+	);
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -46,6 +51,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			email: user.email,
 			name: user.name,
 			apartmentNumber: user.apartmentNumber,
+			bankAccount: user.bankAccount || null,
 			roleName: role?.name || "Unknown",
 			createdAt: user.createdAt,
 			localOllamaEnabled: user.localOllamaEnabled,
@@ -53,6 +59,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			description: user.description || null,
 			picture: user.picture || null,
 		},
+		canManageReimbursementDefaults,
 	};
 }
 
@@ -74,14 +81,23 @@ export async function action({ request }: Route.ActionArgs) {
 	const name = formData.get("name") as string;
 	const apartmentNumber = formData.get("apartmentNumber") as string;
 	const description = formData.get("description") as string;
+	const bankAccount = formData.get("bankAccount") as string;
 	const localOllamaEnabled = formData.get("localOllamaEnabled") === "true";
 	const localOllamaUrl =
 		(formData.get("localOllamaUrl") as string) || "http://localhost:11434";
+
+	const canManageReimbursementDefaults = hasPermission(
+		authUser,
+		"treasury:reimbursements:write",
+	);
 
 	// Update user profile (language is now managed via the navbar language switcher)
 	await db.updateUser(user.id, {
 		name: name || user.name,
 		apartmentNumber: apartmentNumber || null,
+		bankAccount: canManageReimbursementDefaults
+			? (bankAccount || null)
+			: user.bankAccount,
 		description: description || null,
 		localOllamaEnabled,
 		localOllamaUrl,
@@ -94,7 +110,7 @@ export default function Profile({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { user } = loaderData;
+	const { user, canManageReimbursementDefaults } = loaderData;
 	const { t, i18n } = useTranslation();
 	const revalidator = useRevalidator();
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +124,12 @@ export default function Profile({
 	>("idle");
 	const [uploadingPicture, setUploadingPicture] = useState(false);
 	const [settingGooglePicture, setSettingGooglePicture] = useState(false);
+
+	useEffect(() => {
+		if (actionData?.success) {
+			toast.success(t("profile.update_success"));
+		}
+	}, [actionData, t]);
 
 	const testConnection = async () => {
 		setTestingConnection(true);
@@ -255,20 +277,13 @@ export default function Profile({
 			<div className="w-full max-w-2xl mx-auto px-4">
 				{/* Header */}
 				<div className="mb-8">
-					<h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
+					<h1 className="text-3xl md:text-4xl font-black text-foreground">
 						{t("profile.title")}
 					</h1>
 				</div>
 
-				{/* Success Message */}
-				{actionData?.success && (
-					<div className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl">
-						<p className="font-medium">{t("profile.update_success")}</p>
-					</div>
-				)}
-
 				{/* Profile Form */}
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<div className="bg-card text-card-foreground rounded-2xl border border-border p-6 shadow-sm">
 					<Form method="post" className="space-y-6">
 						{/* Email (read-only) */}
 						<div>
@@ -277,9 +292,9 @@ export default function Profile({
 								type="email"
 								value={user.email}
 								disabled
-								className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+								className="bg-muted text-muted-foreground w-full cursor-not-allowed rounded-xl px-4 py-3"
 							/>
-							<p className="mt-1 text-xs text-gray-500">
+							<p className="text-muted-foreground mt-1 text-xs">
 								{t("profile.email_help")}
 							</p>
 						</div>
@@ -294,7 +309,7 @@ export default function Profile({
 								id="name"
 								name="name"
 								defaultValue={user.name}
-								className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+								className="bg-background focus-visible:ring-ring/50 w-full rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
 							/>
 						</div>
 
@@ -302,7 +317,7 @@ export default function Profile({
 						<div>
 							<Label htmlFor="apartmentNumber" className="mb-2">
 								{t("profile.apartment_label")}
-								<span className="ml-2 text-xs font-normal text-gray-500">
+								<span className="text-muted-foreground ml-2 text-xs font-normal">
 									({t("profile.optional")})
 								</span>
 							</Label>
@@ -312,18 +327,47 @@ export default function Profile({
 								name="apartmentNumber"
 								defaultValue={user.apartmentNumber || ""}
 								placeholder={t("profile.apartment_placeholder")}
-								className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+								className="bg-background focus-visible:ring-ring/50 w-full rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
 							/>
-							<p className="mt-1 text-xs text-gray-500">
+							<p className="text-muted-foreground mt-1 text-xs">
 								{t("profile.apartment_help")}
 							</p>
 						</div>
 
+						{canManageReimbursementDefaults && (
+							<div>
+								<Label htmlFor="bankAccount" className="mb-2">
+									{t("profile.bank_account_label", {
+										defaultValue: "Bank account",
+									})}
+									<span className="text-muted-foreground ml-2 text-xs font-normal">
+										({t("profile.optional")})
+									</span>
+								</Label>
+								<input
+									type="text"
+									id="bankAccount"
+									name="bankAccount"
+									defaultValue={user.bankAccount || ""}
+									placeholder={t("profile.bank_account_placeholder", {
+										defaultValue: "FI12 3456 7890 1234 56",
+									})}
+									className="bg-background focus-visible:ring-ring/50 w-full rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
+								/>
+								<p className="text-muted-foreground mt-1 text-xs">
+									{t("profile.bank_account_help", {
+										defaultValue:
+											"Used as default bank account for reimbursement autofill.",
+									})}
+								</p>
+							</div>
+						)}
+
 						{/* Role (read-only) */}
 						<div>
 							<Label className="mb-2">{t("profile.role_label")}</Label>
-							<div className="px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700">
-								<span className="font-medium text-gray-700 dark:text-gray-300">
+							<div className="bg-muted rounded-xl px-4 py-3">
+								<span className="text-foreground font-medium">
 									{user.roleName}
 								</span>
 							</div>
@@ -332,8 +376,8 @@ export default function Profile({
 						{/* Member Since */}
 						<div>
 							<Label className="mb-2">{t("profile.member_since_label")}</Label>
-							<div className="px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700">
-								<span className="text-gray-700 dark:text-gray-300">
+							<div className="bg-muted rounded-xl px-4 py-3">
+								<span className="text-foreground">
 									{new Date(user.createdAt).toLocaleDateString(i18n.language, {
 										day: "numeric",
 										month: "long",
@@ -347,7 +391,7 @@ export default function Profile({
 						<div>
 							<Label htmlFor="description" className="mb-2">
 								{t("profile.description_label")}
-								<span className="ml-2 text-xs font-normal text-gray-500">
+								<span className="text-muted-foreground ml-2 text-xs font-normal">
 									({t("profile.optional")})
 								</span>
 							</Label>
@@ -357,9 +401,9 @@ export default function Profile({
 								defaultValue={user.description || ""}
 								placeholder={t("profile.description_placeholder")}
 								rows={4}
-								className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+								className="bg-background focus-visible:ring-ring/50 w-full resize-none rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
 							/>
-							<p className="mt-1 text-xs text-gray-500">
+							<p className="text-muted-foreground mt-1 text-xs">
 								{t("committee.no_description")}
 							</p>
 						</div>
@@ -372,17 +416,17 @@ export default function Profile({
 									<img
 										src={user.picture}
 										alt={user.name}
-										className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shrink-0"
+										className="border-border h-20 w-20 shrink-0 rounded-full border-2 object-cover"
 									/>
 								) : (
-									<div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
-										<span className="material-symbols-outlined text-4xl text-gray-400">
+									<div className="bg-muted flex h-20 w-20 shrink-0 items-center justify-center rounded-full">
+										<span className="text-muted-foreground material-symbols-outlined text-4xl">
 											person
 										</span>
 									</div>
 								)}
 								<div className="flex-1 min-w-0 space-y-2">
-									<p className="text-sm text-gray-600 dark:text-gray-400">
+									<p className="text-muted-foreground text-sm">
 										{t("profile.picture_help")}
 									</p>
 									<div className="flex flex-wrap gap-2">
@@ -440,11 +484,11 @@ export default function Profile({
 						</div>
 
 						{/* Local AI Settings Section */}
-						<div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-							<h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+						<div className="border-border border-t pt-6">
+							<h2 className="text-foreground mb-4 text-lg font-bold">
 								{t("profile.local_ai.title")}
 							</h2>
-							<p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+							<p className="text-muted-foreground mb-4 text-sm">
 								{t("profile.local_ai.description")}
 							</p>
 
@@ -454,7 +498,7 @@ export default function Profile({
 									<Label htmlFor="localOllamaEnabled" className="font-medium">
 										{t("profile.local_ai.enable_label")}
 									</Label>
-									<span className="text-xs text-gray-500 dark:text-gray-400">
+									<span className="text-muted-foreground text-xs">
 										{t("profile.local_ai.enable_help")}
 									</span>
 								</div>
@@ -472,7 +516,7 @@ export default function Profile({
 
 							{/* Ollama URL (shown when enabled) */}
 							{localOllamaEnabled && (
-								<div className="space-y-4 mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+								<div className="bg-muted/40 mt-4 space-y-4 rounded-xl p-4">
 									<div>
 										<Label htmlFor="localOllamaUrl" className="mb-2">
 											{t("profile.local_ai.url_label")}
@@ -485,7 +529,7 @@ export default function Profile({
 												value={localOllamaUrl}
 												onChange={(e) => setLocalOllamaUrl(e.target.value)}
 												placeholder="http://localhost:11434"
-												className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+												className="bg-background focus-visible:ring-ring/50 flex-1 rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
 											/>
 											<Button
 												type="button"
@@ -516,7 +560,7 @@ export default function Profile({
 												</span>
 											</Button>
 										</div>
-										<p className="mt-1 text-xs text-gray-500">
+										<p className="text-muted-foreground mt-1 text-xs">
 											{t("profile.local_ai.url_help")}
 										</p>
 									</div>

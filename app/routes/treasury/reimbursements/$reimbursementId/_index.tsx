@@ -12,14 +12,37 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
+import { renderCommitteeEmail } from "~/lib/email-templates/committee-email";
+import {
+	type CommitteeMailRecipient,
+	sendCommitteeEmail,
+} from "~/lib/mail-nodemailer.server";
 import { maskBankAccount } from "~/lib/mask-bank-account";
+import {
+	buildQuotedReplyHtml,
+	buildReferencesForReply,
+	computeThreadId,
+} from "~/lib/mail-threading.server";
 import {
 	formatMissingRelationshipsMessage,
 	validateRequiredRelationships,
 } from "~/lib/required-relationships";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 import type { Route } from "./+types/_index";
+
+function parseRecipientsJson(
+	json: string | null,
+): Array<{ email: string; name?: string }> {
+	if (!json?.trim()) return [];
+	try {
+		const parsed = JSON.parse(json) as Array<{ email: string; name?: string }>;
+		return Array.isArray(parsed) ? parsed.filter((r) => Boolean(r?.email)) : [];
+	} catch {
+		return [];
+	}
+}
 
 export function meta({ data }: Route.MetaArgs) {
 	const description = (data as any)?.reimbursement?.description;
@@ -64,6 +87,32 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				"reimbursement",
 				purchase.id,
 			);
+			const linkedMailIds = Array.from(
+				new Set(
+					allRelationships
+						.filter((r) => {
+							const isReimbursementA =
+								r.relationAType === "reimbursement" &&
+								r.relationId === purchase.id;
+							const isReimbursementB =
+								r.relationBType === "reimbursement" &&
+								r.relationBId === purchase.id;
+							if (!isReimbursementA && !isReimbursementB) return false;
+							const otherType = isReimbursementA
+								? r.relationBType
+								: r.relationAType;
+							return otherType === "mail";
+						})
+						.map((r) => (r.relationAType === "mail" ? r.relationId : r.relationBId)),
+				),
+			);
+			const linkedMailDrafts = await Promise.all(
+				linkedMailIds.map((mailId) => db.getMailDraftById(mailId)),
+			);
+			const linkedMailDraft =
+				linkedMailDrafts.find(
+					(draft): draft is NonNullable<typeof draft> => draft !== null,
+				) ?? null;
 			const linkedMinuteIds = Array.from(
 				new Set(
 					allRelationships
@@ -100,6 +149,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				mailThread,
 				emailConfigured: await isEmailConfigured(),
 				hasMinutesFile,
+				hasLinkedMailRelation: linkedMailIds.length > 0,
+				linkedMailDraft: linkedMailDraft
+					? {
+							id: linkedMailDraft.id,
+							subject: linkedMailDraft.subject,
+						}
+					: null,
 			};
 		},
 	});
@@ -121,6 +177,359 @@ export async function action({ request, params }: Route.ActionArgs) {
 			"reimbursement",
 			purchase.id,
 		);
+		const linkedMailIds = Array.from(
+			new Set(
+				allRelationships
+					.filter((r) => {
+						const isReimbursementA =
+							r.relationAType === "reimbursement" && r.relationId === purchase.id;
+						const isReimbursementB =
+							r.relationBType === "reimbursement" && r.relationBId === purchase.id;
+						if (!isReimbursementA && !isReimbursementB) return false;
+						const otherType = isReimbursementA ? r.relationBType : r.relationAType;
+						return otherType === "mail";
+					})
+					.map((r) => (r.relationAType === "mail" ? r.relationId : r.relationBId)),
+			),
+		);
+		const linkedMailDrafts = await Promise.all(
+			linkedMailIds.map((mailId) => db.getMailDraftById(mailId)),
+		);
+		const linkedMailDraft =
+			linkedMailDrafts.find(
+				(draft): draft is NonNullable<typeof draft> => draft !== null,
+			) ?? null;
+		if (linkedMailIds.length > 0) {
+			if (!linkedMailDraft) {
+				return {
+					success: false,
+					error:
+						"A mail relation is linked, but no editable mail draft was found. Link a mail draft and try again.",
+				};
+			}
+
+			const subject = linkedMailDraft.subject?.trim();
+			const body = linkedMailDraft.body?.trim();
+			const toRecipients = parseRecipientsJson(linkedMailDraft.toJson);
+			const ccRecipients = parseRecipientsJson(linkedMailDraft.ccJson);
+			const bccRecipients = parseRecipientsJson(linkedMailDraft.bccJson);
+
+			if (!subject || !body) {
+				return {
+					success: false,
+					error: "The linked mail draft is missing subject or body.",
+				};
+			}
+			if (toRecipients.length === 0) {
+				return {
+					success: false,
+					error: "The linked mail draft has no recipients.",
+				};
+			}
+
+			const relationshipData = await loadRelationshipsForEntity(
+				db,
+				"mail",
+				linkedMailDraft.id,
+				["reimbursement", "minute", "receipt"],
+			);
+			const linkedReimbursements = (
+				relationshipData.reimbursement?.linked || []
+			) as Array<Record<string, unknown>>;
+			const linkedMinutes = (relationshipData.minute?.linked || []) as Array<
+				Record<string, unknown>
+			>;
+			const linkedReceipts = (relationshipData.receipt?.linked || []) as Array<
+				Record<string, unknown>
+			>;
+
+			if (
+				linkedReimbursements.length > 0 &&
+				(linkedMinutes.length === 0 || linkedReceipts.length === 0)
+			) {
+				return {
+					success: false,
+					error:
+						"The linked mail draft cannot be sent: reimbursement mail requires both linked minutes and at least one linked receipt.",
+				};
+			}
+
+			try {
+				const minuteAttachments = (
+					await Promise.all(
+						linkedMinutes.map((minute) =>
+							buildMinutesAttachment(
+								String(minute.id),
+								typeof minute.title === "string" ? minute.title : null,
+							),
+						),
+					)
+				).filter((attachment): attachment is NonNullable<typeof attachment> =>
+					Boolean(attachment),
+				);
+
+				const requestOrigin = new URL(request.url).origin;
+				const receiptLinks = linkedReceipts
+					.filter((receipt) => typeof receipt.id === "string")
+					.map((receipt) => ({
+						id: String(receipt.id),
+						name:
+							(typeof receipt.name === "string" && receipt.name) ||
+							(typeof receipt.description === "string" && receipt.description) ||
+							`receipt-${String(receipt.id).slice(0, 8)}`,
+						url:
+							(typeof receipt.url === "string" && receipt.url) ||
+							(typeof receipt.fileUrl === "string" && receipt.fileUrl) ||
+							(typeof receipt.pathname === "string" && receipt.pathname
+								? `${requestOrigin}${receipt.pathname.startsWith("/") ? receipt.pathname : `/${receipt.pathname}`}`
+								: "") ||
+							"",
+					}));
+				const receiptAttachments = await buildReceiptAttachments(receiptLinks);
+
+				const reimbursementAttachments = linkedReimbursements.map(
+					(reimbursement) => {
+						const id = String(reimbursement.id || "");
+						const details = [
+							`Reimbursement ID: ${id}`,
+							`Description: ${String(reimbursement.description || "")}`,
+							`Amount: ${String(reimbursement.amount || "")}`,
+							`Purchaser: ${String(reimbursement.purchaserName || "")}`,
+							`Bank account: ${String(reimbursement.bankAccount || "")}`,
+							`Status: ${String(reimbursement.status || "")}`,
+							`Year: ${String(reimbursement.year || "")}`,
+							`Notes: ${String(reimbursement.notes || "")}`,
+						].join("\n");
+						return {
+							filename: `reimbursement-${id.slice(0, 8)}.txt`,
+							content: Buffer.from(details, "utf-8").toString("base64"),
+							contentType: "text/plain; charset=utf-8",
+						};
+					},
+				);
+
+				const composeMode =
+					(linkedMailDraft.draftType as
+						| "new"
+						| "reply"
+						| "replyAll"
+						| "forward") || "new";
+				const parentMsgId =
+					linkedMailDraft.replyToMessageId || linkedMailDraft.forwardFromMessageId;
+				let inReplyToHeader: string | undefined;
+				let referencesHeader: string[] | undefined;
+				let parentMessage: Awaited<
+					ReturnType<typeof db.getCommitteeMailMessageById>
+				> = null;
+				if (
+					parentMsgId &&
+					(composeMode === "reply" || composeMode === "replyAll")
+				) {
+					parentMessage = await db.getCommitteeMailMessageById(parentMsgId);
+					if (parentMessage?.messageId) {
+						inReplyToHeader = parentMessage.messageId;
+						const parentRefs = parentMessage.referencesJson
+							? (JSON.parse(parentMessage.referencesJson) as string[])
+							: null;
+						referencesHeader = buildReferencesForReply(
+							parentMessage.messageId,
+							parentRefs,
+						);
+					}
+				}
+
+				const bodyHtml = body.replace(/\n/g, "<br>\n");
+				let quotedReply:
+					| {
+							date: string;
+							fromName: string;
+							fromEmail: string;
+							bodyHtml: string;
+					  }
+					| undefined;
+				if (
+					parentMessage &&
+					(composeMode === "reply" || composeMode === "replyAll")
+				) {
+					quotedReply = {
+						date: new Date(parentMessage.date).toLocaleString("en-US", {
+							weekday: "short",
+							year: "numeric",
+							month: "short",
+							day: "numeric",
+							hour: "2-digit",
+							minute: "2-digit",
+						}),
+						fromName: parentMessage.fromName || "",
+						fromEmail: parentMessage.fromAddress,
+						bodyHtml: parentMessage.bodyHtml,
+					};
+				}
+
+				let html: string;
+				try {
+					html = await renderCommitteeEmail({ bodyHtml, quotedReply });
+				} catch {
+					html = quotedReply
+						? `${bodyHtml}${buildQuotedReplyHtml(quotedReply.date, quotedReply.fromName, quotedReply.fromEmail, quotedReply.bodyHtml)}`
+						: bodyHtml;
+				}
+
+				const result = await sendCommitteeEmail({
+					to: toRecipients.map((r) => ({ email: r.email, name: r.name })),
+					cc: ccRecipients.length
+						? ccRecipients.map((r) => ({ email: r.email, name: r.name }))
+						: undefined,
+					bcc: bccRecipients.length
+						? bccRecipients.map((r) => ({ email: r.email, name: r.name }))
+						: undefined,
+					subject,
+					html,
+					inReplyTo: inReplyToHeader,
+					references: referencesHeader,
+					attachments: [
+						...minuteAttachments.map((attachment) => ({
+							filename: attachment.name,
+							content: attachment.content,
+							contentType: attachment.type,
+						})),
+						...receiptAttachments.map((attachment) => ({
+							filename: attachment.name,
+							content: attachment.content,
+							contentType: attachment.type,
+						})),
+						...reimbursementAttachments,
+					],
+				});
+				if (!result.success) {
+					await db.updatePurchase(purchase.id, {
+						emailError: result.error || "Email sending failed",
+					});
+					return {
+						success: false,
+						error: result.error || "Email sending failed",
+					};
+				}
+
+				await db.deleteMailDraft(linkedMailDraft.id);
+
+				const fromEmail = process.env.COMMITTEE_FROM_EMAIL || "";
+				const fromName =
+					process.env.COMMITTEE_FROM_NAME || process.env.SITE_NAME || "Committee";
+				const toJson = JSON.stringify(
+					toRecipients.map((r) => ({ email: r.email, name: r.name })),
+				);
+				const ccJson = ccRecipients.length
+					? JSON.stringify(ccRecipients.map((r) => ({ email: r.email, name: r.name })))
+					: null;
+				const bccJson = bccRecipients.length
+					? JSON.stringify(
+							bccRecipients.map((r) => ({ email: r.email, name: r.name })),
+						)
+					: null;
+
+				const sentMessageId = result.messageId || null;
+				const parentRefs = parentMessage?.referencesJson
+					? (JSON.parse(parentMessage.referencesJson) as string[])
+					: null;
+				const threadId = computeThreadId(
+					sentMessageId,
+					inReplyToHeader || null,
+					referencesHeader || parentRefs,
+				);
+				const inserted = await db.insertCommitteeMailMessage({
+					direction: "sent",
+					fromAddress: fromEmail,
+					fromName: fromName || null,
+					toJson,
+					ccJson,
+					bccJson,
+					subject,
+					bodyHtml: html,
+					bodyText: null,
+					date: new Date(),
+					messageId: sentMessageId,
+					inReplyTo: inReplyToHeader || null,
+					referencesJson: referencesHeader
+						? JSON.stringify(referencesHeader)
+						: null,
+					threadId,
+				});
+
+				const draftRelationships = await db.getEntityRelationships(
+					"mail",
+					linkedMailDraft.id,
+				);
+				for (const rel of draftRelationships) {
+					const relationAType = rel.relationAType;
+					const relationId =
+						rel.relationAType === "mail" &&
+						rel.relationId === linkedMailDraft.id
+							? inserted.id
+							: rel.relationId;
+					const relationBType = rel.relationBType;
+					const relationBId =
+						rel.relationBType === "mail" &&
+						rel.relationBId === linkedMailDraft.id
+							? inserted.id
+							: rel.relationBId;
+
+					const exists = await db.entityRelationshipExists(
+						relationAType as any,
+						relationId,
+						relationBType as any,
+						relationBId,
+					);
+					if (!exists) {
+						await db.createEntityRelationship({
+							relationAType: relationAType as any,
+							relationId,
+							relationBType: relationBType as any,
+							relationBId,
+							createdBy: null,
+						});
+					}
+					await db.deleteEntityRelationshipByPair(
+						rel.relationAType as any,
+						rel.relationId,
+						rel.relationBType as any,
+						rel.relationBId,
+					);
+				}
+
+				await db.updatePurchase(purchase.id, {
+					emailSent: true,
+					emailMessageId: result.messageId || null,
+					emailError: null,
+				});
+
+				const reimbursementMailRelationExists = await db.entityRelationshipExists(
+					"reimbursement" as any,
+					purchase.id,
+					"mail" as any,
+					inserted.id,
+				);
+				if (!reimbursementMailRelationExists) {
+					await db.createEntityRelationship({
+						relationAType: "reimbursement",
+						relationId: purchase.id,
+						relationBType: "mail",
+						relationBId: inserted.id,
+						createdBy: null,
+					});
+				}
+
+				return {
+					success: true,
+					message: "treasury.reimbursements.email_sent_success",
+				};
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
+				await db.updatePurchase(purchase.id, { emailError: errorMessage });
+				return { success: false, error: errorMessage };
+			}
+		}
 
 		const relationshipsForValidation: Record<string, { linked: any[] }> = {};
 
@@ -342,11 +751,14 @@ export default function ViewReimbursement({
 		mailThread,
 		emailConfigured,
 		hasMinutesFile,
+		hasLinkedMailRelation,
+		linkedMailDraft,
 	} = loaderData as any;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t } = useTranslation();
 	const fetcher = useFetcher();
 	const [showResendConfirm, setShowResendConfirm] = useState(false);
+	const [showSendConfirm, setShowSendConfirm] = useState(false);
 
 	useEffect(() => {
 		if (fetcher.data?.success) {
@@ -355,7 +767,9 @@ export default function ViewReimbursement({
 			}
 		} else if (fetcher.data?.error) {
 			toast.error(
-				typeof fetcher.data.error === "string" ? fetcher.data.error : "Error",
+				typeof fetcher.data.error === "string"
+					? t(fetcher.data.error, { defaultValue: fetcher.data.error })
+					: t("common.feedback.error", { defaultValue: "Error" }),
 			);
 		}
 	}, [fetcher.data, t]);
@@ -386,7 +800,8 @@ export default function ViewReimbursement({
 		purchase.purchaserName &&
 		purchase.bankAccount &&
 		requiredValidation.valid &&
-		hasMinutesFile;
+		hasMinutesFile &&
+		(!hasLinkedMailRelation || Boolean(linkedMailDraft));
 
 	const missingRequirementsMessage = useMemo(() => {
 		if (!hasMinutesFile) {
@@ -401,6 +816,9 @@ export default function ViewReimbursement({
 		if (!purchase.purchaserName || !purchase.bankAccount) {
 			return t("treasury.reimbursements.missing_purchaser_info");
 		}
+		if (hasLinkedMailRelation && !linkedMailDraft) {
+			return "A mail relation is linked, but only mail drafts can be sent from reimbursement view.";
+		}
 		return null;
 	}, [
 		requiredValidation,
@@ -408,6 +826,8 @@ export default function ViewReimbursement({
 		hasMinutesFile,
 		purchase.purchaserName,
 		purchase.bankAccount,
+		hasLinkedMailRelation,
+		linkedMailDraft,
 	]);
 
 	const displayFields = {
@@ -441,6 +861,7 @@ export default function ViewReimbursement({
 			: {};
 
 	const handleSendRequest = () => {
+		setShowSendConfirm(false);
 		fetcher.submit({ _action: "sendRequest" }, { method: "post" });
 	};
 
@@ -448,6 +869,39 @@ export default function ViewReimbursement({
 		setShowResendConfirm(false);
 		fetcher.submit({ _action: "resendRequest" }, { method: "post" });
 	};
+
+	const headerSendAction =
+		!purchase.emailSent && canSendRequest ? (
+			<Button
+				type="button"
+				variant="default"
+				size="sm"
+				className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+				disabled={fetcher.state === "submitting"}
+				onClick={() => setShowSendConfirm(true)}
+			>
+				<span className="material-symbols-outlined text-base sm:mr-1.5">send</span>
+				<span className="hidden sm:inline truncate max-w-full">
+					{t("treasury.reimbursements.send_request")}
+				</span>
+			</Button>
+		) : purchase.emailSent && canSendRequest ? (
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+				disabled={fetcher.state === "submitting"}
+				onClick={() => setShowResendConfirm(true)}
+			>
+				<span className="material-symbols-outlined text-base sm:mr-1.5">
+					refresh
+				</span>
+				<span className="hidden sm:inline truncate max-w-full">
+					{t("treasury.reimbursements.resend_request")}
+				</span>
+			</Button>
+		) : null;
 
 	return (
 		<PageWrapper>
@@ -462,21 +916,10 @@ export default function ViewReimbursement({
 				canEdit={canUpdate && !purchase.emailSent}
 				canDelete={canUpdate && !purchase.emailSent}
 				translationNamespace="treasury.reimbursements"
+				headerActionButtons={headerSendAction}
 			>
 				{emailConfigured && (
 					<div className="space-y-2">
-						{!purchase.emailSent && canSendRequest && (
-							<Button
-								type="button"
-								variant="default"
-								disabled={fetcher.state === "submitting"}
-								onClick={handleSendRequest}
-							>
-								<span className="material-symbols-outlined mr-2">send</span>
-								{t("treasury.reimbursements.send_request")}
-							</Button>
-						)}
-
 						{!purchase.emailSent &&
 							!canSendRequest &&
 							missingRequirementsMessage && (
@@ -501,19 +944,6 @@ export default function ViewReimbursement({
 									</span>
 									{t("treasury.reimbursements.email_sent")}
 								</div>
-								{canSendRequest && (
-									<Button
-										type="button"
-										variant="outline"
-										disabled={fetcher.state === "submitting"}
-										onClick={() => setShowResendConfirm(true)}
-									>
-										<span className="material-symbols-outlined mr-2">
-											refresh
-										</span>
-										{t("treasury.reimbursements.resend_request")}
-									</Button>
-								)}
 							</div>
 						)}
 
@@ -534,6 +964,29 @@ export default function ViewReimbursement({
 					</div>
 				)}
 			</ViewForm>
+
+			<ConfirmDialog
+				open={showSendConfirm}
+				onOpenChange={setShowSendConfirm}
+				title={t("treasury.reimbursements.send_request")}
+				description={
+					linkedMailDraft
+						? t("treasury.reimbursements.send_linked_mail_confirm_desc", {
+								subject: linkedMailDraft.subject,
+								defaultValue: linkedMailDraft.subject
+									? `This will send the linked mail draft "${linkedMailDraft.subject}" and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.`
+									: "This will send the linked mail draft and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.",
+							})
+						: t("treasury.reimbursements.send_confirm_desc", {
+								defaultValue:
+									"Are you sure you want to send this reimbursement request email now?",
+							})
+				}
+				confirmLabel={t("treasury.reimbursements.send_request")}
+				cancelLabel={t("common.actions.cancel")}
+				onConfirm={handleSendRequest}
+				loading={fetcher.state === "submitting"}
+			/>
 
 			<ConfirmDialog
 				open={showResendConfirm}

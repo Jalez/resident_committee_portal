@@ -218,13 +218,16 @@ async function getMailAutofillSuggestions(
 	db: ReturnType<typeof getDatabase>,
 	entityId: string,
 	currentValues: Record<string, string>,
+	userPermissions: string[],
 	pendingChanges?: PendingRelationshipChanges,
 ): Promise<Record<string, string>> {
-	const relationshipData = await loadRelationshipsForEntity(db, "mail", entityId, [
-		"reimbursement",
-		"receipt",
-		"minute",
-	]);
+	const relationshipData = await loadRelationshipsForEntity(
+		db,
+		"mail",
+		entityId,
+		["reimbursement", "receipt", "minute"],
+		{ userPermissions },
+	);
 
 	const reimbursements = (relationshipData.reimbursement?.linked ??
 		[]) as Array<Record<string, unknown>>;
@@ -446,6 +449,7 @@ export async function action({ request }: Route.ActionArgs) {
 			entityId,
 			formData,
 			authUser.userId || null,
+			authUser.permissions,
 		);
 	}
 
@@ -491,6 +495,7 @@ export async function action({ request }: Route.ActionArgs) {
 			db,
 			entityId,
 			currentValues,
+			authUser.permissions,
 			pendingChanges,
 		);
 		Object.assign(suggestions, mailSuggestions);
@@ -535,6 +540,21 @@ export async function action({ request }: Route.ActionArgs) {
 				if (descriptionParts.length > 0) {
 					suggestions.description = descriptionParts.join(" • ");
 				}
+			}
+		}
+	}
+
+	if (entityType === "reimbursement" && authUser.userId !== "guest") {
+		const profileUser = await db.findUserById(authUser.userId);
+		if (profileUser) {
+			const currentPurchaserName = currentValues.purchaserName;
+			const currentBankAccount = currentValues.bankAccount;
+
+			if (isEmptyValue(currentPurchaserName) && profileUser.name?.trim()) {
+				suggestions.purchaserName = profileUser.name.trim();
+			}
+			if (isEmptyValue(currentBankAccount) && profileUser.bankAccount?.trim()) {
+				suggestions.bankAccount = profileUser.bankAccount.trim();
 			}
 		}
 	}

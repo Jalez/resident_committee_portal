@@ -200,6 +200,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		reimbursementId,
 		formData,
 		user?.userId || null,
+		user?.permissions,
 	);
 
 	// Auto-publish draft

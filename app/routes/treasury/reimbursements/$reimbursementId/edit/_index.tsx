@@ -12,6 +12,7 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { EditForm } from "~/components/ui/edit-form";
 import { getDatabase, type Minute } from "~/db/server.server";
+import { getAuthenticatedUser } from "~/lib/auth.server";
 import { clearCache } from "~/lib/cache.server";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getReceiptsForPurchaseEdit } from "~/lib/receipts/server";
@@ -36,9 +37,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		params,
 		request,
 		fetchEntity: (db, id) => db.getPurchaseById(id),
-		extend: async ({ db, entity }: any) => {
+		extend: async ({ db, entity, request }: any) => {
 			if (entity.emailSent) {
 				throw redirect(`/treasury/reimbursements/${entity.id}`);
+			}
+
+			const authUser = await getAuthenticatedUser(request, getDatabase);
+			let profileBankAccount: string | null = null;
+			if (authUser?.userId) {
+				const profileUser = await db.findUserById(authUser.userId);
+				profileBankAccount = profileUser?.bankAccount || null;
 			}
 
 			const [receiptsByYear, allMinutes] = await Promise.all([
@@ -59,6 +67,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				receiptsByYear,
 				recentMinutes: allMinutes,
 				currentYear: new Date().getFullYear(),
+				userHasProfileBankAccount: Boolean(profileBankAccount?.trim()),
 			};
 		},
 	});
@@ -124,6 +133,7 @@ export default function EditReimbursement({
 		returnUrl,
 		sourceContext,
 		currentYear,
+		userHasProfileBankAccount,
 	} = loaderData as any;
 	const { t } = useTranslation();
 	const navigation = useNavigation();
@@ -172,6 +182,13 @@ export default function EditReimbursement({
 			bankAccount: {
 				value: reimbursement.bankAccount ?? "",
 				placeholder: "FI12 3456 7890 1234 56",
+				description:
+					!reimbursement.bankAccount && !userHasProfileBankAccount
+						? t("treasury.reimbursements.bank_account_profile_hint", {
+								defaultValue:
+									"No default bank account found in your profile. Add it in /profile to speed up future reimbursement autofill.",
+							})
+						: undefined,
 			},
 			year: {
 				type: "select",
@@ -181,7 +198,7 @@ export default function EditReimbursement({
 			notes: reimbursement.notes ?? "",
 			status: reimbursement.status ?? "",
 		}),
-		[reimbursement, yearOptions],
+		[reimbursement, yearOptions, t, userHasProfileBankAccount],
 	);
 
 	const readOnlyFields = {};
