@@ -56,6 +56,7 @@ export const users = pgTable("users", {
 	email: text("email").notNull().unique(),
 	name: text("name").notNull(),
 	apartmentNumber: text("apartment_number"),
+	bankAccount: text("bank_account"),
 	// Profile fields
 	description: text("description"),
 	picture: text("picture"), // Google profile picture URL

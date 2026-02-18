@@ -76,6 +76,7 @@ export interface User {
 	email: string;
 	name: string;
 	apartmentNumber: string | null;
+	bankAccount: string | null;
 	description: string | null;
 	picture: string | null;
 	primaryLanguage: string;
