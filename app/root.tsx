@@ -18,6 +18,10 @@ import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getLanguageNames } from "~/lib/language-names.server";
 import { getThemePrimaryColor } from "~/lib/settings.server";
+import {
+	generateDarkThemePalette,
+	generateLightThemePalette,
+} from "~/lib/theme-palette";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const authUser = await getAuthenticatedUser(request, getDatabase);
@@ -138,6 +142,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	const loaderData = useLoaderData<typeof loader>();
 	const locale = loaderData?.locale ?? "en";
 	const themePrimary = loaderData?.themePrimary || "#ff2446";
+	const lightPalette = generateLightThemePalette(themePrimary);
+	const darkPalette = generateDarkThemePalette(themePrimary);
 	return (
 		<html lang={locale} suppressHydrationWarning>
 			<head>
@@ -167,10 +173,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
 							:root {
 								--primary: ${themePrimary};
 								--ring: ${themePrimary};
+								--background: ${lightPalette.background};
+								--card: ${lightPalette.card};
+								--popover: ${lightPalette.card};
+								--muted: ${lightPalette.muted};
+								--accent: ${lightPalette.accent};
+								--secondary: ${lightPalette.muted};
+								--input: ${lightPalette.input};
+								--border: ${lightPalette.border};
 							}
 							.dark {
 								--primary: ${themePrimary};
 								--ring: ${themePrimary};
+								--background: ${darkPalette.background};
+								--card: ${darkPalette.card};
+								--popover: ${darkPalette.card};
+								--muted: ${darkPalette.muted};
+								--accent: ${darkPalette.accent};
+								--secondary: ${darkPalette.muted};
+								--input: ${darkPalette.input};
+								--border: ${darkPalette.border};
 							}
 						`,
 					}}
