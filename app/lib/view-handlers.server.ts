@@ -60,7 +60,7 @@ export async function createViewLoader<
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	await requirePermissionOrSelf(
+	const user = await requirePermissionOrSelf(
 		request,
 		permission,
 		permissionSelf,
@@ -78,6 +78,7 @@ export async function createViewLoader<
 		entityType as RelationshipEntityType,
 		entity.id,
 		typesToLoad,
+		{ userPermissions: user.permissions },
 	);
 
 	let extraData = {};

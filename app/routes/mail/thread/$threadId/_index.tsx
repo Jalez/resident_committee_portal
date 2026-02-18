@@ -22,6 +22,7 @@ import {
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db/server.server";
+import type { RelationshipEntityType } from "~/db/types";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
@@ -33,7 +34,11 @@ import type { AnyEntity } from "~/lib/entity-converters";
 import type { Route } from "./+types/_index";
 
 export async function action({ request, params }: Route.ActionArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const currentUser = await requirePermission(
+		request,
+		"committee:email",
+		getDatabase,
+	);
 	const formData = await request.formData();
 	const intent = formData.get("_action") as string;
 	const db = getDatabase();
@@ -43,7 +48,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 		if (!messageId) return { success: false, error: "Missing messageId" };
 
 		// Save relationship changes using the universal system
-		await saveRelationshipChanges(db, "mail", messageId, formData, null);
+		await saveRelationshipChanges(
+			db,
+			"mail",
+			messageId,
+			formData,
+			currentUser.userId || null,
+			currentUser.permissions,
+		);
 
 		// Check for source context to create auto-link (if creating new from specific context)
 		const sourceType = formData.get("_sourceType") as string | null;
@@ -85,7 +97,11 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const currentUser = await requirePermission(
+		request,
+		"committee:email",
+		getDatabase,
+	);
 	const threadId = decodeURIComponent(params.threadId);
 	if (!threadId) throw new Response("Not Found", { status: 404 });
 
@@ -105,6 +121,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"mail",
 		mainMessage.id,
 		["reimbursement", "transaction", "event", "minute"],
+		{ userPermissions: currentUser.permissions },
 	);
 
 	// Get context
@@ -355,42 +372,27 @@ export default function MailThread({
 					currentPath={`/mail/thread/${encodeURIComponent(threadId)}`}
 					sections={[
 						{
-							relationBType: "reimbursement",
-							linkedEntities: (loaderData.relationships.reimbursement?.linked ||
-								[]) as unknown as AnyEntity[],
-							availableEntities: (loaderData.relationships.reimbursement
-								?.available || []) as unknown as AnyEntity[],
-							createType: "reimbursement",
+							type: "reimbursement",
 							label: t("treasury.reimbursements.title"),
 						},
-						{
-							relationBType: "transaction",
-							linkedEntities: (loaderData.relationships.transaction?.linked ||
-								[]) as unknown as AnyEntity[],
-							availableEntities: (loaderData.relationships.transaction
-								?.available || []) as unknown as AnyEntity[],
-							createType: "transaction",
-							label: t("treasury.transactions.title"),
-						},
-						{
-							relationBType: "event",
-							linkedEntities: (loaderData.relationships.event?.linked ||
-								[]) as unknown as AnyEntity[],
-							availableEntities: (loaderData.relationships.event?.available ||
-								[]) as unknown as AnyEntity[],
-							createType: "event",
-							label: t("events.title"),
-						},
-						{
-							relationBType: "minute",
-							linkedEntities: (loaderData.relationships.minute?.linked ||
-								[]) as unknown as AnyEntity[],
-							availableEntities: (loaderData.relationships.minute?.available ||
-								[]) as unknown as AnyEntity[],
-							createType: "minute",
-							label: t("minutes.title"),
-						},
-					]}
+						{ type: "transaction", label: t("treasury.transactions.title") },
+						{ type: "event", label: t("events.title") },
+						{ type: "minute", label: t("minutes.title") },
+					].flatMap(({ type, label }) => {
+						const relData = loaderData.relationships[type];
+						if (!relData) return [];
+						return [
+							{
+								relationBType: type as RelationshipEntityType,
+								linkedEntities: (relData.linked || []) as unknown as AnyEntity[],
+								availableEntities: (relData.available ||
+									[]) as unknown as AnyEntity[],
+								canWrite: relData.canWrite ?? false,
+								createType: type,
+								label,
+							},
+						];
+					})}
 					onLink={relationshipPicker.handleLink}
 					onUnlink={relationshipPicker.handleUnlink}
 					formData={relationshipPicker.toFormData()}

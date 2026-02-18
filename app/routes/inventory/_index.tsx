@@ -49,6 +49,8 @@ import {
 } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import type { Route } from "./+types/_index";
 
 // ============================================================================
@@ -161,6 +163,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 					quantity: number;
 				}[]
 			>,
+			relationsMap: {} as Record<string, RelationBadgeData[]>,
 			languages,
 		};
 	}
@@ -189,6 +192,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const totalCount = items.length;
 	const startIndex = (page - 1) * PAGE_SIZE;
 	const paginatedItems = items.slice(startIndex, startIndex + PAGE_SIZE);
+	const inventoryIds = paginatedItems.map((item) => item.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"inventory",
+		inventoryIds,
+		undefined,
+		permissions,
+	);
 
 	// Fetch transaction links for each item via entity relationships (for remove modal)
 	const transactionLinksMap: Record<
@@ -272,6 +283,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 				new Date(b.date).getTime() - new Date(a.date).getTime(),
 		)
 		.slice(0, 50); // Limit to recent 50
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -289,6 +304,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		uniqueCategories,
 		transactionLinksMap,
 		inventoryTransactions: recentInventoryTransactions,
+		relationsMap: serializedRelationsMap,
 		languages,
 	};
 }
@@ -550,6 +566,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 		uniqueCategories,
 		transactionLinksMap,
 		inventoryTransactions,
+		relationsMap,
 		languages,
 	} = loaderData;
 	const { hasPermission } = useUser();
@@ -569,6 +586,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 			isAdmin={canDelete}
 			transactionLinksMap={transactionLinksMap}
 			inventoryTransactions={inventoryTransactions || []}
+			relationsMap={relationsMap || {}}
 		>
 			{isInfoReel ? (
 				<InventoryInfoReelPage languages={languages} />
@@ -637,6 +655,7 @@ function InventoryTablePage({
 		uniqueCategories,
 		transactionLinksMap,
 		inventoryTransactions,
+		relationsMap,
 	} = useInventory();
 
 	const navigation = useNavigation();
@@ -887,6 +906,7 @@ function InventoryTablePage({
 		uniqueCategories,
 		itemNames: items.map((i) => i.name),
 		transactionLinksMap,
+		relationsMap,
 	});
 
 	// Selection Actions (Left side)

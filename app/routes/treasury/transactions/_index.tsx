@@ -119,7 +119,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"transaction",
 		transactionIds,
-		["budget", "reimbursement", "inventory"],
+		undefined,
+		user.permissions,
 	);
 
 	const transactionLockMap = new Map<string, boolean>();

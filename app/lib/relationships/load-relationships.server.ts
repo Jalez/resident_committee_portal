@@ -7,10 +7,15 @@
 
 import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
+import {
+	canReadRelationType,
+	canWriteRelationType,
+} from "./permissions.server";
 
 interface RelationshipData<T = unknown> {
 	linked: T[];
 	available: T[];
+	canWrite: boolean;
 }
 
 const VALID_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
@@ -74,15 +79,20 @@ export async function loadRelationshipsForEntity(
 	entityType: RelationshipEntityType,
 	entityId: string,
 	relationBTypes: RelationshipEntityType[],
+	options?: { userPermissions?: string[] },
 ): Promise<Record<string, RelationshipData>> {
 	const result: Record<string, RelationshipData> = {};
+	const userPermissions = options?.userPermissions;
+	const readableRelationTypes = relationBTypes.filter((relationBType) =>
+		canReadRelationType(userPermissions, relationBType),
+	);
 
 	const allRelationships = await db.getEntityRelationships(
 		entityType,
 		entityId,
 	);
 
-	for (const relationBType of relationBTypes) {
+	for (const relationBType of readableRelationTypes) {
 		const linkedIds = allRelationships
 			.map((rel) => {
 				const normalizedAType = normalizeRelationshipType(rel.relationAType);
@@ -102,13 +112,12 @@ export async function loadRelationshipsForEntity(
 
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
-		const available = await fetchAvailableEntities(
-			db,
-			relationBType,
-			linkedIds,
-		);
+		const canWrite = canWriteRelationType(userPermissions, relationBType);
+		const available = canWrite
+			? await fetchAvailableEntities(db, relationBType, linkedIds)
+			: [];
 
-		result[relationBType] = { linked, available };
+		result[relationBType] = { linked, available, canWrite };
 	}
 
 	return result;
@@ -265,9 +274,10 @@ export async function loadRelationshipsForType(
 	entityType: RelationshipEntityType,
 	entityId: string,
 	relationBType: RelationshipEntityType,
+	options?: { userPermissions?: string[] },
 ): Promise<RelationshipData> {
 	const result = await loadRelationshipsForEntity(db, entityType, entityId, [
 		relationBType,
-	]);
-	return result[relationBType] || { linked: [], available: [] };
+	], options);
+	return result[relationBType] || { linked: [], available: [], canWrite: false };
 }

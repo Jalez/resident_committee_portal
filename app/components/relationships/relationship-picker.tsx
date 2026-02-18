@@ -34,6 +34,7 @@ export interface RelationshipSection {
 	relationBType: RelationshipEntityType;
 	linkedEntities: AnyEntity[];
 	availableEntities: AnyEntity[];
+	canWrite?: boolean;
 	maxItems?: number;
 	createType?: string;
 	onUpload?: (file: File) => Promise<void>;
@@ -328,7 +329,7 @@ function RelationshipSectionComponent({
 			}
 			items={items}
 			linkableItems={linkableItems}
-			mode={mode}
+			mode={section.canWrite === false ? "view" : mode}
 			currentPath={currentPath}
 			onRemove={handleRemove}
 			onSelectionChange={(id) => {
@@ -457,7 +458,7 @@ export function RelationshipPicker({
 		for (const section of sectionsWithPending) {
 			if (section.linkedEntities.length > 0) {
 				visible.push(section);
-			} else {
+			} else if (section.canWrite !== false) {
 				hidden.push(section);
 			}
 		}

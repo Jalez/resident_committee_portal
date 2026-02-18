@@ -112,7 +112,11 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const currentUser = await requirePermission(
+		request,
+		"committee:email",
+		getDatabase,
+	);
 	const db = getDatabase();
 
 	const roles = await db.getAllRoles();
@@ -180,6 +184,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"mail",
 		draftId,
 		[...relationshipTypes],
+		{ userPermissions: currentUser.permissions },
 	);
 
 	// Reply to a message
@@ -300,7 +305,14 @@ export async function action({ request }: Route.ActionArgs) {
 			? ensureSignedBody(body, currentUser.name, currentUser.roleName)
 			: body;
 
-		await saveRelationshipChanges(db, "mail", draftId, formData, null);
+		await saveRelationshipChanges(
+			db,
+			"mail",
+			draftId,
+			formData,
+			currentUser.userId || null,
+			currentUser.permissions,
+		);
 		const updated = await db.updateMailDraft(draftId, {
 			toJson,
 			ccJson,
@@ -349,13 +361,22 @@ export async function action({ request }: Route.ActionArgs) {
 			contentType?: string;
 		}[] = [];
 		if (draftId) {
-			await saveRelationshipChanges(db, "mail", draftId, formData, null);
+			await saveRelationshipChanges(
+				db,
+				"mail",
+				draftId,
+				formData,
+				currentUser.userId || null,
+				currentUser.permissions,
+			);
 
-			const relationshipData = await loadRelationshipsForEntity(db, "mail", draftId, [
-				"receipt",
-				"reimbursement",
-				"minute",
-			]);
+			const relationshipData = await loadRelationshipsForEntity(
+				db,
+				"mail",
+				draftId,
+				["receipt", "reimbursement", "minute"],
+				{ userPermissions: currentUser.permissions },
+			);
 			const linkedReimbursements = (
 				relationshipData.reimbursement?.linked || []
 			) as Array<Record<string, unknown>>;
@@ -1321,43 +1342,24 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 							mode="edit"
 							currentPath={`/mail/drafts/${draftId}/edit`}
 							sections={[
-								{
-									relationBType: "receipt",
-									linkedEntities: (relationships.receipt?.linked ?? []) as any[],
-									availableEntities: (relationships.receipt?.available ??
-										[]) as any[],
-								},
-								{
-									relationBType: "reimbursement",
-									linkedEntities: (relationships.reimbursement?.linked ??
-										[]) as any[],
-									availableEntities: (relationships.reimbursement?.available ??
-										[]) as any[],
-									maxItems: 1,
-								},
-								{
-									relationBType: "transaction",
-									linkedEntities: (relationships.transaction?.linked ??
-										[]) as any[],
-									availableEntities: (relationships.transaction?.available ??
-										[]) as any[],
-									maxItems: 1,
-								},
-								{
-									relationBType: "event",
-									linkedEntities: (relationships.event?.linked ?? []) as any[],
-									availableEntities: (relationships.event?.available ??
-										[]) as any[],
-									maxItems: 1,
-								},
-								{
-									relationBType: "minute",
-									linkedEntities: (relationships.minute?.linked ?? []) as any[],
-									availableEntities: (relationships.minute?.available ??
-										[]) as any[],
-									maxItems: 1,
-								},
-							]}
+								{ type: "receipt" as const },
+								{ type: "reimbursement" as const, maxItems: 1 },
+								{ type: "transaction" as const, maxItems: 1 },
+								{ type: "event" as const, maxItems: 1 },
+								{ type: "minute" as const, maxItems: 1 },
+							].flatMap(({ type, maxItems }) => {
+								const relData = relationships[type];
+								if (!relData) return [];
+								return [
+									{
+										relationBType: type,
+										linkedEntities: (relData.linked ?? []) as any[],
+										availableEntities: (relData.available ?? []) as any[],
+										canWrite: relData.canWrite ?? false,
+										maxItems,
+									},
+								];
+							})}
 							onLink={relationshipPicker.handleLink}
 							onUnlink={relationshipPicker.handleUnlink}
 							formData={relationshipPicker.toFormData()}

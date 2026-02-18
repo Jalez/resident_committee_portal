@@ -44,7 +44,7 @@ export async function action({ request }: Route.ActionArgs) {}
 export async function loader({ request }: Route.LoaderArgs) {
 	// Require either treasury:breakdown:read or treasury:breakdown:read-self permission
 	// Note: Breakdown always shows all transactions regardless of permission level
-	await requireAnyPermission(
+	const user = await requireAnyPermission(
 		request,
 		["treasury:breakdown:read"],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
@@ -174,6 +174,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"budget",
 		budgetIds,
+		undefined,
+		user.permissions,
 	);
 
 	const budgetedTransactions = transactionsForTotals
@@ -197,6 +199,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"transaction",
 		transactionIds,
+		undefined,
+		user.permissions,
 	);
 
 	// Get all years with transactions for navigation
@@ -222,13 +226,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	});
 	const serializedBudgetRelationsMap: Record<string, RelationBadgeData[]> = {};
 	for (const [id, relations] of budgetRelationsMap) {
-		serializedBudgetRelationsMap[id] = relations.filter(
-			(relation) =>
-				!(
-					relation.type === "transaction" &&
-					excludedTransactionIds.has(relation.id)
-				),
-		);
+		serializedBudgetRelationsMap[id] = relations;
 	}
 	const serializedTransactionRelationsMap: Record<string, RelationBadgeData[]> = {};
 	for (const [id, relations] of transactionRelationsMap) {

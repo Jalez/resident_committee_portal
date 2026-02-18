@@ -1,5 +1,6 @@
 import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
+import { canReadRelationType } from "./relationships/permissions.server";
 import { loadRelationshipsForEntity } from "./relationships/load-relationships.server";
 import {
 	RELATION_CONFIG,
@@ -32,13 +33,25 @@ const ALL_RELATION_TYPES: RelationshipEntityType[] = [
 	"event",
 ];
 
+function getVisibleRelationTypes(
+	relationTypes: RelationshipEntityType[] | undefined,
+	userPermissions: string[] | undefined,
+): RelationshipEntityType[] {
+	const typesToLoad = relationTypes ?? ALL_RELATION_TYPES;
+	if (!userPermissions) return typesToLoad;
+
+	return typesToLoad.filter((type) => canReadRelationType(userPermissions, type));
+}
+
 export async function loadRelationsForTableColumn(
 	db: ReturnType<typeof getDatabase>,
 	entityType: RelationshipEntityType,
 	entityId: string,
 	relationTypes?: RelationshipEntityType[],
+	userPermissions?: string[],
 ): Promise<RelationBadgeData[]> {
-	const typesToLoad = relationTypes ?? ALL_RELATION_TYPES;
+	const typesToLoad = getVisibleRelationTypes(relationTypes, userPermissions);
+	if (typesToLoad.length === 0) return [];
 
 	const relationships = await loadRelationshipsForEntity(
 		db,
@@ -71,11 +84,24 @@ export async function loadRelationsForTableColumn(
 			const name = config.getName(entity);
 			const shortId = id.slice(0, 8);
 			const tooltipSubtitle = name !== "—" ? `${name} (${shortId})` : shortId;
+			const href =
+				typedRelType === "mail"
+					? (() => {
+							const threadId = record.threadId;
+							if ("draftType" in record) {
+								return `/mail/drafts/${id}/edit`;
+							}
+							if (typeof threadId === "string" && threadId.trim().length > 0) {
+								return `/mail/thread/${encodeURIComponent(threadId)}`;
+							}
+							return `/mail/messages/${id}`;
+						})()
+					: `${config.route}/${id}`;
 
 			badgeData.push({
 				id,
 				type: typedRelType,
-				href: `${config.route}/${id}`,
+				href,
 				icon: config.icon,
 				statusVariant,
 				tooltipTitleKey: config.labelKey,
@@ -92,6 +118,7 @@ export async function loadRelationsMapForEntities(
 	entityType: RelationshipEntityType,
 	entityIds: string[],
 	relationTypes?: RelationshipEntityType[],
+	userPermissions?: string[],
 ): Promise<Map<string, RelationBadgeData[]>> {
 	const map = new Map<string, RelationBadgeData[]>();
 
@@ -102,6 +129,7 @@ export async function loadRelationsMapForEntities(
 				entityType,
 				id,
 				relationTypes,
+				userPermissions,
 			);
 			map.set(id, relations);
 		}),

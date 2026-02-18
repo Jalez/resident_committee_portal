@@ -99,7 +99,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"reimbursement",
 		purchaseIds,
-		["transaction", "receipt"],
+		undefined,
+		user.permissions,
 	);
 
 	const enrichedPurchases = purchases.map((p) => ({

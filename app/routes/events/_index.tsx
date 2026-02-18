@@ -143,6 +143,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"event",
 		eventIds,
+		undefined,
+		permissions,
 	);
 
 	const groupedMap = new Map<string, DisplayEvent[]>();

@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useFetcher, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import type { InventoryItem } from "~/db";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	COLUMN_KEYS,
 	type ColumnKey,
@@ -51,6 +52,7 @@ interface InventoryContextValue {
 		date: Date;
 		amount: string;
 	}[];
+	relationsMap: Record<string, RelationBadgeData[]>;
 
 	// UI State
 	showAddRow: boolean;
@@ -128,6 +130,7 @@ interface InventoryProviderProps {
 		date: Date;
 		amount: string;
 	}[];
+	relationsMap?: Record<string, RelationBadgeData[]>;
 }
 
 export function InventoryProvider({
@@ -143,6 +146,7 @@ export function InventoryProvider({
 	isAdmin,
 	transactionLinksMap = {},
 	inventoryTransactions = [],
+	relationsMap = {},
 }: InventoryProviderProps) {
 	const fetcher = useFetcher();
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -345,6 +349,7 @@ export function InventoryProvider({
 		isAdmin,
 		transactionLinksMap,
 		inventoryTransactions,
+		relationsMap,
 
 		// UI State
 		showAddRow,

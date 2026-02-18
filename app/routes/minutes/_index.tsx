@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
 import {
@@ -12,7 +13,6 @@ import {
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
 import {
-	type EntityRelationship,
 	getDatabase,
 	type Minute,
 } from "~/db/server.server";
@@ -22,6 +22,8 @@ import {
 	requireAnyPermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
@@ -67,6 +69,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 			new Date(b.date || b.createdAt).getTime() -
 			new Date(a.date || a.createdAt).getTime(),
 	);
+	const minuteIds = sortedMinutes.map((minute) => minute.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"minute",
+		minuteIds,
+		undefined,
+		user.permissions,
+	);
 
 	const creatorIds = [
 		...new Set(
@@ -88,6 +98,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 			allMinutes.map((m) => m.year).filter((y): y is number => Boolean(y)),
 		),
 	].sort((a, b) => b - a);
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -99,6 +113,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		years,
 		currentYear: year,
 		creatorsMap: Object.fromEntries(creatorsMap),
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -108,12 +123,16 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 		years,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
+		relationsMap: relationsMapRaw,
 		canWrite,
 		canUpdate,
 		canDelete,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
+	);
+	const relationsMap = new Map(
+		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
@@ -210,6 +229,14 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 			cell: (row: Minute) =>
 				row.createdBy ? (creatorsMap.get(row.createdBy) ?? "—") : "—",
 			cellClassName: "text-gray-500",
+		},
+		{
+			key: "relations",
+			header: t("common.relations.title"),
+			cell: (row: Minute) => (
+				<RelationsColumn relations={relationsMap.get(row.id) || []} />
+			),
+			cellClassName: "min-w-[170px]",
 		},
 	];
 

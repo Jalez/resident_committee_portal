@@ -11,6 +11,7 @@
 import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { cleanupOrphanedDraft } from "./draft-lifecycle.server";
+import { canWriteRelationType } from "./permissions.server";
 
 interface RelationshipLink {
 	relationBType: RelationshipEntityType;
@@ -48,6 +49,7 @@ export async function saveRelationshipChanges(
 	relationId: string,
 	formData: FormData,
 	userId: string | null,
+	userPermissions?: string[],
 ): Promise<SaveRelationshipChangesResult> {
 	const result: SaveRelationshipChangesResult = {
 		linked: 0,
@@ -113,6 +115,9 @@ export async function saveRelationshipChanges(
 
 	// 3. Process links
 	for (const link of links) {
+		if (!canWriteRelationType(userPermissions, link.relationBType)) {
+			continue;
+		}
 		try {
 			// Check if relationship already exists
 			const exists = await db.entityRelationshipExists(

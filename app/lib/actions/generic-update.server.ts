@@ -132,7 +132,7 @@ export function createGenericUpdateAction(
 				getDatabase,
 			);
 		} else {
-			await requirePermission(
+			user = await requirePermission(
 				request,
 				`${schema.permissionPrefix}:update`,
 				getDatabase,
@@ -206,6 +206,7 @@ export function createGenericUpdateAction(
 				entityId,
 				formData,
 				user?.userId || null,
+				user?.permissions,
 			);
 		}
 

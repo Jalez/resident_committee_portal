@@ -7,7 +7,6 @@ import {
 	useFetcher,
 	useNavigation,
 	useRevalidator,
-	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
 import { MailItem } from "~/components/mail/mail-item";
@@ -15,6 +14,8 @@ import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -25,19 +26,31 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const user = await requirePermission(request, "committee:email", getDatabase);
 	const url = new URL(request.url);
-	const direction = (url.searchParams.get("direction") || "inbox") as
-		| "inbox"
-		| "sent";
+	const pathname = url.pathname;
+	const direction = pathname.endsWith("/sent") ? "sent" : "inbox";
 	const db = getDatabase();
 
 	const threads = await db.getCommitteeMailThreads(direction, 50, 0);
+	const messageIds = threads.map((thread) => thread.latestMessage.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"mail",
+		messageIds,
+		undefined,
+		user.permissions,
+	);
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
 
 	return {
 		siteConfig: SITE_CONFIG,
 		threads,
 		direction,
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -92,11 +105,12 @@ function formatDate(date: Date | string): string {
 }
 
 export default function MailInbox({ loaderData }: Route.ComponentProps) {
-	const { threads, direction } = loaderData;
+	const { threads, direction, relationsMap: relationsMapRaw } = loaderData;
 	const { t } = useTranslation();
-	const [searchParams] = useSearchParams();
 	const actionData = useActionData<typeof action>();
-	const currentDirection = searchParams.get("direction") || "inbox";
+	const relationsMap = new Map(
+		Object.entries((relationsMapRaw ?? {}) as Record<string, RelationBadgeData[]>),
+	);
 	const deleteFetcher = useFetcher();
 	const navigation = useNavigation();
 	const revalidator = useRevalidator();
@@ -107,13 +121,13 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 			const formData = new FormData();
 			formData.set("_action", "deleteMessage");
 			formData.set("messageId", messageId);
-			formData.set("direction", currentDirection);
+			formData.set("direction", direction);
 			deleteFetcher.submit(formData, {
 				action: "/mail",
 				method: "post",
 			});
 		},
-		[currentDirection, deleteFetcher],
+		[direction, deleteFetcher],
 	);
 
 	useEffect(() => {
@@ -149,7 +163,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 		<div className="flex flex-col">
 			<div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
 				<h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-					{currentDirection === "sent" ? t("mail.sent") : t("mail.inbox")}
+					{direction === "sent" ? t("mail.sent") : t("mail.inbox")}
 				</h2>
 				<div className="flex items-center gap-4">
 					<span className="text-xs text-gray-500 dark:text-gray-400">
@@ -161,7 +175,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 							}),
 						})}
 					</span>
-					{currentDirection === "inbox" ? (
+					{direction === "inbox" ? (
 						<Form method="post" className="flex">
 							<input type="hidden" name="_action" value="refreshInbox" />
 							<Button
@@ -226,6 +240,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 								href={threadHref}
 								onDelete={handleDeleteMessage}
 								threadCount={thread.messageCount}
+								relations={relationsMap.get(msg.id) || []}
 							/>
 						);
 					})

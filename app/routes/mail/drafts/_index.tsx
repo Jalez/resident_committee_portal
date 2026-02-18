@@ -7,6 +7,8 @@ import { MailItem } from "~/components/mail/mail-item";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -17,12 +19,25 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const user = await requirePermission(request, "committee:email", getDatabase);
 	const db = getDatabase();
 	const drafts = await db.getMailDrafts(50);
+	const draftIds = drafts.map((draft) => draft.id);
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"mail",
+		draftIds,
+		undefined,
+		user.permissions,
+	);
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
 	return {
 		siteConfig: SITE_CONFIG,
 		drafts,
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -65,8 +80,11 @@ function formatDraftRecipients(toJson: string | null): string {
 }
 
 export default function MailDrafts({ loaderData }: Route.ComponentProps) {
-	const { drafts } = loaderData;
+	const { drafts, relationsMap: relationsMapRaw } = loaderData;
 	const { t } = useTranslation();
+	const relationsMap = new Map(
+		Object.entries((relationsMapRaw ?? {}) as Record<string, RelationBadgeData[]>),
+	);
 	const deleteFetcher = useFetcher();
 
 	const handleDeleteDraft = useCallback(
@@ -122,6 +140,7 @@ export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 								preview={preview || undefined}
 								href={`/mail/drafts/${draft.id}/edit`}
 								onDelete={handleDeleteDraft}
+								relations={relationsMap.get(draft.id) || []}
 							/>
 						);
 					})}

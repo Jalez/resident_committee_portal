@@ -84,7 +84,7 @@ export async function createEditLoader<
 		throw new Response("Not Found", { status: 404 });
 	}
 
-	await requirePermissionOrSelf(
+	const user = await requirePermissionOrSelf(
 		request,
 		permission,
 		permissionSelf,
@@ -102,6 +102,7 @@ export async function createEditLoader<
 		entityType as RelationshipEntityType,
 		entity.id,
 		typesToLoad,
+		{ userPermissions: user.permissions },
 	);
 
 	// Context and URL params
@@ -294,6 +295,7 @@ export async function createEditAction<
 			entity.id,
 			formData,
 			user?.userId || null,
+			user?.permissions,
 		);
 	} catch (error) {
 		console.error(

@@ -123,7 +123,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		db,
 		"receipt",
 		receiptIds,
-		["reimbursement"],
+		undefined,
+		user.permissions,
 	);
 
 	const years = [

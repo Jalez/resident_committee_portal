@@ -1,7 +1,9 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
+import { RelationsColumn } from "~/components/relations-column";
 import { Checkbox } from "~/components/ui/checkbox";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -56,6 +58,7 @@ interface UseInventoryColumnsProps {
 	itemNames: string[];
 	// Transaction links for the transactions column
 	transactionLinksMap?: Record<string, TransactionLink[]>;
+	relationsMap?: Record<string, RelationBadgeData[]>;
 }
 
 // Status badge component
@@ -91,6 +94,7 @@ export function useInventoryColumns({
 	uniqueCategories,
 	itemNames,
 	transactionLinksMap = {},
+	relationsMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
 	const { t, i18n } = useTranslation();
 
@@ -451,6 +455,14 @@ export function useInventoryColumns({
 			},
 		});
 	}
+
+	columns.push({
+		id: "relations",
+		header: t("common.relations.title"),
+		cell: ({ row }) => (
+			<RelationsColumn relations={relationsMap[row.original.id] || []} />
+		),
+	});
 
 	if (isStaff && visibleColumns.has("showInInfoReel")) {
 		columns.push({
