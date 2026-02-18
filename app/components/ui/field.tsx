@@ -197,7 +197,7 @@ export function Field({
 
 	return (
 		<div
-			className={cn("group space-y-1 relative", className)}
+			className={cn("group min-w-0 space-y-1 relative", className)}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
@@ -229,7 +229,7 @@ export function Field({
 				</div>
 			)}
 
-			<div className="relative">
+			<div className="relative min-w-0">
 				{type === "select" && options ? (
 					<>
 						{readOnly && (
@@ -337,7 +337,7 @@ export function Field({
 			</div>
 
 			{description && !error && (
-				<p className="text-sm text-muted-foreground">{description}</p>
+				<p className="text-sm text-muted-foreground break-words">{description}</p>
 			)}
 			{error && <p className="text-sm text-destructive">{error}</p>}
 		</div>

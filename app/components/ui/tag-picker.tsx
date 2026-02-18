@@ -12,7 +12,7 @@ import {
 import { cn } from "~/lib/utils";
 
 const INPUT_CLASS =
-	"flex-1 min-w-[100px] bg-card border-border border-0 outline-none py-1 text-sm";
+	"flex-1 min-w-[100px] border-0 bg-transparent py-1 text-sm outline-none";
 
 export interface TagPickerProps<TItem, TSuggestion> {
 	selectedItems: TItem[];
@@ -146,8 +146,8 @@ export function TagPicker<TItem, TSuggestion>({
 						aria-label={label}
 						aria-multiselectable
 						className={cn(
-							"flex flex-1 min-w-[100px] flex-wrap items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 min-h-8 px-2 py-1",
-							open && "ring-ring/50 ring-2 ring-offset-2",
+							"border-input dark:bg-input/30 flex min-w-[100px] flex-1 flex-wrap items-center gap-1 rounded-md border bg-transparent px-2 py-1 min-h-8",
+							open && "ring-ring/50 ring-2 ring-offset-2 ring-offset-background",
 							disabled && "opacity-50 cursor-not-allowed",
 						)}
 					>

@@ -27,7 +27,12 @@ export function ReadOnlyFields({
 	return (
 		<Card>
 			<CardContent>
-				<div className={cn("flex flex-row justify-between")}>
+				<div
+					className={cn(
+						"grid gap-4",
+						columns > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1",
+					)}
+				>
 					{Object.entries(fields).map(([key, value]) => {
 						if (value === null || value === undefined) return null;
 
@@ -43,9 +48,9 @@ export function ReadOnlyFields({
 									: key;
 
 						return (
-							<div key={key}>
+							<div key={key} className="min-w-0">
 								<Label className="text-muted-foreground">{displayLabel}</Label>
-								<div className="font-medium">{displayValue}</div>
+								<div className="font-medium break-all">{displayValue}</div>
 							</div>
 						);
 					})}

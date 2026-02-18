@@ -149,7 +149,7 @@ export function FileUpload({
 							<span className="material-symbols-outlined text-4xl text-primary">
 								description
 							</span>
-							<div className="text-sm font-medium text-center">
+							<div className="text-sm font-medium text-center break-all max-w-full">
 								{selectedFile.name}
 							</div>
 							<p className="text-xs text-muted-foreground">

@@ -398,7 +398,7 @@ export function EditForm({
 						id={formId}
 						method={method}
 						action={action}
-						className="space-y-6"
+						className="space-y-6 min-w-0"
 						encType={encType}
 					>
 						{/* Hidden Fields */}

@@ -2,6 +2,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
+import { AddItemButton } from "~/components/add-item-button";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
@@ -276,6 +277,9 @@ export function ViewForm({
 				};
 			});
 	}, [relationships, definition, t, entityType]);
+	const hasRelationshipSections = Boolean(
+		relationshipSections && relationshipSections.length > 0,
+	);
 
 	if (variant === "content") {
 		const primaryTitle =
@@ -369,24 +373,32 @@ export function ViewForm({
 	return (
 		<PageWrapper>
 			<div className={cn("w-full mx-auto px-4 pb-12", className)}>
-				<div className="flex items-center justify-between mb-4">
-					<PageHeader title={title} />
-					<div className="flex gap-2">
-						{canEdit && resolvedEditUrl && (
-							<Button variant="default" asChild>
-								<Link to={resolvedEditUrl}>
-									<span className="material-symbols-outlined mr-2 text-sm">
-										edit
-									</span>
-									{t("common.actions.edit")}
-								</Link>
-							</Button>
-						)}
-					</div>
-				</div>
+				<PageHeader
+					title={title}
+					className="mt-3 mb-2"
+					actions={
+						canEdit && resolvedEditUrl ? (
+							<AddItemButton
+								to={resolvedEditUrl}
+								title={t("common.actions.edit")}
+								label={t("common.actions.edit")}
+								variant="button"
+								icon="edit"
+							/>
+						) : undefined
+					}
+				/>
 
 				<div className="space-y-6">
-					<TreasuryDetailCard title={title}>
+					<div
+						className={cn(
+							hasRelationshipSections && "grid gap-6 lg:grid-cols-3",
+						)}
+					>
+						<TreasuryDetailCard
+							title={title}
+							className={cn(hasRelationshipSections && "lg:col-span-2")}
+						>
 						<div className="grid gap-4">
 							{fields.map((field) => (
 								<TreasuryField
@@ -403,16 +415,6 @@ export function ViewForm({
 								</TreasuryField>
 							))}
 						</div>
-
-						{relationshipSections && relationshipSections.length > 0 && (
-							<RelationshipPicker
-								relationAType={entityType}
-								relationAId={entityId}
-								relationAName={entityName || ""}
-								mode="view"
-								sections={relationshipSections}
-							/>
-						)}
 
 						{canDelete && resolvedDeleteUrl && (
 							<div className="flex gap-2 pt-4">
@@ -449,7 +451,23 @@ export function ViewForm({
 								loading={deleteFetcher.state !== "idle"}
 							/>
 						)}
-					</TreasuryDetailCard>
+						</TreasuryDetailCard>
+
+						{hasRelationshipSections && relationshipSections && (
+							<TreasuryDetailCard
+								title={t("common.relations.title", "Relations")}
+								className="lg:col-span-1"
+							>
+								<RelationshipPicker
+									relationAType={entityType}
+									relationAId={entityId}
+									relationAName={entityName || ""}
+									mode="view"
+									sections={relationshipSections}
+								/>
+							</TreasuryDetailCard>
+						)}
+					</div>
 
 					{children}
 
