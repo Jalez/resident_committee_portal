@@ -36,6 +36,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		transaction.id,
 		formData,
 		user?.userId || "system",
+		user?.permissions,
 	);
 
 	// Auto-publish draft if all required fields are filled
