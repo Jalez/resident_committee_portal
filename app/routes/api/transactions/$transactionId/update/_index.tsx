@@ -41,14 +41,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	// Auto-publish draft if all required fields are filled
 	if (transaction.status === "draft") {
 		const description = formData.get("description") as string;
-		const category = formData.get("category") as string;
 		const amount = formData.get("amount") as string;
 		const newStatus = getDraftAutoPublishStatus(
 			"transaction",
 			transaction.status,
 			{
 				description,
-				category,
 				amount,
 			},
 		);
@@ -94,6 +92,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	}
 	if (controlled.reimbursementStatus !== undefined) {
 		formData.set("reimbursementStatus", controlled.reimbursementStatus);
+	}
+	if (controlled.year !== undefined) {
+		formData.set("year", String(controlled.year));
 	}
 
 	// Handle returnUrl redirect (from source entity picker)

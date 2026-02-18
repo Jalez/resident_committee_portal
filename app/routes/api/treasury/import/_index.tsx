@@ -145,12 +145,6 @@ export async function action({ request }: Route.ActionArgs) {
 				}
 
 				// Optional fields
-				const categoryRaw = getColumn(row, [
-					"category",
-					"Category",
-					"Kategoria",
-					"kategoria",
-				]);
 				const dateRaw = getColumn(row, ["date", "Date", "Päivä", "päivä"]);
 				const statusRaw = getColumn(row, ["status", "Status", "Tila", "tila"]);
 
@@ -182,7 +176,6 @@ export async function action({ request }: Route.ActionArgs) {
 					type,
 					year,
 					date,
-					category: categoryRaw ? String(categoryRaw).trim() || null : null,
 					status,
 					reimbursementStatus: "not_requested",
 					createdBy: user.userId,
