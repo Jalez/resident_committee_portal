@@ -6,6 +6,7 @@ import { mapPurchaseStatusToTransactionControl } from "./transaction-control";
 export interface TransactionControlledFields {
 	amount?: string;
 	description?: string;
+	year?: number;
 	type?: TransactionType;
 	status?: ReturnType<typeof mapPurchaseStatusToTransactionControl>["status"];
 	reimbursementStatus?: ReturnType<
@@ -33,6 +34,9 @@ export async function getControlledTransactionFields(
 	}
 	if (hasContextControl && context.description?.trim()) {
 		controlled.description = context.description.trim();
+	}
+	if (hasContextControl && context.date) {
+		controlled.year = context.date.getFullYear();
 	}
 
 	const relationships = await db.getEntityRelationships(

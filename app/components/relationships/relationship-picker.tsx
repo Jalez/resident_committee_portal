@@ -318,7 +318,14 @@ function RelationshipSectionComponent({
 
 	return (
 		<RelationActions
-			label={section.label || t(config.pluralKey)}
+			label={
+				section.label ||
+				t(config.pluralKey, {
+					defaultValue: t(config.labelKey, {
+						defaultValue: config.type,
+					}),
+				})
+			}
 			items={items}
 			linkableItems={linkableItems}
 			mode={mode}
@@ -363,7 +370,9 @@ export function RelationshipPicker({
 }: RelationshipPickerProps) {
 	const { t } = useTranslation();
 	const [isAddingNewType, setIsAddingNewType] = useState(false);
-	const [selectedNewType, setSelectedNewType] =
+	const [pendingNewType, setPendingNewType] =
+		useState<RelationshipEntityType | null>(null);
+	const [confirmedNewType, setConfirmedNewType] =
 		useState<RelationshipEntityType | null>(null);
 
 	const sourceEntityType = relationAType as unknown as EntityType;
@@ -458,13 +467,34 @@ export function RelationshipPicker({
 
 	const handleCancelNewType = () => {
 		setIsAddingNewType(false);
-		setSelectedNewType(null);
+		setPendingNewType(null);
 	};
 
-	const selectedHiddenSection = React.useMemo(() => {
-		if (!selectedNewType) return null;
-		return hiddenSections.find((s) => s.relationBType === selectedNewType);
-	}, [hiddenSections, selectedNewType]);
+	const handleConfirmNewType = () => {
+		if (!pendingNewType) return;
+		setConfirmedNewType(pendingNewType);
+		setIsAddingNewType(false);
+		setPendingNewType(null);
+	};
+
+	const resetAddTypeFlow = () => {
+		setIsAddingNewType(false);
+		setPendingNewType(null);
+		setConfirmedNewType(null);
+	};
+
+	const confirmedSection = React.useMemo(() => {
+		if (!confirmedNewType) return null;
+		return sectionsWithPending.find((s) => s.relationBType === confirmedNewType);
+	}, [sectionsWithPending, confirmedNewType]);
+
+	const visibleTypeSet = React.useMemo(
+		() => new Set(visibleSections.map((s) => s.relationBType)),
+		[visibleSections],
+	);
+
+	const shouldShowConfirmedSection =
+		!!confirmedSection && !visibleTypeSet.has(confirmedSection.relationBType);
 
 	return (
 		<div className={className}>
@@ -484,6 +514,25 @@ export function RelationshipPicker({
 						sourceEntityType={sourceEntityType}
 					/>
 				))}
+
+				{shouldShowConfirmedSection && confirmedSection && (
+					<RelationshipSectionComponent
+						key={`confirmed-${confirmedSection.relationBType}`}
+						section={confirmedSection}
+						relationAType={relationAType}
+						relationAId={relationAId}
+						relationAName={relationAName}
+						mode={mode}
+						currentPath={currentPath}
+						onLink={(type, id, metadata) => {
+							handleLink(type, id, metadata);
+							resetAddTypeFlow();
+						}}
+						onUnlink={handleUnlink}
+						storageKeyPrefix={storageKeyPrefix}
+						sourceEntityType={sourceEntityType}
+					/>
+				)}
 			</div>
 
 			{mode === "edit" && hiddenSections.length > 0 && (
@@ -513,9 +562,9 @@ export function RelationshipPicker({
 							) : (
 								<div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border-2 border-dashed border-muted-foreground/30 rounded-md p-1">
 									<Select
-										value={selectedNewType || ""}
+										value={pendingNewType || ""}
 										onValueChange={(val) =>
-											setSelectedNewType(val as RelationshipEntityType)
+											setPendingNewType(val as RelationshipEntityType)
 										}
 									>
 										<SelectTrigger className="h-8 w-[180px]">
@@ -551,6 +600,20 @@ export function RelationshipPicker({
 										variant="ghost"
 										size="icon"
 										className="h-8 w-8 rounded-full"
+										onClick={handleConfirmNewType}
+										title={t("common.actions.confirm", "Confirm")}
+										disabled={!pendingNewType}
+									>
+										<span className="material-symbols-outlined text-sm">
+											check
+										</span>
+									</Button>
+
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8 rounded-full"
 										onClick={handleCancelNewType}
 										title={t("common.actions.cancel")}
 									>
@@ -562,28 +625,6 @@ export function RelationshipPicker({
 							)}
 						</div>
 					</div>
-
-					{selectedHiddenSection && (
-						<div className="mt-4">
-							<RelationshipSectionComponent
-								key={selectedHiddenSection.relationBType}
-								section={selectedHiddenSection}
-								relationAType={relationAType}
-								relationAId={relationAId}
-								relationAName={relationAName}
-								mode={mode}
-								currentPath={currentPath}
-								onLink={(type, id) => {
-									handleLink(type, id);
-									setIsAddingNewType(false);
-									setSelectedNewType(null);
-								}}
-								onUnlink={handleUnlink}
-								storageKeyPrefix={storageKeyPrefix}
-								sourceEntityType={sourceEntityType}
-							/>
-						</div>
-					)}
 				</>
 			)}
 

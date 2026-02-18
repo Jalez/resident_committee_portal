@@ -219,7 +219,6 @@ async function populateContextFromEntity(
 						: null;
 					context.description = transaction.description;
 					context.currency = "EUR";
-					context.category = transaction.category;
 					context.valueSource = "transaction";
 				}
 				break;

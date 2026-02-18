@@ -1,4 +1,5 @@
 import type { RelationshipEntityType } from "~/db/types";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
 export const TREASURY_PURCHASE_STATUS_VARIANTS: Record<string, string> = {
 	pending:
@@ -21,7 +22,8 @@ export const TREASURY_TRANSACTION_STATUS_VARIANTS: Record<string, string> = {
 };
 
 export const TREASURY_RECEIPT_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
@@ -33,45 +35,52 @@ export const TREASURY_BUDGET_STATUS_VARIANTS: Record<string, string> = {
 };
 
 export const INVENTORY_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	removed: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 	legacy: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 export const MINUTE_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 export const EVENT_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 	completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
 export const NEWS_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 export const POLL_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	closed: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 };
 
 export const SOCIAL_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
 export const FAQ_STATUS_VARIANTS: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+	active:
+		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 	draft: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 	archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
@@ -101,9 +110,12 @@ function getEntityStatus(entity: unknown): string | null {
 	return typeof status === "string" ? status : null;
 }
 
-export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig> = {
+export const RELATION_CONFIG: Record<
+	RelationshipEntityType,
+	RelationTypeConfig
+> = {
 	receipt: {
-		icon: "receipt_long",
+		icon: ENTITY_REGISTRY.receipt.icon,
 		route: "/treasury/receipts",
 		labelKey: "common.relation_types.receipt",
 		statusVariantMap: TREASURY_RECEIPT_STATUS_VARIANTS,
@@ -111,7 +123,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	transaction: {
-		icon: "swap_horiz",
+		icon: ENTITY_REGISTRY.transaction.icon,
 		route: "/treasury/transactions",
 		labelKey: "common.relation_types.transaction",
 		statusVariantMap: TREASURY_TRANSACTION_STATUS_VARIANTS,
@@ -119,7 +131,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	reimbursement: {
-		icon: "request_quote",
+		icon: ENTITY_REGISTRY.reimbursement.icon,
 		route: "/treasury/reimbursements",
 		labelKey: "common.relation_types.reimbursement",
 		statusVariantMap: TREASURY_PURCHASE_STATUS_VARIANTS,
@@ -131,7 +143,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	budget: {
-		icon: "bookmark",
+		icon: ENTITY_REGISTRY.budget.icon,
 		route: "/treasury/budgets",
 		labelKey: "common.relation_types.budget",
 		statusVariantMap: TREASURY_BUDGET_STATUS_VARIANTS,
@@ -139,7 +151,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	inventory: {
-		icon: "inventory_2",
+		icon: ENTITY_REGISTRY.inventory.icon,
 		route: "/inventory",
 		labelKey: "common.relation_types.inventory",
 		statusVariantMap: INVENTORY_STATUS_VARIANTS,
@@ -147,7 +159,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	minute: {
-		icon: "description",
+		icon: ENTITY_REGISTRY.minute.icon,
 		route: "/minutes",
 		labelKey: "common.relation_types.minute",
 		statusVariantMap: MINUTE_STATUS_VARIANTS,
@@ -155,7 +167,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	news: {
-		icon: "newspaper",
+		icon: ENTITY_REGISTRY.news.icon,
 		route: "/news",
 		labelKey: "common.relation_types.news",
 		statusVariantMap: NEWS_STATUS_VARIANTS,
@@ -163,7 +175,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	faq: {
-		icon: "help",
+		icon: ENTITY_REGISTRY.faq.icon,
 		route: "/faq",
 		labelKey: "common.relation_types.faq",
 		statusVariantMap: FAQ_STATUS_VARIANTS,
@@ -171,7 +183,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	poll: {
-		icon: "poll",
+		icon: ENTITY_REGISTRY.poll.icon,
 		route: "/polls",
 		labelKey: "common.relation_types.poll",
 		statusVariantMap: POLL_STATUS_VARIANTS,
@@ -179,7 +191,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	social: {
-		icon: "share",
+		icon: ENTITY_REGISTRY.social.icon,
 		route: "/social",
 		labelKey: "common.relation_types.social",
 		statusVariantMap: SOCIAL_STATUS_VARIANTS,
@@ -187,7 +199,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: getEntityStatus,
 	},
 	mail: {
-		icon: "mail",
+		icon: ENTITY_REGISTRY.mail.icon,
 		route: "/mail/messages",
 		labelKey: "common.relation_types.mail",
 		statusVariantMap: {},
@@ -195,7 +207,7 @@ export const RELATION_CONFIG: Record<RelationshipEntityType, RelationTypeConfig>
 		getStatus: () => null,
 	},
 	event: {
-		icon: "event",
+		icon: ENTITY_REGISTRY.event.icon,
 		route: "/events",
 		labelKey: "common.relation_types.event",
 		statusVariantMap: EVENT_STATUS_VARIANTS,

@@ -13,6 +13,47 @@ interface RelationshipData<T = unknown> {
 	available: T[];
 }
 
+const VALID_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
+	"receipt",
+	"transaction",
+	"reimbursement",
+	"budget",
+	"inventory",
+	"minute",
+	"news",
+	"faq",
+	"poll",
+	"social",
+	"mail",
+	"event",
+];
+
+const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
+	purchase: "reimbursement",
+	purchases: "reimbursement",
+	minutes: "minute",
+	transactions: "transaction",
+	receipts: "receipt",
+	budgets: "budget",
+	inventories: "inventory",
+	inventory_items: "inventory",
+	faqs: "faq",
+	polls: "poll",
+	socials: "social",
+	mails: "mail",
+	events: "event",
+};
+
+function normalizeRelationshipType(
+	type: unknown,
+): RelationshipEntityType | null {
+	if (typeof type !== "string") return null;
+	if ((VALID_RELATIONSHIP_TYPES as string[]).includes(type)) {
+		return type as RelationshipEntityType;
+	}
+	return LEGACY_TYPE_ALIASES[type] || null;
+}
+
 /**
  * Load relationships for an entity across multiple relationship types.
  *
@@ -44,13 +85,16 @@ export async function loadRelationshipsForEntity(
 	for (const relationBType of relationBTypes) {
 		const linkedIds = allRelationships
 			.map((rel) => {
+				const normalizedAType = normalizeRelationshipType(rel.relationAType);
+				const normalizedBType = normalizeRelationshipType(rel.relationBType);
+
 				// Case 1: Current entity is relationA, linked entity is relationB
-				if (rel.relationAType === entityType && rel.relationId === entityId) {
-					return rel.relationBType === relationBType ? rel.relationBId : null;
+				if (normalizedAType === entityType && rel.relationId === entityId) {
+					return normalizedBType === relationBType ? rel.relationBId : null;
 				}
 				// Case 2: Current entity is relationB, linked entity is relationA
-				if (rel.relationBType === entityType && rel.relationBId === entityId) {
-					return rel.relationAType === relationBType ? rel.relationId : null;
+				if (normalizedBType === entityType && rel.relationBId === entityId) {
+					return normalizedAType === relationBType ? rel.relationId : null;
 				}
 				return null;
 			})
@@ -130,8 +174,11 @@ async function fetchEntityById(
 			return db.getPollById(id);
 		case "social":
 			return db.getSocialLinkById(id);
-		case "mail":
-			return db.getCommitteeMailMessageById(id);
+	case "mail":
+		return (
+			(await db.getCommitteeMailMessageById(id)) ||
+			(await db.getMailDraftById(id))
+		);
 		case "event":
 			return db.getEventById(id);
 		default:
@@ -180,16 +227,23 @@ async function fetchAvailableEntities(
 		case "social":
 			allEntities = await db.getSocialLinks();
 			break;
-		case "mail":
-			allEntities = await db.getCommitteeMailMessages("inbox", 50); // Get recent inbox messages
-			break;
+	case "mail":
+		allEntities = [
+			...(await db.getMailDrafts(50)),
+			...(await db.getCommitteeMailMessages("inbox", 50)),
+			...(await db.getCommitteeMailMessages("sent", 50)),
+		];
+		break;
 		case "event":
 			allEntities = await db.getEvents();
 			break;
 	}
 
-	// Filter out archived entities and already linked ones
-	return allEntities.filter((entity: any) => {
+	// Dedupe by id, then filter out archived entities and already linked ones
+	const deduped = Array.from(
+		new Map(allEntities.map((entity: any) => [entity.id, entity])).values(),
+	);
+	return deduped.filter((entity: any) => {
 		// Exclude already linked
 		if (excludeIds.includes(entity.id)) {
 			return false;

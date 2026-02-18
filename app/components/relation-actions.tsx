@@ -152,6 +152,20 @@ export function RelationActions({
 	// In view mode with no items, don't render anything
 	if (mode === "view" && items.length === 0) return null;
 
+	const collapseActions = () => {
+		setIsLinking(false);
+		setIsExpanded(false);
+		setSelectedLinkId(null);
+		if (storageKey && isReady) {
+			saveDraft({
+				isExpanded: false,
+				isLinking: false,
+				selectedLinkId: null,
+			});
+		}
+		onCollapse?.();
+	};
+
 	return (
 		<>
 			{withSeparator ? <Separator /> : null}
@@ -199,7 +213,7 @@ export function RelationActions({
 												className="h-8"
 												onClick={() => {
 													onAdd();
-													setIsExpanded(false);
+													collapseActions();
 												}}
 											>
 												<span className="material-symbols-outlined mr-2 text-sm">
@@ -289,7 +303,7 @@ export function RelationActions({
 											variant="ghost"
 											size="icon"
 											className="h-8 w-8 rounded-full"
-											onClick={() => setIsExpanded(false)}
+											onClick={collapseActions}
 										>
 											<span className="material-symbols-outlined text-sm">
 												close
@@ -339,9 +353,9 @@ export function RelationActions({
 												disabled={!selectedLinkId}
 												onClick={() => {
 													if (selectedLinkId && onSelectionChange) {
-														onSelectionChange(selectedLinkId);
-														setIsLinking(false);
-														setIsExpanded(false);
+														const selectedId = selectedLinkId;
+														collapseActions();
+														onSelectionChange(selectedId);
 													}
 												}}
 												title={t("common.actions.confirm")}
@@ -356,8 +370,7 @@ export function RelationActions({
 												size="icon"
 												className="h-8 w-8 rounded-full"
 												onClick={() => {
-													setIsLinking(false);
-													setSelectedLinkId(null);
+													collapseActions();
 												}}
 												title={t("common.actions.cancel")}
 											>
