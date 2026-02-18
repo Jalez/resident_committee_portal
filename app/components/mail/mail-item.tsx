@@ -3,7 +3,8 @@
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import { RelationIconBadge } from "~/components/relation-icon-badge";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,6 +17,7 @@ import {
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
 import { cn } from "~/lib/utils";
 
 export interface MailItemProps {
@@ -32,6 +34,7 @@ export interface MailItemProps {
 	onSelectChange?: (selected: boolean) => void;
 	/** Number of messages in the thread (shown as badge when > 1) */
 	threadCount?: number;
+	relations?: RelationBadgeData[];
 }
 
 export function MailItem({
@@ -47,8 +50,10 @@ export function MailItem({
 	selected = false,
 	onSelectChange,
 	threadCount,
+	relations = [],
 }: MailItemProps) {
 	const { t } = useTranslation();
+	const navigate = useNavigate();
 	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const avatarLetter = (primaryText || secondaryText || "?")
@@ -70,12 +75,28 @@ export function MailItem({
 		onSelectChange?.(checked === true);
 	};
 
+	const handleNavigate = (e: React.MouseEvent<HTMLDivElement>) => {
+		const target = e.target as HTMLElement;
+		if (target.closest("a,button,input,[role='checkbox']")) return;
+		navigate(href);
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			navigate(href);
+		}
+	};
+
 	return (
 		<>
-			<Link
-				to={href}
+			<div
+				role="link"
+				tabIndex={0}
+				onClick={handleNavigate}
+				onKeyDown={handleKeyDown}
 				className={cn(
-					"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
+					"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer",
 				)}
 			>
 				{selectable && (
@@ -132,8 +153,27 @@ export function MailItem({
 							{preview}
 						</p>
 					)}
+					<div className="mt-2 min-h-7">
+						{relations.length > 0 ? (
+							<div className="flex flex-wrap items-center gap-1">
+								{relations.map((rel) => (
+									<RelationIconBadge
+										key={`${rel.type}-${rel.id}`}
+										href={rel.href}
+										icon={rel.icon}
+										statusVariant={rel.statusVariant}
+										tooltipTitleKey={rel.tooltipTitleKey}
+										tooltipSubtitle={rel.tooltipSubtitle}
+										className="h-7 w-7"
+									/>
+								))}
+							</div>
+						) : (
+							<span className="text-xs text-muted-foreground">—</span>
+						)}
+					</div>
 				</div>
-			</Link>
+			</div>
 
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent onClick={(e) => e.stopPropagation()}>

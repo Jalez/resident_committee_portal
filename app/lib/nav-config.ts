@@ -150,8 +150,8 @@ export const NAV_ITEMS: NavItem[] = [
 		i18nKey: "nav.committee_mail",
 		permission: "committee:email",
 		children: [
-			{ path: "/mail", icon: "inbox", i18nKey: "mail.inbox" },
-			{ path: "/mail?direction=sent", icon: "send", i18nKey: "mail.sent" },
+			{ path: "/mail/received", icon: "inbox", i18nKey: "mail.inbox" },
+			{ path: "/mail/sent", icon: "send", i18nKey: "mail.sent" },
 			{ path: "/mail/drafts", icon: "draft", i18nKey: "mail.drafts" },
 			{ path: "/mail/compose", icon: "edit_note", i18nKey: "mail.compose" },
 		],

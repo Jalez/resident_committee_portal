@@ -134,7 +134,9 @@ export default [
 	route("inventory/incomplete", "routes/inventory/incomplete/_index.tsx"),
 	route("mail", "routes/mail.tsx", [
 		index("routes/mail/_index.tsx"),
+		route("received", "routes/mail/received/_index.tsx"),
 		route("inbox", "routes/mail/inbox/_index.tsx"),
+		route("sent", "routes/mail/sent/_index.tsx"),
 		route("messages/:messageId", "routes/mail/messages/$messageId/_index.tsx"),
 		route("compose", "routes/mail/compose/_index.tsx"),
 		route("drafts", "routes/mail/drafts/_index.tsx"),

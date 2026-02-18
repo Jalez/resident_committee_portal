@@ -362,22 +362,15 @@ export function Navigation({ variant }: NavigationProps) {
 		return link;
 	};
 
-	// Child active state: mail uses path+search, others use path prefix
-	const search = typeof location.search === "string" ? location.search : "";
-	const searchParams = new URLSearchParams(search);
+	// Child active state for sub-navigation links.
 	const isChildActive = (parentPath: string, childPath: string) => {
 		if (parentPath === "/mail") {
+			if (childPath === "/mail/received")
+				return pathname === "/mail/received" || pathname === "/mail/inbox";
 			if (childPath === "/mail/drafts") return pathname === "/mail/drafts";
-			if (childPath === "/mail?direction=sent")
-				return pathname === "/mail" && searchParams.get("direction") === "sent";
-			if (childPath === "/mail?compose=new")
-				return pathname === "/mail" && !!searchParams.get("compose");
-			if (childPath === "/mail")
-				return (
-					pathname === "/mail" &&
-					searchParams.get("direction") !== "sent" &&
-					!searchParams.get("compose")
-				);
+			if (childPath === "/mail/sent") return pathname === "/mail/sent";
+			if (childPath === "/mail/compose")
+				return pathname.startsWith("/mail/compose");
 			return false;
 		}
 		// Index/overview child (same path as parent): only active on exact match

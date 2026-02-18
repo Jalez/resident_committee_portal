@@ -11,7 +11,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		return { notConfigured: true };
 	}
 
-	return redirect("/mail/inbox");
+	return redirect("/mail/received");
 }
 
 export default function MailIndexRedirect() {

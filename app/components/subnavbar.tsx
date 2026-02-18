@@ -28,18 +28,11 @@ function isChildActive(
 	childPath: string,
 ): boolean {
 	if (parentPath === "/mail") {
-		const searchParams = new URLSearchParams(search);
+		if (childPath === "/mail/received")
+			return pathname === "/mail/received" || pathname === "/mail/inbox";
 		if (childPath === "/mail/drafts") return pathname === "/mail/drafts";
-		if (childPath === "/mail?direction=sent")
-			return pathname === "/mail" && searchParams.get("direction") === "sent";
-		if (childPath === "/mail?compose=new")
-			return pathname === "/mail" && !!searchParams.get("compose");
-		if (childPath === "/mail")
-			return (
-				pathname === "/mail" &&
-				searchParams.get("direction") !== "sent" &&
-				!searchParams.get("compose")
-			);
+		if (childPath === "/mail/sent") return pathname === "/mail/sent";
+		if (childPath === "/mail/compose") return pathname.startsWith("/mail/compose");
 		return false;
 	}
 	// Index/overview child (same path as parent): only active on exact match
