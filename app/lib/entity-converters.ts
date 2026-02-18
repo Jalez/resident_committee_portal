@@ -83,7 +83,7 @@ export function getEntityTitle(
 		case "social":
 			return (entity as any).name;
 		case "mail":
-			return (entity as any).subject;
+			return (entity as any).subject || "Draft email";
 		case "event":
 			return (
 				(entity as any).summary || (entity as any).title || "Untitled Event"
@@ -97,10 +97,18 @@ export function getEntityTitle(
  * Helper to get a consistent status for any entity
  */
 export function getEntityStatus(
-	_type: RelationshipEntityType,
+	type: RelationshipEntityType,
 	entity: AnyEntity,
 ): string {
 	if (!entity) return "unknown";
+
+	// Mail drafts do not have a status field in DB, but should behave like draft entities.
+	if (type === "mail") {
+		const record = entity as Record<string, unknown>;
+		if ("draftType" in record) {
+			return "draft";
+		}
+	}
 
 	// Most entities have a 'status' field, but some might not or have different names
 	// Check if 'status' property exists

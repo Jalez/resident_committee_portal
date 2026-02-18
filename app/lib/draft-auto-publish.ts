@@ -41,13 +41,12 @@ type RequiredFieldsCheck = Record<string, unknown>;
 
 /**
  * Check if a transaction draft should be auto-published.
- * Required: description, category, amount > 0
+ * Required: description, amount > 0
  */
 function isTransactionReady(fields: RequiredFieldsCheck): boolean {
 	const description = String(fields.description || "").trim();
-	const category = String(fields.category || "").trim();
 	const amount = Number.parseFloat(String(fields.amount || "0"));
-	return description.length > 0 && category.length > 0 && amount > 0;
+	return description.length > 0 && amount > 0;
 }
 
 /**

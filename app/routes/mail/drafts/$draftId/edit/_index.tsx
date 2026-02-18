@@ -1,5 +1,5 @@
-import { ArrowLeft, Send, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Save, Send, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Form,
@@ -16,23 +16,33 @@ import {
 	type RecipientEntry,
 	RecipientField,
 } from "~/components/committee-recipient-field";
+import { RelationshipPicker } from "~/components/relationships/relationship-picker";
+import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { useUser } from "~/contexts/user-context";
 import { type CommitteeMailMessage, getDatabase, type MailDraft } from "~/db/server.server";
+import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import {
+	buildMinutesAttachment,
+	buildReceiptAttachments,
+} from "~/lib/email.server";
 import { renderCommitteeEmail } from "~/lib/email-templates/committee-email";
 import {
 	type CommitteeMailRecipient,
 	isCommitteeMailConfigured,
 	sendCommitteeEmail,
 } from "~/lib/mail-nodemailer.server";
+import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import {
 	buildQuotedReplyHtml,
 	buildReferencesForReply,
 	computeThreadId,
 } from "~/lib/mail-threading.server";
 import { addForwardPrefix, addReplyPrefix } from "~/lib/mail-utils";
+import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import type { Route } from "./+types/_index";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
@@ -61,6 +71,35 @@ function parseRecipients(json: string | null): RecipientEntry[] {
 	} catch {
 		return [];
 	}
+}
+
+function displayAttachmentName(entity: Record<string, unknown>, fallback: string) {
+	return (
+		(typeof entity.name === "string" && entity.name.trim()) ||
+		(typeof entity.title === "string" && entity.title.trim()) ||
+		(typeof entity.description === "string" && entity.description.trim()) ||
+		fallback
+	);
+}
+
+function buildSignature(name?: string | null, roleName?: string | null) {
+	const trimmedName = name?.trim();
+	if (!trimmedName) return null;
+	const trimmedRole = roleName?.trim();
+	return `Best regards,\n${trimmedName}${trimmedRole ? `\n${trimmedRole}` : ""}`;
+}
+
+function ensureSignedBody(
+	body: string,
+	name?: string | null,
+	roleName?: string | null,
+) {
+	const signature = buildSignature(name, roleName);
+	if (!signature) return body;
+	if (body.includes(signature)) return body;
+	if (body.includes("Best regards,")) return body;
+	const trimmed = body.trimEnd();
+	return trimmed ? `${trimmed}\n\n${signature}` : signature;
 }
 
 export function meta({ data }: Route.MetaArgs) {
@@ -129,6 +168,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		}
 	}
 
+	const relationshipTypes = [
+		"receipt",
+		"reimbursement",
+		"transaction",
+		"event",
+		"minute",
+	] as const;
+	const relationships = await loadRelationshipsForEntity(
+		db,
+		"mail",
+		draftId,
+		[...relationshipTypes],
+	);
+
 	// Reply to a message
 	if (replyTo && UUID_REGEX.test(replyTo)) {
 		originalMessage = await db.getCommitteeMailMessageById(replyTo);
@@ -156,11 +209,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		draft,
 		originalMessage,
 		composeMode,
+		relationships,
 	};
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	await requirePermission(request, "committee:email", getDatabase);
+	const currentUser = await requirePermission(
+		request,
+		"committee:email",
+		getDatabase,
+	);
 	const formData = await request.formData();
 	const intent = formData.get("_action") as string;
 	const db = getDatabase();
@@ -229,6 +287,33 @@ export async function action({ request }: Route.ActionArgs) {
 			: { error: "Draft not found" };
 	}
 
+	if (intent === "saveDraft") {
+		const draftId = formData.get("draftId") as string;
+		if (!draftId) return { saved: false, error: "Missing draftId" };
+
+		const toJson = (formData.get("to_json") as string) ?? "[]";
+		const ccJson = (formData.get("cc_json") as string) || null;
+		const bccJson = (formData.get("bcc_json") as string) || null;
+		const subject = (formData.get("subject") as string) ?? null;
+		const body = (formData.get("body") as string) ?? null;
+		const signedBody = body
+			? ensureSignedBody(body, currentUser.name, currentUser.roleName)
+			: body;
+
+		await saveRelationshipChanges(db, "mail", draftId, formData, null);
+		const updated = await db.updateMailDraft(draftId, {
+			toJson,
+			ccJson,
+			bccJson,
+			subject,
+			body: signedBody,
+		});
+
+		return updated
+			? { saved: true, updatedAt: updated.updatedAt, draft: updated }
+			: { saved: false, error: "Draft not found" };
+	}
+
 	if (intent === "send") {
 		const subject = (formData.get("subject") as string)?.trim();
 		const body = (formData.get("body") as string)?.trim();
@@ -250,6 +335,114 @@ export async function action({ request }: Route.ActionArgs) {
 				sent: false,
 				error: "Add at least one To recipient",
 			};
+		}
+
+		const signedBody = ensureSignedBody(
+			body,
+			currentUser.name,
+			currentUser.roleName,
+		);
+
+		let mailAttachments: {
+			filename: string;
+			content: string;
+			contentType?: string;
+		}[] = [];
+		if (draftId) {
+			await saveRelationshipChanges(db, "mail", draftId, formData, null);
+
+			const relationshipData = await loadRelationshipsForEntity(db, "mail", draftId, [
+				"receipt",
+				"reimbursement",
+				"minute",
+			]);
+			const linkedReimbursements = (
+				relationshipData.reimbursement?.linked || []
+			) as Array<Record<string, unknown>>;
+			const linkedMinutes = (relationshipData.minute?.linked || []) as Array<
+				Record<string, unknown>
+			>;
+			const linkedReceipts = (relationshipData.receipt?.linked || []) as Array<
+				Record<string, unknown>
+			>;
+
+			if (
+				linkedReimbursements.length > 0 &&
+				(linkedMinutes.length === 0 || linkedReceipts.length === 0)
+			) {
+				return {
+					sent: false,
+					error:
+						"A reimbursement email requires both a linked minutes document and at least one linked receipt before sending.",
+				};
+			}
+
+			const minuteAttachments = (
+				await Promise.all(
+					linkedMinutes.map((minute) =>
+						buildMinutesAttachment(
+							String(minute.id),
+							typeof minute.title === "string" ? minute.title : null,
+						),
+					),
+				)
+			).filter((attachment): attachment is NonNullable<typeof attachment> =>
+				Boolean(attachment),
+			);
+
+			const requestOrigin = new URL(request.url).origin;
+			const receiptLinks = linkedReceipts
+				.filter((receipt) => typeof receipt.id === "string")
+				.map((receipt) => ({
+					id: String(receipt.id),
+					name:
+						(typeof receipt.name === "string" && receipt.name) ||
+						(typeof receipt.description === "string" && receipt.description) ||
+						`receipt-${String(receipt.id).slice(0, 8)}`,
+					url:
+						(typeof receipt.url === "string" && receipt.url) ||
+						(typeof receipt.fileUrl === "string" && receipt.fileUrl) ||
+						(typeof receipt.pathname === "string" && receipt.pathname
+							? `${requestOrigin}${receipt.pathname.startsWith("/") ? receipt.pathname : `/${receipt.pathname}`}`
+							: "") ||
+						"",
+				}));
+			const receiptAttachments = await buildReceiptAttachments(receiptLinks);
+
+			const reimbursementAttachments = linkedReimbursements.map(
+				(reimbursement) => {
+					const id = String(reimbursement.id || "");
+					const details = [
+						`Reimbursement ID: ${id}`,
+						`Description: ${String(reimbursement.description || "")}`,
+						`Amount: ${String(reimbursement.amount || "")}`,
+						`Purchaser: ${String(reimbursement.purchaserName || "")}`,
+						`Bank account: ${String(reimbursement.bankAccount || "")}`,
+						`Status: ${String(reimbursement.status || "")}`,
+						`Year: ${String(reimbursement.year || "")}`,
+						`Notes: ${String(reimbursement.notes || "")}`,
+					].join("\n");
+					return {
+						filename: `reimbursement-${id.slice(0, 8)}.txt`,
+						content: Buffer.from(details, "utf-8").toString("base64"),
+						contentType: "text/plain; charset=utf-8",
+					};
+				},
+			);
+
+			mailAttachments = [
+				...minuteAttachments.map((attachment) => ({
+					filename: attachment.name,
+					content: attachment.content,
+					contentType: attachment.type,
+				})),
+				...receiptAttachments.map((attachment) => ({
+					filename: attachment.name,
+					content: attachment.content,
+					contentType: attachment.type,
+				})),
+				...reimbursementAttachments,
+			];
 		}
 
 		const to: CommitteeMailRecipient[] = toEmails.map((email) => ({
@@ -288,7 +481,7 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 
 		// Render HTML with React Email template
-		const bodyHtml = body.replace(/\n/g, "<br>\n");
+		const bodyHtml = signedBody.replace(/\n/g, "<br>\n");
 		let quotedReply:
 			| {
 				date: string;
@@ -338,6 +531,7 @@ export async function action({ request }: Route.ActionArgs) {
 			html,
 			inReplyTo: inReplyToHeader,
 			references: referencesHeader,
+			attachments: mailAttachments.length > 0 ? mailAttachments : undefined,
 		});
 
 		if (!result.success) {
@@ -393,6 +587,46 @@ export async function action({ request }: Route.ActionArgs) {
 			threadId,
 		});
 
+		if (draftId) {
+			const draftRelationships = await db.getEntityRelationships("mail", draftId);
+			for (const rel of draftRelationships) {
+				const relationAType = rel.relationAType;
+				const relationId =
+					rel.relationAType === "mail" && rel.relationId === draftId
+						? inserted.id
+						: rel.relationId;
+				const relationBType = rel.relationBType;
+				const relationBId =
+					rel.relationBType === "mail" && rel.relationBId === draftId
+						? inserted.id
+						: rel.relationBId;
+
+				const exists = await db.entityRelationshipExists(
+					relationAType as any,
+					relationId,
+					relationBType as any,
+					relationBId,
+				);
+
+				if (!exists) {
+					await db.createEntityRelationship({
+						relationAType: relationAType as any,
+						relationId,
+						relationBType: relationBType as any,
+						relationBId,
+						createdBy: null,
+					});
+				}
+
+				await db.deleteEntityRelationshipByPair(
+					rel.relationAType as any,
+					rel.relationId,
+					rel.relationBType as any,
+					rel.relationBId,
+				);
+			}
+		}
+
 		// Navigate to thread view if part of a thread, otherwise to the message
 		if (threadId) {
 			return redirect(`/mail/thread/${encodeURIComponent(threadId)}`);
@@ -433,8 +667,10 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		draft: initialDraft,
 		originalMessage,
 		composeMode: initialComposeMode,
+		relationships,
 	} = loaderData;
 	const { t } = useTranslation();
+	const { user } = useUser();
 	const navigate = useNavigate();
 	const navigation = useNavigation();
 	const [_searchParams] = useSearchParams();
@@ -519,6 +755,11 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 	// State
 	const createFetcher = useFetcher<{ draftId?: string; draft?: MailDraft }>();
 	const updateFetcher = useFetcher<{ updatedAt?: string }>();
+	const saveDraftFetcher = useFetcher<{
+		saved?: boolean;
+		updatedAt?: string;
+		error?: string;
+	}>();
 	const getRecipientsFetcher = useFetcher<{
 		recipients?: { id: string; name: string; email: string }[];
 		field?: "to" | "cc" | "bcc";
@@ -544,6 +785,59 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 
 	const draftId = initialDraft?.id as string;
 	const _isNew = !draftId;
+	const relationshipPicker = useRelationshipPicker({
+		relationAType: "mail",
+		relationAId: draftId || "",
+		initialRelationships: [],
+	});
+	const signature = useMemo(
+		() => buildSignature(user?.name, user?.roleName),
+		[user?.name, user?.roleName],
+	);
+
+	const getEffectiveLinkedEntities = useCallback(
+		(relationType: "receipt" | "reimbursement" | "minute") => {
+			const rawLinked = relationships[relationType]?.linked ?? [];
+			const rawAvailable = relationships[relationType]?.available ?? [];
+			const toEntityArray = (
+				values: unknown,
+			): Array<Record<string, unknown>> =>
+				(Array.isArray(values) ? (values as unknown[]) : []).filter(
+					(value): value is Record<string, unknown> =>
+						typeof value === "object" && value !== null,
+				);
+			const linked = toEntityArray(rawLinked);
+			const available = toEntityArray(rawAvailable);
+
+			const pendingUnlinks = new Set(
+				relationshipPicker.pendingUnlinks
+					.filter((u) => u.relationBType === relationType)
+					.map((u) => u.relationBId),
+			);
+			const pendingLinks = new Set(
+				relationshipPicker.pendingLinks
+					.filter((l) => l.relationBType === relationType)
+					.map((l) => l.relationBId),
+			);
+
+			const map = new Map<string, Record<string, unknown>>();
+			for (const entity of linked) {
+				if (typeof entity.id !== "string") continue;
+				if (!pendingUnlinks.has(entity.id)) map.set(entity.id, entity);
+			}
+			for (const entity of available) {
+				if (typeof entity.id !== "string") continue;
+				if (pendingLinks.has(entity.id)) map.set(entity.id, entity);
+			}
+
+			return Array.from(map.values());
+		},
+		[
+			relationships,
+			relationshipPicker.pendingLinks,
+			relationshipPicker.pendingUnlinks,
+		],
+	);
 
 	// Initial draft creation is now handled by the /mail/compose redirect route
 
@@ -609,6 +903,24 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 			setLastSavedAt(new Date(updateFetcher.data.updatedAt as string));
 		}
 	}, [updateFetcher.state, updateFetcher.data]);
+
+	useEffect(() => {
+		if (saveDraftFetcher.data?.error) {
+			toast.error(saveDraftFetcher.data.error);
+		} else if (saveDraftFetcher.data?.saved && saveDraftFetcher.data.updatedAt) {
+			setLastSavedAt(new Date(saveDraftFetcher.data.updatedAt));
+			toast.success(
+				t("mail.draft_saved", {
+					defaultValue: "Draft saved",
+				}),
+			);
+		}
+	}, [saveDraftFetcher.data, t]);
+
+	useEffect(() => {
+		if (!signature) return;
+		setBody((prev) => ensureSignedBody(prev, user?.name, user?.roleName));
+	}, [signature, user?.name, user?.roleName]);
 
 	// Recipient helpers
 	const addToRecipients = useCallback(
@@ -712,7 +1024,28 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		toRecipients.length > 0 &&
 		subject.trim().length > 0 &&
 		body.trim().length > 0;
+	const linkedReceiptsForSend = draftId ? getEffectiveLinkedEntities("receipt") : [];
+	const linkedMinutesForSend = draftId ? getEffectiveLinkedEntities("minute") : [];
+	const linkedReimbursementsForSend = draftId
+		? getEffectiveLinkedEntities("reimbursement")
+		: [];
+	const missingRequiredReimbursementAttachments =
+		linkedReimbursementsForSend.length > 0 &&
+		(linkedReceiptsForSend.length === 0 || linkedMinutesForSend.length === 0);
 	const isSubmitting = navigation.state === "submitting";
+	const handleAutofillSuggestions = (
+		suggestions: Record<string, string | number | null>,
+	) => {
+		if (typeof suggestions.toEmail === "string" && suggestions.toEmail.trim()) {
+			addToRecipients([{ email: suggestions.toEmail.trim() }]);
+		}
+		if (typeof suggestions.subject === "string") {
+			setSubject(suggestions.subject);
+		}
+		if (typeof suggestions.body === "string") {
+			setBody(ensureSignedBody(suggestions.body, user?.name, user?.roleName));
+		}
+	};
 
 	const handleDeleteDraft = () => {
 		if (!draftId) {
@@ -724,6 +1057,53 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 			{ method: "post" },
 		);
 	};
+
+	const handleManualSave = useCallback(() => {
+		if (!draftId) return;
+		const toJson = JSON.stringify(
+			toRecipients.map((r) => ({ email: r.email, name: r.name })),
+		);
+		const ccJson =
+			ccRecipients.length > 0
+				? JSON.stringify(
+					ccRecipients.map((r) => ({
+						email: r.email,
+						name: r.name,
+					})),
+				)
+				: "";
+		const bccJson =
+			bccRecipients.length > 0
+				? JSON.stringify(
+					bccRecipients.map((r) => ({
+						email: r.email,
+						name: r.name,
+					})),
+				)
+				: "";
+		saveDraftFetcher.submit(
+			{
+				_action: "saveDraft",
+				draftId,
+				to_json: toJson,
+				cc_json: ccJson || "",
+				bcc_json: bccJson || "",
+				subject,
+				body,
+				...relationshipPicker.toFormData(),
+			},
+			{ method: "post" },
+		);
+	}, [
+		draftId,
+		toRecipients,
+		ccRecipients,
+		bccRecipients,
+		subject,
+		body,
+		relationshipPicker,
+		saveDraftFetcher,
+	]);
 
 	if (!committeeMailConfigured) {
 		return (
@@ -788,9 +1168,33 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						})}
 					</h1>
 				</div>
-				<div className="flex items-center gap-2">
-					{draftId && (
-						<Button
+					<div className="flex items-center gap-2">
+						{draftId && (
+							<SmartAutofillButton
+								entityType="mail"
+								entityId={draftId}
+								getCurrentValues={() => ({
+									subject,
+									body,
+								})}
+								getExtraFormData={() => relationshipPicker.toFormData()}
+								onSuggestions={handleAutofillSuggestions}
+							/>
+						)}
+						{draftId && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleManualSave}
+								disabled={saveDraftFetcher.state !== "idle"}
+							>
+								<Save className="mr-1 size-4" />
+								{t("mail.save_draft", { defaultValue: "Save draft" })}
+							</Button>
+						)}
+						{draftId && (
+							<Button
 							variant="ghost"
 							size="sm"
 							type="button"
@@ -803,97 +1207,222 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 							})}
 						</Button>
 					)}
-					<Button type="submit" disabled={!canSubmit || isSubmitting} size="sm">
+					<Button
+						type="submit"
+						disabled={
+							!canSubmit || isSubmitting || missingRequiredReimbursementAttachments
+						}
+						size="sm"
+					>
 						<Send className="mr-1 size-4" />
 						{t("mail.send_tooltip")}
 					</Button>
 				</div>
 			</div>
+			{missingRequiredReimbursementAttachments && (
+				<p className="text-destructive text-sm">
+					Link at least one receipt and one minutes document before sending a
+					reimbursement email.
+				</p>
+			)}
 
-			{/* Compose form fields */}
-			<div className="flex flex-col gap-4">
-				<RecipientField
-					field="to"
-					recipients={toRecipients}
-					onAdd={addToRecipients}
-					onRemove={(id) =>
-						setToRecipients((prev) => prev.filter((r) => r.id !== id))
-					}
-					roles={roles}
-					recipientCandidates={recipientCandidates}
-					onGetRecipientsForRole={(roleId) =>
-						getRecipientsForRoleBound(roleId, "to")
-					}
-					listId="compose-to-list"
-					label={t("committee.mail.to")}
-				/>
-				<RecipientField
-					field="cc"
-					recipients={ccRecipients}
-					onAdd={addCcRecipients}
-					onRemove={(id) =>
-						setCcRecipients((prev) => prev.filter((r) => r.id !== id))
-					}
-					roles={roles}
-					recipientCandidates={recipientCandidates}
-					onGetRecipientsForRole={(roleId) =>
-						getRecipientsForRoleBound(roleId, "cc")
-					}
-					listId="compose-cc-list"
-					label={t("committee.mail.cc")}
-				/>
-				<RecipientField
-					field="bcc"
-					recipients={bccRecipients}
-					onAdd={addBccRecipients}
-					onRemove={(id) =>
-						setBccRecipients((prev) => prev.filter((r) => r.id !== id))
-					}
-					roles={roles}
-					recipientCandidates={recipientCandidates}
-					onGetRecipientsForRole={(roleId) =>
-						getRecipientsForRoleBound(roleId, "bcc")
-					}
-					listId="compose-bcc-list"
-					label={t("committee.mail.bcc")}
-				/>
-
-				<div className="flex items-center gap-2">
-					<span className="w-48 shrink-0 truncate text-sm font-medium">
-						{t("committee.mail.subject")}:
-					</span>
-					<Input
-						name="subject"
-						type="text"
-						required
-						value={subject}
-						onChange={(e) => setSubject(e.target.value)}
-						className="h-8 flex-1 border-gray-300 bg-white text-sm dark:border-gray-600 dark:bg-gray-800"
-						placeholder={t("committee.mail.subject_placeholder")}
+			{/* Compose form fields + relationships */}
+			<div className="grid gap-6 lg:grid-cols-3">
+				<div className="flex flex-col gap-4 lg:col-span-2">
+					<RecipientField
+						field="to"
+						recipients={toRecipients}
+						onAdd={addToRecipients}
+						onRemove={(id) =>
+							setToRecipients((prev) => prev.filter((r) => r.id !== id))
+						}
+						roles={roles}
+						recipientCandidates={recipientCandidates}
+						onGetRecipientsForRole={(roleId) =>
+							getRecipientsForRoleBound(roleId, "to")
+						}
+						listId="compose-to-list"
+						label={t("committee.mail.to")}
 					/>
-				</div>
-
-				<div className="flex flex-col gap-1">
-					<textarea
-						name="body"
-						required
-						rows={14}
-						value={body}
-						onChange={(e) => setBody(e.target.value)}
-						className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-						placeholder={t("committee.mail.body_placeholder")}
+					<RecipientField
+						field="cc"
+						recipients={ccRecipients}
+						onAdd={addCcRecipients}
+						onRemove={(id) =>
+							setCcRecipients((prev) => prev.filter((r) => r.id !== id))
+						}
+						roles={roles}
+						recipientCandidates={recipientCandidates}
+						onGetRecipientsForRole={(roleId) =>
+							getRecipientsForRoleBound(roleId, "cc")
+						}
+						listId="compose-cc-list"
+						label={t("committee.mail.cc")}
 					/>
-					{lastSavedAt && (
-						<p className="text-muted-foreground text-sm">
-							{t("mail.draft_saved_at", {
-								time: lastSavedAt.toLocaleTimeString(undefined, {
-									hour: "2-digit",
-									minute: "2-digit",
-								}),
-							})}
-						</p>
-					)}
+					<RecipientField
+						field="bcc"
+						recipients={bccRecipients}
+						onAdd={addBccRecipients}
+						onRemove={(id) =>
+							setBccRecipients((prev) => prev.filter((r) => r.id !== id))
+						}
+						roles={roles}
+						recipientCandidates={recipientCandidates}
+						onGetRecipientsForRole={(roleId) =>
+							getRecipientsForRoleBound(roleId, "bcc")
+						}
+						listId="compose-bcc-list"
+						label={t("committee.mail.bcc")}
+					/>
+
+					<div className="flex items-center gap-2">
+						<span className="w-48 shrink-0 truncate text-sm font-medium">
+							{t("committee.mail.subject")}:
+						</span>
+						<Input
+							name="subject"
+							type="text"
+							required
+							value={subject}
+							onChange={(e) => setSubject(e.target.value)}
+							className="h-8 flex-1 text-sm"
+							placeholder={t("committee.mail.subject_placeholder")}
+						/>
+					</div>
+
+					<div className="flex flex-col gap-1">
+						<textarea
+							name="body"
+							required
+							rows={14}
+							value={body}
+							onChange={(e) => setBody(e.target.value)}
+							className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] md:text-sm"
+							placeholder={t("committee.mail.body_placeholder")}
+						/>
+						{lastSavedAt && (
+							<p className="text-muted-foreground text-sm">
+								{t("mail.draft_saved_at", {
+									time: lastSavedAt.toLocaleTimeString(undefined, {
+										hour: "2-digit",
+										minute: "2-digit",
+									}),
+								})}
+							</p>
+						)}
+					</div>
 				</div>
+				{draftId && (
+					<div className="lg:col-span-1">
+						<RelationshipPicker
+							relationAType="mail"
+							relationAId={draftId}
+							relationAName={subject || t("mail.no_subject")}
+							mode="edit"
+							currentPath={`/mail/drafts/${draftId}/edit`}
+							sections={[
+								{
+									relationBType: "receipt",
+									linkedEntities: (relationships.receipt?.linked ?? []) as any[],
+									availableEntities: (relationships.receipt?.available ??
+										[]) as any[],
+								},
+								{
+									relationBType: "reimbursement",
+									linkedEntities: (relationships.reimbursement?.linked ??
+										[]) as any[],
+									availableEntities: (relationships.reimbursement?.available ??
+										[]) as any[],
+									maxItems: 1,
+								},
+								{
+									relationBType: "transaction",
+									linkedEntities: (relationships.transaction?.linked ??
+										[]) as any[],
+									availableEntities: (relationships.transaction?.available ??
+										[]) as any[],
+									maxItems: 1,
+								},
+								{
+									relationBType: "event",
+									linkedEntities: (relationships.event?.linked ?? []) as any[],
+									availableEntities: (relationships.event?.available ??
+										[]) as any[],
+									maxItems: 1,
+								},
+								{
+									relationBType: "minute",
+									linkedEntities: (relationships.minute?.linked ?? []) as any[],
+									availableEntities: (relationships.minute?.available ??
+										[]) as any[],
+									maxItems: 1,
+								},
+							]}
+							onLink={relationshipPicker.handleLink}
+							onUnlink={relationshipPicker.handleUnlink}
+							formData={relationshipPicker.toFormData()}
+						/>
+						{(() => {
+							const linkedReceipts = getEffectiveLinkedEntities("receipt");
+							const linkedMinutes = getEffectiveLinkedEntities("minute");
+							const linkedReimbursements =
+								getEffectiveLinkedEntities("reimbursement");
+
+							const previewItems: Array<{
+								key: string;
+								label: string;
+							}> = [
+								...linkedReceipts.map((receipt) => ({
+									key: `receipt-${String(receipt.id || "unknown")}`,
+									label: `Receipt: ${displayAttachmentName(
+										receipt,
+										"receipt-file",
+									)}`,
+								})),
+								...linkedMinutes.map((minute) => ({
+									key: `minute-${String(minute.id || "unknown")}`,
+									label: `Minutes: ${displayAttachmentName(
+										minute,
+										"minutes.pdf",
+									)}`,
+								})),
+								...linkedReimbursements.map((reimbursement) => ({
+									key: `reimbursement-${String(reimbursement.id || "unknown")}`,
+									label: `Reimbursement details: reimbursement-${String(
+										reimbursement.id || "",
+									).slice(0, 8)}.txt`,
+								})),
+							];
+
+							if (previewItems.length === 0) {
+								return (
+									<div className="bg-muted/30 mt-3 rounded-md border p-3 text-sm">
+										<p className="font-medium">Email attachments</p>
+										<p className="text-muted-foreground mt-1">
+											No linked receipts, minutes, or reimbursements to attach.
+										</p>
+									</div>
+								);
+							}
+
+							return (
+								<div className="bg-muted/30 mt-3 rounded-md border p-3 text-sm">
+									<p className="font-medium">Email attachments</p>
+									<p className="text-muted-foreground mt-1">
+										These files/details are attached automatically on send.
+									</p>
+									<ul className="mt-2 space-y-1">
+										{previewItems.map((item) => (
+											<li key={item.key} className="text-foreground">
+												{item.label}
+											</li>
+										))}
+									</ul>
+								</div>
+							);
+						})()}
+					</div>
+				)}
 			</div>
 
 			{/* Quoted reply preview (non-editable) */}

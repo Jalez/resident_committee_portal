@@ -47,7 +47,7 @@ export async function action({ request }: Route.ActionArgs) {
 		poll: ["polls:write"],
 		social: ["social:write"],
 		event: ["events:write"],
-		mail: ["mail:write"],
+		mail: ["committee:email"],
 	};
 
 	const permissions = permissionMap[type] || ["admin"];
@@ -191,7 +191,10 @@ export async function action({ request }: Route.ActionArgs) {
 						});
 					}
 				} catch (error) {
-					console.error("[create-draft] Failed to create calendar event:", error);
+					console.error(
+						"[create-draft] Failed to create calendar event:",
+						error,
+					);
 				}
 
 				entity = {
@@ -262,7 +265,7 @@ export async function action({ request }: Route.ActionArgs) {
 					description?: string;
 					amount?: string;
 					date?: Date;
-					category?: string;
+					year?: number;
 				} = {};
 
 				if (contextValues.description?.trim()) {
@@ -273,13 +276,13 @@ export async function action({ request }: Route.ActionArgs) {
 				}
 				if (contextValues.date) {
 					updates.date = contextValues.date;
+					updates.year = contextValues.date.getFullYear();
 				}
-				if (contextValues.category?.trim()) {
-					updates.category = contextValues.category.trim();
-				}
-
 				if (Object.keys(updates).length > 0) {
-					const updatedTransaction = await db.updateTransaction(entity.id, updates);
+					const updatedTransaction = await db.updateTransaction(
+						entity.id,
+						updates,
+					);
 					if (updatedTransaction) {
 						entity = updatedTransaction;
 					}

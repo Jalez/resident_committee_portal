@@ -108,7 +108,6 @@ export const ENTITY_SCHEMAS: Record<RelationshipEntityType, EntitySchema> = {
 		deleteItem: (db, id) => db.deleteTransaction(id),
 		extractFields: (formData) => ({
 			description: (formData.get("description") as string)?.trim(),
-			category: formData.get("category") as string,
 			amount: formData.get("amount") as string,
 			status: formData.get("status") as string,
 			reimbursementStatus: formData.get("reimbursementStatus") as string,

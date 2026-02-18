@@ -157,16 +157,11 @@ export const ENTITY_DEFINITIONS: Record<
 	transaction: {
 		type: "transaction",
 		permissionPrefix: "treasury:transactions",
-		requiredFields: ["description", "category", "amount"],
+		requiredFields: ["description", "amount"],
 		defaultRedirect: (id) => `/treasury/transactions/${id}?success=updated`,
-		draftAutoPublishFields: ["description", "category", "amount"],
+		draftAutoPublishFields: ["description", "amount"],
 		fields: {
 			description: { type: "text", required: true },
-			category: {
-				type: "select",
-				required: true,
-				// Options will be populated by the component or loader if dynamic
-			},
 			amount: { type: "currency", required: true },
 			status: {
 				type: "select",

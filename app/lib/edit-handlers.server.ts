@@ -259,14 +259,25 @@ export async function createEditAction<
 		if (error) return error;
 	}
 
-	const onUpdateResult = await onUpdate({
-		db,
-		id: entity.id,
-		entity,
-		data: result.data,
-		formData,
-		newStatus,
-	});
+	let onUpdateResult: any;
+	try {
+		onUpdateResult = await onUpdate({
+			db,
+			id: entity.id,
+			entity,
+			data: result.data,
+			formData,
+			newStatus,
+		});
+	} catch (error) {
+		console.error(`[createEditAction] ${entityType} update failed:`, error);
+		return {
+			error:
+				error instanceof Error
+					? error.message
+					: `Failed to update ${entityType}`,
+		};
+	}
 	if (
 		onUpdateResult &&
 		typeof onUpdateResult === "object" &&
@@ -276,13 +287,26 @@ export async function createEditAction<
 	}
 
 	// Save relationships
-	await saveRelationshipChanges(
-		db,
-		entityType as RelationshipEntityType,
-		entity.id,
-		formData,
-		user?.userId || null,
-	);
+	try {
+		await saveRelationshipChanges(
+			db,
+			entityType as RelationshipEntityType,
+			entity.id,
+			formData,
+			user?.userId || null,
+		);
+	} catch (error) {
+		console.error(
+			`[createEditAction] ${entityType} relationship save failed:`,
+			error,
+		);
+		return {
+			error:
+				error instanceof Error
+					? error.message
+					: "Failed to save relationships",
+		};
+	}
 
 	// Source context auto-link
 	const sourceType = formData.get("_sourceType") as string | null;
@@ -295,6 +319,7 @@ export async function createEditAction<
 			entity.id,
 		);
 		if (!exists) {
+		try {
 			await db.createEntityRelationship({
 				relationAType: sourceType as RelationshipEntityType,
 				relationId: sourceId,
@@ -302,18 +327,40 @@ export async function createEditAction<
 				relationBId: entity.id,
 				createdBy: user?.userId || null,
 			});
+		} catch (error) {
+			console.error(
+				`[createEditAction] ${entityType} source relationship link failed:`,
+				error,
+			);
+			return {
+				error:
+					error instanceof Error
+						? error.message
+						: "Failed to link source relationship",
+			};
+		}
 		}
 	}
 
 	if (afterUpdate) {
-		await afterUpdate({
-			db,
-			entity,
-			formData,
-			userId: user?.userId || null,
-			parsedData: result.data,
-			newStatus,
-		});
+		try {
+			await afterUpdate({
+				db,
+				entity,
+				formData,
+				userId: user?.userId || null,
+				parsedData: result.data,
+				newStatus,
+			});
+		} catch (error) {
+			console.error(`[createEditAction] ${entityType} afterUpdate failed:`, error);
+			return {
+				error:
+					error instanceof Error
+						? error.message
+						: "Post-update processing failed",
+			};
+		}
 	}
 
 	// Redirection logic
