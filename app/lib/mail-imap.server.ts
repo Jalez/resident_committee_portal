@@ -125,9 +125,9 @@ async function applyReimbursementReply(
 					r.relationAType === "transaction",
 			)?.relationBType === "transaction"
 				? relationships.find((r) => r.relationBType === "transaction")
-						?.relationBId
+					?.relationBId
 				: relationships.find((r) => r.relationAType === "transaction")
-						?.relationId;
+					?.relationId;
 
 		if (transactionId) {
 			const linkedTransaction = await db.getTransactionById(transactionId);
@@ -224,17 +224,35 @@ export async function fetchInboxMessages(
 					: null;
 				const subject = envelope?.subject?.trim() || "(No subject)";
 				const date = envelope?.date || new Date();
-				const purchaseId = findReimbursementPurchaseId({
+				const threadId = computeThreadId(messageId, inReplyTo, references);
+
+				let purchaseId = findReimbursementPurchaseId({
 					to: envelope?.to,
 					subject,
 					bodyText,
 					bodyHtml,
 				});
+
+				// Look up if this thread has been manually linked to a reimbursement
+				if (!purchaseId && threadId) {
+					const rels = await db.getEntityRelationships("mail", threadId);
+					const reimbRel = rels.find(
+						(r) =>
+							r.relationBType === "reimbursement" ||
+							r.relationAType === "reimbursement",
+					);
+					if (reimbRel) {
+						purchaseId =
+							reimbRel.relationBType === "reimbursement"
+								? reimbRel.relationBId
+								: reimbRel.relationId;
+					}
+				}
+
 				if (purchaseId) {
 					const content = bodyText || stripHtml(bodyHtml) || subject;
 					await applyReimbursementReply(db, purchaseId, content);
 				}
-				const threadId = computeThreadId(messageId, inReplyTo, references);
 				await db.insertCommitteeMailMessage({
 					direction: "inbox",
 					fromAddress,

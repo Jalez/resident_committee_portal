@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import {
+	extractPurchaseIdFromContent,
 	extractPurchaseIdFromEmail,
+	extractPurchaseIdFromSubject,
 	getWebhookSecret,
 	parseReimbursementReply,
 } from "~/lib/email.server";
@@ -143,9 +145,21 @@ async function processEmailEvent(event: ResendEmailReceivedEvent) {
 		}
 	}
 
+	if (!purchaseId && data.subject) {
+		purchaseId = extractPurchaseIdFromSubject(data.subject);
+	}
+
+	if (!purchaseId && data.text) {
+		purchaseId = extractPurchaseIdFromContent(data.text);
+	}
+
+	if (!purchaseId && data.html) {
+		purchaseId = extractPurchaseIdFromContent(data.html.replace(/<[^>]+>/g, " "));
+	}
+
 	if (!purchaseId) {
 		console.log(
-			"[Resend Webhook] No purchase ID found in to addresses:",
+			"[Resend Webhook] No purchase ID found in to addresses, subject, or content:",
 			data.to,
 		);
 		// Not a reimbursement reply, just acknowledge
