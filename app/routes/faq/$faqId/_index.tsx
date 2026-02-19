@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server.server";
@@ -44,13 +45,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function FaqView({ loaderData }: Route.ComponentProps) {
-	const { faq: item, systemLanguages } = loaderData as any;
+	const { faq: item, relationships, systemLanguages } = loaderData as any;
 	const { t, i18n } = useTranslation();
 	const { hasPermission } = useUser();
 	const canUpdate = hasPermission("faq:update");
+	const canDelete = hasPermission("faq:delete");
 
 	const useSecondary =
-		systemLanguages.secondary && systemLanguages.secondary === i18n.language;
+		systemLanguages?.secondary && systemLanguages.secondary === i18n.language;
 
 	const question =
 		useSecondary && item.questionSecondary
@@ -60,27 +62,28 @@ export default function FaqView({ loaderData }: Route.ComponentProps) {
 		useSecondary && item.answerSecondary ? item.answerSecondary : item.answer;
 
 	const displayFields = {
-		question: { value: question, valueClassName: "text-3xl font-bold" },
+		question: { value: question },
 		answer: {
 			value: answer,
-			valueClassName:
-				"prose dark:prose-invert max-w-none whitespace-pre-wrap text-lg leading-relaxed",
+			type: "textarea" as const,
 		},
 		createdAt: item.createdAt,
 	};
 
 	return (
-		<ViewForm
-			title=""
-			entityType="faq"
-			entityId={item.id}
-			displayFields={displayFields}
-			variant="content"
-			systemLanguages={systemLanguages}
-			useSecondary={useSecondary}
-			returnUrl="/faq"
-			canEdit={canUpdate}
-			translationNamespace="faq"
-		/>
+		<PageWrapper>
+			<ViewForm
+				title={question || "FAQ"}
+				entityType="faq"
+				entityId={item.id}
+				entityName={question}
+				displayFields={displayFields}
+				relationships={relationships}
+				returnUrl="/faq"
+				canEdit={canUpdate}
+				canDelete={canDelete}
+				translationNamespace="faq"
+			/>
+		</PageWrapper>
 	);
 }

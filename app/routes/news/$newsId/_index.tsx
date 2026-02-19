@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
 import { useUser } from "~/contexts/user-context";
 import { getDatabase } from "~/db/server.server";
@@ -44,13 +45,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function NewsView({ loaderData }: Route.ComponentProps) {
-	const { news: item, systemLanguages } = loaderData as any;
+	const { news: item, relationships, systemLanguages } = loaderData as any;
 	const { t, i18n } = useTranslation();
 	const { hasPermission } = useUser();
 	const canUpdate = hasPermission("news:update");
+	const canDelete = hasPermission("news:delete");
 
 	const useSecondary =
-		systemLanguages.secondary && systemLanguages.secondary === i18n.language;
+		systemLanguages?.secondary && systemLanguages.secondary === i18n.language;
 
 	const title =
 		useSecondary && item.titleSecondary ? item.titleSecondary : item.title;
@@ -64,32 +66,33 @@ export default function NewsView({ loaderData }: Route.ComponentProps) {
 			: item.content;
 
 	const displayFields = {
-		title: { value: title, valueClassName: "text-3xl font-bold" },
+		title: { value: title },
 		summary: {
 			value: summary,
 			hide: !summary,
-			valueClassName: "text-lg font-medium border-l-4 border-primary pl-4",
+			type: "textarea" as const,
 		},
 		content: {
 			value: content,
-			valueClassName:
-				"prose dark:prose-invert max-w-none whitespace-pre-wrap text-lg leading-relaxed",
+			type: "textarea" as const,
 		},
 		createdAt: item.createdAt,
 	};
 
 	return (
-		<ViewForm
-			title=""
-			entityType="news"
-			entityId={item.id}
-			displayFields={displayFields}
-			variant="content"
-			systemLanguages={systemLanguages}
-			useSecondary={useSecondary}
-			returnUrl="/news"
-			canEdit={canUpdate}
-			translationNamespace="news"
-		/>
+		<PageWrapper>
+			<ViewForm
+				title={title || "News"}
+				entityType="news"
+				entityId={item.id}
+				entityName={title}
+				displayFields={displayFields}
+				relationships={relationships}
+				returnUrl="/news"
+				canEdit={canUpdate}
+				canDelete={canDelete}
+				translationNamespace="news"
+			/>
+		</PageWrapper>
 	);
 }
