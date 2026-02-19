@@ -303,8 +303,21 @@ export function ViewForm({
 						secondary: "",
 					}}
 				>
-					<div className={cn("w-full space-y-6", className)}>
-						<div className="bg-card rounded-2xl p-8 shadow-sm border border-border space-y-6">
+					<div className="w-full space-y-12 relative">
+
+						{hasRelationshipSections && (
+							<div className="flex flex-wrap gap-2 pb-2">
+								<RelationshipPicker
+									relationAType={entityType}
+									relationAId={entityId}
+									relationAName={entityName || ""}
+									mode="view"
+									sections={relationshipSections || []}
+								/>
+							</div>
+						)}
+
+						<div className="space-y-10">
 							{contentFields.map((field) => {
 								const isContent =
 									field.name === "content" ||
@@ -319,9 +332,9 @@ export function ViewForm({
 										key={field.name}
 										className={cn(
 											isContent &&
-												"prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-lg leading-relaxed",
+											"prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-2xl md:text-3xl leading-relaxed font-serif",
 											isSummary &&
-												"text-lg text-gray-600 dark:text-gray-400 font-medium border-l-4 border-primary pl-4 py-1",
+											"text-3xl md:text-4xl text-gray-600 dark:text-gray-400 font-bold border-l-8 border-primary/30 pl-8 py-3 italic leading-tight",
 											field.config.className,
 										)}
 									>
@@ -333,17 +346,24 @@ export function ViewForm({
 									</div>
 								);
 							})}
+						</div>
 
-							<div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500">
-								{createdAtField && (
-									<span>
+						<div className="pt-12 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-base text-gray-500">
+							{createdAtField && (
+								<div className="flex items-center gap-2">
+									<span className="material-symbols-outlined">
+										calendar_today
+									</span>
+									<span className="font-bold tracking-tight">
 										{formatDate(createdAtField.config.value, i18n.language)}
 									</span>
-								)}
+								</div>
+							)}
+							<div className="flex items-center gap-4">
 								{canEdit && resolvedEditUrl && (
-									<Button variant="outline" size="sm" asChild>
+									<Button variant="ghost" size="sm" asChild className="rounded-xl hover:bg-primary/10 hover:text-primary transition-all text-base px-6 h-12">
 										<Link to={resolvedEditUrl}>
-											<span className="material-symbols-outlined mr-2 text-sm">
+											<span className="material-symbols-outlined mr-2">
 												edit
 											</span>
 											{t("common.actions.edit")}
@@ -352,19 +372,19 @@ export function ViewForm({
 								)}
 							</div>
 						</div>
+					</div>
 
-						{children}
+					{children}
 
-						<div className="flex justify-start">
-							<Button variant="ghost" asChild>
-								<Link to={resolvedReturnUrl} className="flex items-center">
-									<span className="material-symbols-outlined mr-2">
-										arrow_back
-									</span>
-									{t("common.actions.back")}
-								</Link>
-							</Button>
-						</div>
+					<div className="flex justify-start pt-4">
+						<Button variant="ghost" asChild className="hover:bg-primary/5 rounded-xl px-4 group transition-all">
+							<Link to={resolvedReturnUrl} className="flex items-center">
+								<span className="material-symbols-outlined mr-2 group-hover:-translate-x-1 transition-transform">
+									arrow_back
+								</span>
+								<span className="font-semibold tracking-tight">{t("common.actions.back")}</span>
+							</Link>
+						</Button>
 					</div>
 				</SplitLayout>
 			</PageWrapper>
@@ -448,43 +468,43 @@ export function ViewForm({
 							title={title}
 							className={cn(hasRelationshipSections && "lg:col-span-2")}
 						>
-						<div className="grid gap-4">
-							{fields.map((field) => (
-								<TreasuryField
-									key={field.name}
-									label={getLabel(field.name, field.config)}
-									className={field.config.className}
-									valueClassName={field.config.valueClassName}
-								>
-									{renderFieldValue(
-										field.config,
-										field.schemaConfig,
-										field.name,
-									)}
-								</TreasuryField>
-							))}
-						</div>
+							<div className="grid gap-4">
+								{fields.map((field) => (
+									<TreasuryField
+										key={field.name}
+										label={getLabel(field.name, field.config)}
+										className={field.config.className}
+										valueClassName={field.config.valueClassName}
+									>
+										{renderFieldValue(
+											field.config,
+											field.schemaConfig,
+											field.name,
+										)}
+									</TreasuryField>
+								))}
+							</div>
 
-						{canDelete && resolvedDeleteUrl && (
-							<ConfirmDialog
-								open={showDeleteConfirm}
-								onOpenChange={setShowDeleteConfirm}
-								title={t("common.actions.delete")}
-								description={t("common.actions.delete_confirm")}
-								confirmLabel={t("common.actions.delete")}
-								cancelLabel={t("common.actions.cancel")}
-								variant="destructive"
-								onConfirm={() => {
-									deleteProcessedRef.current = false;
-									deleteFetcher.submit(null, {
-										method: "DELETE",
-										action: resolvedDeleteUrl,
-									});
-									setShowDeleteConfirm(false);
-								}}
-								loading={deleteFetcher.state !== "idle"}
-							/>
-						)}
+							{canDelete && resolvedDeleteUrl && (
+								<ConfirmDialog
+									open={showDeleteConfirm}
+									onOpenChange={setShowDeleteConfirm}
+									title={t("common.actions.delete")}
+									description={t("common.actions.delete_confirm")}
+									confirmLabel={t("common.actions.delete")}
+									cancelLabel={t("common.actions.cancel")}
+									variant="destructive"
+									onConfirm={() => {
+										deleteProcessedRef.current = false;
+										deleteFetcher.submit(null, {
+											method: "DELETE",
+											action: resolvedDeleteUrl,
+										});
+										setShowDeleteConfirm(false);
+									}}
+									loading={deleteFetcher.state !== "idle"}
+								/>
+							)}
 						</TreasuryDetailCard>
 
 						{hasRelationshipSections && relationshipSections && (
