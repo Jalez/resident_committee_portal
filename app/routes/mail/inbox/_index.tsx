@@ -1,13 +1,14 @@
 import { Loader2, Mail, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+	Await,
 	Form,
 	useActionData,
 	useFetcher,
 	useNavigation,
 	useRevalidator,
 } from "react-router";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MailItem } from "~/components/mail/mail-item";
 import { Button } from "~/components/ui/button";
@@ -32,25 +33,31 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const direction = pathname.endsWith("/sent") ? "sent" : "inbox";
 	const db = getDatabase();
 
-	const threads = await db.getCommitteeMailThreads(direction, 50, 0);
-	const messageIds = threads.map((thread) => thread.latestMessage.id);
-	const relationsMap = await loadRelationsMapForEntities(
-		db,
-		"mail",
-		messageIds,
-		undefined,
-		user.permissions,
-	);
-	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
-	for (const [id, relations] of relationsMap) {
-		serializedRelationsMap[id] = relations;
-	}
+	const loadData = async () => {
+		const threads = await db.getCommitteeMailThreads(direction, 50, 0);
+		const messageIds = threads.map((thread) => thread.latestMessage.id);
+		const relationsMap = await loadRelationsMapForEntities(
+			db,
+			"mail",
+			messageIds,
+			undefined,
+			user.permissions,
+		);
+		const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+		for (const [id, relations] of relationsMap) {
+			serializedRelationsMap[id] = relations;
+		}
+
+		return {
+			threads,
+			relationsMap: serializedRelationsMap,
+		};
+	};
 
 	return {
 		siteConfig: SITE_CONFIG,
-		threads,
 		direction,
-		relationsMap: serializedRelationsMap,
+		dataPromise: loadData(),
 	};
 }
 
@@ -105,12 +112,9 @@ function formatDate(date: Date | string): string {
 }
 
 export default function MailInbox({ loaderData }: Route.ComponentProps) {
-	const { threads, direction, relationsMap: relationsMapRaw } = loaderData;
+	const { direction, dataPromise } = loaderData;
 	const { t } = useTranslation();
 	const actionData = useActionData<typeof action>();
-	const relationsMap = new Map(
-		Object.entries((relationsMapRaw ?? {}) as Record<string, RelationBadgeData[]>),
-	);
 	const deleteFetcher = useFetcher();
 	const navigation = useNavigation();
 	const revalidator = useRevalidator();
@@ -197,37 +201,58 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 			</div>
 
 			<div className="divide-y divide-gray-200 dark:divide-gray-700">
-				{threads.length === 0 ? (
-					<div className="py-12 text-center text-gray-500 dark:text-gray-400">
-						<Mail className="mx-auto size-12 opacity-50" />
-						<p className="mt-2">{t("mail.no_messages")}</p>
-					</div>
-				) : (
-					threads.map((thread) => {
-						const msg = thread.latestMessage;
-						const threadHref = msg.threadId
-							? `/mail/thread/${encodeURIComponent(msg.threadId)}`
-							: `/mail/messages/${msg.id}`;
-						return (
-							<MailItem
-								key={thread.threadId}
-								type="message"
-								id={msg.id}
-								primaryText={
-									direction === "sent"
-										? formatRecipients(msg.toJson, "sent")
-										: msg.fromName || msg.fromAddress || ""
-								}
-								secondaryText={msg.subject || t("mail.no_subject")}
-								date={formatDate(msg.date)}
-								href={threadHref}
-								onDelete={handleDeleteMessage}
-								threadCount={thread.messageCount}
-								relations={relationsMap.get(msg.id) || []}
-							/>
-						);
-					})
-				)}
+				<Suspense
+					fallback={
+						<div className="py-12 flex justify-center">
+							<Loader2 className="animate-spin size-8 text-primary/50" />
+						</div>
+					}
+				>
+					<Await resolve={dataPromise}>
+						{(data) => {
+							const { threads, relationsMap: relationsMapRaw } = data;
+							const relationsMap = new Map(
+								Object.entries(
+									(relationsMapRaw ?? {}) as Record<string, RelationBadgeData[]>,
+								),
+							);
+
+							if (threads.length === 0) {
+								return (
+									<div className="py-12 text-center text-gray-500 dark:text-gray-400">
+										<Mail className="mx-auto size-12 opacity-50" />
+										<p className="mt-2">{t("mail.no_messages")}</p>
+									</div>
+								);
+							}
+
+							return threads.map((thread) => {
+								const msg = thread.latestMessage;
+								const threadHref = msg.threadId
+									? `/mail/thread/${encodeURIComponent(msg.threadId)}`
+									: `/mail/messages/${msg.id}`;
+								return (
+									<MailItem
+										key={thread.threadId}
+										type="message"
+										id={msg.id}
+										primaryText={
+											direction === "sent"
+												? formatRecipients(msg.toJson, "sent")
+												: msg.fromName || msg.fromAddress || ""
+										}
+										secondaryText={msg.subject || t("mail.no_subject")}
+										date={formatDate(msg.date)}
+										href={threadHref}
+										onDelete={handleDeleteMessage}
+										threadCount={thread.messageCount}
+										relations={relationsMap.get(msg.id) || []}
+									/>
+								);
+							});
+						}}
+					</Await>
+				</Suspense>
 			</div>
 		</div>
 	);
