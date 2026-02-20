@@ -149,7 +149,7 @@ async function applyReimbursementReply(
  * Fetch recent messages from INBOX and store new ones in committee_mail_messages.
  * Dedupes by message_id. Returns count of new messages stored.
  */
-export async function fetchInboxMessages(
+export async function syncCommitteeMail(
 	db: DatabaseAdapter,
 	limit = 50,
 ): Promise<{ count: number; error?: string }> {
@@ -166,114 +166,180 @@ export async function fetchInboxMessages(
 
 	try {
 		await client.connect();
-		const lock = await client.getMailboxLock("INBOX");
-		let stored = 0;
-		try {
-			const mailbox = client.mailbox;
-			const exists =
-				mailbox && typeof mailbox === "object" && "exists" in mailbox
-					? (mailbox.exists as number)
-					: 0;
-			if (exists === 0) {
-				return { count: 0 };
+
+		let sentMailboxPath: string | null = null;
+		for (const mb of await client.list()) {
+			if (mb.specialUse && mb.specialUse.includes("\\Sent")) {
+				sentMailboxPath = mb.path;
+				break;
 			}
-			const start = Math.max(1, exists - limit + 1);
-			const range = `${start}:${exists}`;
-			for await (const msg of client.fetch(range, {
-				envelope: true,
-				source: true,
-			})) {
-				const envelope = msg.envelope;
-				const messageId = envelope?.messageId?.trim() || null;
+		}
+		if (!sentMailboxPath) {
+			for (const mb of await client.list()) {
+				const pathLower = mb.path.toLowerCase();
 				if (
-					messageId &&
-					(await db.committeeMailMessageExistsByMessageId(messageId))
+					pathLower === "[gmail]/sent mail" ||
+					pathLower === "sent" ||
+					pathLower === "sent items" ||
+					pathLower === "sent messages"
 				) {
+					sentMailboxPath = mb.path;
+					break;
+				}
+			}
+		}
+
+		let stored = 0;
+		const mailboxesToSync: { path: string; direction: "inbox" | "sent" }[] = [
+			{ path: "INBOX", direction: "inbox" },
+		];
+		if (sentMailboxPath) {
+			mailboxesToSync.push({ path: sentMailboxPath, direction: "sent" });
+		}
+
+		for (const folder of mailboxesToSync) {
+			let lock;
+			try {
+				lock = await client.getMailboxLock(folder.path);
+			} catch {
+				continue;
+			}
+			try {
+				const mailbox = client.mailbox;
+				const exists =
+					mailbox && typeof mailbox === "object" && "exists" in mailbox
+						? (mailbox.exists as number)
+						: 0;
+				if (exists === 0) {
 					continue;
 				}
-				let bodyHtml = "";
-				let bodyText: string | null = null;
-				let inReplyTo: string | null = null;
-				let references: string[] | null = null;
-				if (msg.source) {
-					try {
-						const parsed = await simpleParser(msg.source);
-						bodyHtml = parsed.html || "";
-						bodyText = parsed.text || null;
-						inReplyTo = parsed.inReplyTo || null;
-						const refs = parsed.references;
-						if (refs) {
-							references = Array.isArray(refs) ? refs : [refs];
+				const start = Math.max(1, exists - limit + 1);
+				const range = `${start}:${exists}`;
+
+				const missingUids: number[] = [];
+				for await (const msg of client.fetch(range, {
+					envelope: true,
+					uid: true,
+				})) {
+					const messageId = msg.envelope?.messageId?.trim() || null;
+					if (
+						messageId &&
+						(await db.committeeMailMessageExistsByMessageId(messageId))
+					) {
+						continue;
+					}
+					missingUids.push(msg.uid);
+				}
+
+				if (missingUids.length === 0) {
+					continue;
+				}
+
+				const fetchSequence = missingUids.join(",");
+				for await (const msg of client.fetch(
+					fetchSequence,
+					{
+						envelope: true,
+						source: true,
+					},
+					{ uid: true },
+				)) {
+					const envelope = msg.envelope;
+					const messageId = envelope?.messageId?.trim() || null;
+					if (
+						messageId &&
+						(await db.committeeMailMessageExistsByMessageId(messageId))
+					) {
+						continue;
+					}
+
+					let bodyHtml = "";
+					let bodyText: string | null = null;
+					let inReplyTo: string | null = null;
+					let references: string[] | null = null;
+					if (msg.source) {
+						try {
+							const parsed = await simpleParser(msg.source);
+							bodyHtml = parsed.html || "";
+							bodyText = parsed.text || null;
+							inReplyTo = parsed.inReplyTo || null;
+							const refs = parsed.references;
+							if (refs) {
+								references = Array.isArray(refs) ? refs : [refs];
+							}
+						} catch {
+							bodyHtml = String(msg.source).slice(0, 50_000);
 						}
-					} catch {
-						bodyHtml = String(msg.source).slice(0, 50_000);
 					}
-				}
-				if (!bodyHtml && bodyText) {
-					bodyHtml = bodyText.replace(/\n/g, "<br>\n");
-				}
-				const from = envelope?.from?.[0];
-				const fromAddress = from?.address || "";
-				const fromName = from?.name || null;
-				const toJson = addressesToJson(envelope?.to);
-				const ccJson = envelope?.cc?.length
-					? addressesToJson(envelope.cc)
-					: null;
-				const bccJson = envelope?.bcc?.length
-					? addressesToJson(envelope.bcc)
-					: null;
-				const subject = envelope?.subject?.trim() || "(No subject)";
-				const date = envelope?.date || new Date();
-				const threadId = computeThreadId(messageId, inReplyTo, references);
-
-				let purchaseId = findReimbursementPurchaseId({
-					to: envelope?.to,
-					subject,
-					bodyText,
-					bodyHtml,
-				});
-
-				// Look up if this thread has been manually linked to a reimbursement
-				if (!purchaseId && threadId) {
-					const rels = await db.getEntityRelationships("mail", threadId);
-					const reimbRel = rels.find(
-						(r) =>
-							r.relationBType === "reimbursement" ||
-							r.relationAType === "reimbursement",
-					);
-					if (reimbRel) {
-						purchaseId =
-							reimbRel.relationBType === "reimbursement"
-								? reimbRel.relationBId
-								: reimbRel.relationId;
+					if (!bodyHtml && bodyText) {
+						bodyHtml = bodyText.replace(/\n/g, "<br>\n");
 					}
-				}
 
-				if (purchaseId) {
-					const content = bodyText || stripHtml(bodyHtml) || subject;
-					await applyReimbursementReply(db, purchaseId, content);
+					const from = envelope?.from?.[0];
+					const fromAddress = from?.address || "";
+					const fromName = from?.name || null;
+					const toJson = addressesToJson(envelope?.to);
+					const ccJson = envelope?.cc?.length
+						? addressesToJson(envelope.cc)
+						: null;
+					const bccJson = envelope?.bcc?.length
+						? addressesToJson(envelope.bcc)
+						: null;
+					const subject = envelope?.subject?.trim() || "(No subject)";
+					const date = envelope?.date || new Date();
+					const threadId = computeThreadId(messageId, inReplyTo, references);
+
+					let purchaseId = findReimbursementPurchaseId({
+						to: folder.direction === "inbox" ? envelope?.to : undefined,
+						subject,
+						bodyText,
+						bodyHtml,
+					});
+
+					// Look up if this thread has been manually linked to a reimbursement
+					if (!purchaseId && threadId) {
+						const rels = await db.getEntityRelationships("mail", threadId);
+						const reimbRel = rels.find(
+							(r) =>
+								r.relationBType === "reimbursement" ||
+								r.relationAType === "reimbursement",
+						);
+						if (reimbRel) {
+							purchaseId =
+								reimbRel.relationBType === "reimbursement"
+									? reimbRel.relationBId
+									: reimbRel.relationId;
+						}
+					}
+
+					if (purchaseId) {
+						const content = bodyText || stripHtml(bodyHtml) || subject;
+						await applyReimbursementReply(db, purchaseId, content);
+					}
+
+					await db.insertCommitteeMailMessage({
+						direction: folder.direction,
+						fromAddress,
+						fromName,
+						toJson,
+						ccJson,
+						bccJson,
+						subject,
+						bodyHtml: bodyHtml || "(No body)",
+						bodyText,
+						date,
+						messageId,
+						inReplyTo,
+						referencesJson: references ? JSON.stringify(references) : null,
+						threadId,
+					});
+					stored++;
 				}
-				await db.insertCommitteeMailMessage({
-					direction: "inbox",
-					fromAddress,
-					fromName,
-					toJson,
-					ccJson,
-					bccJson,
-					subject,
-					bodyHtml: bodyHtml || "(No body)",
-					bodyText,
-					date,
-					messageId,
-					inReplyTo,
-					referencesJson: references ? JSON.stringify(references) : null,
-					threadId,
-				});
-				stored++;
+			} finally {
+				lock?.release();
 			}
-		} finally {
-			lock.release();
 		}
+
 		await client.logout();
 		return { count: stored };
 	} catch (err) {

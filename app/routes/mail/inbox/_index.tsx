@@ -59,9 +59,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const intent = formData.get("_action") as string;
 	if (intent === "refreshInbox") {
-		const { fetchInboxMessages } = await import("~/lib/mail-imap.server");
+		const { syncCommitteeMail } = await import("~/lib/mail-imap.server");
 		const db = getDatabase();
-		const result = await fetchInboxMessages(db, 50);
+		const result = await syncCommitteeMail(db, 50);
 		return {
 			refreshed: true,
 			count: result.count,
@@ -175,41 +175,24 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 							}),
 						})}
 					</span>
-					{direction === "inbox" ? (
-						<Form method="post" className="flex">
-							<input type="hidden" name="_action" value="refreshInbox" />
-							<Button
-								variant="ghost"
-								size="sm"
-								type="submit"
-								disabled={navigation.state === "submitting"}
-								className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
-							>
-								{navigation.state === "submitting" &&
-								navigation.formData?.get("_action") === "refreshInbox" ? (
-									<Loader2 className="mr-2 size-4 animate-spin" />
-								) : (
-									<RefreshCw className="mr-2 size-4" />
-								)}
-								{t("mail.refresh")}
-							</Button>
-						</Form>
-					) : (
+					<Form method="post" className="flex">
+						<input type="hidden" name="_action" value="refreshInbox" />
 						<Button
 							variant="ghost"
 							size="sm"
-							onClick={() => revalidator.revalidate()}
-							disabled={navigation.state === "loading"}
+							type="submit"
+							disabled={navigation.state === "submitting"}
 							className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
 						>
-							{navigation.state === "loading" ? (
+							{navigation.state === "submitting" &&
+								navigation.formData?.get("_action") === "refreshInbox" ? (
 								<Loader2 className="mr-2 size-4 animate-spin" />
 							) : (
 								<RefreshCw className="mr-2 size-4" />
 							)}
 							{t("mail.refresh")}
 						</Button>
-					)}
+					</Form>
 				</div>
 			</div>
 
