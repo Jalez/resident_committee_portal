@@ -1065,35 +1065,54 @@ export class NeonAdapter implements DatabaseAdapter {
 			? [eq(committeeMailMessages.direction, direction)]
 			: [];
 		const allMessages = await this.db
-			.select()
+			.select({
+				id: committeeMailMessages.id,
+				threadId: committeeMailMessages.threadId,
+				date: committeeMailMessages.date,
+			})
 			.from(committeeMailMessages)
 			.where(conditions.length > 0 ? conditions[0] : undefined)
 			.orderBy(desc(committeeMailMessages.date));
 
 		const threadMap = new Map<
 			string,
-			{ latestMessage: CommitteeMailMessage; messageCount: number }
+			{ latestMessageId: string; latestDate: Date; messageCount: number }
 		>();
 		for (const msg of allMessages) {
 			const tid = msg.threadId || msg.id;
 			const existing = threadMap.get(tid);
 			if (!existing) {
-				threadMap.set(tid, { latestMessage: msg, messageCount: 1 });
+				threadMap.set(tid, {
+					latestMessageId: msg.id,
+					latestDate: new Date(msg.date),
+					messageCount: 1,
+				});
 			} else {
 				existing.messageCount++;
 			}
 		}
 
-		const threads = Array.from(threadMap.entries())
+		const threadsMetadata = Array.from(threadMap.entries())
 			.map(([threadId, data]) => ({ threadId, ...data }))
-			.sort(
-				(a, b) =>
-					new Date(b.latestMessage.date).getTime() -
-					new Date(a.latestMessage.date).getTime(),
-			)
+			.sort((a, b) => b.latestDate.getTime() - a.latestDate.getTime())
 			.slice(offset, offset + limit);
 
-		return threads;
+		if (threadsMetadata.length === 0) return [];
+
+		const messageIdsToFetch = threadsMetadata.map((t) => t.latestMessageId);
+
+		const fetchedFullMessages = await this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(inArray(committeeMailMessages.id, messageIdsToFetch));
+
+		const messageMap = new Map(fetchedFullMessages.map((m) => [m.id, m]));
+
+		return threadsMetadata.map((t) => ({
+			threadId: t.threadId,
+			latestMessage: messageMap.get(t.latestMessageId) as CommitteeMailMessage,
+			messageCount: t.messageCount,
+		}));
 	}
 
 	async getCommitteeMailMessageByMessageId(
