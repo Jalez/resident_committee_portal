@@ -318,6 +318,10 @@ export interface DatabaseAdapter {
 		type: RelationshipEntityType,
 		id: string,
 	): Promise<EntityRelationship[]>;
+	getEntityRelationshipsForMultipleIds(
+		type: RelationshipEntityType,
+		ids: string[],
+	): Promise<EntityRelationship[]>;
 	entityRelationshipExists(
 		relationAType: RelationshipEntityType,
 		relationAId: string,

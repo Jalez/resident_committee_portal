@@ -49,6 +49,7 @@ export async function loadRelationsForTableColumn(
 	entityId: string,
 	relationTypes?: RelationshipEntityType[],
 	userPermissions?: string[],
+	preloadedRelationships?: any[],
 ): Promise<RelationBadgeData[]> {
 	const typesToLoad = getVisibleRelationTypes(relationTypes, userPermissions);
 	if (typesToLoad.length === 0) return [];
@@ -58,6 +59,7 @@ export async function loadRelationsForTableColumn(
 		entityType,
 		entityId,
 		typesToLoad,
+		{ userPermissions, includeAvailable: false, preloadedRelationships }
 	);
 
 	const badgeData: RelationBadgeData[] = [];
@@ -87,15 +89,15 @@ export async function loadRelationsForTableColumn(
 			const href =
 				typedRelType === "mail"
 					? (() => {
-							const threadId = record.threadId;
-							if ("draftType" in record) {
-								return `/mail/drafts/${id}/edit`;
-							}
-							if (typeof threadId === "string" && threadId.trim().length > 0) {
-								return `/mail/thread/${encodeURIComponent(threadId)}`;
-							}
-							return `/mail/messages/${id}`;
-						})()
+						const threadId = record.threadId;
+						if ("draftType" in record) {
+							return `/mail/drafts/${id}/edit`;
+						}
+						if (typeof threadId === "string" && threadId.trim().length > 0) {
+							return `/mail/thread/${encodeURIComponent(threadId)}`;
+						}
+						return `/mail/messages/${id}`;
+					})()
 					: `${config.route}/${id}`;
 
 			badgeData.push({
@@ -121,6 +123,21 @@ export async function loadRelationsMapForEntities(
 	userPermissions?: string[],
 ): Promise<Map<string, RelationBadgeData[]>> {
 	const map = new Map<string, RelationBadgeData[]>();
+	if (entityIds.length === 0) return map;
+
+	const allRels = await db.getEntityRelationshipsForMultipleIds(entityType, entityIds);
+	const relsByEntityId = new Map<string, any[]>();
+	for (const id of entityIds) {
+		relsByEntityId.set(id, []);
+	}
+	for (const rel of allRels) {
+		if (rel.relationAType === entityType && relsByEntityId.has(rel.relationId)) {
+			relsByEntityId.get(rel.relationId)!.push(rel);
+		}
+		if (rel.relationBType === entityType && relsByEntityId.has(rel.relationBId)) {
+			relsByEntityId.get(rel.relationBId)!.push(rel);
+		}
+	}
 
 	await Promise.all(
 		entityIds.map(async (id) => {
@@ -130,6 +147,7 @@ export async function loadRelationsMapForEntities(
 				id,
 				relationTypes,
 				userPermissions,
+				relsByEntityId.get(id) || []
 			);
 			map.set(id, relations);
 		}),

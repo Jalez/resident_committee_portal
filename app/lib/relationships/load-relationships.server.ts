@@ -79,15 +79,16 @@ export async function loadRelationshipsForEntity(
 	entityType: RelationshipEntityType,
 	entityId: string,
 	relationBTypes: RelationshipEntityType[],
-	options?: { userPermissions?: string[] },
+	options?: { userPermissions?: string[], includeAvailable?: boolean, preloadedRelationships?: any[] },
 ): Promise<Record<string, RelationshipData>> {
 	const result: Record<string, RelationshipData> = {};
 	const userPermissions = options?.userPermissions;
+	const includeAvailable = options?.includeAvailable ?? true;
 	const readableRelationTypes = relationBTypes.filter((relationBType) =>
 		canReadRelationType(userPermissions, relationBType),
 	);
 
-	const allRelationships = await db.getEntityRelationships(
+	const allRelationships = options?.preloadedRelationships ?? await db.getEntityRelationships(
 		entityType,
 		entityId,
 	);
@@ -113,7 +114,7 @@ export async function loadRelationshipsForEntity(
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
 		const canWrite = canWriteRelationType(userPermissions, relationBType);
-		const available = canWrite
+		const available = canWrite && includeAvailable
 			? await fetchAvailableEntities(db, relationBType, linkedIds)
 			: [];
 
@@ -183,11 +184,11 @@ async function fetchEntityById(
 			return db.getPollById(id);
 		case "social":
 			return db.getSocialLinkById(id);
-	case "mail":
-		return (
-			(await db.getCommitteeMailMessageById(id)) ||
-			(await db.getMailDraftById(id))
-		);
+		case "mail":
+			return (
+				(await db.getCommitteeMailMessageById(id)) ||
+				(await db.getMailDraftById(id))
+			);
 		case "event":
 			return db.getEventById(id);
 		default:
@@ -236,13 +237,13 @@ async function fetchAvailableEntities(
 		case "social":
 			allEntities = await db.getSocialLinks();
 			break;
-	case "mail":
-		allEntities = [
-			...(await db.getMailDrafts(50)),
-			...(await db.getCommitteeMailMessages("inbox", 50)),
-			...(await db.getCommitteeMailMessages("sent", 50)),
-		];
-		break;
+		case "mail":
+			allEntities = [
+				...(await db.getMailDrafts(50)),
+				...(await db.getCommitteeMailMessages("inbox", 50)),
+				...(await db.getCommitteeMailMessages("sent", 50)),
+			];
+			break;
 		case "event":
 			allEntities = await db.getEvents();
 			break;

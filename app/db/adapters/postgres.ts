@@ -1433,6 +1433,28 @@ export class PostgresAdapter implements DatabaseAdapter {
 			);
 	}
 
+	async getEntityRelationshipsForMultipleIds(
+		type: RelationshipEntityType,
+		ids: string[],
+	): Promise<EntityRelationship[]> {
+		if (ids.length === 0) return [];
+		return this.db
+			.select()
+			.from(entityRelationships)
+			.where(
+				or(
+					and(
+						eq(entityRelationships.relationAType, type),
+						inArray(entityRelationships.relationId, ids),
+					),
+					and(
+						eq(entityRelationships.relationBType, type),
+						inArray(entityRelationships.relationBId, ids),
+					),
+				),
+			);
+	}
+
 	async entityRelationshipExists(
 		relationAType: RelationshipEntityType,
 		relationAId: string,
