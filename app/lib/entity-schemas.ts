@@ -169,7 +169,6 @@ export const ENTITY_SCHEMAS: Record<RelationshipEntityType, EntitySchema> = {
 			location: (formData.get("location") as string)?.trim() || null,
 			category: (formData.get("category") as string)?.trim() || null,
 			description: (formData.get("description") as string)?.trim() || null,
-			value: (formData.get("value") as string) || "0",
 			purchasedAt: formData.get("purchasedAt")
 				? new Date(formData.get("purchasedAt") as string)
 				: null,

@@ -93,7 +93,6 @@ async function createDraftEntity(
 				const item = await db.createInventoryItem({
 					name: suggestion.name,
 					description: suggestion.data.description as string | undefined,
-					value: String(suggestion.data.value || "0"),
 					quantity: (suggestion.data.quantity as number) || 1,
 					purchasedAt: suggestion.data.purchasedAt
 						? new Date(suggestion.data.purchasedAt as string)
@@ -348,8 +347,8 @@ export async function analyzeReimbursement(
 		const receipts =
 			receiptIds.length > 0
 				? await Promise.all(receiptIds.map((id) => db.getReceiptById(id))).then(
-						(rs) => rs.filter((r): r is NonNullable<typeof r> => r !== null),
-					)
+					(rs) => rs.filter((r): r is NonNullable<typeof r> => r !== null),
+				)
 				: [];
 
 		// Build context from reimbursement + linked receipts
@@ -390,7 +389,6 @@ export async function analyzeReimbursement(
 									entityType: "inventory",
 									name: item.name || item.description || "Inventory Item",
 									data: {
-										value: String(price),
 										quantity: item.quantity || 1,
 										purchasedAt:
 											receipt.purchaseDate?.toISOString() ||

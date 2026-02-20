@@ -70,9 +70,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 			const attendees = attendeesRaw
 				? attendeesRaw
-						.split(/[,;\n]/)
-						.map((e: string) => e.trim())
-						.filter((e: string) => e.includes("@"))
+					.split(/[,;\n]/)
+					.map((e: string) => e.trim())
+					.filter((e: string) => e.includes("@"))
 				: undefined;
 
 			const existingEvent = await db.getEventById(id);
@@ -90,7 +90,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 			const eventType: EventType =
 				description?.includes("#meeting") ||
-				title.toLowerCase().includes("kokous")
+					title.toLowerCase().includes("kokous")
 					? "meeting"
 					: description?.includes("#private")
 						? "private"
@@ -162,32 +162,32 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 	const existingStartDate = eventStartDate.toISOString().split("T")[0];
 	const existingStartTime = eventTimezone
 		? eventStartDate.toLocaleTimeString("sv-SE", {
-				timeZone: eventTimezone,
-				hour: "2-digit",
-				minute: "2-digit",
-			})
+			timeZone: eventTimezone,
+			hour: "2-digit",
+			minute: "2-digit",
+		})
 		: eventStartDate.toLocaleTimeString("sv-SE", {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	const eventEndDate = event.endDate ? new Date(event.endDate) : eventStartDate;
 	const existingEndDate = eventEndDate.toISOString().split("T")[0];
 	const existingEndTime = eventTimezone
 		? eventEndDate.toLocaleTimeString("sv-SE", {
-				timeZone: eventTimezone,
-				hour: "2-digit",
-				minute: "2-digit",
-			})
+			timeZone: eventTimezone,
+			hour: "2-digit",
+			minute: "2-digit",
+		})
 		: eventEndDate.toLocaleTimeString("sv-SE", {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	const existingAttendees = event.attendees
 		? JSON.parse(event.attendees).join(", ")
 		: "";
 
 	const [isAllDay, setIsAllDay] = useState(existingIsAllDay);
-	
+
 	const userTimezone =
 		typeof window !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -244,25 +244,23 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<EditForm
-					title={t("events.edit.header")}
-					action=""
-					inputFields={inputFields}
-					entityType="event"
-					entityId={event.id}
-					entityName={event.summary}
-					returnUrl={returnUrl || "/events"}
-					onCancel={() => navigate(returnUrl || "/events")}
-					relationships={relationships}
-					hiddenFields={{
-						_sourceType: sourceContext?.type,
-						_sourceId: sourceContext?.id,
-						_returnUrl: returnUrl,
-						timezone: isAllDay ? "" : (eventTimezone || userTimezone),
-					}}
-				/>
-			</div>
+			<EditForm
+				title={t("events.edit.header")}
+				action=""
+				inputFields={inputFields}
+				entityType="event"
+				entityId={event.id}
+				entityName={event.summary}
+				returnUrl={returnUrl || "/events"}
+				onCancel={() => navigate(returnUrl || "/events")}
+				relationships={relationships}
+				hiddenFields={{
+					_sourceType: sourceContext?.type,
+					_sourceId: sourceContext?.id,
+					_returnUrl: returnUrl,
+					timezone: isAllDay ? "" : (eventTimezone || userTimezone),
+				}}
+			/>
 		</PageWrapper>
 	);
 }

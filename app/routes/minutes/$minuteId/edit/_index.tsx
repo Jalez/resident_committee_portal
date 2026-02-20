@@ -80,7 +80,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 							: uploadResult.error === "upload_failed"
 								? uploadResult.message || "File upload failed. Please try again."
 								: uploadResult.message ||
-									"Could not process the selected file. Please try again.";
+								"Could not process the selected file. Please try again.";
 				return { error: errorMessage };
 			}
 
@@ -234,37 +234,35 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<EditForm
-					title={t("minutes.edit", "Edit Minute")}
-					action=""
-					encType="multipart/form-data"
-					inputFields={inputFields as any}
-					entityType="minute"
-					entityId={minute.id}
-					returnUrl={returnUrl || "/minutes"}
-					onCancel={() => {
-						handleCancel();
-						navigate(returnUrl || "/minutes");
-					}}
-					relationships={relationships}
-					deleteUrl={ENTITY_REGISTRY.minute.deleteUrl(minute.id)}
-					submitDisabled={isUploading}
-					hiddenFields={{
-						_sourceType: sourceContext?.type,
-						_sourceId: sourceContext?.id,
-						_returnUrl: returnUrl,
-						tempUrl: tempUrl,
-						tempPathname: tempPathname,
-					}}
-					onFieldChange={(name, value) => {
-						if (name === "date") setDate(value);
-						if (name === "title") setTitle(value);
-						if (name === "description") setDescription(value);
-					}}
-					translationNamespace="minutes"
-				/>
-			</div>
+			<EditForm
+				title={t("minutes.edit", "Edit Minute")}
+				action=""
+				encType="multipart/form-data"
+				inputFields={inputFields as any}
+				entityType="minute"
+				entityId={minute.id}
+				returnUrl={returnUrl || "/minutes"}
+				onCancel={() => {
+					handleCancel();
+					navigate(returnUrl || "/minutes");
+				}}
+				relationships={relationships}
+				deleteUrl={ENTITY_REGISTRY.minute.deleteUrl(minute.id)}
+				submitDisabled={isUploading}
+				hiddenFields={{
+					_sourceType: sourceContext?.type,
+					_sourceId: sourceContext?.id,
+					_returnUrl: returnUrl,
+					tempUrl: tempUrl,
+					tempPathname: tempPathname,
+				}}
+				onFieldChange={(name, value) => {
+					if (name === "date") setDate(value);
+					if (name === "title") setTitle(value);
+					if (name === "description") setDescription(value);
+				}}
+				translationNamespace="minutes"
+			/>
 		</PageWrapper>
 	);
 }

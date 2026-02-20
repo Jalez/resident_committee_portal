@@ -94,7 +94,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 						location: categorization.suggestedLocation || null,
 						needsCompletion: !categorization.suggestedLocation,
 						completionNotes: `Auto-created from receipt: ${receipt.name || "Unnamed receipt"}. ${categorization.reasoning}`,
-						value: item.totalPrice ? String(item.totalPrice) : "0",
 						purchasedAt: receipt.purchaseDate || new Date(),
 						category: categorization.category,
 					});

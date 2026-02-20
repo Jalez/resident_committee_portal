@@ -118,40 +118,40 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
 		_linkedInfo:
 			poll.type === "linked"
 				? {
-						render: () => (
-							<div className="space-y-4 mb-6 p-4 bg-muted rounded-xl">
-								<div className="space-y-1">
-									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-										Name
-									</Label>
-									<div className="font-medium">{poll.name}</div>
-								</div>
-								<div className="space-y-1">
-									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-										Description
-									</Label>
-									<div className="text-sm whitespace-pre-wrap">
-										{poll.description || "-"}
-									</div>
-								</div>
-								<div className="space-y-1">
-									<Label className="text-xs text-muted-foreground uppercase tracking-wider">
-										Google Form URL
-									</Label>
-									<div className="text-sm truncate">
-										<a
-											href={poll.externalUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-blue-600 hover:underline"
-										>
-											{poll.externalUrl}
-										</a>
-									</div>
+					render: () => (
+						<div className="space-y-4 mb-6 p-4 bg-muted rounded-xl">
+							<div className="space-y-1">
+								<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+									Name
+								</Label>
+								<div className="font-medium">{poll.name}</div>
+							</div>
+							<div className="space-y-1">
+								<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+									Description
+								</Label>
+								<div className="text-sm whitespace-pre-wrap">
+									{poll.description || "-"}
 								</div>
 							</div>
-						),
-					}
+							<div className="space-y-1">
+								<Label className="text-xs text-muted-foreground uppercase tracking-wider">
+									Google Form URL
+								</Label>
+								<div className="text-sm truncate">
+									<a
+										href={poll.externalUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-blue-600 hover:underline"
+									>
+										{poll.externalUrl}
+									</a>
+								</div>
+							</div>
+						</div>
+					),
+				}
 				: undefined,
 
 		deadlineDate: {
@@ -175,34 +175,32 @@ export default function EditPoll({ loaderData }: Route.ComponentProps) {
 		analyticsSheetId:
 			analyticsSheets.length > 0
 				? {
-						label: t("polls.new.analytics_sheet"),
-						value: poll.analyticsSheetId || "none",
-						options: [
-							{ value: "none", label: t("polls.new.no_sheet") },
-							...analyticsSheets.map((s: any) => ({
-								value: s.id,
-								label: s.name,
-							})),
-						],
-					}
+					label: t("polls.new.analytics_sheet"),
+					value: poll.analyticsSheetId || "none",
+					options: [
+						{ value: "none", label: t("polls.new.no_sheet") },
+						...analyticsSheets.map((s: any) => ({
+							value: s.id,
+							label: s.name,
+						})),
+					],
+				}
 				: { hidden: true },
 	};
 
 	return (
 		<PageWrapper>
-			<div className="w-full max-w-2xl mx-auto px-4 pb-12">
-				<EditForm
-					title={t("common.actions.edit") + " Poll"}
-					action=""
-					inputFields={inputFields}
-					entityType="poll"
-					entityId={poll.id}
-					returnUrl={returnUrl || "/polls"}
-					relationships={relationships}
-					onCancel={() => navigate(returnUrl || "/polls")}
-					translationNamespace="polls.new"
-				></EditForm>
-			</div>
+			<EditForm
+				title={t("common.actions.edit") + " Poll"}
+				action=""
+				inputFields={inputFields}
+				entityType="poll"
+				entityId={poll.id}
+				returnUrl={returnUrl || "/polls"}
+				relationships={relationships}
+				onCancel={() => navigate(returnUrl || "/polls")}
+				translationNamespace="polls.new"
+			></EditForm>
 		</PageWrapper>
 	);
 }

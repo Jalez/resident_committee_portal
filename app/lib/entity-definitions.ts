@@ -2,16 +2,16 @@ import type { RelationshipEntityType } from "~/db/types";
 
 export interface FieldConfig {
 	type:
-		| "text"
-		| "number"
-		| "date"
-		| "select"
-		| "textarea"
-		| "currency"
-		| "checkbox"
-		| "time"
-		| "hidden"
-		| "url";
+	| "text"
+	| "number"
+	| "date"
+	| "select"
+	| "textarea"
+	| "currency"
+	| "checkbox"
+	| "time"
+	| "hidden"
+	| "url";
 	labelKey?: string;
 	required?: boolean;
 	options?: string[] | { label: string; value: string }[];
@@ -280,7 +280,6 @@ export const ENTITY_DEFINITIONS: Record<
 			location: { type: "text", required: true },
 			category: { type: "text" },
 			description: { type: "textarea" },
-			value: { type: "currency" },
 			status: {
 				type: "select",
 				options: [

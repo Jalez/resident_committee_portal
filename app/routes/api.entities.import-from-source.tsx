@@ -140,14 +140,12 @@ async function importInventoryFromReceipt(
 	for (const item of items) {
 		const name = item.name || item.description || "Unnamed Item";
 		const quantity = item.quantity || 1;
-		const value = item.total || item.price || 0;
 
 		// Create draft inventory item
 		const inventoryItem = await db.createInventoryItem({
 			name,
 			description: `Imported from receipt`,
 			quantity,
-			value: value.toString(),
 			status: "draft",
 		});
 
