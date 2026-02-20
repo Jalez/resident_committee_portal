@@ -5,6 +5,7 @@ import type {
 	Event,
 	Faq,
 	FundBudget,
+	InventoryAdjustment,
 	InventoryItem,
 	MailDraft,
 	Message,
@@ -14,6 +15,7 @@ import type {
 	NewEvent,
 	NewFaq,
 	NewFundBudget,
+	NewInventoryAdjustment,
 	NewInventoryItem,
 	NewMailDraft,
 	NewMessage,
@@ -101,6 +103,14 @@ export interface DatabaseAdapter {
 		notes?: string,
 	): Promise<InventoryItem | null>;
 	markInventoryItemAsLegacy(id: string): Promise<InventoryItem | null>;
+
+	// ==================== Inventory Adjustment Methods ====================
+	getInventoryAdjustmentsByItemId(
+		inventoryItemId: string,
+	): Promise<InventoryAdjustment[]>;
+	createInventoryAdjustment(
+		adjustment: NewInventoryAdjustment,
+	): Promise<InventoryAdjustment>;
 
 	// ==================== Purchase Methods ====================
 	getPurchases(): Promise<Purchase[]>;

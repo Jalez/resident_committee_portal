@@ -100,12 +100,8 @@ export interface InventoryItem {
 	location: string | null;
 	category: string | null;
 	description: string | null;
-	value: string | null;
 	showInInfoReel: boolean;
 	status: InventoryItemStatus;
-	removedAt: Date | null;
-	removalReason: RemovalReason | null;
-	removalNotes: string | null;
 	needsCompletion: boolean | null;
 	completionNotes: string | null;
 	purchasedAt: Date | null;
@@ -117,6 +113,26 @@ export type NewInventoryItem = Partial<
 	Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
 > & {
 	name: string;
+};
+
+export interface InventoryAdjustment {
+	id: string;
+	inventoryItemId: string;
+	quantityChange: number;
+	reason: string;
+	notes: string | null;
+	date: Date;
+	createdBy: string | null;
+	createdAt: Date;
+}
+
+export type NewInventoryAdjustment = Partial<
+	Omit<InventoryAdjustment, "id" | "createdAt" | "date">
+> & {
+	inventoryItemId: string;
+	quantityChange: number;
+	reason: string;
+	date?: Date;
 };
 
 export interface Purchase {

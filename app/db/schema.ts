@@ -128,16 +128,12 @@ export const inventoryItems = pgTable("inventory_items", {
 	location: text("location"), // Nullable for incomplete items from receipt processing
 	category: text("category"),
 	description: text("description"),
-	value: decimal("value", { precision: 10, scale: 2 }).default("0"),
 	showInInfoReel: boolean("show_in_info_reel").notNull().default(false),
 	// Lifecycle tracking
 	status: text("status")
 		.$type<InventoryItemStatus>()
 		.notNull()
 		.default("active"),
-	removedAt: timestamp("removed_at"),
-	removalReason: text("removal_reason").$type<RemovalReason>(),
-	removalNotes: text("removal_notes"),
 	// Completion tracking for auto-created items from receipt processing
 	needsCompletion: boolean("needs_completion").default(false),
 	completionNotes: text("completion_notes"),
@@ -149,6 +145,26 @@ export const inventoryItems = pgTable("inventory_items", {
 
 export type InventoryItem = typeof inventoryItems.$inferSelect;
 export type NewInventoryItem = typeof inventoryItems.$inferInsert;
+
+/**
+ * Inventory adjustments table
+ * Tracks additions, removals, and other changes to inventory quantities
+ */
+export const inventoryAdjustments = pgTable("inventory_adjustments", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	inventoryItemId: uuid("inventory_item_id")
+		.references(() => inventoryItems.id, { onDelete: "cascade" })
+		.notNull(),
+	quantityChange: integer("quantity_change").notNull(),
+	reason: text("reason").notNull(), // 'initial_stock', 'purchase', 'lost', 'broken', 'disposed', 'found', 'correction'
+	notes: text("notes"),
+	date: timestamp("date").defaultNow().notNull(),
+	createdBy: uuid("created_by").references(() => users.id),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type InventoryAdjustment = typeof inventoryAdjustments.$inferSelect;
+export type NewInventoryAdjustment = typeof inventoryAdjustments.$inferInsert;
 
 /**
  * Purchase status values

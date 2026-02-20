@@ -14,6 +14,8 @@ import {
 	type FundBudget,
 	faq,
 	fundBudgets,
+	type InventoryAdjustment,
+	inventoryAdjustments,
 	type InventoryItem,
 	inventoryItems,
 	type MailDraft,
@@ -27,6 +29,7 @@ import {
 	type NewEvent,
 	type NewFaq,
 	type NewFundBudget,
+	type NewInventoryAdjustment,
 	type NewInventoryItem,
 	type NewMailDraft,
 	type NewMessage,
@@ -325,7 +328,18 @@ export class NeonAdapter implements DatabaseAdapter {
 			.insert(inventoryItems)
 			.values(item)
 			.returning();
-		return result[0];
+
+		const createdItem = result[0];
+		if (createdItem && createdItem.quantity > 0) {
+			await this.db.insert(inventoryAdjustments).values({
+				inventoryItemId: createdItem.id,
+				quantityChange: createdItem.quantity,
+				reason: "initial_stock",
+				notes: "Created via " + (item.status === "draft" ? "draft" : "initial creation"),
+			});
+		}
+
+		return createdItem;
 	}
 
 	async updateInventoryItem(
@@ -352,7 +366,20 @@ export class NeonAdapter implements DatabaseAdapter {
 		items: NewInventoryItem[],
 	): Promise<InventoryItem[]> {
 		if (items.length === 0) return [];
-		return this.db.insert(inventoryItems).values(items).returning();
+		const result = await this.db.insert(inventoryItems).values(items).returning();
+
+		const adjustments = result.filter(item => item.quantity > 0).map(item => ({
+			inventoryItemId: item.id,
+			quantityChange: item.quantity,
+			reason: "initial_stock",
+			notes: "Created via bulk import"
+		}));
+
+		if (adjustments.length > 0) {
+			await this.db.insert(inventoryAdjustments).values(adjustments);
+		}
+
+		return result;
 	}
 
 	async getInventoryItemsWithoutTransactions(): Promise<InventoryItem[]> {
@@ -372,17 +399,27 @@ export class NeonAdapter implements DatabaseAdapter {
 		reason: string,
 		notes?: string,
 	): Promise<InventoryItem | null> {
+		const item = await this.getInventoryItemById(id);
+		if (!item) return null;
+
 		const result = await this.db
 			.update(inventoryItems)
 			.set({
 				status: "removed",
-				removedAt: new Date(),
-				removalReason: reason as InventoryItem["removalReason"],
-				removalNotes: notes || null,
 				updatedAt: new Date(),
 			})
 			.where(eq(inventoryItems.id, id))
 			.returning();
+
+		if (result[0] && item.quantity > 0) {
+			await this.createInventoryAdjustment({
+				inventoryItemId: id,
+				quantityChange: -item.quantity,
+				reason,
+				notes: notes || null,
+			});
+		}
+
 		return result[0] ?? null;
 	}
 
@@ -396,6 +433,35 @@ export class NeonAdapter implements DatabaseAdapter {
 			.where(eq(inventoryItems.id, id))
 			.returning();
 		return result[0] ?? null;
+	}
+
+	// ==================== Inventory Adjustment Methods ====================
+	async getInventoryAdjustmentsByItemId(
+		inventoryItemId: string,
+	): Promise<InventoryAdjustment[]> {
+		return this.db
+			.select()
+			.from(inventoryAdjustments)
+			.where(eq(inventoryAdjustments.inventoryItemId, inventoryItemId))
+			.orderBy(desc(inventoryAdjustments.date));
+	}
+
+	async createInventoryAdjustment(
+		adjustment: NewInventoryAdjustment,
+	): Promise<InventoryAdjustment> {
+		const result = await this.db
+			.insert(inventoryAdjustments)
+			.values(adjustment)
+			.returning();
+
+		// Also update the total quantity in the inventoryItem
+		const item = await this.getInventoryItemById(adjustment.inventoryItemId);
+		if (item) {
+			const newQuantity = Math.max(0, item.quantity + adjustment.quantityChange);
+			await this.updateInventoryItem(item.id, { quantity: newQuantity });
+		}
+
+		return result[0];
 	}
 
 	async getInventoryItemsForPicker(): Promise<
