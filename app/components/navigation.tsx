@@ -139,13 +139,11 @@ export function Navigation({ variant }: NavigationProps) {
 		// During info reel: only hide login/logout items, show permitted routes
 		if (isInfoReel && item.showWhen) return false;
 
+		// Login item is shown in the bottom section, not the main nav
+		if (item.showWhen === "logged-out") return false;
+
 		// Always show items without conditions
 		if (!item.showWhen && !item.permission) return true;
-
-		// Handle login visibility (show for guests, hide for logged-in users)
-		if (item.showWhen === "logged-out") {
-			return !user || user.userId === "guest";
-		}
 
 		// Handle permission-based visibility
 		if (item.permission) {
@@ -154,6 +152,9 @@ export function Navigation({ variant }: NavigationProps) {
 
 		return true;
 	});
+
+	// Show login in bottom section for guests
+	const showLoginButton = !isInfoReel && (!user || user.userId === "guest");
 
 	const isProfileActive = pathname === "/profile";
 
@@ -175,6 +176,7 @@ export function Navigation({ variant }: NavigationProps) {
 				key={item.path}
 				to={item.path}
 				onClick={onNavigate}
+				prefetch="intent"
 				className={cn(
 					"relative group flex items-center gap-3 px-2 py-2 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
@@ -185,8 +187,8 @@ export function Navigation({ variant }: NavigationProps) {
 				style={
 					isAnimating
 						? {
-								color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-							}
+							color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+						}
 						: undefined
 				}
 			>
@@ -334,6 +336,7 @@ export function Navigation({ variant }: NavigationProps) {
 			<Link
 				to={to}
 				onClick={onNavigate}
+				prefetch="intent"
 				className={cn(
 					"flex items-center gap-3 px-2 py-2 rounded-xl transition-all w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
@@ -342,7 +345,7 @@ export function Navigation({ variant }: NavigationProps) {
 						: "text-gray-500 dark:text-gray-400",
 					!showLabels && "justify-center px-3",
 					destructive &&
-						"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
+					"hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400",
 				)}
 			>
 				<span className="material-symbols-outlined text-2xl shrink-0">
@@ -395,6 +398,7 @@ export function Navigation({ variant }: NavigationProps) {
 								key={item.path}
 								to={item.path}
 								onClick={onNavigate}
+								prefetch="intent"
 								className={cn(
 									"relative group flex items-center justify-center gap-3 px-2 py-2 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
 									"hover:bg-primary/10 hover:text-primary",
@@ -466,6 +470,7 @@ export function Navigation({ variant }: NavigationProps) {
 												key={child.path}
 												to={child.path}
 												onClick={onNavigate}
+												prefetch="intent"
 												className={cn(
 													"flex items-center gap-3 px-2 py-2 rounded-lg transition-all text-sm w-full",
 													"hover:bg-primary/10 hover:text-primary",
@@ -644,6 +649,20 @@ export function Navigation({ variant }: NavigationProps) {
 								destructive: true,
 							},
 						],
+						showLabels,
+						onNavigate,
+					)}
+				</div>
+			)}
+			{showLoginButton && (
+				<div
+					className={cn("pt-4 border-t border-border", !showLabels && "pt-2")}
+				>
+					{renderMenuLink(
+						"/auth/login",
+						"login",
+						t("nav.login"),
+						pathname === "/auth/login",
 						showLabels,
 						onNavigate,
 					)}

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { PageHeader } from "~/components/layout/page-header";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import { SplitLayout } from "~/components/layout/page-layout";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import {
 	TreasuryDetailCard,
@@ -296,237 +296,233 @@ export function ViewForm({
 		const createdAtField = fields.find((f) => f.name === "createdAt");
 
 		return (
-			<PageWrapper>
-				<SplitLayout
-					header={{
-						primary: String(primaryTitle || title),
-						secondary: "",
-					}}
-				>
-					<div className="w-full space-y-12 relative">
+			<SplitLayout
+				header={{
+					primary: String(primaryTitle || title),
+					secondary: "",
+				}}
+			>
+				<div className="w-full space-y-12 relative">
 
-						{hasRelationshipSections && (
-							<div className="flex flex-wrap gap-2 pb-2">
-								<RelationshipPicker
-									relationAType={entityType}
-									relationAId={entityId}
-									relationAName={entityName || ""}
-									mode="view"
-									sections={relationshipSections || []}
-								/>
+					{hasRelationshipSections && (
+						<div className="flex flex-wrap gap-2 pb-2">
+							<RelationshipPicker
+								relationAType={entityType}
+								relationAId={entityId}
+								relationAName={entityName || ""}
+								mode="view"
+								sections={relationshipSections || []}
+							/>
+						</div>
+					)}
+
+					<div className="space-y-10">
+						{contentFields.map((field) => {
+							const isContent =
+								field.name === "content" ||
+								field.name === "contentSecondary" ||
+								field.name === "answer" ||
+								field.name === "answerSecondary";
+							const isSummary =
+								field.name === "summary" || field.name === "summarySecondary";
+
+							return (
+								<div
+									key={field.name}
+									className={cn(
+										isContent &&
+										"prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-2xl md:text-3xl leading-relaxed font-serif",
+										isSummary &&
+										"text-3xl md:text-4xl text-gray-600 dark:text-gray-400 font-bold border-l-8 border-primary/30 pl-8 py-3 italic leading-tight",
+										field.config.className,
+									)}
+								>
+									{renderFieldValue(
+										field.config,
+										field.schemaConfig,
+										field.name,
+									)}
+								</div>
+							);
+						})}
+					</div>
+
+					<div className="pt-12 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-base text-gray-500">
+						{createdAtField && (
+							<div className="flex items-center gap-2">
+								<span className="material-symbols-outlined">
+									calendar_today
+								</span>
+								<span className="font-bold tracking-tight">
+									{formatDate(createdAtField.config.value, i18n.language)}
+								</span>
 							</div>
 						)}
-
-						<div className="space-y-10">
-							{contentFields.map((field) => {
-								const isContent =
-									field.name === "content" ||
-									field.name === "contentSecondary" ||
-									field.name === "answer" ||
-									field.name === "answerSecondary";
-								const isSummary =
-									field.name === "summary" || field.name === "summarySecondary";
-
-								return (
-									<div
-										key={field.name}
-										className={cn(
-											isContent &&
-											"prose dark:prose-invert max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-2xl md:text-3xl leading-relaxed font-serif",
-											isSummary &&
-											"text-3xl md:text-4xl text-gray-600 dark:text-gray-400 font-bold border-l-8 border-primary/30 pl-8 py-3 italic leading-tight",
-											field.config.className,
-										)}
-									>
-										{renderFieldValue(
-											field.config,
-											field.schemaConfig,
-											field.name,
-										)}
-									</div>
-								);
-							})}
-						</div>
-
-						<div className="pt-12 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-base text-gray-500">
-							{createdAtField && (
-								<div className="flex items-center gap-2">
-									<span className="material-symbols-outlined">
-										calendar_today
-									</span>
-									<span className="font-bold tracking-tight">
-										{formatDate(createdAtField.config.value, i18n.language)}
-									</span>
-								</div>
+						<div className="flex items-center gap-4">
+							{canEdit && resolvedEditUrl && (
+								<Button variant="ghost" size="sm" asChild className="rounded-xl hover:bg-primary/10 hover:text-primary transition-all text-base px-6 h-12">
+									<Link to={resolvedEditUrl}>
+										<span className="material-symbols-outlined mr-2">
+											edit
+										</span>
+										{t("common.actions.edit")}
+									</Link>
+								</Button>
 							)}
-							<div className="flex items-center gap-4">
-								{canEdit && resolvedEditUrl && (
-									<Button variant="ghost" size="sm" asChild className="rounded-xl hover:bg-primary/10 hover:text-primary transition-all text-base px-6 h-12">
-										<Link to={resolvedEditUrl}>
-											<span className="material-symbols-outlined mr-2">
-												edit
-											</span>
-											{t("common.actions.edit")}
-										</Link>
-									</Button>
-								)}
-							</div>
 						</div>
 					</div>
+				</div>
 
-					{children}
+				{children}
 
-					<div className="flex justify-start pt-4">
-						<Button variant="ghost" asChild className="hover:bg-primary/5 rounded-xl px-4 group transition-all">
-							<Link to={resolvedReturnUrl} className="flex items-center">
-								<span className="material-symbols-outlined mr-2 group-hover:-translate-x-1 transition-transform">
-									arrow_back
-								</span>
-								<span className="font-semibold tracking-tight">{t("common.actions.back")}</span>
-							</Link>
-						</Button>
-					</div>
-				</SplitLayout>
-			</PageWrapper>
+				<div className="flex justify-start pt-4">
+					<Button variant="ghost" asChild className="hover:bg-primary/5 rounded-xl px-4 group transition-all">
+						<Link to={resolvedReturnUrl} className="flex items-center">
+							<span className="material-symbols-outlined mr-2 group-hover:-translate-x-1 transition-transform">
+								arrow_back
+							</span>
+							<span className="font-semibold tracking-tight">{t("common.actions.back")}</span>
+						</Link>
+					</Button>
+				</div>
+			</SplitLayout>
 		);
 	}
 
 	return (
-		<PageWrapper>
-			<div className={cn("w-full mx-auto px-4 pb-12", className)}>
-				<div className="py-3 sticky top-0 z-30 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur border-b">
-					<PageHeader
-						title={title}
-						className="mb-0"
-						actions={
-							<div className="flex w-full sm:w-auto min-w-0 items-center justify-between sm:justify-end gap-3 flex-nowrap">
+		<div className={cn("w-full mx-auto px-4 pb-12", className)}>
+			<div className="py-3 sticky top-0 z-30 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur border-b">
+				<PageHeader
+					title={title}
+					className="mb-0"
+					actions={
+						<div className="flex w-full sm:w-auto min-w-0 items-center justify-between sm:justify-end gap-3 flex-nowrap">
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+								asChild
+							>
+								<Link to={resolvedReturnUrl}>
+									<span className="material-symbols-outlined text-base sm:mr-1.5">
+										arrow_back
+									</span>
+									<span className="hidden sm:inline truncate max-w-full">
+										{t("common.actions.back_to_list", "Back")}
+									</span>
+								</Link>
+							</Button>
+
+							{headerActionButtons}
+
+							{canDelete && resolvedDeleteUrl && (
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
+									onClick={() => setShowDeleteConfirm(true)}
+									disabled={deleteFetcher.state !== "idle"}
+								>
+									<span className="material-symbols-outlined text-base sm:mr-1.5">
+										delete
+									</span>
+									<span className="hidden sm:inline truncate max-w-full">
+										{t("common.actions.delete")}
+									</span>
+								</Button>
+							)}
+
+							{canEdit && resolvedEditUrl && (
 								<Button
 									variant="outline"
 									size="sm"
 									className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
 									asChild
 								>
-									<Link to={resolvedReturnUrl}>
+									<Link to={resolvedEditUrl}>
 										<span className="material-symbols-outlined text-base sm:mr-1.5">
-											arrow_back
+											edit
 										</span>
 										<span className="hidden sm:inline truncate max-w-full">
-											{t("common.actions.back_to_list", "Back")}
+											{t("common.actions.edit")}
 										</span>
 									</Link>
 								</Button>
-
-								{headerActionButtons}
-
-								{canDelete && resolvedDeleteUrl && (
-									<Button
-										type="button"
-										variant="destructive"
-										size="sm"
-										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
-										onClick={() => setShowDeleteConfirm(true)}
-										disabled={deleteFetcher.state !== "idle"}
-									>
-										<span className="material-symbols-outlined text-base sm:mr-1.5">
-											delete
-										</span>
-										<span className="hidden sm:inline truncate max-w-full">
-											{t("common.actions.delete")}
-										</span>
-									</Button>
-								)}
-
-								{canEdit && resolvedEditUrl && (
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
-										asChild
-									>
-										<Link to={resolvedEditUrl}>
-											<span className="material-symbols-outlined text-base sm:mr-1.5">
-												edit
-											</span>
-											<span className="hidden sm:inline truncate max-w-full">
-												{t("common.actions.edit")}
-											</span>
-										</Link>
-									</Button>
-								)}
-							</div>
-						}
-					/>
-				</div>
-
-				<div className="space-y-6">
-					<div
-						className={cn(
-							hasRelationshipSections && "grid gap-6 lg:grid-cols-3",
-						)}
-					>
-						<TreasuryDetailCard
-							title={title}
-							className={cn(hasRelationshipSections && "lg:col-span-2")}
-						>
-							<div className="grid gap-4">
-								{fields.map((field) => (
-									<TreasuryField
-										key={field.name}
-										label={getLabel(field.name, field.config)}
-										className={field.config.className}
-										valueClassName={field.config.valueClassName}
-									>
-										{renderFieldValue(
-											field.config,
-											field.schemaConfig,
-											field.name,
-										)}
-									</TreasuryField>
-								))}
-							</div>
-
-							{canDelete && resolvedDeleteUrl && (
-								<ConfirmDialog
-									open={showDeleteConfirm}
-									onOpenChange={setShowDeleteConfirm}
-									title={t("common.actions.delete")}
-									description={t("common.actions.delete_confirm")}
-									confirmLabel={t("common.actions.delete")}
-									cancelLabel={t("common.actions.cancel")}
-									variant="destructive"
-									onConfirm={() => {
-										deleteProcessedRef.current = false;
-										deleteFetcher.submit(null, {
-											method: "DELETE",
-											action: resolvedDeleteUrl,
-										});
-										setShowDeleteConfirm(false);
-									}}
-									loading={deleteFetcher.state !== "idle"}
-								/>
 							)}
-						</TreasuryDetailCard>
-
-						{hasRelationshipSections && relationshipSections && (
-							<TreasuryDetailCard
-								title={t("common.relations.title", "Relations")}
-								className="lg:col-span-1"
-							>
-								<RelationshipPicker
-									relationAType={entityType}
-									relationAId={entityId}
-									relationAName={entityName || ""}
-									mode="view"
-									sections={relationshipSections}
-								/>
-							</TreasuryDetailCard>
-						)}
-					</div>
-
-					{children}
-
-				</div>
+						</div>
+					}
+				/>
 			</div>
-		</PageWrapper>
+
+			<div className="space-y-6">
+				<div
+					className={cn(
+						hasRelationshipSections && "grid gap-6 lg:grid-cols-3",
+					)}
+				>
+					<TreasuryDetailCard
+						title={title}
+						className={cn(hasRelationshipSections && "lg:col-span-2")}
+					>
+						<div className="grid gap-4">
+							{fields.map((field) => (
+								<TreasuryField
+									key={field.name}
+									label={getLabel(field.name, field.config)}
+									className={field.config.className}
+									valueClassName={field.config.valueClassName}
+								>
+									{renderFieldValue(
+										field.config,
+										field.schemaConfig,
+										field.name,
+									)}
+								</TreasuryField>
+							))}
+						</div>
+
+						{canDelete && resolvedDeleteUrl && (
+							<ConfirmDialog
+								open={showDeleteConfirm}
+								onOpenChange={setShowDeleteConfirm}
+								title={t("common.actions.delete")}
+								description={t("common.actions.delete_confirm")}
+								confirmLabel={t("common.actions.delete")}
+								cancelLabel={t("common.actions.cancel")}
+								variant="destructive"
+								onConfirm={() => {
+									deleteProcessedRef.current = false;
+									deleteFetcher.submit(null, {
+										method: "DELETE",
+										action: resolvedDeleteUrl,
+									});
+									setShowDeleteConfirm(false);
+								}}
+								loading={deleteFetcher.state !== "idle"}
+							/>
+						)}
+					</TreasuryDetailCard>
+
+					{hasRelationshipSections && relationshipSections && (
+						<TreasuryDetailCard
+							title={t("common.relations.title", "Relations")}
+							className="lg:col-span-1"
+						>
+							<RelationshipPicker
+								relationAType={entityType}
+								relationAId={entityId}
+								relationAName={entityName || ""}
+								mode="view"
+								sections={relationshipSections}
+							/>
+						</TreasuryDetailCard>
+					)}
+				</div>
+
+				{children}
+
+			</div>
+		</div>
 	);
 }

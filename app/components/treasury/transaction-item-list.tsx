@@ -90,7 +90,7 @@ export function TransactionItemList({
 						itemId: id,
 						name: inventoryItem.name,
 						quantity: 1,
-						unitValue: parseFloat(inventoryItem.value || "0"),
+						unitValue: 0,
 					});
 				}
 			}

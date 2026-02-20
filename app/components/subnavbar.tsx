@@ -123,6 +123,7 @@ export function Subnavbar() {
 								key={child.path}
 								to={child.path}
 								onClick={() => setSheetOpen(false)}
+								prefetch="intent"
 								className={cn(
 									"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm w-full",
 									"hover:bg-primary/10 hover:text-primary",
@@ -157,6 +158,7 @@ export function Subnavbar() {
 					<Link
 						key={child.path}
 						to={child.path}
+						prefetch="intent"
 						className={cn(
 							"flex items-center gap-2 px-2 py-2 xl:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0",
 							"hover:bg-primary/10 hover:text-primary",
