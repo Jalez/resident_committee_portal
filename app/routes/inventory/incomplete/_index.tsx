@@ -101,19 +101,7 @@ export default function IncompleteInventoryItems() {
 													</span>
 												</div>
 
-												{item.value && item.value !== "0" && (
-													<div className="flex items-center gap-2">
-														<span className="text-muted-foreground">
-															{t("common.fields.value")}:
-														</span>
-														<span>
-															{parseFloat(item.value)
-																.toFixed(2)
-																.replace(".", ",")}{" "}
-															€
-														</span>
-													</div>
-												)}
+
 
 												{item.completionNotes && (
 													<div className="flex items-start gap-2">

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
+import { SmartCombobox } from "~/components/ui/smart-combobox";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { getRelationshipContextFromUrl } from "~/lib/linking/relationship-context";
 import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
@@ -24,7 +25,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	return createEditLoader({
 		entityType: "inventory",
 		permission: "inventory:write",
-		params,
+		params: { ...params, inventoryId: params.itemId },
 		request,
 		fetchEntity: (db, id) => db.getInventoryItemById(id),
 		extend: async ({ db, entity: item }) => {
@@ -35,6 +36,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				"inventory",
 				item.id,
 			);
+			const allItems = await db.getInventoryItems();
+
+			const uniqueLocations = [...new Set(allItems.map((i: any) => i.location).filter(Boolean))] as string[];
+			const uniqueCategories = [...new Set(allItems.map((i: any) => i.category).filter(Boolean))] as string[];
+			const itemNames = [...new Set(allItems.map((i: any) => i.name).filter(Boolean))] as string[];
 
 			const itemName = (item as any).name;
 			const metaTitle = itemName ? `Muokkaa: ${itemName}` : "Muokkaa tavaraa";
@@ -43,6 +49,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				contextValues,
 				sourceContext,
 				metaTitle,
+				uniqueLocations,
+				uniqueCategories,
+				itemNames,
 			};
 		},
 	});
@@ -51,10 +60,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 const inventorySchema = z.object({
 	name: z.string().min(1),
 	quantity: z.preprocess((val) => Number(val), z.number().min(1)),
-	location: z.string().min(1),
+	location: z.string().optional(),
 	category: z.string().optional(),
 	description: z.string().optional(),
-	value: z.string().optional(),
 	purchasedAt: z.string().optional(),
 	showInInfoReel: z.preprocess(
 		(val) => val === "true" || val === "on",
@@ -66,12 +74,19 @@ export async function action({ request, params }: Route.ActionArgs) {
 	return createEditAction({
 		entityType: "inventory",
 		permission: "inventory:write",
-		params,
+		params: { ...params, inventoryId: params.itemId },
 		request,
 		schema: inventorySchema,
 		fetchEntity: (db, id) => db.getInventoryItemById(id),
-		onUpdate: ({ db, id, data, entity, formData }) =>
-			db.updateInventoryItem(id, data),
+		onUpdate: ({ db, id, data, entity, formData }) => {
+			const sanitizedData = { ...data };
+			if (sanitizedData.purchasedAt === "") {
+				sanitizedData.purchasedAt = null;
+			} else if (sanitizedData.purchasedAt) {
+				sanitizedData.purchasedAt = new Date(sanitizedData.purchasedAt);
+			}
+			return db.updateInventoryItem(id, sanitizedData);
+		},
 		successRedirect: (item) => `/inventory`,
 	});
 }
@@ -79,7 +94,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 export default function EditInventoryItem({
 	loaderData,
 }: Route.ComponentProps) {
-	const { inventory, contextValues, sourceContext, returnUrl, relationships } =
+	const { inventory, contextValues, sourceContext, returnUrl, relationships, uniqueLocations, uniqueCategories, itemNames } =
 		loaderData as any;
 	const { t } = useTranslation();
 
@@ -99,12 +114,6 @@ export default function EditInventoryItem({
 					? contextValues.category
 					: item.category || "",
 			description: item.description || "",
-			value:
-				isDraft &&
-				(!item.value || item.value === "0") &&
-				contextValues?.totalAmount
-					? String(contextValues.totalAmount)
-					: item.value || "0",
 			purchasedAt:
 				isDraft && !item.purchasedAt && contextValues?.date
 					? new Date(contextValues.date).toISOString().split("T")[0]
@@ -115,16 +124,69 @@ export default function EditInventoryItem({
 		};
 
 		return {
-			name: initialValues.name,
+			name: {
+				value: initialValues.name,
+				render: (field: any, value: string, onChange: (val: string) => void) => (
+					<div className="space-y-1">
+						<label htmlFor="name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("inventory.form.name")}<span className="text-destructive ml-1">*</span></label>
+						<SmartCombobox
+							items={itemNames}
+							value={value}
+							onValueChange={onChange}
+							placeholder={t("inventory.form.name_placeholder")}
+							searchPlaceholder={t("inventory.form.name_placeholder")}
+							emptyText={t("common.no_results")}
+							customLabel={t("common.actions.use")}
+							allowCustom={true}
+						/>
+						<input type="hidden" name="name" value={value || ""} />
+					</div>
+				),
+			},
 			quantity: initialValues.quantity,
-			location: initialValues.location,
-			category: initialValues.category,
+			location: {
+				value: initialValues.location,
+				render: (field: any, value: string, onChange: (val: string) => void) => (
+					<div className="space-y-1">
+						<label htmlFor="location" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("inventory.form.location")}</label>
+						<SmartCombobox
+							items={uniqueLocations}
+							value={value}
+							onValueChange={onChange}
+							placeholder={t("inventory.form.location_placeholder")}
+							searchPlaceholder={t("inventory.form.location_placeholder")}
+							emptyText={t("common.no_results")}
+							customLabel={t("common.actions.use")}
+							allowCustom={true}
+						/>
+						<input type="hidden" name="location" value={value || ""} />
+					</div>
+				),
+			},
+			category: {
+				value: initialValues.category,
+				render: (field: any, value: string, onChange: (val: string) => void) => (
+					<div className="space-y-1">
+						<label htmlFor="category" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("inventory.form.category")}</label>
+						<SmartCombobox
+							items={uniqueCategories}
+							value={value}
+							onValueChange={onChange}
+							placeholder={t("inventory.form.category_placeholder")}
+							searchPlaceholder={t("inventory.form.category_placeholder")}
+							emptyText={t("common.no_results")}
+							customLabel={t("common.actions.use")}
+							allowCustom={true}
+						/>
+						<input type="hidden" name="category" value={value || ""} />
+					</div>
+				),
+			},
 			description: initialValues.description,
-			value: initialValues.value,
 			purchasedAt: initialValues.purchasedAt,
 			showInInfoReel: initialValues.showInInfoReel,
 		};
-	}, [item, contextValues, isDraft]);
+	}, [item, contextValues, isDraft, uniqueCategories, uniqueLocations, itemNames, t]);
 
 	return (
 		<PageWrapper>

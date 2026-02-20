@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useNavigate, useNavigation } from "react-router";
+import { Link, useFetcher, useNavigate, useNavigation, useRouteLoaderData } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
+import type { loader as rootLoader } from "~/root";
 import {
-	InventoryFilters,
 	InventoryInfoReelCards,
 	InventoryProvider,
 	PAGE_SIZE,
-	QuantitySelectionModal,
-	RemoveInventoryModal,
-	TransactionSelectorModal,
 	useInventory,
 	useInventoryColumns,
 } from "~/components/inventory";
@@ -20,32 +17,16 @@ import {
 	QRPanel,
 	SplitLayout,
 } from "~/components/layout/page-layout";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { Button } from "~/components/ui/button";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { DataTable } from "~/components/ui/data-table";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "~/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
-import { Textarea } from "~/components/ui/textarea";
+
 import { useLanguage } from "~/contexts/language-context";
 import { useNewTransaction } from "~/contexts/new-transaction-context";
 import { useUser } from "~/contexts/user-context";
 import {
 	getDatabase,
-	type InventoryItem,
 	type NewInventoryItem,
-	type Transaction,
 } from "~/db/server.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -151,18 +132,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 			pageSize: PAGE_SIZE,
 			uniqueLocations,
 			uniqueCategories,
-			transactionLinksMap: {} as Record<
-				string,
-				{
-					transaction: {
-						id: string;
-						description: string;
-						date: Date;
-						type: string;
-					};
-					quantity: number;
-				}[]
-			>,
 			relationsMap: {} as Record<string, RelationBadgeData[]>,
 			languages,
 		};
@@ -174,14 +143,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 			item.name.toLowerCase().includes(searchTerm),
 		);
 	}
-	if (locationFilter) {
+	if (locationFilter && locationFilter !== "all") {
 		const searchTerm = locationFilter.toLowerCase();
 		items = items.filter(
 			(item) =>
 				(item.location ?? "missing location").toLowerCase() === searchTerm,
 		);
 	}
-	if (categoryFilter) {
+	if (categoryFilter && categoryFilter !== "all") {
 		const searchTerm = categoryFilter.toLowerCase();
 		items = items.filter(
 			(item) => (item.category || "").toLowerCase() === searchTerm,
@@ -201,88 +170,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		permissions,
 	);
 
-	// Fetch transaction links for each item via entity relationships (for remove modal)
-	const transactionLinksMap: Record<
-		string,
-		{
-			transaction: {
-				id: string;
-				description: string;
-				date: Date;
-				type: string;
-			};
-			quantity: number;
-		}[]
-	> = {};
-	for (const item of paginatedItems) {
-		const relationships = await db.getEntityRelationships("inventory", item.id);
-		const links: {
-			transaction: {
-				id: string;
-				description: string;
-				date: Date;
-				type: string;
-			};
-			quantity: number;
-		}[] = [];
-
-		for (const rel of relationships) {
-			if (
-				rel.relationBType === "transaction" ||
-				rel.relationAType === "transaction"
-			) {
-				const transactionId =
-					rel.relationBType === "transaction"
-						? rel.relationBId
-						: rel.relationId;
-				const transaction = await db.getTransactionById(transactionId);
-				if (transaction) {
-					links.push({
-						transaction: {
-							id: transaction.id,
-							description: transaction.description,
-							date: transaction.date,
-							type: transaction.type,
-						},
-						quantity: 1,
-					});
-				}
-			}
-		}
-		transactionLinksMap[item.id] = links;
-	}
-
-	// Fetch transactions already linked to inventory items for "Add to Existing" feature
-	const allTransactions = await db.getAllTransactions();
-	const candidateTransactions = allTransactions.filter(
-		(t: { status: string }) => t.status !== "declined",
-	);
-	const inventoryTransactionsWithLinks: Array<{
-		id: string;
-		description: string;
-		date: Date;
-		amount: string;
-	}> = [];
-	for (const transaction of candidateTransactions) {
-		const rels = await db.getEntityRelationships("transaction", transaction.id);
-		const hasInventoryLink = rels.some(
-			(rel) =>
-				rel.relationBType === "inventory" || rel.relationAType === "inventory",
-		);
-		if (!hasInventoryLink) continue;
-		inventoryTransactionsWithLinks.push({
-			id: transaction.id,
-			description: transaction.description,
-			date: transaction.date,
-			amount: transaction.amount,
-		});
-	}
-	const recentInventoryTransactions = inventoryTransactionsWithLinks
-		.sort(
-			(a: { date: Date }, b: { date: Date }) =>
-				new Date(b.date).getTime() - new Date(a.date).getTime(),
-		)
-		.slice(0, 50); // Limit to recent 50
 	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
 	for (const [id, relations] of relationsMap) {
 		serializedRelationsMap[id] = relations;
@@ -302,8 +189,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		pageSize: PAGE_SIZE,
 		uniqueLocations,
 		uniqueCategories,
-		transactionLinksMap,
-		inventoryTransactions: recentInventoryTransactions,
 		relationsMap: serializedRelationsMap,
 		languages,
 	};
@@ -348,33 +233,6 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
-	if (actionType === "updateField" && itemId) {
-		const field = formData.get("field") as string;
-		const value = formData.get("value") as string;
-		if (
-			field &&
-			[
-				"name",
-				"category",
-				"description",
-				"location",
-				"quantity",
-				"value",
-			].includes(field)
-		) {
-			if (field === "quantity") {
-				await db.updateInventoryItem(itemId, {
-					quantity: parseInt(value, 10) || 1,
-				});
-			} else if (field === "value") {
-				await db.updateInventoryItem(itemId, { value: value || "0" });
-			} else {
-				await db.updateInventoryItem(itemId, { [field]: value || null });
-			}
-			return { success: true, updatedField: field, itemId };
-		}
-	}
-
 	if (actionType === "createItem") {
 		const newItem: NewInventoryItem = {
 			name: formData.get("name") as string,
@@ -382,7 +240,6 @@ export async function action({ request }: Route.ActionArgs) {
 			location: formData.get("location") as string,
 			category: (formData.get("category") as string) || null,
 			description: (formData.get("description") as string) || null,
-			value: (formData.get("value") as string) || "0",
 		};
 		await db.createInventoryItem(newItem);
 	}
@@ -406,122 +263,11 @@ export async function action({ request }: Route.ActionArgs) {
 		});
 	}
 
-	// Remove item with transaction-aware quantity reduction
-	if (actionType === "removeItem" && itemId) {
-		const reason = formData.get("reason") as string;
-		const notes = formData.get("notes") as string;
-		const removals = JSON.parse(
-			(formData.get("removals") as string) || "[]",
-		) as { transactionId: string; quantity: number }[];
-		const totalToRemove =
-			parseInt(formData.get("totalToRemove") as string, 10) || 0;
-
-		// Process each removal from linked transactions
-		// Note: reduceInventoryFromTransaction no longer exists - we delete the relationship directly
-		for (const removal of removals) {
-			await db.deleteEntityRelationshipByPair(
-				"inventory",
-				itemId,
-				"transaction",
-				removal.transactionId,
-			);
-		}
-
-		// If no transaction links or removing all, just update the item
-		const item = await db.getInventoryItemById(itemId);
-		if (item) {
-			const newQty =
-				removals.length > 0
-					? item.quantity
-					: Math.max(0, item.quantity - totalToRemove);
-			if (newQty <= 0) {
-				// Soft delete if quantity reaches zero
-				await db.softDeleteInventoryItem(itemId, reason, notes);
-			} else if (removals.length === 0 && totalToRemove > 0) {
-				// Direct quantity reduction (no transaction links)
-				await db.updateInventoryItem(itemId, { quantity: newQty });
-			}
-		}
-	}
-
-	// Mark item manual count (no transaction)
-	if (actionType === "markManualCount" && itemId) {
-		const item = await db.getInventoryItemById(itemId);
-		if (item) {
-			const quantityToAdd =
-				parseInt(formData.get("quantityToAdd") as string, 10) || 0;
-			const newManualCount = (item.manualCount || 0) + quantityToAdd;
-			// Ensure we don't exceed total quantity (logic check)
-			// We trust the client/dialog roughly, but could enforce strict check here
-			await db.updateInventoryItem(itemId, { manualCount: newManualCount });
-		}
-	}
-
-	// Reduce manual count (reverse of markManualCount - return units to unknown)
-	if (actionType === "reduceManualCount") {
-		const itemId = formData.get("itemId") as string;
-		const quantityToRemove = parseInt(
-			formData.get("quantityToRemove") as string,
-			10,
-		);
-
-		if (itemId && quantityToRemove > 0) {
-			const item = await db.getInventoryItemById(itemId);
-			if (item) {
-				const newManualCount = Math.max(
-					0,
-					(item.manualCount || 0) - quantityToRemove,
-				);
-				await db.updateInventoryItem(itemId, { manualCount: newManualCount });
-			}
-		}
-	}
-
-	// Link one inventory item to a transaction (inline from unknown badge, no navigation)
-	if (actionType === "linkItemToTransaction") {
-		const itemId = formData.get("itemId") as string;
-		const transactionId = formData.get("transactionId") as string;
-
-		if (itemId && transactionId) {
-			await db.createEntityRelationship({
-				relationAType: "inventory",
-				relationId: itemId,
-				relationBType: "transaction",
-				relationBId: transactionId,
-			});
-			return { success: true, linked: true };
-		}
-		return { success: true };
-	}
-
-	// Unlink item from transaction with amount update
 	if (actionType === "unlinkFromTransaction") {
 		const itemId = formData.get("itemId") as string;
 		const transactionId = formData.get("transactionId") as string;
 
 		if (itemId && transactionId) {
-			// Fetch validation data to calculate amount reduction
-			const item = await db.getInventoryItemById(itemId);
-			const transaction = await db.getTransactionById(transactionId);
-
-			if (item && transaction) {
-				// Calculate unit value and deduction
-				// item.value stores the UNIT VALUE (per item)
-				const unitValue = parseFloat(item.value || "0");
-				const deduction = unitValue; // Assume 1 unit per relationship
-
-				if (deduction > 0) {
-					const currentAmount = parseFloat(transaction.amount);
-					const newAmount = Math.max(0, currentAmount - deduction).toFixed(2);
-
-					console.log(
-						`[Unlink] Reducing transaction ${transactionId} amount from ${currentAmount} to ${newAmount} (Deduction: ${deduction})`,
-					);
-
-					await db.updateTransaction(transactionId, { amount: newAmount });
-				}
-			}
-
 			await db.deleteEntityRelationshipByPair(
 				"inventory",
 				itemId,
@@ -531,21 +277,6 @@ export async function action({ request }: Route.ActionArgs) {
 		}
 	}
 
-	// Migrate legacy items to use manualCount (one-time operation)
-	if (actionType === "migrateLegacy") {
-		const allItems = await db.getInventoryItems();
-		const legacyItems = allItems.filter((item) => item.status === "legacy");
-
-		for (const item of legacyItems) {
-			// Set manualCount = quantity and status = active
-			await db.updateInventoryItem(item.id, {
-				status: "active",
-				manualCount: item.quantity,
-			});
-		}
-
-		return { success: true, migratedCount: legacyItems.length };
-	}
 
 	return { success: true };
 }
@@ -564,8 +295,6 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 		pageSize,
 		uniqueLocations,
 		uniqueCategories,
-		transactionLinksMap,
-		inventoryTransactions,
 		relationsMap,
 		languages,
 	} = loaderData;
@@ -584,8 +313,6 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 			pageSize={pageSize}
 			isStaff={canWrite}
 			isAdmin={canDelete}
-			transactionLinksMap={transactionLinksMap}
-			inventoryTransactions={inventoryTransactions || []}
 			relationsMap={relationsMap || {}}
 		>
 			{isInfoReel ? (
@@ -613,7 +340,6 @@ function InventoryInfoReelPage({
 		<PageWrapper>
 			<SplitLayout
 				right={<InventoryQRPanel languages={languages} />}
-				footer={<InventoryFooter />}
 				header={{
 					primary: t("inventory.title", { lng: languages.primary }),
 					secondary: t("inventory.title", { lng: languages.secondary }),
@@ -645,445 +371,113 @@ function InventoryTablePage({
 		selectedIds,
 		setSelectedIds,
 		visibleColumns,
-		handleInlineEdit,
 		handlePageChange,
 		handleDeleteSelected,
-		pendingDeleteMany,
-		setPendingDeleteMany,
-		handleConfirmDeleteMany,
 		uniqueLocations,
 		uniqueCategories,
-		transactionLinksMap,
-		inventoryTransactions,
 		relationsMap,
 	} = useInventory();
 
 	const navigation = useNavigation();
-	const navigate = useNavigate();
 	const fetcher = useFetcher();
-	const { setItems: setTransactionItems } = useNewTransaction();
+	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isLoading = navigation.state === "loading";
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Modal state
-	const [showReportModal, setShowReportModal] = useState(false);
-	const [reportMessage, setReportMessage] = useState("");
-	const [removeModalItem, setRemoveModalItem] = useState<InventoryItem | null>(
-		null,
-	);
-	const [showQuantityModal, setShowQuantityModal] = useState(false);
-	const [quantityModalMode, setQuantityModalMode] = useState<
-		"markNoTransaction" | "addTransaction" | "addToExisting"
-	>("markNoTransaction");
+	const { t } = useTranslation();
 
-	// State for transaction selector (Add to Existing flow)
-	const [showTransactionSelector, setShowTransactionSelector] = useState(false);
-	const [pendingItemSelections, setPendingItemSelections] = useState<
-		{ itemId: string; quantity: number }[]
-	>([]);
-
-	// State for unlink confirmation dialog
-	const [unlinkConfirmation, setUnlinkConfirmation] = useState<{
-		itemId: string;
-		transactionId: string;
-		quantity: number;
-	} | null>(null);
-
-	const { isInfoReel } = useLanguage();
-	const { t, i18n } = useTranslation();
-
-	const getUnknownQuantity = (item: InventoryItem) => {
-		const links = transactionLinksMap[item.id] || [];
-		const linkedQty = links.reduce((sum, l) => sum + l.quantity, 0);
-		const manualQty = item.manualCount || 0;
-		return Math.max(0, item.quantity - linkedQty - manualQty);
-	};
-
-	// Get selected items and their unknown quantities
-	const selectedItems = items.filter((i) => selectedIds.includes(i.id));
-	const selectedItemNames = selectedItems.map((i) => i.name);
-	const itemsWithUnknown = selectedItems
-		.map((item) => ({ item, unknownQuantity: getUnknownQuantity(item) }))
-		.filter(({ unknownQuantity }) => unknownQuantity > 0);
-
-	// Check capabilities
-	const canRemoveSelection = selectedItems.some((i) => i.status === "active");
-	const hasTreasuryCapableItems = itemsWithUnknown.length > 0;
-
-	const handleSubmitReport = () => {
-		if (selectedIds.length === 0 || !reportMessage.trim()) return;
-		fetcher.submit(
-			{
-				_action: "report",
-				reportItemIds: JSON.stringify(selectedIds),
-				reportMessage: reportMessage,
-			},
-			{ method: "POST" },
-		);
-		setShowReportModal(false);
-		setReportMessage("");
-		setSelectedIds([]);
-	};
-
-	const getTransactionLinksForItem = (item: InventoryItem) => {
-		const links = transactionLinksMap[item.id] || [];
-		return links.map((l) => ({
-			transaction: l.transaction as Transaction,
-			quantity: l.quantity,
-		}));
-	};
-
-	const handleRemoveSelected = () => {
-		const firstActiveItem = selectedItems.find((i) => i.status === "active");
-		if (firstActiveItem) {
-			setRemoveModalItem(firstActiveItem);
-		}
-	};
-
-	const handleOpenQuantityModal = (
-		mode: "markNoTransaction" | "addTransaction" | "addToExisting",
-	) => {
-		setQuantityModalMode(mode);
-		setShowQuantityModal(true);
-	};
-
-	const handleQuantityConfirm = (
-		selections: { itemId: string; quantity: number }[],
-	) => {
-		if (quantityModalMode === "markNoTransaction") {
-			// Submit each selection as a markManualCount action
-			for (const sel of selections) {
-				fetcher.submit(
-					{
-						_action: "markManualCount",
-						itemId: sel.itemId,
-						quantityToAdd: sel.quantity.toString(),
-					},
-					{ method: "POST" },
-				);
-			}
-			setSelectedIds([]);
-		} else if (quantityModalMode === "addToExisting") {
-			// Store selections and show transaction selector
-			setPendingItemSelections(selections);
-			setShowTransactionSelector(true);
-		} else {
-			// Set items in context and navigate to new transaction
-			const transactionItems = selections.map((sel) => {
-				const item = items.find((i) => i.id === sel.itemId);
-				return {
-					itemId: sel.itemId,
-					name: item?.name || "Unknown",
-					quantity: sel.quantity,
-					unitValue: parseFloat(item?.value || "0"),
-				};
-			});
-			setTransactionItems(transactionItems);
-			navigate("/treasury/transactions/new");
-		}
-	};
-
-	const handleSelectTransaction = (transaction: {
-		id: string;
-		description: string;
-		date: Date;
-		amount: string;
-	}) => {
-		// Set items in context for the edit page
-		const transactionItems = pendingItemSelections.map((sel) => {
-			const item = items.find((i) => i.id === sel.itemId);
-			return {
-				itemId: sel.itemId,
-				name: item?.name || "Unknown",
-				quantity: sel.quantity,
-				unitValue: parseFloat(item?.value || "0"),
-			};
-		});
-		setTransactionItems(transactionItems);
-		setShowTransactionSelector(false);
-		setPendingItemSelections([]);
-		setSelectedIds([]);
-		// Navigate to the edit page
-		navigate(`/treasury/transactions/${transaction.id}/edit?addItems=true`);
-	};
-
-	// Handlers for unlink operations
-	const handleUnlinkFromTransaction = (
-		itemId: string,
-		transactionId: string,
-		quantity: number,
-	) => {
-		// Show confirmation dialog
-		setUnlinkConfirmation({ itemId, transactionId, quantity });
-	};
-
-	const handleConfirmUnlink = () => {
-		if (unlinkConfirmation) {
-			fetcher.submit(
-				{
-					_action: "unlinkFromTransaction",
-					itemId: unlinkConfirmation.itemId,
-					transactionId: unlinkConfirmation.transactionId,
-				},
-				{ method: "POST" },
-			);
-			setUnlinkConfirmation(null);
-		}
-	};
-
-	const handleReduceManualCount = (itemId: string, quantity: number) => {
-		// No confirmation needed - directly remove marker
-		fetcher.submit(
-			{
-				_action: "reduceManualCount",
-				itemId,
-				quantityToRemove: quantity.toString(),
-			},
-			{ method: "POST" },
-		);
-	};
-
-	// Toast when item is linked to transaction from unknown badge
-	const lastFetcherDataRef = useRef<unknown>(null);
-	useEffect(() => {
-		if (
-			fetcher.state === "idle" &&
-			fetcher.data &&
-			typeof fetcher.data === "object" &&
-			"linked" in fetcher.data &&
-			fetcher.data !== lastFetcherDataRef.current
-		) {
-			lastFetcherDataRef.current = fetcher.data;
-			toast.success(t("inventory.badge_linked_to_transaction"));
-		}
-	}, [fetcher.state, fetcher.data, t]);
-
-	// Unknown badge: link this item to the chosen transaction inline (no navigation)
-	const handleSelectTransactionForItem = (
-		item: InventoryItem,
-		quantity: number,
-		transaction: {
-			id: string;
-			description: string;
-			date: Date;
-			amount: string;
+	const searchFields: SearchField[] = [
+		{
+			name: "name",
+			label: t("inventory.search.name_label"),
+			type: "text",
+			placeholder: t("inventory.search.name_placeholder"),
 		},
-	) => {
-		fetcher.submit(
-			{
-				_action: "linkItemToTransaction",
-				itemId: item.id,
-				transactionId: transaction.id,
-				quantity: quantity.toString(),
-			},
-			{ method: "POST", action: "/inventory" },
-		);
-	};
+		{
+			name: "location",
+			label: t("inventory.search.location_label"),
+			type: "select",
+			placeholder: t("inventory.search.location_all"),
+			options: ["all", ...uniqueLocations.filter(Boolean)],
+		},
+		{
+			name: "category",
+			label: t("inventory.search.category_label"),
+			type: "select",
+			placeholder: t("inventory.search.category_all"),
+			options: ["all", ...uniqueCategories.filter(Boolean)],
+		},
+	];
 
-	// Unknown badge: create new transaction with this single item
-	const handleCreateNewFromBadge = (item: InventoryItem, quantity: number) => {
-		setTransactionItems([
-			{
-				itemId: item.id,
-				name: item.name,
-				quantity,
-				unitValue: parseFloat(item.value || "0"),
-			},
-		]);
-		navigate("/treasury/transactions/new");
-	};
+	const permissions = rootData?.user?.permissions || [];
+	const canEdit = isStaff || permissions.includes("*") || permissions.includes("inventory:write") || permissions.includes("inventory:update");
 
 	const columns = useInventoryColumns({
 		visibleColumns,
+		canEdit,
 		isStaff,
-		onInlineEdit: handleInlineEdit,
-		onUnlinkFromTransaction: handleUnlinkFromTransaction,
-		onReduceManualCount: handleReduceManualCount,
-		onSelectTransactionForItem: handleSelectTransactionForItem,
-		onCreateNewTransaction: handleCreateNewFromBadge,
-		inventoryTransactions,
-		uniqueLocations,
 		uniqueCategories,
 		itemNames: items.map((i) => i.name),
-		transactionLinksMap,
 		relationsMap,
 	});
 
-	// Selection Actions (Left side)
-	const selectionActions =
-		selectedIds.length > 0 ? (
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="outline" size="sm">
-						<span className="material-symbols-outlined text-base mr-1">
-							checklist
-						</span>
-						{t("inventory.actions.selected")} ({selectedIds.length})
-						<span className="material-symbols-outlined text-base ml-1">
-							expand_more
-						</span>
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start">
-					<DropdownMenuItem onClick={() => setShowReportModal(true)}>
-						<span className="material-symbols-outlined text-base mr-2">
-							report
-						</span>
-						{t("inventory.actions.report")}
-					</DropdownMenuItem>
-					{isStaff && (
-						<>
-							<DropdownMenuSeparator />
-							{/* Treasury Section - flattened for mobile compatibility */}
-							<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-								{t("inventory.actions.treasury")}
-							</div>
-							<DropdownMenuItem
-								onClick={() => handleOpenQuantityModal("addTransaction")}
-								disabled={!hasTreasuryCapableItems}
-							>
-								<span className="material-symbols-outlined text-base mr-2">
-									add_circle
-								</span>
-								{t("inventory.actions.add_to_new")}
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => handleOpenQuantityModal("addToExisting")}
-								disabled={
-									!hasTreasuryCapableItems || inventoryTransactions.length === 0
-								}
-							>
-								<span className="material-symbols-outlined text-base mr-2">
-									playlist_add
-								</span>
-								{t("inventory.actions.add_to_existing")}
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => handleOpenQuantityModal("markNoTransaction")}
-								disabled={!hasTreasuryCapableItems}
-							>
-								<span className="material-symbols-outlined text-base mr-2">
-									block
-								</span>
-								{t("inventory.actions.no_transaction")}
-							</DropdownMenuItem>
-
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={handleRemoveSelected}
-								disabled={!canRemoveSelection}
-								className="text-red-600"
-							>
-								<span className="material-symbols-outlined text-base mr-2">
-									delete
-								</span>
-								{t("inventory.actions.remove")}
-							</DropdownMenuItem>
-						</>
-					)}
-				</DropdownMenuContent>
-			</DropdownMenu>
-		) : null;
-
-	// Actions bar (Right side) - responsive: dropdown on mobile, inline on desktop
-	const actionsComponent = isStaff ? (
-		<div className="flex items-center gap-2">
-			{/* Mobile: Dropdown menu for actions */}
-			<div className="md:hidden">
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
-							variant="default"
-							size="sm"
-							className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 hover:scale-[1.02] transition-all duration-300"
-						>
-							<span className="material-symbols-outlined text-base">
-								more_vert
-							</span>
-							{t("inventory.actions.menu")}
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-56">
-						<DropdownMenuItem asChild>
-							<AddItemButton
-								title={t("inventory.actions.add")}
-								variant="button"
-								createType="inventory"
-								className="w-full justify-start border-none hover:bg-transparent p-0 px-2 py-1.5"
-							/>
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem asChild>
-							<a
-								href="/api/inventory/export"
-								download
-								className="flex items-center cursor-pointer"
-							>
-								<span className="material-symbols-outlined text-base mr-2">
-									download
-								</span>
-								<div>
-									<p className="font-medium">
-										{t("inventory.actions.export_short")}
-									</p>
-									{isInfoReel && (
-										<p className="text-xs text-muted-foreground">Export CSV</p>
-									)}
-								</div>
-							</a>
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => fileInputRef.current?.click()}
-							disabled={fetcher.state !== "idle"}
-						>
-							<span className="material-symbols-outlined text-base mr-2">
-								upload
-							</span>
-							<div>
-								<p className="font-medium">
-									{t("inventory.actions.import_short")}
-								</p>
-								<p className="text-xs text-muted-foreground">Import CSV</p>
-							</div>
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</div>
-
-			{/* Desktop: Inline buttons */}
-			<div className="hidden md:flex gap-2 flex-wrap items-center">
-				<AddItemButton
-					title={t("inventory.actions.add")}
-					variant="button"
-					createType="inventory"
-				/>
-
-				<Button variant="ghost" size="sm" asChild>
-					<a
-						href="/api/inventory/export"
-						download
-						className="flex items-center gap-1"
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2">
+			<SearchMenu fields={searchFields} />
+			{isStaff && (
+				<>
+					<AddItemButton
+						title={t("inventory.actions.add")}
+						variant="icon"
+						createType="inventory"
+					/>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-9 w-9 text-muted-foreground hover:text-foreground"
+						asChild
+						title={t("inventory.actions.export")}
 					>
-						<span className="material-symbols-outlined text-base">
-							download
-						</span>
-						{t("inventory.actions.export")}
-					</a>
-				</Button>
-
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => fileInputRef.current?.click()}
-					className="flex items-center gap-1"
-					disabled={fetcher.state !== "idle"}
-				>
-					<span className="material-symbols-outlined text-base">upload</span>
-					{t("inventory.actions.import")}
-				</Button>
-			</div>
+						<a href="/api/inventory/export" download>
+							<span className="material-symbols-outlined text-lg">
+								download
+							</span>
+						</a>
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-9 w-9 text-muted-foreground hover:text-foreground relative cursor-pointer"
+						title={t("inventory.actions.import")}
+					>
+						<label htmlFor="csv-upload" className="absolute inset-0 cursor-pointer">
+							<span className="sr-only">Upload</span>
+						</label>
+						<span className="material-symbols-outlined text-lg pointer-events-none">upload</span>
+						<input
+							type="file"
+							id="csv-upload"
+							className="hidden"
+							accept=".csv, .xlsx, .xls"
+							onChange={(e) => {
+								const file = e.target.files?.[0];
+								if (file) {
+									const formData = new FormData();
+									formData.set("file", file);
+									fetcher.submit(formData, {
+										method: "POST",
+										action: "/api/inventory/import",
+										encType: "multipart/form-data",
+									});
+									e.target.value = "";
+									toast.info(t("inventory.messages.importing"));
+								}
+							}}
+						/>
+					</Button>
+				</>
+			)}
 		</div>
-	) : null;
+	);
 
 	return (
 		<PageWrapper>
@@ -1092,12 +486,11 @@ function InventoryTablePage({
 					primary: t("inventory.title", { lng: languages.primary }),
 					secondary: t("inventory.title", { lng: languages.secondary }),
 				}}
+				footer={footerContent}
 			>
 				<div
 					className={`space-y-4 transition-opacity duration-200 ${isLoading ? "opacity-50" : ""}`}
 				>
-					<InventoryFilters />
-
 					<DataTable
 						columns={columns}
 						data={items}
@@ -1108,166 +501,20 @@ function InventoryTablePage({
 						onPageChange={handlePageChange}
 						enableRowSelection={true}
 						onSelectionChange={setSelectedIds}
+						selectedIds={selectedIds}
 						onDeleteSelected={isStaff ? handleDeleteSelected : undefined}
-						actionsComponent={actionsComponent}
-						selectionActions={selectionActions}
+						basePath="/inventory"
+						canEdit={canEdit}
 						maxBodyHeight="calc(100vh - 280px)"
+						deleteConfirmTitle={t("inventory.modals.confirm_delete_many_title")}
+						deleteConfirmDesc={t("inventory.modals.confirm_delete_many_desc", {
+							count: selectedIds.length ?? 0,
+						})}
+						deleteConfirmLabel={t("common.actions.delete")}
+						deleteCancelLabel={t("inventory.modals.cancel")}
 					/>
 				</div>
 			</SplitLayout>
-
-			<input
-				type="file"
-				ref={fileInputRef}
-				className="hidden"
-				accept=".csv, .xlsx, .xls"
-				onChange={(e) => {
-					const file = e.target.files?.[0];
-					if (file) {
-						const formData = new FormData();
-						formData.set("file", file);
-						fetcher.submit(formData, {
-							method: "POST",
-							action: "/api/inventory/import",
-							encType: "multipart/form-data",
-						});
-						e.target.value = "";
-						toast.info(t("inventory.messages.importing"));
-					}
-				}}
-			/>
-
-			{/* Report Modal */}
-			<Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-				<DialogContent className="w-full h-full max-w-none md:h-auto md:max-w-lg p-0 md:p-6 rounded-none md:rounded-lg overflow-y-auto flex flex-col md:block">
-					<div className="p-4 md:p-0 flex-1 overflow-y-auto">
-						<DialogHeader className="mb-4 text-left">
-							<DialogTitle>{t("inventory.modals.report_title")}</DialogTitle>
-						</DialogHeader>
-						<div className="space-y-4">
-							<div>
-								<p className="text-sm text-gray-500 mb-2">
-									{t("inventory.modals.selected_items")}
-								</p>
-								<p className="font-medium">{selectedItemNames.join(", ")}</p>
-							</div>
-							<Textarea
-								value={reportMessage}
-								onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-									setReportMessage(e.target.value)
-								}
-								placeholder={t("inventory.modals.describe_issue")}
-								rows={4}
-							/>
-						</div>
-					</div>
-					<div className="p-4 md:p-0 border-t md:border-t-0 mt-auto">
-						<DialogFooter className="flex flex-col sm:flex-row gap-2">
-							<Button
-								variant="outline"
-								onClick={() => setShowReportModal(false)}
-								className="flex-1 sm:flex-none"
-							>
-								{t("inventory.modals.cancel")}
-							</Button>
-							<Button
-								onClick={handleSubmitReport}
-								disabled={!reportMessage.trim()}
-								className="flex-1 sm:flex-none"
-							>
-								{t("inventory.modals.send")}
-							</Button>
-						</DialogFooter>
-					</div>
-				</DialogContent>
-			</Dialog>
-
-			{/* Remove Inventory Modal */}
-			{removeModalItem && (
-				<RemoveInventoryModal
-					item={removeModalItem}
-					transactionLinks={getTransactionLinksForItem(removeModalItem)}
-					isOpen={!!removeModalItem}
-					onClose={() => setRemoveModalItem(null)}
-				/>
-			)}
-
-			{/* Quantity Selection Modal */}
-			<QuantitySelectionModal
-				open={showQuantityModal}
-				onOpenChange={setShowQuantityModal}
-				items={itemsWithUnknown}
-				mode={quantityModalMode}
-				onConfirm={handleQuantityConfirm}
-			/>
-
-			{/* Unlink Confirmation Dialog */}
-			<ConfirmDialog
-				open={!!unlinkConfirmation}
-				onOpenChange={(open) => !open && setUnlinkConfirmation(null)}
-				title={t("inventory.modals.confirm_unlink_title")}
-				description={
-					<>
-						<p>{t("inventory.modals.confirm_unlink_desc")}</p>
-						{unlinkConfirmation && (
-							<p className="mt-2 whitespace-pre-line">
-								{t("inventory.modals.confirm_unlink_details", {
-									name:
-										items.find((i) => i.id === unlinkConfirmation.itemId)
-											?.name ?? "—",
-									count: unlinkConfirmation.quantity,
-									description:
-										(transactionLinksMap[unlinkConfirmation.itemId] || []).find(
-											(l) =>
-												l.transaction.id === unlinkConfirmation.transactionId,
-										)?.transaction.description ?? "—",
-									date: (() => {
-										const link = (
-											transactionLinksMap[unlinkConfirmation.itemId] || []
-										).find(
-											(l) =>
-												l.transaction.id === unlinkConfirmation.transactionId,
-										);
-										return link?.transaction.date
-											? new Date(link.transaction.date).toLocaleDateString(
-													i18n.language,
-												)
-											: "—";
-									})(),
-								})}
-							</p>
-						)}
-					</>
-				}
-				confirmLabel={t("inventory.modals.unlink")}
-				cancelLabel={t("inventory.modals.cancel")}
-				variant="destructive"
-				onConfirm={handleConfirmUnlink}
-			/>
-
-			{/* Delete many confirmation */}
-			<ConfirmDialog
-				open={!!pendingDeleteMany}
-				onOpenChange={(open) => !open && setPendingDeleteMany(null)}
-				title={t("inventory.modals.confirm_delete_many_title")}
-				description={t("inventory.modals.confirm_delete_many_desc", {
-					count: pendingDeleteMany?.ids.length ?? 0,
-				})}
-				confirmLabel={t("common.actions.delete")}
-				cancelLabel={t("inventory.modals.cancel")}
-				variant="destructive"
-				onConfirm={() =>
-					pendingDeleteMany && handleConfirmDeleteMany(pendingDeleteMany.ids)
-				}
-			/>
-
-			{/* Transaction Selector Modal */}
-			<TransactionSelectorModal
-				open={showTransactionSelector}
-				onOpenChange={setShowTransactionSelector}
-				transactions={inventoryTransactions}
-				onSelect={handleSelectTransaction}
-			/>
 		</PageWrapper>
 	);
 }
@@ -1294,67 +541,5 @@ function InventoryQRPanel({
 				</h2>
 			}
 		/>
-	);
-}
-
-function InventoryFooter() {
-	const { isAdmin } = useInventory();
-	const { t } = useTranslation();
-
-	return (
-		<div className="flex items-center gap-2">
-			{isAdmin && (
-				<>
-					<a
-						href="/api/inventory/export"
-						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-						title="Export CSV"
-					>
-						<span className="material-symbols-outlined text-xl">download</span>
-					</a>
-					<label
-						className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-						title="Import"
-					>
-						<input
-							type="file"
-							accept=".csv,.xlsx,.xls"
-							className="hidden"
-							onChange={async (e) => {
-								const file = e.target.files?.[0];
-								if (!file) return;
-								const formData = new FormData();
-								formData.append("file", file);
-								const res = await fetch("/api/inventory/import", {
-									method: "POST",
-									body: formData,
-								});
-								const data = await res.json();
-								if (data.success) {
-									toast.success(
-										data.imported != null
-											? t("inventory.messages.import_success", {
-													count: data.imported,
-												})
-											: "Imported",
-									);
-									window.location.reload();
-								} else {
-									toast.error(
-										data.error != null
-											? t("inventory.messages.import_error", {
-													error: data.error,
-												})
-											: "Import failed",
-									);
-								}
-								e.target.value = "";
-							}}
-						/>
-						<span className="material-symbols-outlined text-xl">upload</span>
-					</label>
-				</>
-			)}
-		</div>
 	);
 }

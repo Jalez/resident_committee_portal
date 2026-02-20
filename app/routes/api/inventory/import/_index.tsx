@@ -96,7 +96,6 @@ export async function action({ request }: Route.ActionArgs) {
 				const quantityRaw = getColumn(row, ["Quantity", "quantity"]);
 				const categoryRaw = getColumn(row, ["Category", "category"]);
 				const descriptionRaw = getColumn(row, ["Description", "description"]);
-				const valueRaw = getColumn(row, ["Value", "value"]);
 				const purchasedRaw = getColumn(row, [
 					"Purchased",
 					"purchasedAt",
@@ -111,7 +110,6 @@ export async function action({ request }: Route.ActionArgs) {
 					description: descriptionRaw
 						? String(descriptionRaw).trim() || null
 						: null,
-					value: valueRaw ? String(valueRaw).trim() || "0" : "0",
 					purchasedAt: purchasedRaw ? parseDate(purchasedRaw) : null,
 				};
 

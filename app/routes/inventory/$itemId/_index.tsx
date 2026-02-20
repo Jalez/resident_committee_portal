@@ -18,7 +18,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	return createViewLoader({
 		entityType: "inventory",
 		permission: "inventory:read",
-		params,
+		params: { ...params, inventoryId: params.itemId },
 		request,
 		fetchEntity: (db, id) => db.getInventoryItemById(id),
 	});
@@ -35,13 +35,15 @@ export default function ViewInventoryItem({
 		rootData?.user?.permissions?.includes("inventory:write") ||
 		rootData?.user?.permissions?.includes("*");
 
+	const canDelete =
+		rootData?.user?.permissions?.includes("inventory:delete") ||
+		rootData?.user?.permissions?.includes("*");
 	const displayFields = {
 		name: { value: item.name, valueClassName: "font-semibold" },
 		quantity: item.quantity,
 		location: item.location || "—",
 		category: { value: item.category, hide: !item.category },
 		description: { value: item.description, hide: !item.description },
-		value: { value: item.value || "0", valueClassName: "font-bold" },
 		status: item.status,
 		purchasedAt: { value: item.purchasedAt, hide: !item.purchasedAt },
 		showInInfoReel: item.showInInfoReel,
@@ -58,6 +60,7 @@ export default function ViewInventoryItem({
 				relationships={relationships}
 				returnUrl="/inventory"
 				canEdit={canWrite}
+				canDelete={canDelete}
 				translationNamespace="inventory.form"
 			/>
 		</PageWrapper>

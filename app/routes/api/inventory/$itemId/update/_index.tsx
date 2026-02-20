@@ -23,7 +23,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		location: formData.get("location") as string,
 		category: (formData.get("category") as string) || null,
 		description: (formData.get("description") as string) || null,
-		value: (formData.get("value") as string) || "0",
 		showInInfoReel: formData.get("showInInfoReel") === "on",
 		purchasedAt: formData.get("purchasedAt")
 			? new Date(formData.get("purchasedAt") as string)

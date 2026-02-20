@@ -20,7 +20,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		"location",
 		"category",
 		"description",
-		"value",
 		"purchasedAt",
 		"createdAt",
 		"updatedAt",
@@ -35,7 +34,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 			escapeCSV(item.location ?? "missing location"),
 			escapeCSV(item.category || ""),
 			escapeCSV(item.description || ""),
-			item.value || "0",
 			item.purchasedAt
 				? new Date(item.purchasedAt).toISOString().split("T")[0]
 				: "",
