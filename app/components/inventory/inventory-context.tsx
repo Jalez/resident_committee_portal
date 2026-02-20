@@ -34,47 +34,18 @@ interface InventoryContextValue {
 	pageSize: number;
 	isStaff: boolean;
 	isAdmin: boolean;
-	transactionLinksMap: Record<
-		string,
-		{
-			transaction: {
-				id: string;
-				description: string;
-				date: Date;
-				type: string;
-			};
-			quantity: number;
-		}[]
-	>;
-	inventoryTransactions: {
-		id: string;
-		description: string;
-		date: Date;
-		amount: string;
-	}[];
 	relationsMap: Record<string, RelationBadgeData[]>;
 
 	// UI State
-	showAddRow: boolean;
-	setShowAddRow: (show: boolean) => void;
-	newItem: NewInventoryItemState;
-	setNewItem: (item: NewInventoryItemState) => void;
 	selectedIds: string[];
 	setSelectedIds: (ids: string[]) => void;
 	visibleColumns: Set<ColumnKey>;
 
 	// Actions
-	handleInlineEdit: (itemId: string, field: string, value: string) => void;
-	handleCreateItem: () => void;
 	handleDeleteSelected: (ids: string[]) => void;
-	pendingDeleteMany: { ids: string[] } | null;
-	setPendingDeleteMany: (pending: { ids: string[] } | null) => void;
-	handleConfirmDeleteMany: (ids: string[]) => void;
 	handleFilterChange: (key: string, value: string) => void;
 	handlePageChange: (page: number) => void;
 	toggleColumn: (col: ColumnKey) => void;
-	handleAddTreasuryTransaction: () => void;
-	resetAddRow: () => void;
 
 	// Fetcher state
 	isSaving: boolean;
@@ -110,26 +81,6 @@ interface InventoryProviderProps {
 	pageSize: number;
 	isStaff: boolean;
 	isAdmin: boolean;
-	// Transaction links for modals
-	transactionLinksMap?: Record<
-		string,
-		{
-			transaction: {
-				id: string;
-				description: string;
-				date: Date;
-				type: string;
-			};
-			quantity: number;
-		}[]
-	>;
-	// Inventory category transactions for "Add to Existing" feature
-	inventoryTransactions?: {
-		id: string;
-		description: string;
-		date: Date;
-		amount: string;
-	}[];
 	relationsMap?: Record<string, RelationBadgeData[]>;
 }
 
@@ -144,8 +95,6 @@ export function InventoryProvider({
 	pageSize,
 	isStaff,
 	isAdmin,
-	transactionLinksMap = {},
-	inventoryTransactions = [],
 	relationsMap = {},
 }: InventoryProviderProps) {
 	const fetcher = useFetcher();
@@ -153,42 +102,11 @@ export function InventoryProvider({
 	const navigate = useNavigate();
 
 	// UI State
-	const [showAddRow, setShowAddRow] = useState(false);
-	const [newItem, setNewItem] =
-		useState<NewInventoryItemState>(DEFAULT_NEW_ITEM);
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
-	const [pendingDeleteMany, setPendingDeleteMany] = useState<{
-		ids: string[];
-	} | null>(null);
 
 	const isSaving = fetcher.state !== "idle";
 	const { t } = useTranslation();
 	const lastToastDataRef = useRef<unknown>(null);
-
-	// Reset add row form when createItem completes (not on inline edit)
-	useEffect(() => {
-		if (
-			fetcher.state === "idle" &&
-			fetcher.data?.success &&
-			!("updatedField" in (fetcher.data ?? {}))
-		) {
-			setNewItem(DEFAULT_NEW_ITEM);
-			setShowAddRow(false);
-		}
-	}, [fetcher.state, fetcher.data]);
-
-	// Toast when inline edit (e.g. quantity) succeeds
-	useEffect(() => {
-		if (
-			fetcher.state === "idle" &&
-			fetcher.data &&
-			"updatedField" in fetcher.data &&
-			fetcher.data !== lastToastDataRef.current
-		) {
-			lastToastDataRef.current = fetcher.data;
-			toast.success(t("inventory.inline_edit_saved"));
-		}
-	}, [fetcher.state, fetcher.data, t]);
 
 	// Parse visible columns from URL
 	const getVisibleColumns = useCallback((): Set<ColumnKey> => {
@@ -208,8 +126,6 @@ export function InventoryProvider({
 				"category",
 				"description",
 				"updatedAt",
-				"unitValue",
-				"totalValue",
 				"showInInfoReel",
 			] as ColumnKey[]);
 		}
@@ -229,42 +145,12 @@ export function InventoryProvider({
 	// Actions
 	// ========================================================================
 
-	const handleInlineEdit = useCallback(
-		(itemId: string, field: string, value: string) => {
-			const formData = new FormData();
-			formData.set("_action", "updateField");
-			formData.set("itemId", itemId);
-			formData.set("field", field);
-			formData.set("value", value);
-			fetcher.submit(formData, { method: "POST", action: "/inventory" });
-		},
-		[fetcher],
-	);
-
-	const handleCreateItem = useCallback(() => {
-		if (!newItem.name.trim() || !newItem.location.trim()) return;
-		const formData = new FormData();
-		formData.set("_action", "createItem");
-		formData.set("name", newItem.name);
-		formData.set("quantity", newItem.quantity);
-		formData.set("location", newItem.location);
-		formData.set("category", newItem.category);
-		formData.set("description", newItem.description);
-		formData.set("value", newItem.value);
-		fetcher.submit(formData, { method: "POST" });
-	}, [fetcher, newItem]);
-
-	const handleDeleteSelected = useCallback((ids: string[]) => {
-		setPendingDeleteMany({ ids });
-	}, []);
-
-	const handleConfirmDeleteMany = useCallback(
+	const handleDeleteSelected = useCallback(
 		(ids: string[]) => {
 			const formData = new FormData();
 			formData.set("_action", "deleteMany");
 			formData.set("itemIds", JSON.stringify(ids));
 			fetcher.submit(formData, { method: "POST", action: "/inventory" });
-			setPendingDeleteMany(null);
 			setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
 		},
 		[fetcher],
@@ -309,12 +195,8 @@ export function InventoryProvider({
 	);
 
 	const handleAddTreasuryTransaction = useCallback(() => {
-		if (selectedIds.length === 0) return;
 		const selectedItems = items.filter((i) => selectedIds.includes(i.id));
-		const totalValue = selectedItems.reduce(
-			(sum, item) => sum + parseFloat(item.value || "0") * item.quantity,
-			0,
-		);
+		const totalValue = 0; // Value is no longer tracked on inventory items
 		const itemNames = selectedItems.map((i) => i.name).join(", ");
 		const itemIdsStr = selectedIds.join(",");
 
@@ -327,10 +209,6 @@ export function InventoryProvider({
 		navigate(`/treasury/transactions/new?${params.toString()}`);
 	}, [selectedIds, items, navigate]);
 
-	const resetAddRow = useCallback(() => {
-		setNewItem(DEFAULT_NEW_ITEM);
-		setShowAddRow(false);
-	}, []);
 
 	// ========================================================================
 	// Context Value
@@ -347,31 +225,18 @@ export function InventoryProvider({
 		pageSize,
 		isStaff,
 		isAdmin,
-		transactionLinksMap,
-		inventoryTransactions,
 		relationsMap,
 
 		// UI State
-		showAddRow,
-		setShowAddRow,
-		newItem,
-		setNewItem,
 		selectedIds,
 		setSelectedIds,
 		visibleColumns,
 
 		// Actions
-		handleInlineEdit,
-		handleCreateItem,
 		handleDeleteSelected,
-		pendingDeleteMany,
-		setPendingDeleteMany,
-		handleConfirmDeleteMany,
 		handleFilterChange,
 		handlePageChange,
 		toggleColumn,
-		handleAddTreasuryTransaction,
-		resetAddRow,
 
 		// Fetcher state
 		isSaving,
