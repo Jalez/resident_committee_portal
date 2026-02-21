@@ -130,6 +130,9 @@
 		"compose_reply": "Antworten",
 		"compose_reply_all": "Allen antworten",
 		"compose_forward": "Weiterleiten",
+		"signature": {
+			"regards": "Mit freundlichen Grüßen,"
+		},
 		"quoted_reply_header": "Am {{date}} schrieb {{name}} <{{email}}>:"
 	},
 	"home": {

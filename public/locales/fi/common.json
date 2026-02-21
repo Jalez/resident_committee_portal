@@ -984,6 +984,9 @@
 		"compose_reply": "Vastaus",
 		"compose_reply_all": "Vastaus kaikille",
 		"compose_forward": "Välitys",
+		"signature": {
+			"regards": "Ystävällisin terveisin,"
+		},
 		"quoted_reply_header": "{{date}}, {{name}} <{{email}}> kirjoitti:"
 	},
 	"contact": {

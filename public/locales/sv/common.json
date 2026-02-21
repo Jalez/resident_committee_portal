@@ -628,6 +628,9 @@
 		"compose_reply": "Svara",
 		"compose_reply_all": "Svara alla",
 		"compose_forward": "Vidarebefordra",
+		"signature": {
+			"regards": "Med vänliga hälsningar,"
+		},
 		"quoted_reply_header": "Den {{date}} skrev {{name}} <{{email}}>:"
 	},
 	"contact": {

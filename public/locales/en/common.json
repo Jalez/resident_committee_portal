@@ -984,6 +984,9 @@
 		"compose_reply": "Reply",
 		"compose_reply_all": "Reply All",
 		"compose_forward": "Forward",
+		"signature": {
+			"regards": "Best regards,"
+		},
 		"quoted_reply_header": "On {{date}}, {{name}} <{{email}}> wrote:"
 	},
 	"contact": {

@@ -28,6 +28,7 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
+	primaryText,
 } from "~/lib/email.server";
 import {
 	type CommitteeMailRecipient,
@@ -37,6 +38,7 @@ import {
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { addForwardPrefix, addReplyPrefix } from "~/lib/mail-utils";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
@@ -76,22 +78,24 @@ function displayAttachmentName(entity: Record<string, unknown>, fallback: string
 	);
 }
 
-function buildSignature(name?: string | null, roleName?: string | null) {
+function buildSignature(
+	name?: string | null,
+	regardsLine = "Best regards,",
+) {
 	const trimmedName = name?.trim();
 	if (!trimmedName) return null;
-	const trimmedRole = roleName?.trim();
-	return `Best regards,\n${trimmedName}${trimmedRole ? `\n${trimmedRole}` : ""}`;
+	return `${regardsLine}\n${trimmedName}`;
 }
 
 function ensureSignedBody(
 	body: string,
 	name?: string | null,
-	roleName?: string | null,
+	regardsLine = "Best regards,",
 ) {
-	const signature = buildSignature(name, roleName);
+	const signature = buildSignature(name, regardsLine);
 	if (!signature) return body;
 	if (body.includes(signature)) return body;
-	if (body.includes("Best regards,")) return body;
+	if (body.includes(regardsLine)) return body;
 	const trimmed = body.trimEnd();
 	return trimmed ? `${trimmed}\n\n${signature}` : signature;
 }
@@ -112,6 +116,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		getDatabase,
 	);
 	const db = getDatabase();
+	const { primary: primaryLanguage } = await getSystemLanguageDefaults();
+	const signatureRegards = primaryText(primaryLanguage, "mail.signature.regards");
 
 	const roles = await db.getAllRoles();
 	const rolesExcludingGuest = roles
@@ -209,6 +215,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		originalMessage,
 		composeMode,
 		relationships,
+		signatureRegards,
 	};
 }
 
@@ -224,6 +231,8 @@ export async function action({ request }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const intent = formData.get("_action") as string;
 	const db = getDatabase();
+	const { primary: primaryLanguage } = await getSystemLanguageDefaults();
+	const signatureRegards = primaryText(primaryLanguage, "mail.signature.regards");
 
 	if (intent === "getRecipients") {
 		const roleId = formData.get("roleId") as string;
@@ -299,7 +308,7 @@ export async function action({ request }: Route.ActionArgs) {
 		const subject = (formData.get("subject") as string) ?? null;
 		const body = (formData.get("body") as string) ?? null;
 		const signedBody = body
-			? ensureSignedBody(body, currentUser.name, currentUser.roleName)
+			? ensureSignedBody(body, currentUser.name, signatureRegards)
 			: body;
 
 		await saveRelationshipChanges(
@@ -349,7 +358,7 @@ export async function action({ request }: Route.ActionArgs) {
 		const signedBody = ensureSignedBody(
 			body,
 			currentUser.name,
-			currentUser.roleName,
+			signatureRegards,
 		);
 
 		let mailAttachments: {
@@ -662,6 +671,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		originalMessage,
 		composeMode: initialComposeMode,
 		relationships,
+		signatureRegards,
 	} = loaderData;
 	const { t } = useTranslation();
 	const { user } = useUser();
@@ -785,8 +795,8 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		initialRelationships: [],
 	});
 	const signature = useMemo(
-		() => buildSignature(user?.name, user?.roleName),
-		[user?.name, user?.roleName],
+		() => buildSignature(user?.name, signatureRegards),
+		[user?.name, signatureRegards],
 	);
 
 	const getEffectiveLinkedEntities = useCallback(
@@ -913,8 +923,10 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 
 	useEffect(() => {
 		if (!signature) return;
-		setBody((prev) => ensureSignedBody(prev, user?.name, user?.roleName));
-	}, [signature, user?.name, user?.roleName]);
+		setBody((prev) =>
+			ensureSignedBody(prev, user?.name, signatureRegards),
+		);
+	}, [signature, user?.name, signatureRegards]);
 
 	// Recipient helpers
 	const addToRecipients = useCallback(
@@ -1037,7 +1049,13 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 			setSubject(suggestions.subject);
 		}
 		if (typeof suggestions.body === "string") {
-			setBody(ensureSignedBody(suggestions.body, user?.name, user?.roleName));
+			setBody(
+				ensureSignedBody(
+					suggestions.body,
+					user?.name,
+					signatureRegards,
+				),
+			);
 		}
 	};
 

@@ -121,6 +121,9 @@
 		"compose_reply": "Responder",
 		"compose_reply_all": "Responder a todos",
 		"compose_forward": "Reenviar",
+		"signature": {
+			"regards": "Saludos cordiales,"
+		},
 		"quoted_reply_header": "El {{date}}, {{name}} <{{email}}> escribió:"
 	},
 	"home": {
