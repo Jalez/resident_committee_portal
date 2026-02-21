@@ -109,5 +109,24 @@
 			"view_email_thread": "",
 			"resend_confirm_desc": ""
 		}
+	},
+	"email": {
+		"reimbursement": {
+			"subject": "Richiesta di rimborso",
+			"title": "Richiesta di rimborso",
+			"greeting": "Ciao,",
+			"intro": "Elabora la seguente richiesta di rimborso:",
+			"id_label": "ID rimborso",
+			"item": "Voce",
+			"amount": "Importo",
+			"purchaser": "Acquirente",
+			"bank_account": "Conto bancario",
+			"minutes": "Verbale",
+			"receipts": "Ricevute",
+			"notes": "Note",
+			"attached": "allegato",
+			"not_specified": "Non specificato",
+			"reply_instruction": "Rispondi a questa email per approvare o rifiutare la richiesta."
+		}
 	}
 }

@@ -151,6 +151,9 @@
 		"reimbursement": {
 			"subject": "Solicitud de Reembolso",
 			"title": "Solicitud de Reembolso",
+			"greeting": "Hola,",
+			"intro": "Procese la siguiente solicitud de reembolso:",
+			"id_label": "ID de reembolso",
 			"success": {
 				"transaction_created": "Transacción creada",
 				"reimbursement_requested": "Solicitud de reembolso enviada"

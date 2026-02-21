@@ -5,6 +5,7 @@ import {
 	analyzeRelationshipContext,
 } from "~/lib/ai/relationship-analyzer.server";
 import { requireAnyPermission } from "~/lib/auth.server";
+import { primaryText } from "~/lib/email.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import {
 	getRelationshipContext,
@@ -13,6 +14,7 @@ import {
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { translateFaq, translateNews } from "~/lib/translate.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
+import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
 
 interface LegacyContext {
@@ -129,6 +131,12 @@ function stripKnownSignature(body: string): string {
 	return trimmed;
 }
 
+function normalizeLanguageTag(lang: string): string {
+	const normalized = (lang || "").trim().toLowerCase();
+	if (!normalized) return "en";
+	return normalized.split(/[-_]/)[0] || "en";
+}
+
 function getRelatedEntityFromRelationship(
 	entityType: RelationshipEntityType,
 	entityId: string,
@@ -236,6 +244,15 @@ async function getMailAutofillSuggestions(
 	userPermissions: string[],
 	pendingChanges?: PendingRelationshipChanges,
 ): Promise<Record<string, string>> {
+	const { primary: defaultPrimaryLanguage } = await getSystemLanguageDefaults();
+	const primaryLang = normalizeLanguageTag(defaultPrimaryLanguage);
+	const t = (key: string) => primaryText(primaryLang, key);
+	const notSpecified = t("email.reimbursement.not_specified");
+	const attached = t("email.reimbursement.attached");
+	const reimbursementIdLabel = t("email.reimbursement.id_label");
+	const greeting = t("email.reimbursement.greeting");
+	const intro = t("email.reimbursement.intro");
+
 	const relationshipData = await loadRelationshipsForEntity(
 		db,
 		"mail",
@@ -251,13 +268,13 @@ async function getMailAutofillSuggestions(
 
 	const reimbursementId = toNonEmptyString(reimbursement.id);
 	const description =
-		toNonEmptyString(reimbursement.description) || "Reimbursement";
+		toNonEmptyString(reimbursement.description) || t("email.reimbursement.title");
 	const purchaserName =
-		toNonEmptyString(reimbursement.purchaserName) || "Not specified";
+		toNonEmptyString(reimbursement.purchaserName) || notSpecified;
 	const bankAccount =
-		toNonEmptyString(reimbursement.bankAccount) || "Not specified";
+		toNonEmptyString(reimbursement.bankAccount) || notSpecified;
 	const notes = toNonEmptyString(reimbursement.notes);
-	const amount = formatAmount(reimbursement.amount) || "Not specified";
+	const amount = formatAmount(reimbursement.amount) || notSpecified;
 	const reimbursementRecipientEmail =
 		(await db.getSetting(SETTINGS_KEYS.REIMBURSEMENT_RECIPIENT_EMAIL))?.trim() ||
 		(process.env.RECIPIENT_EMAIL || "").trim();
@@ -290,13 +307,13 @@ async function getMailAutofillSuggestions(
 	const minuteLabel =
 		(() => {
 			const primaryMinute = Array.from(minuteMap.values())[0];
-			if (!primaryMinute) return "Not specified";
+			if (!primaryMinute) return notSpecified;
 			return (
 				toNonEmptyString(primaryMinute.title) ||
 				toNonEmptyString(primaryMinute.name) ||
 				toNonEmptyString(primaryMinute.description) ||
 				toNonEmptyString(primaryMinute.fileKey) ||
-				"Not specified"
+				notSpecified
 			);
 		})();
 
@@ -338,38 +355,38 @@ async function getMailAutofillSuggestions(
 		.filter(Boolean);
 	const receiptLine =
 		receiptNames.length > 0
-			? `${receiptNames.join(", ")} (attached)`
+			? `${receiptNames.join(", ")} (${attached})`
 			: effectiveReceipts.length > 0
-				? `${effectiveReceipts.length} receipt(s) attached`
-				: "Not specified";
+				? `${effectiveReceipts.length} ${t("email.reimbursement.receipts")} (${attached})`
+				: notSpecified;
 
 	const suggestions: Record<string, string> = {};
 	if (reimbursementRecipientEmail) {
 		suggestions.toEmail = reimbursementRecipientEmail;
 	}
 	if (!currentValues.subject?.trim()) {
-		suggestions.subject = `Reimbursement request: ${description} (${amount})`;
+		suggestions.subject = `${t("email.reimbursement.subject")}: ${description} (${amount})`;
 	}
 	const currentBody = currentValues.body?.trim() || "";
 	const isPreviouslyAutofilledTemplate =
-		currentBody.includes("Please process the following reimbursement request:") &&
+		currentBody.includes(reimbursementIdLabel) ||
 		currentBody.includes("Reimbursement ID:");
 	const currentBodyWithoutSignature = stripKnownSignature(currentBody);
 	if (!currentBodyWithoutSignature || isPreviouslyAutofilledTemplate) {
 		suggestions.body = [
-			"Hello,",
+			greeting,
 			"",
-			"Please process the following reimbursement request:",
-			`- Item: ${description}`,
-			`- Amount: ${amount}`,
-			`- Purchaser: ${purchaserName}`,
-			`- Bank account: ${bankAccount}`,
-			`- Minutes: ${minuteLabel} (attached if linked)`,
-			`- Receipts: ${receiptLine}`,
-			...(notes ? [`- Notes: ${notes}`] : []),
+			intro,
+			`- ${t("email.reimbursement.item")}: ${description}`,
+			`- ${t("email.reimbursement.amount")}: ${amount}`,
+			`- ${t("email.reimbursement.purchaser")}: ${purchaserName}`,
+			`- ${t("email.reimbursement.bank_account")}: ${bankAccount}`,
+			`- ${t("email.reimbursement.minutes")}: ${minuteLabel}`,
+			`- ${t("email.reimbursement.receipts")}: ${receiptLine}`,
+			...(notes ? [`- ${t("email.reimbursement.notes")}: ${notes}`] : []),
 			"",
-			`Reimbursement ID: ${reimbursementId || "Not specified"}`,
-			"Please reply to this email with approval or rejection.",
+			`${reimbursementIdLabel}: ${reimbursementId || notSpecified}`,
+			t("email.reimbursement.reply_instruction"),
 		].join("\n");
 	}
 

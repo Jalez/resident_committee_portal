@@ -1259,6 +1259,9 @@
 		"reimbursement": {
 			"subject": "Reimbursement Request",
 			"title": "Reimbursement Request",
+			"greeting": "Hello,",
+			"intro": "Please process the following reimbursement request:",
+			"id_label": "Reimbursement ID",
 			"item": "Item",
 			"amount": "Amount",
 			"purchaser": "Purchaser",

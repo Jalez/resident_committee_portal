@@ -266,6 +266,9 @@
 		"reimbursement": {
 			"subject": "Erstattungsantrag",
 			"title": "Erstattungsantrag",
+			"greeting": "Hallo,",
+			"intro": "Bitte bearbeiten Sie den folgenden Erstattungsantrag:",
+			"id_label": "Erstattungs-ID",
 			"item": "Artikel",
 			"amount": "Betrag",
 			"purchaser": "Käufer",

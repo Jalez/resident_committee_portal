@@ -761,6 +761,9 @@
 		"reimbursement": {
 			"subject": "Ersättningsbegäran",
 			"title": "Ersättningsbegäran",
+			"greeting": "Hej,",
+			"intro": "Vänligen behandla följande ersättningsbegäran:",
+			"id_label": "Ersättnings-ID",
 			"item": "Vara",
 			"amount": "Belopp",
 			"purchaser": "Köpare",
