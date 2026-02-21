@@ -135,13 +135,13 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 				</AlertDialogContent>
 			</AlertDialog>
 
-			<div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60">
+			<div className="overflow-hidden rounded-lg border border-border bg-card">
 				{/* Header */}
-				<div className="space-y-2 border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/70">
-					<h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+				<div className="space-y-2 border-b border-border bg-muted px-4 py-3">
+					<h1 className="text-xl font-semibold text-foreground">
 						{message.subject || "(No subject)"}
 					</h1>
-					<div className="grid gap-1 text-sm text-gray-600 dark:text-gray-400">
+					<div className="grid gap-1 text-sm text-muted-foreground">
 						<div className="flex gap-2">
 							<span className="shrink-0 font-medium">{t("mail.from")}:</span>
 							<span>
@@ -174,7 +174,7 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 
 				{/* Body */}
 				<div
-					className="prose prose-sm dark:prose-invert max-w-none px-4 py-4 text-gray-900 dark:text-gray-100"
+					className="prose prose-sm dark:prose-invert max-w-none px-4 py-4 text-foreground"
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB (sent by us or fetched via IMAP)
 					dangerouslySetInnerHTML={{ __html: message.bodyHtml }}
 				/>

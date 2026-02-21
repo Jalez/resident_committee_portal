@@ -37,6 +37,8 @@ export default [
 		"api/entities/create-draft",
 		"routes/api/entities/create-draft/_index.tsx",
 	),
+	route("api/entities/link", "routes/api/entities/link/_index.tsx"),
+	route("api/entities/unlink", "routes/api/entities/unlink/_index.tsx"),
 	route(
 		"api/entities/smart-autofill",
 		"routes/api/entities/smart-autofill/_index.tsx",

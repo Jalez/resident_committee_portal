@@ -96,7 +96,7 @@ export function MailItem({
 				onClick={handleNavigate}
 				onKeyDown={handleKeyDown}
 				className={cn(
-					"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer",
+					"flex items-start gap-3 px-2 py-3 rounded-md hover:bg-muted transition-colors cursor-pointer",
 				)}
 			>
 				{selectable && (
@@ -113,21 +113,21 @@ export function MailItem({
 						/>
 					</button>
 				)}
-				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium">
+				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-medium">
 					{avatarLetter}
 				</div>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center justify-between gap-2">
-						<span className="truncate text-sm font-medium text-gray-900 dark:text-white">
+						<span className="truncate text-sm font-medium text-foreground">
 							{primaryText}
 							{threadCount != null && threadCount > 1 && (
-								<span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 px-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+								<span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-xs font-medium text-secondary-foreground">
 									{threadCount}
 								</span>
 							)}
 						</span>
 						<div className="flex items-center gap-1 shrink-0">
-							<span className="text-xs text-gray-500 dark:text-gray-400">
+							<span className="text-xs text-muted-foreground">
 								{date}
 							</span>
 							{onDelete && (
@@ -145,11 +145,11 @@ export function MailItem({
 							)}
 						</div>
 					</div>
-					<p className="truncate text-sm text-gray-600 dark:text-gray-300">
+					<p className="truncate text-sm text-muted-foreground">
 						{secondaryText}
 					</p>
 					{preview && (
-						<p className="truncate text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+						<p className="truncate text-sm text-muted-foreground mt-0.5">
 							{preview}
 						</p>
 					)}

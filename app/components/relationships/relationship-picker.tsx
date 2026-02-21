@@ -120,6 +120,8 @@ function RelationshipSectionComponent({
 	const revalidator = useRevalidator();
 	const fetcher = useFetcher<CreateDraftResponse>();
 	const importFetcher = useFetcher<ImportFromSourceResponse>();
+	const linkFetcher = useFetcher<{ success: boolean }>();
+	const unlinkFetcher = useFetcher<{ success: boolean }>();
 
 	const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
@@ -209,6 +211,19 @@ function RelationshipSectionComponent({
 		t,
 		clearRemovedId,
 	]);
+
+	// Revalidate after link/unlink API calls succeed
+	useEffect(() => {
+		if (linkFetcher.data?.success && linkFetcher.state === "idle") {
+			revalidator.revalidate();
+		}
+	}, [linkFetcher.data, linkFetcher.state, revalidator]);
+
+	useEffect(() => {
+		if (unlinkFetcher.data?.success && unlinkFetcher.state === "idle") {
+			revalidator.revalidate();
+		}
+	}, [unlinkFetcher.data, unlinkFetcher.state, revalidator]);
 
 	const config = ENTITY_REGISTRY[section.relationBType];
 	const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
@@ -309,6 +324,16 @@ function RelationshipSectionComponent({
 				);
 			}
 		} else {
+			const fd = new FormData();
+			fd.append("relationAType", relationAType);
+			fd.append("relationAId", relationAId);
+			fd.append("relationBType", section.relationBType);
+			fd.append("relationBId", id);
+			unlinkFetcher.submit(fd, {
+				method: "POST",
+				action: "/api/entities/unlink",
+			});
+
 			toast.success(
 				t("common.relationships.unlinked", {
 					defaultValue: "Item unlinked",
@@ -335,6 +360,17 @@ function RelationshipSectionComponent({
 			onSelectionChange={(id) => {
 				clearRemovedId(id);
 				onLink?.(section.relationBType, id);
+
+				const fd = new FormData();
+				fd.append("relationAType", relationAType);
+				fd.append("relationAId", relationAId);
+				fd.append("relationBType", section.relationBType);
+				fd.append("relationBId", id);
+				linkFetcher.submit(fd, {
+					method: "POST",
+					action: "/api/entities/link",
+				});
+
 				toast.success(
 					t("common.relationships.linked", {
 						defaultValue: "Item linked",

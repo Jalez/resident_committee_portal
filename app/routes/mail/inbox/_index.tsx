@@ -194,12 +194,12 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<div className="flex flex-col">
-			<div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
-				<h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+			<div className="mb-2 flex items-center justify-between border-b border-border pb-2">
+				<h2 className="text-lg font-semibold text-foreground">
 					{direction === "sent" ? t("mail.sent") : t("mail.inbox")}
 				</h2>
 				<div className="flex items-center gap-4">
-					<span className="text-xs text-gray-500 dark:text-gray-400">
+					<span className="text-xs text-muted-foreground">
 						{t("mail.last_refreshed", {
 							defaultValue: "Updated: {{time}}",
 							time: lastRefreshed.toLocaleTimeString([], {
@@ -229,7 +229,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 				</div>
 			</div>
 
-			<div className="divide-y divide-gray-200 dark:divide-gray-700">
+			<div className="divide-y divide-border">
 				<Suspense
 					fallback={
 						<div className="py-12 flex justify-center">
@@ -248,7 +248,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 
 							if (threads.length === 0) {
 								return (
-									<div className="py-12 text-center text-gray-500 dark:text-gray-400">
+									<div className="py-12 text-center text-muted-foreground">
 										<Mail className="mx-auto size-12 opacity-50" />
 										<p className="mt-2">{t("mail.no_messages")}</p>
 									</div>
