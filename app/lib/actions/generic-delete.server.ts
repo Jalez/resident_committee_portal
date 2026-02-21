@@ -11,6 +11,75 @@ import {
 } from "~/lib/auth.server";
 import { ENTITY_SCHEMAS } from "~/lib/entity-schemas";
 
+function getErrorChain(error: unknown): Array<Record<string, unknown>> {
+	const chain: Array<Record<string, unknown>> = [];
+	const seen = new Set<unknown>();
+	let current: unknown = error;
+
+	while (current && typeof current === "object" && !seen.has(current)) {
+		seen.add(current);
+		chain.push(current as Record<string, unknown>);
+		current = (current as { cause?: unknown }).cause;
+	}
+
+	return chain;
+}
+
+function toSafeDeleteError(entityType: RelationshipEntityType, error: unknown) {
+	const chain = getErrorChain(error);
+	const code = chain.find((e) => typeof e.code === "string")?.code as
+		| string
+		| undefined;
+	const dependencyDetails = Array.from(
+		new Set(
+			chain
+				.flatMap((e) => {
+					const details: string[] = [];
+					if (typeof e.detail === "string" && e.detail.trim()) {
+						details.push(e.detail.trim());
+					}
+					if (typeof e.table === "string" && e.table.trim()) {
+						details.push(`Referenced table: ${e.table.trim()}`);
+					}
+					if (typeof e.constraint === "string" && e.constraint.trim()) {
+						details.push(`Constraint: ${e.constraint.trim()}`);
+					}
+					if (typeof e.message === "string") {
+						const match = e.message.match(/referenced from table\s+"([^"]+)"/i);
+						if (match?.[1]) {
+							details.push(`Referenced table: ${match[1]}`);
+						}
+					}
+					return details;
+				})
+				.filter(Boolean),
+		),
+	);
+	const combinedMessage = chain
+		.map((e) => (typeof e.message === "string" ? e.message : ""))
+		.filter(Boolean)
+		.join("\n")
+		.toLowerCase();
+
+	const isForeignKeyViolation =
+		code === "23503" || combinedMessage.includes("foreign key");
+
+	if (isForeignKeyViolation) {
+		return {
+			status: 400,
+			error:
+				`Cannot delete this ${entityType} because other records still reference it. Remove dependent links or records first.`,
+			blockingDependencies: dependencyDetails,
+		};
+	}
+
+	return {
+		status: 500,
+		error: "Delete failed due to an unexpected server error.",
+		blockingDependencies: [],
+	};
+}
+
 /**
  * Options for creating a generic delete action
  */
@@ -141,15 +210,9 @@ export function createGenericDeleteAction(
 				entityId,
 			);
 			if (relationships.length > 0 && !options.autoUnlinkAllRelationships) {
-				const relationRowsText = relationships
-					.map(
-						(rel) =>
-							`${rel.id}: ${rel.relationAType}:${rel.relationId} -> ${rel.relationBType}:${rel.relationBId}`,
-					)
-					.join("\n");
 				return new Response(
 					JSON.stringify({
-						error: `Cannot delete a linked item. Remove all links first.\n${relationRowsText}`,
+						error: "Cannot delete a linked item. Remove all links first.",
 						blockingRelationships: relationships,
 					}),
 					{
@@ -191,12 +254,14 @@ export function createGenericDeleteAction(
 			return Response.json({ success: true });
 		} catch (error) {
 			console.error(`[api.${entityType}.delete]`, error);
+			const safeError = toSafeDeleteError(entityType, error);
 			return new Response(
 				JSON.stringify({
-					error: error instanceof Error ? error.message : "Delete failed",
+					error: safeError.error,
+					blockingDependencies: safeError.blockingDependencies,
 				}),
 				{
-					status: 500,
+					status: safeError.status,
 					headers: { "Content-Type": "application/json" },
 				},
 			);

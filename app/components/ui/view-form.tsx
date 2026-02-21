@@ -108,9 +108,17 @@ export function ViewForm({
 							)
 							.join("\n")
 					: "";
-				const message = relationRows
-					? `${data.error}\n${relationRows}`
-					: (data.error as string);
+				const dependencyRows = Array.isArray(data.blockingDependencies)
+					? data.blockingDependencies.join("\n")
+					: "";
+				const messageParts = [data.error as string];
+				if (relationRows) {
+					messageParts.push(relationRows);
+				}
+				if (dependencyRows) {
+					messageParts.push(dependencyRows);
+				}
+				const message = messageParts.filter(Boolean).join("\n");
 				toast.error(message);
 			}
 		}
