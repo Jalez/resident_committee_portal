@@ -155,7 +155,6 @@ export default [
 	route("news/:newsId", "routes/news/$newsId/_index.tsx"),
 	route("news/:newsId/edit", "routes/news/$newsId/edit/_index.tsx"),
 	route("polls", "routes/polls/_index.tsx"),
-	route("polls/:pollId", "routes/polls/$pollId/_index.tsx"),
 	route("polls/:pollId/delete", "routes/polls/$pollId/delete/_index.tsx"),
 	route("polls/:pollId/edit", "routes/polls/$pollId/edit/_index.tsx"),
 	route("polls/analytics", "routes/polls/analytics/_index.tsx"),
@@ -178,14 +177,9 @@ export default [
 	route("social", "routes/social/_index.tsx"),
 	route("social/new", "routes/social/new/_index.tsx"),
 	route("submissions", "routes/submissions/_index.tsx"),
-	route("submissions/:submissionId", "routes/submissions/$submissionId/_index.tsx"),
 	route(
 		"submissions/:submissionId/delete",
 		"routes/submissions/$submissionId/delete/_index.tsx",
-	),
-	route(
-		"submissions/:submissionId/edit",
-		"routes/submissions/$submissionId/edit/_index.tsx",
 	),
 	route("treasury", "routes/treasury/_index.tsx"),
 	route("treasury/breakdown", "routes/treasury/breakdown/_index.tsx"),

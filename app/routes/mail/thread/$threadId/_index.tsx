@@ -113,16 +113,43 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	}
 
 	// Use the latest message as the main anchor for relationships in this thread
-	const mainMessage = messages[messages.length - 1];
+	let mainMessage = messages[messages.length - 1];
+	const relationshipTypes: RelationshipEntityType[] = [
+		"reimbursement",
+		"transaction",
+		"event",
+		"minute",
+	];
 
 	// Load relationships
-	const relationships = await loadRelationshipsForEntity(
+	let relationships = await loadRelationshipsForEntity(
 		db,
 		"mail",
 		mainMessage.id,
-		["reimbursement", "transaction", "event", "minute"],
+		relationshipTypes,
 		{ userPermissions: currentUser.permissions },
 	);
+
+	const hasLinkedRelationships = (value: typeof relationships) =>
+		relationshipTypes.some((type) => (value as any)[type]?.linked?.length > 0);
+
+	if (!hasLinkedRelationships(relationships)) {
+		for (let i = messages.length - 2; i >= 0; i--) {
+			const candidate = messages[i];
+			const candidateRelationships = await loadRelationshipsForEntity(
+				db,
+				"mail",
+				candidate.id,
+				relationshipTypes,
+				{ userPermissions: currentUser.permissions },
+			);
+			if (hasLinkedRelationships(candidateRelationships)) {
+				mainMessage = candidate;
+				relationships = candidateRelationships;
+				break;
+			}
+		}
+	}
 
 	// Get context
 	const contextValues = await getRelationshipContext(db, "mail", mainMessage.id);
@@ -201,13 +228,13 @@ export default function MailThread({
 	return (
 		<div className="flex flex-col gap-4">
 			{/* Thread header */}
-			<div className="flex items-center gap-2 border-b border-gray-200 pb-3 dark:border-gray-700">
+			<div className="border-border flex items-center gap-2 border-b pb-3">
 				<Button variant="ghost" size="icon" asChild className="shrink-0">
 					<Link to="/mail">
 						<ArrowLeft className="size-4" />
 					</Link>
 				</Button>
-				<h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+				<h1 className="text-foreground text-xl font-semibold">
 					{threadSubject}
 				</h1>
 				<span className="text-muted-foreground ml-2 text-sm">
@@ -233,49 +260,49 @@ export default function MailThread({
 					return (
 						<div
 							key={msg.id}
-							className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60"
+							className="border-border bg-card overflow-hidden rounded-lg border"
 						>
 							{/* Message header (always visible) */}
 							<button
 								type="button"
 								onClick={() => toggleExpand(msg.id)}
-								className="flex w-full items-center justify-between gap-2 bg-gray-100 px-4 py-3 text-left hover:bg-gray-200/70 dark:bg-gray-800/70 dark:hover:bg-gray-800/90"
+								className="bg-muted hover:bg-accent flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
 							>
 								<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 									<div className="flex items-center gap-2">
-										<span className="truncate text-sm font-medium text-gray-900 dark:text-white">
+										<span className="text-foreground truncate text-sm font-medium">
 											{msg.fromName || msg.fromAddress}
 										</span>
 										{msg.direction === "sent" && (
-											<span className="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+											<span className="bg-secondary text-secondary-foreground shrink-0 rounded px-1.5 py-0.5 text-xs">
 												{t("mail.sent")}
 											</span>
 										)}
 									</div>
 									{!isExpanded && (
-										<p className="truncate text-xs text-gray-500 dark:text-gray-400">
+										<p className="text-muted-foreground truncate text-xs">
 											{msg.bodyText?.slice(0, 100) ||
 												msg.bodyHtml?.replace(/<[^>]+>/g, "").slice(0, 100)}
 										</p>
 									)}
 								</div>
 								<div className="flex shrink-0 items-center gap-2">
-									<span className="text-xs text-gray-500 dark:text-gray-400">
+									<span className="text-muted-foreground text-xs">
 										{dateStr}
 									</span>
 									{isExpanded ? (
-										<ChevronUp className="size-4 text-gray-400" />
+										<ChevronUp className="text-muted-foreground size-4" />
 									) : (
-										<ChevronDown className="size-4 text-gray-400" />
+										<ChevronDown className="text-muted-foreground size-4" />
 									)}
 								</div>
 							</button>
 
 							{/* Expanded content */}
 							{isExpanded && (
-								<div className="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+								<div className="border-border border-t px-4 py-3">
 									{/* Full headers */}
-									<div className="mb-3 grid gap-1 text-sm text-gray-600 dark:text-gray-400">
+									<div className="text-muted-foreground mb-3 grid gap-1 text-sm">
 										<div className="flex gap-2">
 											<span className="shrink-0 font-medium">
 												{t("mail.from")}:
@@ -305,7 +332,7 @@ export default function MailThread({
 									</div>
 
 									{/* Body */}
-									<div className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
+									<div className="prose prose-sm dark:prose-invert text-foreground max-w-none">
 										<div
 											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
 											className="[&_*]:!bg-transparent [&_*]:text-inherit"
@@ -317,7 +344,7 @@ export default function MailThread({
 									</div>
 
 									{/* Actions */}
-									<div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+									<div className="border-border mt-4 flex items-center gap-2 border-t pt-3">
 										<Button variant="outline" size="sm" asChild>
 											<Link to={`/mail/compose?replyTo=${msg.id}`}>
 												<Reply className="mr-1 size-4" />
@@ -360,8 +387,8 @@ export default function MailThread({
 			</div>
 
 			{/* Relationships Section */}
-			<div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-				<h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+			<div className="border-border bg-card mt-8 rounded-2xl border p-6 shadow-sm">
+				<h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-semibold">
 					<span className="material-symbols-outlined text-primary">link</span>
 					{t("common.sections.relationships", {
 						defaultValue: "Linked Items",

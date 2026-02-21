@@ -24,6 +24,9 @@ function postgresMockPlugin(): Plugin {
 }
 
 export default defineConfig({
+	build: {
+		manifest: true,
+	},
 	plugins: [
 		tailwindcss(),
 		reactRouter(),

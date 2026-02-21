@@ -12,17 +12,11 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import { renderCommitteeEmail } from "~/lib/email-templates/committee-email";
 import {
 	type CommitteeMailRecipient,
 	sendCommitteeEmail,
 } from "~/lib/mail-nodemailer.server";
 import { maskBankAccount } from "~/lib/mask-bank-account";
-import {
-	buildQuotedReplyHtml,
-	buildReferencesForReply,
-	computeThreadId,
-} from "~/lib/mail-threading.server";
 import {
 	formatMissingRelationshipsMessage,
 	validateRequiredRelationships,
@@ -163,6 +157,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export async function action({ request, params }: Route.ActionArgs) {
 	const { getDatabase } = await import("~/db/server.server");
+	const { buildReferencesForReply, computeThreadId } = await import(
+		"~/lib/mail-threading.server"
+	);
 	const db = getDatabase();
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;
@@ -366,14 +363,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 					};
 				}
 
-				let html: string;
-				try {
-					html = await renderCommitteeEmail({ bodyHtml, quotedReply });
-				} catch {
-					html = quotedReply
-						? `${bodyHtml}${buildQuotedReplyHtml(quotedReply.date, quotedReply.fromName, quotedReply.fromEmail, quotedReply.bodyHtml)}`
-						: bodyHtml;
-				}
+				const html = quotedReply
+					? `${bodyHtml}<br><br>On ${quotedReply.date}, ${quotedReply.fromName || quotedReply.fromEmail} &lt;${quotedReply.fromEmail}&gt; wrote:<br>${quotedReply.bodyHtml}`
+					: bodyHtml;
 
 				const result = await sendCommitteeEmail({
 					to: toRecipients.map((r) => ({ email: r.email, name: r.name })),

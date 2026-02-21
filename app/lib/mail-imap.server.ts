@@ -289,6 +289,33 @@ export async function syncCommitteeMail(
 					const date = envelope?.date || new Date();
 					const threadId = computeThreadId(messageId, inReplyTo, references);
 
+					const inheritedThreadRelations = new Map<
+						string,
+						{ type: string; id: string }
+					>();
+					if (threadId) {
+						const threadMessages = await db.getCommitteeMailMessagesByThreadId(threadId);
+						for (const threadMessage of threadMessages) {
+							const rels = await db.getEntityRelationships("mail", threadMessage.id);
+							for (const rel of rels) {
+								const isMailA =
+									rel.relationAType === "mail" && rel.relationId === threadMessage.id;
+								const isMailB =
+									rel.relationBType === "mail" && rel.relationBId === threadMessage.id;
+								if (!isMailA && !isMailB) continue;
+
+								const relatedType = isMailA ? rel.relationBType : rel.relationAType;
+								const relatedId = isMailA ? rel.relationBId : rel.relationId;
+								if (!relatedId || relatedType === "mail") continue;
+
+								inheritedThreadRelations.set(`${relatedType}:${relatedId}`, {
+									type: relatedType,
+									id: relatedId,
+								});
+							}
+						}
+					}
+
 					let purchaseId = findReimbursementPurchaseId({
 						to: folder.direction === "inbox" ? envelope?.to : undefined,
 						subject,
@@ -298,17 +325,11 @@ export async function syncCommitteeMail(
 
 					// Look up if this thread has been manually linked to a reimbursement
 					if (!purchaseId && threadId) {
-						const rels = await db.getEntityRelationships("mail", threadId);
-						const reimbRel = rels.find(
-							(r) =>
-								r.relationBType === "reimbursement" ||
-								r.relationAType === "reimbursement",
+						const reimbRel = Array.from(inheritedThreadRelations.values()).find(
+							(r) => r.type === "reimbursement",
 						);
 						if (reimbRel) {
-							purchaseId =
-								reimbRel.relationBType === "reimbursement"
-									? reimbRel.relationBId
-									: reimbRel.relationId;
+							purchaseId = reimbRel.id;
 						}
 					}
 
@@ -317,7 +338,7 @@ export async function syncCommitteeMail(
 						await applyReimbursementReply(db, purchaseId, content);
 					}
 
-					await db.insertCommitteeMailMessage({
+					const inserted = await db.insertCommitteeMailMessage({
 						direction: folder.direction,
 						fromAddress,
 						fromName,
@@ -333,6 +354,24 @@ export async function syncCommitteeMail(
 						referencesJson: references ? JSON.stringify(references) : null,
 						threadId,
 					});
+
+					for (const relation of inheritedThreadRelations.values()) {
+						const exists = await db.entityRelationshipExists(
+							"mail",
+							inserted.id,
+							relation.type as any,
+							relation.id,
+						);
+						if (!exists) {
+							await db.createEntityRelationship({
+								relationAType: "mail",
+								relationId: inserted.id,
+								relationBType: relation.type as any,
+								relationBId: relation.id,
+								createdBy: null,
+							});
+						}
+					}
 					stored++;
 				}
 			} finally {

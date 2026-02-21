@@ -43,6 +43,35 @@ export async function loader({ request }: Route.LoaderArgs) {
 			undefined,
 			user.permissions,
 		);
+
+		for (const thread of threads) {
+			const latestId = thread.latestMessage.id;
+			const latestRelations = relationsMap.get(latestId) || [];
+			if (latestRelations.length > 0) continue;
+
+			const threadMessages = await db.getCommitteeMailMessagesByThreadId(
+				thread.threadId,
+			);
+			const threadMessageIds = threadMessages.map((m) => m.id);
+			if (threadMessageIds.length === 0) continue;
+
+			const threadRelations = await loadRelationsMapForEntities(
+				db,
+				"mail",
+				threadMessageIds,
+				undefined,
+				user.permissions,
+			);
+
+			for (const message of [...threadMessages].reverse()) {
+				const fallbackRelations = threadRelations.get(message.id) || [];
+				if (fallbackRelations.length > 0) {
+					relationsMap.set(latestId, fallbackRelations);
+					break;
+				}
+			}
+		}
+
 		const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
 		for (const [id, relations] of relationsMap) {
 			serializedRelationsMap[id] = relations;

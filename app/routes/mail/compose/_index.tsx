@@ -52,25 +52,31 @@ export async function loader({ request }: Route.LoaderArgs) {
             for (const msg of threadMessages) {
                 const relations = await db.getEntityRelationships("mail", msg.id);
                 for (const rel of relations) {
-                    if (rel.relationAType === "mail" && rel.relationId === msg.id) {
-                        const key = `${rel.relationBType}:${rel.relationBId}`;
-                        if (!seenRelations.has(key)) {
-                            seenRelations.add(key);
-                            const exists = await db.entityRelationshipExists(
-                                "mail",
-                                draft.id,
-                                rel.relationBType as any,
-                                rel.relationBId,
-                            );
-                            if (!exists) {
-                                await db.createEntityRelationship({
-                                    relationAType: "mail",
-                                    relationId: draft.id,
-                                    relationBType: rel.relationBType as any,
-                                    relationBId: rel.relationBId,
-                                    createdBy: null,
-                                });
-                            }
+                    const isMailA = rel.relationAType === "mail" && rel.relationId === msg.id;
+                    const isMailB = rel.relationBType === "mail" && rel.relationBId === msg.id;
+                    if (!isMailA && !isMailB) continue;
+
+                    const relatedType = isMailA ? rel.relationBType : rel.relationAType;
+                    const relatedId = isMailA ? rel.relationBId : rel.relationId;
+                    if (relatedType === "mail") continue;
+
+                    const key = `${relatedType}:${relatedId}`;
+                    if (!seenRelations.has(key)) {
+                        seenRelations.add(key);
+                        const exists = await db.entityRelationshipExists(
+                            "mail",
+                            draft.id,
+                            relatedType as any,
+                            relatedId,
+                        );
+                        if (!exists) {
+                            await db.createEntityRelationship({
+                                relationAType: "mail",
+                                relationId: draft.id,
+                                relationBType: relatedType as any,
+                                relationBId: relatedId,
+                                createdBy: null,
+                            });
                         }
                     }
                 }

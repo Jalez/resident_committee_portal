@@ -5,9 +5,8 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { EditForm, type InputFieldConfig } from "~/components/ui/edit-form";
 import { createEditAction, createEditLoader } from "~/lib/edit-handlers.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
-import type { Route } from "./+types/_index";
 
-export function meta({ data }: Route.MetaArgs) {
+export function meta({ data }: { data?: unknown }) {
 	return [
 		{
 			title: `${(data as any)?.siteConfig?.name || "Portal"} - ${(data as any)?.submission?.name || "Edit Submission"}`,
@@ -16,7 +15,13 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
-export async function loader({ request, params }: Route.LoaderArgs) {
+export async function loader({
+	request,
+	params,
+}: {
+	request: Request;
+	params: Record<string, string | undefined>;
+}) {
 	return createEditLoader({
 		entityType: "submission",
 		permission: "submissions:write",
@@ -35,7 +40,13 @@ const submissionSchema = z.object({
 	status: z.string().min(1),
 });
 
-export async function action({ request, params }: Route.ActionArgs) {
+export async function action({
+	request,
+	params,
+}: {
+	request: Request;
+	params: Record<string, string | undefined>;
+}) {
 	return createEditAction({
 		entityType: "submission",
 		permission: "submissions:write",
@@ -57,7 +68,11 @@ export async function action({ request, params }: Route.ActionArgs) {
 	});
 }
 
-export default function EditSubmission({ loaderData }: Route.ComponentProps) {
+export default function EditSubmission({
+	loaderData,
+}: {
+	loaderData: any;
+}) {
 	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const { submission, returnUrl, relationships } = loaderData as any;

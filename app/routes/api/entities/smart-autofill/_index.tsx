@@ -114,6 +114,21 @@ function toNonEmptyString(value: unknown): string {
 	return typeof value === "string" ? value.trim() : "";
 }
 
+function stripKnownSignature(body: string): string {
+	const trimmed = body.trim();
+	if (!trimmed) return "";
+
+	const normalized = trimmed.replace(/\r\n/g, "\n");
+	const signatureOnlyPattern =
+		/^Best regards,\s*\n+[\s\S]*$/i;
+
+	if (signatureOnlyPattern.test(normalized)) {
+		return "";
+	}
+
+	return trimmed;
+}
+
 function getRelatedEntityFromRelationship(
 	entityType: RelationshipEntityType,
 	entityId: string,
@@ -339,7 +354,8 @@ async function getMailAutofillSuggestions(
 	const isPreviouslyAutofilledTemplate =
 		currentBody.includes("Please process the following reimbursement request:") &&
 		currentBody.includes("Reimbursement ID:");
-	if (!currentBody || isPreviouslyAutofilledTemplate) {
+	const currentBodyWithoutSignature = stripKnownSignature(currentBody);
+	if (!currentBodyWithoutSignature || isPreviouslyAutofilledTemplate) {
 		suggestions.body = [
 			"Hello,",
 			"",

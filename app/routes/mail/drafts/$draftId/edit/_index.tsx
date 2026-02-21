@@ -29,18 +29,12 @@ import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
 } from "~/lib/email.server";
-import { renderCommitteeEmail } from "~/lib/email-templates/committee-email";
 import {
 	type CommitteeMailRecipient,
 	isCommitteeMailConfigured,
 	sendCommitteeEmail,
 } from "~/lib/mail-nodemailer.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
-import {
-	buildQuotedReplyHtml,
-	buildReferencesForReply,
-	computeThreadId,
-} from "~/lib/mail-threading.server";
 import { addForwardPrefix, addReplyPrefix } from "~/lib/mail-utils";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import type { Route } from "./+types/_index";
@@ -223,6 +217,9 @@ export async function action({ request }: Route.ActionArgs) {
 		request,
 		"committee:email",
 		getDatabase,
+	);
+	const { buildReferencesForReply, computeThreadId } = await import(
+		"~/lib/mail-threading.server"
 	);
 	const formData = await request.formData();
 	const intent = formData.get("_action") as string;
@@ -516,18 +513,9 @@ export async function action({ request }: Route.ActionArgs) {
 			};
 		}
 
-		let html: string;
-		try {
-			html = await renderCommitteeEmail({
-				bodyHtml,
-				quotedReply,
-			});
-		} catch {
-			// Fallback to simple HTML if React Email rendering fails
-			html = quotedReply
-				? `${bodyHtml}${buildQuotedReplyHtml(quotedReply.date, quotedReply.fromName, quotedReply.fromEmail, quotedReply.bodyHtml)}`
-				: bodyHtml;
-		}
+		const html = quotedReply
+			? `${bodyHtml}<br><br>On ${quotedReply.date}, ${quotedReply.fromName || quotedReply.fromEmail} &lt;${quotedReply.fromEmail}&gt; wrote:<br>${quotedReply.bodyHtml}`
+			: bodyHtml;
 
 		const result = await sendCommitteeEmail({
 			to,
