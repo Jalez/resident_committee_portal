@@ -251,4 +251,18 @@ export const ENTITY_SCHEMAS: Record<RelationshipEntityType, EntitySchema> = {
 			body: (formData.get("body") as string) ?? null,
 		}),
 	},
+	submission: {
+		...ENTITY_DEFINITIONS.submission,
+		fetchById: (db, id) => db.getSubmissionById(id),
+		updateItem: (db, id, data) => db.updateSubmission(id, data),
+		deleteItem: (db, id) => db.deleteSubmission(id),
+		extractFields: (formData) => ({
+			name: formData.get("name") as string,
+			email: formData.get("email") as string,
+			apartmentNumber: (formData.get("apartmentNumber") as string) || null,
+			type: formData.get("type") as string,
+			message: formData.get("message") as string,
+			status: formData.get("status") as string,
+		}),
+	},
 };

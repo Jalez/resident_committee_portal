@@ -18,6 +18,7 @@ const ALL_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
 	"social",
 	"event",
 	"mail",
+	"submission",
 ];
 
 export interface ViewLoaderConfig<T> {

@@ -31,6 +31,7 @@ const ALL_RELATION_TYPES: RelationshipEntityType[] = [
 	"social",
 	"mail",
 	"event",
+	"submission",
 ];
 
 function getVisibleRelationTypes(

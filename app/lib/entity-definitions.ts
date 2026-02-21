@@ -346,6 +346,37 @@ export const ENTITY_DEFINITIONS: Record<
 			transaction: {},
 		},
 	},
+	submission: {
+		type: "submission",
+		permissionPrefix: "submissions",
+		requiredFields: ["name", "message"],
+		defaultRedirect: "/submissions",
+		fields: {
+			name: { type: "text", required: true },
+			email: { type: "text", required: true },
+			apartmentNumber: { type: "text" },
+			type: {
+				type: "select",
+				options: [
+					{ value: "committee", label: "Committee" },
+					{ value: "events", label: "Events" },
+					{ value: "purchases", label: "Purchases" },
+					{ value: "questions", label: "Questions" },
+				],
+			},
+			message: { type: "textarea", required: true },
+			status: {
+				type: "select",
+				options: [
+					{ value: "Uusi / New", label: "New" },
+					{ value: "Käsittelyssä / In Progress", label: "In Progress" },
+					{ value: "Hyväksytty / Approved", label: "Approved" },
+					{ value: "Hylätty / Rejected", label: "Rejected" },
+					{ value: "Valmis / Done", label: "Done" },
+				],
+			},
+		},
+	},
 	social: {} as any,
 	mail: {
 		type: "mail",

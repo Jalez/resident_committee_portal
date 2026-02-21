@@ -31,6 +31,7 @@ const VALID_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
 	"social",
 	"mail",
 	"event",
+	"submission",
 ];
 
 const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
@@ -47,6 +48,7 @@ const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
 	socials: "social",
 	mails: "mail",
 	events: "event",
+	submissions: "submission",
 };
 
 function normalizeRelationshipType(
@@ -191,6 +193,8 @@ async function fetchEntityById(
 			);
 		case "event":
 			return db.getEventById(id);
+		case "submission":
+			return db.getSubmissionById(id);
 		default:
 			return null;
 	}
@@ -246,6 +250,9 @@ async function fetchAvailableEntities(
 			break;
 		case "event":
 			allEntities = await db.getEvents();
+			break;
+		case "submission":
+			allEntities = await db.getSubmissions();
 			break;
 	}
 

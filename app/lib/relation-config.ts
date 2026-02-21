@@ -214,6 +214,22 @@ export const RELATION_CONFIG: Record<
 		getName: (entity) => getEntityName(entity, "title"),
 		getStatus: getEntityStatus,
 	},
+	submission: {
+		icon: ENTITY_REGISTRY.submission.icon,
+		route: "/submissions",
+		labelKey: "common.relation_types.submission",
+		statusVariantMap: {},
+		getName: (entity) => getEntityName(entity, "name"),
+		getStatus: (entity) => {
+			if (!entity || typeof entity !== "object") return null;
+			const record = entity as Record<string, unknown>;
+			const status = record.status;
+			if (typeof status !== "string") return null;
+			// Extract English part for variant matching
+			const parts = status.split(" / ");
+			return parts[1]?.toLowerCase() || parts[0]?.toLowerCase() || null;
+		},
+	},
 };
 
 export function getStatusVariant(
