@@ -10,7 +10,8 @@ export type RelationshipEntityType =
 	| "poll"
 	| "social"
 	| "event"
-	| "mail";
+	| "mail"
+	| "submission";
 
 export type InventoryItemStatus = "draft" | "active" | "removed" | "legacy";
 export type RemovalReason = "broken" | "used_up" | "lost" | "sold" | "other";

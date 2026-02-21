@@ -802,6 +802,18 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result[0];
 	}
 
+	async updateSubmission(
+		id: string,
+		data: Partial<Omit<Submission, "id" | "createdAt">>,
+	): Promise<Submission | null> {
+		const result = await this.db
+			.update(submissions)
+			.set({ ...data, updatedAt: new Date() })
+			.where(eq(submissions.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
 	async updateSubmissionStatus(
 		id: string,
 		status: SubmissionStatus,

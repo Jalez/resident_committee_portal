@@ -139,6 +139,10 @@ export interface DatabaseAdapter {
 	getSubmissions(): Promise<Submission[]>;
 	getSubmissionById(id: string): Promise<Submission | null>;
 	createSubmission(submission: NewSubmission): Promise<Submission>;
+	updateSubmission(
+		id: string,
+		data: Partial<Omit<Submission, "id" | "createdAt">>,
+	): Promise<Submission | null>;
 	updateSubmissionStatus(
 		id: string,
 		status: SubmissionStatus,
