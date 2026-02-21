@@ -10,7 +10,6 @@ export interface UploadResult {
 
 export interface UploadOptions {
 	access: "public";
-	addRandomSuffix?: boolean;
 }
 
 export interface MinuteStorageAdapter {

@@ -15,6 +15,42 @@ type ListedBlob = {
 	uploadedAt?: string | Date;
 };
 
+async function listBlobsWithPrefix(prefix: string): Promise<Set<string>> {
+	const pathnames = new Set<string>();
+	let cursor: string | undefined;
+	do {
+		const response = await list({ prefix, cursor, limit: 100 });
+		for (const blob of response.blobs) {
+			pathnames.add(blob.pathname);
+		}
+		cursor = response.cursor || undefined;
+	} while (cursor);
+	return pathnames;
+}
+
+async function deduplicatePathname(pathname: string): Promise<string> {
+	const extIndex = pathname.lastIndexOf(".");
+	const base = extIndex > 0 ? pathname.slice(0, extIndex) : pathname;
+	const ext = extIndex > 0 ? pathname.slice(extIndex) : "";
+
+	// List all blobs sharing the same base name prefix to check for conflicts
+	const existing = await listBlobsWithPrefix(base);
+
+	if (!existing.has(pathname)) {
+		return pathname;
+	}
+
+	for (let i = 1; i <= 100; i++) {
+		const candidate = `${base}(${i})${ext}`;
+		if (!existing.has(candidate)) {
+			return candidate;
+		}
+	}
+
+	// Fallback: use timestamp
+	return `${base}(${Date.now()})${ext}`;
+}
+
 function normalizeUploadedAt(uploadedAt?: string | Date): string {
 	if (!uploadedAt) {
 		return new Date().toISOString();
@@ -133,11 +169,12 @@ export class VercelBlobReceiptStorage implements ReceiptStorageAdapter {
 	async uploadFile(
 		pathname: string,
 		file: File | Buffer,
-		options?: UploadOptions,
+		_options?: UploadOptions,
 	): Promise<UploadResult> {
-		const blob = await put(pathname, file, {
+		const finalPathname = await deduplicatePathname(pathname);
+		const blob = await put(finalPathname, file, {
 			access: "public",
-			addRandomSuffix: options?.addRandomSuffix ?? true,
+			addRandomSuffix: false,
 		});
 
 		return {

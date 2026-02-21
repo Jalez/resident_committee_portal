@@ -18,9 +18,11 @@ export function buildMinuteFilename(
 ): string {
 	const dateStamp = date.toISOString().split("T")[0];
 	const ext = originalName.split(".").pop() || "pdf";
-	const safeDescription =
-		sanitizeMinuteDescription(description || "minutes") || "minutes";
-	return `${dateStamp}_minutes_${safeDescription}.${ext}`;
+	const safeDescription = sanitizeMinuteDescription(description || "");
+	if (safeDescription) {
+		return `${dateStamp}_${safeDescription}.${ext}`;
+	}
+	return `${dateStamp}_minutes.${ext}`;
 }
 
 export function buildMinutePath(
@@ -31,7 +33,7 @@ export function buildMinutePath(
 ): string {
 	const filename = buildMinuteFilename(
 		originalName,
-		description || "minutes",
+		description || "",
 		date,
 	);
 	return `${getMinutesPrefix()}${year}/${filename}`;

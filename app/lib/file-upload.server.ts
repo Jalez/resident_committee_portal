@@ -57,7 +57,7 @@ export function buildEntityPath(
 		case "receipt":
 			return buildReceiptPath(year, filename, description || "kuitti", date);
 		case "minute":
-			return buildMinutePath(year, filename);
+			return buildMinutePath(year, filename, description, date);
 		case "avatar":
 			throw new Error("Avatar paths should be built directly with userId");
 		default:
@@ -81,8 +81,11 @@ export async function handleFileUpload(options: {
 	entity: EntityWithFile;
 	name?: string;
 	year?: string;
+	customFileName?: string;
+	date?: Date;
 }): Promise<FileUploadResult | FileUploadError> {
-	const { formData, entityType, entity, name, year } = options;
+	const { formData, entityType, entity, name, year, customFileName, date } =
+		options;
 
 	const file = formData.get("file") as File | null;
 	const tempUrl = formData.get("tempUrl") as string | null;
@@ -117,11 +120,29 @@ export async function handleFileUpload(options: {
 			return { error: "storage_not_available" };
 		}
 
-		const pathname = buildEntityPath(entityType, currentYear, file.name, nextName || "file");
+		let pathname: string;
+		if (customFileName?.trim()) {
+			// User provided a custom filename — sanitize and use it with proper extension
+			const safeName = customFileName
+				.trim()
+				.replace(/[^a-zA-Z0-9._-]/g, "_")
+				.replace(/_+/g, "_")
+				.replace(/^_+|_+$/g, "");
+			const prefix = getEntityPrefix(entityType);
+			const hasExtension = safeName.includes(".");
+			pathname = `${prefix}${currentYear}/${hasExtension ? safeName : `${safeName}${ext}`}`;
+		} else {
+			pathname = buildEntityPath(
+				entityType,
+				currentYear,
+				file.name,
+				nextName || "file",
+				date,
+			);
+		}
 
 		const uploadResult = await storage.uploadFile(pathname, file, {
 			access: "public",
-			addRandomSuffix: true,
 		});
 		nextUrl = uploadResult.url;
 		nextPathname = uploadResult.pathname;
@@ -200,7 +221,6 @@ export async function uploadTempFile(
 	try {
 		const result = await storage.uploadFile(pathname, file, {
 			access: "public",
-			addRandomSuffix: true,
 		});
 
 		return {

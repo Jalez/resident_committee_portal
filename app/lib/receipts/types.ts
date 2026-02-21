@@ -15,7 +15,6 @@ export interface ReceiptsByYear {
 }
 
 export interface UploadOptions {
-	addRandomSuffix?: boolean;
 	access?: "public" | "private";
 }
 

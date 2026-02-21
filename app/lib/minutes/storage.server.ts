@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { del, list, put } from "@vercel/blob";
@@ -8,6 +9,40 @@ import type {
 } from "./types";
 import { getMinutesPrefix } from "./utils";
 
+async function listBlobsWithPrefix(prefix: string): Promise<Set<string>> {
+	const pathnames = new Set<string>();
+	let cursor: string | undefined;
+	do {
+		const response = await list({ prefix, cursor, limit: 100 });
+		for (const blob of response.blobs) {
+			pathnames.add(blob.pathname);
+		}
+		cursor = response.cursor || undefined;
+	} while (cursor);
+	return pathnames;
+}
+
+async function deduplicateBlobPathname(pathname: string): Promise<string> {
+	const extIndex = pathname.lastIndexOf(".");
+	const base = extIndex > 0 ? pathname.slice(0, extIndex) : pathname;
+	const ext = extIndex > 0 ? pathname.slice(extIndex) : "";
+
+	const existing = await listBlobsWithPrefix(base);
+
+	if (!existing.has(pathname)) {
+		return pathname;
+	}
+
+	for (let i = 1; i <= 100; i++) {
+		const candidate = `${base}(${i})${ext}`;
+		if (!existing.has(candidate)) {
+			return candidate;
+		}
+	}
+
+	return `${base}(${Date.now()})${ext}`;
+}
+
 // ==========================================
 // Vercel Blob Adapter
 // ==========================================
@@ -15,11 +50,12 @@ export class VercelBlobMinuteStorage implements MinuteStorageAdapter {
 	async uploadFile(
 		pathname: string,
 		file: File | Buffer,
-		options?: UploadOptions,
+		_options?: UploadOptions,
 	): Promise<UploadResult> {
-		const blob = await put(pathname, file, {
+		const finalPathname = await deduplicateBlobPathname(pathname);
+		const blob = await put(finalPathname, file, {
 			access: "public",
-			addRandomSuffix: options?.addRandomSuffix ?? true,
+			addRandomSuffix: false,
 		});
 
 		return {
@@ -80,23 +116,12 @@ export class FilesystemMinuteStorage implements MinuteStorageAdapter {
 	async uploadFile(
 		pathname: string,
 		file: File | Buffer,
-		options?: UploadOptions,
+		_options?: UploadOptions,
 	): Promise<UploadResult> {
-		const fullPath = path.join(this.uploadDir, pathname);
+		const finalPathname = this.deduplicatePathname(pathname);
+		const fullPath = path.join(this.uploadDir, finalPathname);
 		const dir = path.dirname(fullPath);
 		await this.ensureDir(dir);
-
-		let finalPath = fullPath;
-		let finalPathname = pathname;
-
-		if (options?.addRandomSuffix) {
-			const ext = path.extname(pathname);
-			const base = path.basename(pathname, ext);
-			const random = Math.random().toString(36).substring(2, 8);
-			const newFilename = `${base}-${random}${ext}`;
-			finalPath = path.join(dir, newFilename);
-			finalPathname = path.join(path.dirname(pathname), newFilename);
-		}
 
 		// Convert File to Buffer if needed
 		let buffer: Buffer;
@@ -107,12 +132,31 @@ export class FilesystemMinuteStorage implements MinuteStorageAdapter {
 			buffer = Buffer.from(arrayBuffer);
 		}
 
-		await fs.writeFile(finalPath, buffer);
+		await fs.writeFile(fullPath, buffer);
 
 		return {
 			url: `/uploads/${finalPathname}`,
 			pathname: finalPathname,
 		};
+	}
+
+	private deduplicatePathname(pathname: string): string {
+		const fullPath = path.join(this.uploadDir, pathname);
+		if (!existsSync(fullPath)) {
+			return pathname;
+		}
+
+		const ext = path.extname(pathname);
+		const base = pathname.slice(0, pathname.length - ext.length);
+
+		for (let i = 1; i <= 100; i++) {
+			const candidate = `${base}(${i})${ext}`;
+			if (!existsSync(path.join(this.uploadDir, candidate))) {
+				return candidate;
+			}
+		}
+
+		return `${base}(${Date.now()})${ext}`;
 	}
 
 	async deleteFile(pathname: string): Promise<void> {

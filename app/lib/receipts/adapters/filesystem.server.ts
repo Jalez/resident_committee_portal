@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import {
 	copyFileSync,
 	existsSync,
@@ -46,15 +45,27 @@ function ensureDirectoryExists(filePath: string): void {
 	}
 }
 
-function addRandomSuffix(pathname: string): string {
-	const parts = pathname.split("/");
-	const filename = parts[parts.length - 1];
-	const extIndex = filename.lastIndexOf(".");
-	const base = extIndex > 0 ? filename.slice(0, extIndex) : filename;
-	const ext = extIndex > 0 ? filename.slice(extIndex) : "";
-	const randomSuffix = randomBytes(4).toString("hex");
-	const newFilename = `${base}_${randomSuffix}${ext}`;
-	return [...parts.slice(0, -1), newFilename].join("/");
+function deduplicatePathname(
+	pathname: string,
+	toFilePath: (p: string) => string,
+): string {
+	const filePath = toFilePath(pathname);
+	if (!existsSync(filePath)) {
+		return pathname;
+	}
+
+	const extIndex = pathname.lastIndexOf(".");
+	const base = extIndex > 0 ? pathname.slice(0, extIndex) : pathname;
+	const ext = extIndex > 0 ? pathname.slice(extIndex) : "";
+
+	for (let i = 1; i <= 100; i++) {
+		const candidate = `${base}(${i})${ext}`;
+		if (!existsSync(toFilePath(candidate))) {
+			return candidate;
+		}
+	}
+
+	return `${base}(${Date.now()})${ext}`;
 }
 
 function pathnameToUrl(pathname: string): string {
@@ -208,14 +219,9 @@ export class FilesystemReceiptStorage implements ReceiptStorageAdapter {
 	async uploadFile(
 		pathname: string,
 		file: File | Buffer,
-		options?: UploadOptions,
+		_options?: UploadOptions,
 	): Promise<UploadResult> {
-		let finalPathname = pathname;
-
-		if (options?.addRandomSuffix) {
-			finalPathname = addRandomSuffix(pathname);
-		}
-
+		const finalPathname = deduplicatePathname(pathname, pathnameToFilePath);
 		const filePath = pathnameToFilePath(finalPathname);
 		ensureDirectoryExists(filePath);
 

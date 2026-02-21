@@ -98,7 +98,6 @@ export async function action({ request }: ActionFunctionArgs) {
 		const storage = getReceiptStorage();
 		const result = await storage.uploadFile(pathname, file, {
 			access: "public",
-			addRandomSuffix: true,
 		});
 
 		let receiptId: string | undefined;
