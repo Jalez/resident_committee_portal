@@ -95,11 +95,23 @@ export function ViewForm({
 			!deleteProcessedRef.current
 		) {
 			deleteProcessedRef.current = true;
-			if ((deleteFetcher.data as any).success) {
+			const data = deleteFetcher.data as any;
+			if (data.success) {
 				toast.success(t("common.actions.deleted", "Deleted successfully"));
 				revalidator.revalidate();
-			} else if ((deleteFetcher.data as any).error) {
-				toast.error((deleteFetcher.data as any).error as string);
+			} else if (data.error) {
+				const relationRows = Array.isArray(data.blockingRelationships)
+					? data.blockingRelationships
+							.map(
+								(rel: any) =>
+									`${rel.id}: ${rel.relationAType}:${rel.relationId} -> ${rel.relationBType}:${rel.relationBId}`,
+							)
+							.join("\n")
+					: "";
+				const message = relationRows
+					? `${data.error}\n${relationRows}`
+					: (data.error as string);
+				toast.error(message);
 			}
 		}
 	}, [deleteFetcher.state, deleteFetcher.data, revalidator, t]);
@@ -261,6 +273,7 @@ export function ViewForm({
 			"social",
 			"event",
 			"mail",
+			"submission",
 		];
 
 		return allEntityTypes

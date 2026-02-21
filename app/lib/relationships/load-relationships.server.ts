@@ -7,10 +7,6 @@
 
 import type { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
-import {
-	canReadRelationType,
-	canWriteRelationType,
-} from "./permissions.server";
 
 interface RelationshipData<T = unknown> {
 	linked: T[];
@@ -84,18 +80,14 @@ export async function loadRelationshipsForEntity(
 	options?: { userPermissions?: string[], includeAvailable?: boolean, preloadedRelationships?: any[] },
 ): Promise<Record<string, RelationshipData>> {
 	const result: Record<string, RelationshipData> = {};
-	const userPermissions = options?.userPermissions;
 	const includeAvailable = options?.includeAvailable ?? true;
-	const readableRelationTypes = relationBTypes.filter((relationBType) =>
-		canReadRelationType(userPermissions, relationBType),
-	);
 
 	const allRelationships = options?.preloadedRelationships ?? await db.getEntityRelationships(
 		entityType,
 		entityId,
 	);
 
-	for (const relationBType of readableRelationTypes) {
+	for (const relationBType of relationBTypes) {
 		const linkedIds = allRelationships
 			.map((rel) => {
 				const normalizedAType = normalizeRelationshipType(rel.relationAType);
@@ -115,8 +107,8 @@ export async function loadRelationshipsForEntity(
 
 		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
-		const canWrite = canWriteRelationType(userPermissions, relationBType);
-		const available = canWrite && includeAvailable
+		const canWrite = true;
+		const available = includeAvailable
 			? await fetchAvailableEntities(db, relationBType, linkedIds)
 			: [];
 

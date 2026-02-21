@@ -7,6 +7,7 @@ import {
 export const loader = genericDeleteLoader;
 export const action = createGenericDeleteAction("reimbursement", {
 	idParam: "reimbursementId",
+	autoUnlinkAllRelationships: true,
 	beforeDelete: async (db, reimbursement) => {
 		if (reimbursement.emailSent && reimbursement.status !== "rejected") {
 			throw new Error(

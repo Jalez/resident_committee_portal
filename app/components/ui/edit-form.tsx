@@ -297,6 +297,7 @@ export function EditForm({
 				"social",
 				"event",
 				"mail",
+				"submission",
 			];
 
 			const sections: RelationshipSection[] = allEntityTypes

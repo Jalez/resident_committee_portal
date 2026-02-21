@@ -18,6 +18,9 @@ export interface GenericDeleteOptions {
 	/** Name of the route param containing the entity ID (default: derived from entity type) */
 	idParam?: string;
 
+	/** If true, remove all links for this entity before deleting instead of blocking. */
+	autoUnlinkAllRelationships?: boolean;
+
 	/** Hook called before deleting the entity (for entity-specific cleanup) */
 	beforeDelete?: (
 		db: ReturnType<typeof getDatabase>,
@@ -132,21 +135,34 @@ export function createGenericDeleteAction(
 		}
 
 		try {
-			// Check for relationships (block delete if linked)
+			// Check for relationships
 			const relationships = await db.getEntityRelationships(
 				entityType,
 				entityId,
 			);
-			if (relationships.length > 0) {
+			if (relationships.length > 0 && !options.autoUnlinkAllRelationships) {
+				const relationRowsText = relationships
+					.map(
+						(rel) =>
+							`${rel.id}: ${rel.relationAType}:${rel.relationId} -> ${rel.relationBType}:${rel.relationBId}`,
+					)
+					.join("\n");
 				return new Response(
 					JSON.stringify({
-						error: "Cannot delete a linked item. Remove all links first.",
+						error: `Cannot delete a linked item. Remove all links first.\n${relationRowsText}`,
+						blockingRelationships: relationships,
 					}),
 					{
 						status: 400,
 						headers: { "Content-Type": "application/json" },
 					},
 				);
+			}
+
+			if (relationships.length > 0 && options.autoUnlinkAllRelationships) {
+				for (const rel of relationships) {
+					await db.deleteEntityRelationship(rel.id);
+				}
 			}
 
 			// Call beforeDelete hook if provided
