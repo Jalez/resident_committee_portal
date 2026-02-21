@@ -28,8 +28,8 @@ export interface SearchField {
 	type: "text" | "select";
 	/** Placeholder text */
 	placeholder?: string;
-	/** Available options for select fields */
-	options?: string[];
+	/** Available options for select fields. Can be plain strings or {value, label} objects. */
+	options?: (string | { value: string; label: string })[];
 }
 
 interface SearchMenuProps {
@@ -152,11 +152,15 @@ export function SearchMenu({ fields, className }: SearchMenuProps) {
 										/>
 									</SelectTrigger>
 									<SelectContent>
-										{field.options.map((option) => (
-											<SelectItem key={option} value={option}>
-												{option}
-											</SelectItem>
-										))}
+										{field.options.map((option) => {
+											const value = typeof option === "string" ? option : option.value;
+											const label = typeof option === "string" ? option : option.label;
+											return (
+												<SelectItem key={value} value={value}>
+													{label}
+												</SelectItem>
+											);
+										})}
 									</SelectContent>
 								</Select>
 							) : null}

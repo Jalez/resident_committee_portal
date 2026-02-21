@@ -41,6 +41,7 @@ const minuteSchema = z.object({
 	date: z.string().min(1, "Date is required"),
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
+	customFileName: z.string().optional(),
 	status: z.string().optional(),
 });
 
@@ -69,6 +70,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 				},
 				name: data.title,
 				year: year?.toString(),
+				customFileName: data.customFileName,
+				date: date || undefined,
 			});
 
 			if ("error" in uploadResult) {
@@ -116,6 +119,7 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 	);
 	const [title, setTitle] = useState(minute.title || "");
 	const [description, setDescription] = useState(minute.description || "");
+	const [customFileName, setCustomFileName] = useState("");
 
 	const year = date
 		? new Date(date).getFullYear().toString()
@@ -150,6 +154,16 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 			toast.error(errorMessages || t("common.error.validation_failed"));
 		}
 	}, [actionData, t]);
+
+	const autoFileName = React.useMemo(() => {
+		const safeTitle = (title || "")
+			.toLowerCase()
+			.replace(/[^a-z0-9]/gi, "_")
+			.replace(/_+/g, "_")
+			.replace(/^_+|_+$/g, "")
+			.substring(0, 50);
+		return safeTitle ? `${date}_${safeTitle}` : `${date}_minutes`;
+	}, [date, title]);
 
 	const inputFields = React.useMemo(
 		() => ({
@@ -216,11 +230,43 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 					</div>
 				),
 			},
+			customFileName: {
+				label: t(
+					"minutes.custom_file_name",
+					"File Name (Optional)",
+				),
+				render: () => (
+					<div className="space-y-1.5">
+						<Label htmlFor="customFileName">
+							{t(
+								"minutes.custom_file_name",
+								"File Name (Optional)",
+							)}
+						</Label>
+						<Input
+							id="customFileName"
+							name="customFileName"
+							type="text"
+							value={customFileName}
+							onChange={(e) => setCustomFileName(e.target.value)}
+							placeholder={autoFileName}
+						/>
+						<p className="text-xs text-muted-foreground">
+							{t(
+								"minutes.custom_file_name_help",
+								"Leave empty to use the auto-generated name based on date and title.",
+							)}
+						</p>
+					</div>
+				),
+			},
 		}),
 		[
 			date,
 			title,
 			description,
+			customFileName,
+			autoFileName,
 			minute.fileUrl,
 			minute.fileKey,
 			tempUrl,
@@ -260,6 +306,7 @@ export default function MinutesEdit({ loaderData }: Route.ComponentProps) {
 					if (name === "date") setDate(value);
 					if (name === "title") setTitle(value);
 					if (name === "description") setDescription(value);
+					if (name === "customFileName") setCustomFileName(value);
 				}}
 				translationNamespace="minutes"
 			/>

@@ -10,7 +10,8 @@
 			"inventory": "Varastoesine",
 			"minute": "Pöytäkirja",
 			"news": "Uutiset",
-			"faq": "UKK"
+			"faq": "UKK",
+			"submission": "Yhteydenotto"
 		},
 		"relations": {
 			"title": "Liittyvät"
@@ -27,7 +28,8 @@
 			"poll": "Äänestys",
 			"social": "Sosiaalinen linkki",
 			"mail": "Sähköposti",
-			"event": "Tapahtuma"
+			"event": "Tapahtuma",
+			"submission": "Yhteydenotto"
 		},
 		"actions": {
 			"delete": "Poista",
@@ -729,6 +731,8 @@
 		"description_placeholder": "Kokouksen kuvaus",
 		"file": "Tiedosto",
 		"replace_file": "Korvaa tiedosto (valinnainen)",
+		"custom_file_name": "Tiedostonimi (valinnainen)",
+		"custom_file_name_help": "Jätä tyhjäksi käyttääksesi automaattista nimeä päivämäärän ja otsikon perusteella.",
 		"edit": "Muokkaa pöytäkirjaa",
 		"search": {
 			"name_label": "Nimi",
@@ -1028,12 +1032,40 @@
 		"no_submissions": "Ei vielä yhteydenottoja",
 		"delete_confirm": "Haluatko varmasti poistaa tämän yhteydenoton?",
 		"apartment": "Asunto",
+		"add": "Uusi yhteydenotto",
+		"search_placeholder": "Hae...",
+		"filter_all": "Kaikki",
+		"name": "Nimi",
+		"name_placeholder": "Koko nimi",
+		"email": "Sähköposti",
+		"email_placeholder": "Sähköpostiosoite",
+		"apartmentNumber": "Asunto",
+		"apartmentNumber_placeholder": "esim. A 123",
+		"type": "Tyyppi",
+		"type_placeholder": "Valitse tyyppi",
+		"message": "Viesti",
+		"message_placeholder": "Viestin sisältö...",
+		"status": "Tila",
+		"status_placeholder": "Valitse tila",
 		"table": {
 			"time": "Aika",
 			"type": "Tyyppi",
 			"sender": "Lähettäjä",
 			"message": "Viesti",
 			"status": "Tila"
+		},
+		"types": {
+			"committee": "Toimikunta",
+			"events": "Tapahtumat",
+			"purchases": "Hankinnat",
+			"questions": "Kysymykset"
+		},
+		"statuses": {
+			"new": "Uusi",
+			"in_progress": "Käsittelyssä",
+			"approved": "Hyväksytty",
+			"rejected": "Hylätty",
+			"done": "Valmis"
 		}
 	},
 	"events": {

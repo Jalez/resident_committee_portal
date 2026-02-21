@@ -159,7 +159,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		const storage = getReceiptStorage();
 		const uploadResult = await storage.uploadFile(pathname, file, {
 			access: "public",
-			addRandomSuffix: true,
 		});
 
 		let rawText: string | null = null;

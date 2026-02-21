@@ -158,6 +158,7 @@ async function checkPermissions(
 		social: "social:write",
 		event: "events:write",
 		mail: "mail:read",
+		submission: "submissions:write",
 	};
 
 	const permission = permissionMap[entityType];

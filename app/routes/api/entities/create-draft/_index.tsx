@@ -48,6 +48,7 @@ export async function action({ request }: Route.ActionArgs) {
 		social: ["social:write"],
 		event: ["events:write"],
 		mail: ["committee:email"],
+		submission: ["submissions:write"],
 	};
 
 	const permissions = permissionMap[type] || ["admin"];
@@ -213,6 +214,16 @@ export async function action({ request }: Route.ActionArgs) {
 				});
 				break;
 			}
+			case "submission": {
+				entity = await db.createSubmission({
+					name: "",
+					email: "",
+					message: "",
+					type: "questions",
+					status: "Uusi / New",
+				});
+				break;
+			}
 
 			default:
 				return data(
@@ -309,6 +320,7 @@ export async function action({ request }: Route.ActionArgs) {
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
 			mail: `/mail/drafts/${entity.id}/edit`,
+			submission: `/submissions/${entity.id}/edit`,
 		};
 		let redirectUrl = editUrls[type] || "/";
 

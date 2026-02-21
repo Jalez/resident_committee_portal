@@ -338,10 +338,9 @@ export default function TreasuryTransactions({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -381,13 +380,13 @@ export default function TreasuryTransactions({
 								deleteProps={
 									canDeleteTransaction(transaction)
 										? {
-												action: `/treasury/transactions/${transaction.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t(
-													"treasury.breakdown.edit.delete_confirm",
-												),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/transactions/${transaction.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t(
+												"treasury.breakdown.edit.delete_confirm",
+											),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>
@@ -396,7 +395,7 @@ export default function TreasuryTransactions({
 							title: t("treasury.breakdown.no_transactions"),
 						}}
 						totals={{
-							labelColSpan: 6,
+							labelColSpan: 7,
 							columns: [
 								{
 									value: transactions.reduce((sum, tx) => {

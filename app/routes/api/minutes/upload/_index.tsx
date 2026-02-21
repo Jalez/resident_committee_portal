@@ -74,7 +74,12 @@ export async function action({ request }: ActionFunctionArgs) {
 			});
 		}
 		const year = date.getFullYear();
-		const pathname = buildMinutePath(year.toString(), file.name);
+		const pathname = buildMinutePath(
+			year.toString(),
+			file.name,
+			title,
+			date,
+		);
 
 		if (!isSafePathname(pathname)) {
 			return new Response(JSON.stringify({ error: "Invalid pathname" }), {
@@ -86,7 +91,6 @@ export async function action({ request }: ActionFunctionArgs) {
 		const storage = getMinuteStorage();
 		const result = await storage.uploadFile(pathname, file, {
 			access: "public",
-			addRandomSuffix: true,
 		});
 
 		// Create Database Record

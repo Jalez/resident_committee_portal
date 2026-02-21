@@ -10,7 +10,8 @@
 			"inventory": "Inventory Item",
 			"minute": "Minute",
 			"news": "News",
-			"faq": "FAQ"
+			"faq": "FAQ",
+			"submission": "Submission"
 		},
 		"relations": {
 			"title": "Relations"
@@ -27,7 +28,8 @@
 			"poll": "Poll",
 			"social": "Social Link",
 			"mail": "Email",
-			"event": "Event"
+			"event": "Event",
+			"submission": "Submission"
 		},
 		"actions": {
 			"save": "Save",
@@ -733,6 +735,8 @@
 		"link_existing": "Link Minutes",
 		"select_placeholder": "Select minutes...",
 		"no_link": "Don't link",
+		"custom_file_name": "File Name (Optional)",
+		"custom_file_name_help": "Leave empty to use the auto-generated name based on date and title.",
 		"edit": "Edit Minute"
 	},
 	"profile": {
@@ -1028,12 +1032,40 @@
 		"no_submissions": "No submissions yet",
 		"delete_confirm": "Are you sure you want to delete this submission?",
 		"apartment": "Apartment",
+		"add": "New Submission",
+		"search_placeholder": "Search...",
+		"filter_all": "All",
+		"name": "Name",
+		"name_placeholder": "Full name",
+		"email": "Email",
+		"email_placeholder": "Email address",
+		"apartmentNumber": "Apartment",
+		"apartmentNumber_placeholder": "e.g. A 123",
+		"type": "Type",
+		"type_placeholder": "Select type",
+		"message": "Message",
+		"message_placeholder": "Message content...",
+		"status": "Status",
+		"status_placeholder": "Select status",
 		"table": {
 			"time": "Time",
 			"type": "Type",
 			"sender": "Sender",
 			"message": "Message",
 			"status": "Status"
+		},
+		"types": {
+			"committee": "Committee",
+			"events": "Events",
+			"purchases": "Purchases",
+			"questions": "Questions"
+		},
+		"statuses": {
+			"new": "New",
+			"in_progress": "In Progress",
+			"approved": "Approved",
+			"rejected": "Rejected",
+			"done": "Done"
 		}
 	},
 	"events": {
