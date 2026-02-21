@@ -227,4 +227,17 @@ export const ENTITY_REGISTRY: Record<RelationshipEntityType, EntityTypeConfig> =
 			supportsAIDraft: true, // Can act as source
 			supportsDraft: true,
 		},
+		message: {
+			type: "message",
+			labelKey: "common.entity_types.message",
+			pluralKey: "messages.title",
+			icon: "notifications",
+			detailUrl: (id) => `/messages`,
+			editUrl: (id) => `/messages`,
+			deleteUrl: (id) => `/messages`,
+			statusVariants: GENERIC_VARIANTS,
+			supportsUpload: false,
+			supportsAIDraft: false,
+			supportsDraft: false,
+		},
 	};

@@ -39,8 +39,33 @@ export async function loader({ request }: Route.LoaderArgs) {
 		throw new Response("User not found", { status: 404 });
 	}
 
-	const messages = await db.getMessagesByUserId(user.id, 100); // Get last 100 messages
+	const rawMessages = await db.getMessagesByUserId(user.id, 100); // Get last 100 messages
 	const unreadCount = await db.getUnreadMessageCount(user.id);
+
+	// Resolve related entity links from entity_relationships
+	const messageIds = rawMessages.map((m) => m.id);
+	const rels = messageIds.length > 0
+		? await db.getEntityRelationshipsForMultipleIds("message", messageIds)
+		: [];
+	const messages = rawMessages.map((msg) => {
+		const msgRels = rels.filter(
+			(r) =>
+				(r.relationAType === "message" && r.relationId === msg.id) ||
+				(r.relationBType === "message" && r.relationBId === msg.id),
+		);
+		const findRelatedId = (type: string) => {
+			for (const r of msgRels) {
+				if (r.relationAType === "message" && r.relationBType === type) return r.relationBId;
+				if (r.relationBType === "message" && r.relationAType === type) return r.relationId;
+			}
+			return null;
+		};
+		return {
+			...msg,
+			relatedPurchaseId: findRelatedId("reimbursement"),
+			relatedNewsId: findRelatedId("news"),
+		};
+	});
 
 	return {
 		siteConfig: SITE_CONFIG,

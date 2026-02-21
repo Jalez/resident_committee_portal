@@ -419,8 +419,6 @@ export const messages = pgTable("messages", {
 	type: text("type").$type<MessageType>().notNull(),
 	title: text("title").notNull(),
 	content: text("content").notNull(),
-	relatedPurchaseId: uuid("related_purchase_id").references(() => purchases.id),
-	relatedNewsId: uuid("related_news_id").references(() => news.id),
 	read: boolean("read").notNull().default(false),
 	readAt: timestamp("read_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),

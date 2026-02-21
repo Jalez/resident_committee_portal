@@ -230,6 +230,14 @@ export const RELATION_CONFIG: Record<
 			return parts[1]?.toLowerCase() || parts[0]?.toLowerCase() || null;
 		},
 	},
+	message: {
+		icon: "notifications",
+		route: "/messages",
+		labelKey: "common.relation_types.message",
+		statusVariantMap: {},
+		getName: (entity) => getEntityName(entity, "title"),
+		getStatus: () => null,
+	},
 };
 
 export function getStatusVariant(

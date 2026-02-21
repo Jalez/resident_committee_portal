@@ -244,6 +244,7 @@ export interface DatabaseAdapter {
 
 	// ==================== Message Methods ====================
 	createMessage(message: NewMessage): Promise<Message>;
+	getMessageById(id: string): Promise<Message | null>;
 	getMessagesByUserId(
 		userId: string,
 		limit?: number,

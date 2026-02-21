@@ -117,6 +117,9 @@ export const ENTITY_DEFINITIONS: Record<
 				],
 			},
 		},
+		relationships: {
+			message: {},
+		},
 	},
 
 	minute: {
@@ -222,6 +225,7 @@ export const ENTITY_DEFINITIONS: Record<
 			social: {},
 			event: {},
 			mail: {},
+			message: {},
 		},
 		requiredRelationships: [
 			{
@@ -373,6 +377,16 @@ export const ENTITY_DEFINITIONS: Record<
 		},
 	},
 	social: {} as any,
+	message: {
+		type: "message",
+		permissionPrefix: "messages",
+		requiredFields: [],
+		defaultRedirect: "/messages",
+		relationships: {
+			reimbursement: { maxItems: 1 },
+			news: { maxItems: 1 },
+		},
+	},
 	mail: {
 		type: "mail",
 		permissionPrefix: "committee",

@@ -159,6 +159,7 @@ async function checkPermissions(
 		event: "events:write",
 		mail: "mail:read",
 		submission: "submissions:write",
+		message: "admin",
 	};
 
 	const permission = permissionMap[entityType];

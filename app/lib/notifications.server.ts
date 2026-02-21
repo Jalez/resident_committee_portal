@@ -65,15 +65,20 @@ export async function createReimbursementStatusNotification(
 		)
 		.replace("{amount}", purchase.amount);
 
-	// Create in-app message
+	// Create in-app message and link to purchase via entity_relationships
 	try {
-		await db.createMessage({
+		const message = await db.createMessage({
 			userId: user.id,
 			type: messageType,
 			title,
 			content,
-			relatedPurchaseId: purchase.id,
 			read: false,
+		});
+		await db.createEntityRelationship({
+			relationAType: "message",
+			relationId: message.id,
+			relationBType: "reimbursement",
+			relationBId: purchase.id,
 		});
 	} catch (error) {
 		console.error(
@@ -143,13 +148,18 @@ export async function createNewsPublishedNotifications(
 				? news.titleSecondary
 				: news.title;
 		try {
-			await db.createMessage({
+			const message = await db.createMessage({
 				userId: user.id,
 				type: "news_published",
 				title,
 				content,
-				relatedNewsId: news.id,
 				read: false,
+			});
+			await db.createEntityRelationship({
+				relationAType: "message",
+				relationId: message.id,
+				relationBType: "news",
+				relationBId: news.id,
 			});
 		} catch (error) {
 			console.error(

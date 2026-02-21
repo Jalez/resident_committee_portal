@@ -28,6 +28,7 @@ const VALID_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
 	"mail",
 	"event",
 	"submission",
+	"message",
 ];
 
 const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
@@ -187,6 +188,8 @@ async function fetchEntityById(
 			return db.getEventById(id);
 		case "submission":
 			return db.getSubmissionById(id);
+		case "message":
+			return db.getMessageById(id);
 		default:
 			return null;
 	}
@@ -245,6 +248,10 @@ async function fetchAvailableEntities(
 			break;
 		case "submission":
 			allEntities = await db.getSubmissions();
+			break;
+		case "message":
+			// Messages are user-specific; don't list all as "available"
+			allEntities = [];
 			break;
 	}
 

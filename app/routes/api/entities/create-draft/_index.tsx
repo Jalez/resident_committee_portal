@@ -49,6 +49,7 @@ export async function action({ request }: Route.ActionArgs) {
 		event: ["events:write"],
 		mail: ["committee:email"],
 		submission: ["submissions:write"],
+		message: ["admin"],
 	};
 
 	const permissions = permissionMap[type] || ["admin"];
@@ -321,6 +322,7 @@ export async function action({ request }: Route.ActionArgs) {
 			event: `/events/${entity.id}/edit`,
 			mail: `/mail/drafts/${entity.id}/edit`,
 			submission: `/submissions/${entity.id}/edit`,
+			message: `/messages`,
 		};
 		let redirectUrl = editUrls[type] || "/";
 

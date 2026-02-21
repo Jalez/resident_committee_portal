@@ -11,7 +11,8 @@ export type RelationshipEntityType =
 	| "social"
 	| "event"
 	| "mail"
-	| "submission";
+	| "submission"
+	| "message";
 
 export type InventoryItemStatus = "draft" | "active" | "removed" | "legacy";
 export type RemovalReason = "broken" | "used_up" | "lost" | "sold" | "other";
@@ -278,8 +279,6 @@ export interface Message {
 	type: MessageType;
 	title: string;
 	content: string;
-	relatedPurchaseId: string | null;
-	relatedNewsId: string | null;
 	read: boolean;
 	readAt: Date | null;
 	createdAt: Date;

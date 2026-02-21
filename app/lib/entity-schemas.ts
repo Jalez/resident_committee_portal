@@ -265,4 +265,11 @@ export const ENTITY_SCHEMAS: Record<RelationshipEntityType, EntitySchema> = {
 			status: formData.get("status") as string,
 		}),
 	},
+	message: {
+		...ENTITY_DEFINITIONS.message,
+		fetchById: (db, id) => db.getMessageById(id),
+		updateItem: async () => null,
+		deleteItem: async () => false,
+		extractFields: () => ({}),
+	},
 };

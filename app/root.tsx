@@ -84,17 +84,34 @@ export async function loader({ request }: Route.LoaderArgs) {
 		if (unreadMessageCount > 0) {
 			// Fetch unread messages (limit to 5 for the dropdown)
 			const allMessages = await db.getMessagesByUserId(user.userId, 100);
-			unreadMessages = allMessages
-				.filter((msg) => !msg.read)
-				.slice(0, 5)
-				.map((msg) => ({
+			const topUnread = allMessages.filter((msg) => !msg.read).slice(0, 5);
+			// Resolve related entity links from entity_relationships
+			const messageIds = topUnread.map((m) => m.id);
+			const rels = messageIds.length > 0
+				? await db.getEntityRelationshipsForMultipleIds("message", messageIds)
+				: [];
+			unreadMessages = topUnread.map((msg) => {
+				const msgRels = rels.filter(
+					(r) =>
+						(r.relationAType === "message" && r.relationId === msg.id) ||
+						(r.relationBType === "message" && r.relationBId === msg.id),
+				);
+				const findRelatedId = (type: string) => {
+					for (const r of msgRels) {
+						if (r.relationAType === "message" && r.relationBType === type) return r.relationBId;
+						if (r.relationBType === "message" && r.relationAType === type) return r.relationId;
+					}
+					return null;
+				};
+				return {
 					id: msg.id,
 					title: msg.title,
 					content: msg.content,
 					createdAt: msg.createdAt,
-					relatedPurchaseId: msg.relatedPurchaseId,
-					relatedNewsId: msg.relatedNewsId,
-				}));
+					relatedPurchaseId: findRelatedId("reimbursement"),
+					relatedNewsId: findRelatedId("news"),
+				};
+			});
 		}
 	}
 

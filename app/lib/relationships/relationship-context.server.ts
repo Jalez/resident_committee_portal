@@ -63,6 +63,7 @@ const PRIORITY_LEVELS: Record<RelationshipEntityType | "manual", number> = {
 	event: 0,
 	mail: 0,
 	submission: 0,
+	message: 0,
 };
 
 /**

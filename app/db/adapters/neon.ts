@@ -1252,6 +1252,15 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result[0];
 	}
 
+	async getMessageById(id: string): Promise<Message | null> {
+		const result = await this.db
+			.select()
+			.from(messages)
+			.where(eq(messages.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
 	async getMessagesByUserId(
 		userId: string,
 		limit?: number,
