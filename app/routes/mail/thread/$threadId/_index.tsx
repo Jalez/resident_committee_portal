@@ -305,13 +305,16 @@ export default function MailThread({
 									</div>
 
 									{/* Body */}
-									<div
-										className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
-										// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
-										dangerouslySetInnerHTML={{
-											__html: msg.bodyHtml,
-										}}
-									/>
+									<div className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
+										<div
+											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
+											className="[&_*]:!bg-transparent [&_*]:text-inherit"
+											// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
+											dangerouslySetInnerHTML={{
+												__html: msg.bodyHtml,
+											}}
+										/>
+									</div>
 
 									{/* Actions */}
 									<div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">

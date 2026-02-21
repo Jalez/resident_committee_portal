@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { del, list, put } from "@vercel/blob";
+import { copy, del, list, put } from "@vercel/blob";
 import type {
 	MinuteStorageAdapter,
 	UploadOptions,
@@ -66,6 +66,17 @@ export class VercelBlobMinuteStorage implements MinuteStorageAdapter {
 
 	async deleteFile(pathname: string): Promise<void> {
 		await del(pathname);
+	}
+
+	async renameFile(
+		fromPathname: string,
+		toPathname: string,
+	): Promise<{ url: string; pathname: string }> {
+		const result = await copy(fromPathname, toPathname, {
+			access: "public",
+		});
+		await del(fromPathname);
+		return { url: result.url, pathname: result.pathname };
 	}
 
 	async getMinuteContentBase64(fileUrl: string): Promise<string | null> {
@@ -157,6 +168,17 @@ export class FilesystemMinuteStorage implements MinuteStorageAdapter {
 		}
 
 		return `${base}(${Date.now()})${ext}`;
+	}
+
+	async renameFile(
+		fromPathname: string,
+		toPathname: string,
+	): Promise<{ url: string; pathname: string }> {
+		const fromPath = path.join(this.uploadDir, fromPathname);
+		const toPath = path.join(this.uploadDir, toPathname);
+		await this.ensureDir(path.dirname(toPath));
+		await fs.rename(fromPath, toPath);
+		return { url: `/uploads/${toPathname}`, pathname: toPathname };
 	}
 
 	async deleteFile(pathname: string): Promise<void> {

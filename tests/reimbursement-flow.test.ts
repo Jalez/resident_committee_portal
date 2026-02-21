@@ -313,7 +313,7 @@ describe("Reimbursement Request Flow", () => {
 			expect(result.missing[0].type).toBe("receipt");
 		});
 
-		it("should fail validation when transaction is missing", () => {
+		it("should pass validation when transaction is missing", () => {
 			const relationships = {
 				receipt: { linked: [{ id: "rc-1" }] },
 				minute: { linked: [{ id: "min-1" }] },
@@ -324,9 +324,8 @@ describe("Reimbursement Request Flow", () => {
 				relationships,
 			);
 
-			expect(result.valid).toBe(false);
-			expect(result.missing).toHaveLength(1);
-			expect(result.missing[0].type).toBe("transaction");
+			expect(result.valid).toBe(true);
+			expect(result.missing).toHaveLength(0);
 		});
 
 		it("should fail validation when minute is missing", () => {
@@ -348,7 +347,6 @@ describe("Reimbursement Request Flow", () => {
 		it("should fail validation when multiple required relationships are missing", () => {
 			const relationships = {
 				receipt: { linked: [] },
-				transaction: { linked: [] },
 				minute: { linked: [] },
 			};
 
@@ -358,7 +356,7 @@ describe("Reimbursement Request Flow", () => {
 			);
 
 			expect(result.valid).toBe(false);
-			expect(result.missing).toHaveLength(3);
+			expect(result.missing).toHaveLength(2);
 		});
 
 		it("should pass validation when all required relationships are present", () => {
@@ -380,11 +378,10 @@ describe("Reimbursement Request Flow", () => {
 		it("should have correct required relationships defined in entity definitions", () => {
 			const definition = ENTITY_DEFINITIONS.reimbursement;
 			expect(definition.requiredRelationships).toBeDefined();
-			expect(definition.requiredRelationships).toHaveLength(3);
+			expect(definition.requiredRelationships).toHaveLength(2);
 
 			const types = definition.requiredRelationships?.map((r) => r.type);
 			expect(types).toContain("receipt");
-			expect(types).toContain("transaction");
 			expect(types).toContain("minute");
 		});
 	});
@@ -417,7 +414,6 @@ describe("Reimbursement Request Flow", () => {
 			});
 
 			expect(result.success).toBe(false);
-			expect(result.error).toContain("transaction");
 			expect(result.error).toContain("minute");
 		});
 

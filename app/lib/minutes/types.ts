@@ -12,6 +12,11 @@ export interface UploadOptions {
 	access: "public";
 }
 
+export interface RenameResult {
+	url: string;
+	pathname: string;
+}
+
 export interface MinuteStorageAdapter {
 	uploadFile(
 		pathname: string,
@@ -19,6 +24,7 @@ export interface MinuteStorageAdapter {
 		options?: UploadOptions,
 	): Promise<UploadResult>;
 	deleteFile(pathname: string): Promise<void>;
+	renameFile(fromPathname: string, toPathname: string): Promise<RenameResult>;
 	getMinuteContentBase64(url: string): Promise<string | null>;
 	listMinutes(): Promise<MinuteFileMetadata[]>;
 }

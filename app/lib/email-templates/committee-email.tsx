@@ -73,12 +73,10 @@ export function CommitteeEmail({
 }
 
 const bodyStyle = {
-	backgroundColor: "#ffffff",
 	fontFamily:
 		'-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
 	fontSize: "14px",
 	lineHeight: "1.6",
-	color: "#333333",
 };
 
 const containerStyle = {

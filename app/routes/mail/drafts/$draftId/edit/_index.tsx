@@ -430,26 +430,11 @@ export async function action({ request }: Route.ActionArgs) {
 				}));
 			const receiptAttachments = await buildReceiptAttachments(receiptLinks);
 
-			const reimbursementAttachments = linkedReimbursements.map(
-				(reimbursement) => {
-					const id = String(reimbursement.id || "");
-					const details = [
-						`Reimbursement ID: ${id}`,
-						`Description: ${String(reimbursement.description || "")}`,
-						`Amount: ${String(reimbursement.amount || "")}`,
-						`Purchaser: ${String(reimbursement.purchaserName || "")}`,
-						`Bank account: ${String(reimbursement.bankAccount || "")}`,
-						`Status: ${String(reimbursement.status || "")}`,
-						`Year: ${String(reimbursement.year || "")}`,
-						`Notes: ${String(reimbursement.notes || "")}`,
-					].join("\n");
-					return {
-						filename: `reimbursement-${id.slice(0, 8)}.txt`,
-						content: Buffer.from(details, "utf-8").toString("base64"),
-						contentType: "text/plain; charset=utf-8",
-					};
-				},
-			);
+			const reimbursementAttachments: {
+				filename: string;
+				content: string;
+				contentType: string;
+			}[] = [];
 
 			mailAttachments = [
 				...minuteAttachments.map((attachment) => ({
@@ -1189,33 +1174,33 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 						})}
 					</h1>
 				</div>
-					<div className="flex items-center gap-2">
-						{draftId && (
-							<SmartAutofillButton
-								entityType="mail"
-								entityId={draftId}
-								getCurrentValues={() => ({
-									subject,
-									body,
-								})}
-								getExtraFormData={() => relationshipPicker.toFormData()}
-								onSuggestions={handleAutofillSuggestions}
-							/>
-						)}
-						{draftId && (
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={handleManualSave}
-								disabled={saveDraftFetcher.state !== "idle"}
-							>
-								<Save className="mr-1 size-4" />
-								{t("mail.save_draft", { defaultValue: "Save draft" })}
-							</Button>
-						)}
-						{draftId && (
-							<Button
+				<div className="flex items-center gap-2">
+					{draftId && (
+						<SmartAutofillButton
+							entityType="mail"
+							entityId={draftId}
+							getCurrentValues={() => ({
+								subject,
+								body,
+							})}
+							getExtraFormData={() => relationshipPicker.toFormData()}
+							onSuggestions={handleAutofillSuggestions}
+						/>
+					)}
+					{draftId && (
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleManualSave}
+							disabled={saveDraftFetcher.state !== "idle"}
+						>
+							<Save className="mr-1 size-4" />
+							{t("mail.save_draft", { defaultValue: "Save draft" })}
+						</Button>
+					)}
+					{draftId && (
+						<Button
 							variant="ghost"
 							size="sm"
 							type="button"
@@ -1374,27 +1359,22 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 								key: string;
 								label: string;
 							}> = [
-								...linkedReceipts.map((receipt) => ({
-									key: `receipt-${String(receipt.id || "unknown")}`,
-									label: `Receipt: ${displayAttachmentName(
-										receipt,
-										"receipt-file",
-									)}`,
-								})),
-								...linkedMinutes.map((minute) => ({
-									key: `minute-${String(minute.id || "unknown")}`,
-									label: `Minutes: ${displayAttachmentName(
-										minute,
-										"minutes.pdf",
-									)}`,
-								})),
-								...linkedReimbursements.map((reimbursement) => ({
-									key: `reimbursement-${String(reimbursement.id || "unknown")}`,
-									label: `Reimbursement details: reimbursement-${String(
-										reimbursement.id || "",
-									).slice(0, 8)}.txt`,
-								})),
-							];
+									...linkedReceipts.map((receipt) => ({
+										key: `receipt-${String(receipt.id || "unknown")}`,
+										label: `Receipt: ${displayAttachmentName(
+											receipt,
+											"receipt-file",
+										)}`,
+									})),
+									...linkedMinutes.map((minute) => ({
+										key: `minute-${String(minute.id || "unknown")}`,
+										label: `Minutes: ${displayAttachmentName(
+											minute,
+											"minutes.pdf",
+										)}`,
+									})),
+									// We no longer show reimbursement details as an attachment preview.
+								];
 
 							if (previewItems.length === 0) {
 								return (
@@ -1474,11 +1454,14 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 							{t("committee.mail.subject")}: {originalMessage.subject}
 						</p>
 					</div>
-					<div
-						className="prose prose-sm dark:prose-invert max-w-none text-gray-500 dark:text-gray-400"
-						// biome-ignore lint/security/noDangerouslySetInnerHtml: forwarded email body from DB
-						dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
-					/>
+					<div className="prose prose-sm dark:prose-invert max-w-none text-gray-500 dark:text-gray-400">
+						<div
+							// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
+							className="[&_*]:!bg-transparent [&_*]:text-inherit"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: forwarded email body from DB
+							dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
+						/>
+					</div>
 				</div>
 			)}
 		</Form>

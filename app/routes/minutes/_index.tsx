@@ -198,12 +198,6 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 			cellClassName: "font-medium",
 		},
 		{
-			key: "description",
-			header: t("common.fields.description"),
-			cell: (row: Minute) => row.description || "—",
-			cellClassName: "text-gray-500",
-		},
-		{
 			key: "file",
 			header: t("minutes.file"),
 			cell: (row: Minute) => {
@@ -218,7 +212,6 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 						<span className="material-symbols-outlined text-sm">
 							description
 						</span>
-						{row.fileKey?.split("/").pop() || "PDF"}
 					</a>
 				);
 			},

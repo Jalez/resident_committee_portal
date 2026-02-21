@@ -240,7 +240,7 @@ export function SmartAutofillButton({
 							className={cn(
 								"gap-1.5",
 								iconOnlyOnMobile &&
-									"h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:gap-1.5 sm:max-w-[9rem] md:max-w-[11rem] lg:max-w-[12rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0",
+								"h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:gap-1.5 sm:max-w-[9rem] md:max-w-[11rem] lg:max-w-[12rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0",
 								hasOptionsMenu && "rounded-r-none border-r-0",
 							)}
 						>
@@ -262,17 +262,24 @@ export function SmartAutofillButton({
 							</span>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>
-						<p>
-							{useAI
-								? t("smart_autofill.tooltip_ai", {
-										defaultValue:
-											"Fill fields from linked entities + AI suggestions",
-									})
-								: t("smart_autofill.tooltip", {
-										defaultValue: "Fill fields from linked entities",
-									})}
+					<TooltipContent className="max-w-xs">
+						<p className="font-medium mb-1">
+							{t("smart_autofill.button", { defaultValue: "Smart Autofill" })}
 						</p>
+						<p className="text-xs text-muted-foreground">
+							{t("smart_autofill.tooltip_description", {
+								defaultValue:
+									"Reads data from linked relations (receipts, minutes, etc.) and auto-fills empty form fields. Does not overwrite fields you've already filled in.",
+							})}
+						</p>
+						{useAI && (
+							<p className="text-xs text-muted-foreground mt-1">
+								{t("smart_autofill.tooltip_ai_note", {
+									defaultValue:
+										"AI suggestions are also included for categorization and descriptions.",
+								})}
+							</p>
+						)}
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
@@ -293,7 +300,7 @@ export function SmartAutofillButton({
 										? "h-8"
 										: "h-9",
 								iconOnlyOnMobile &&
-									(size === "sm" ? "sm:h-8" : "sm:h-9"),
+								(size === "sm" ? "sm:h-8" : "sm:h-9"),
 							)}
 						>
 							<ChevronDown className="w-4 h-4" />

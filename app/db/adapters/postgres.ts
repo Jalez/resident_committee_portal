@@ -1479,11 +1479,19 @@ export class PostgresAdapter implements DatabaseAdapter {
 		const result = await this.db
 			.delete(entityRelationships)
 			.where(
-				and(
-					eq(entityRelationships.relationAType, relationAType),
-					eq(entityRelationships.relationId, relationAId),
-					eq(entityRelationships.relationBType, relationBType),
-					eq(entityRelationships.relationBId, relationBId),
+				or(
+					and(
+						eq(entityRelationships.relationAType, relationAType),
+						eq(entityRelationships.relationId, relationAId),
+						eq(entityRelationships.relationBType, relationBType),
+						eq(entityRelationships.relationBId, relationBId),
+					),
+					and(
+						eq(entityRelationships.relationAType, relationBType),
+						eq(entityRelationships.relationId, relationBId),
+						eq(entityRelationships.relationBType, relationAType),
+						eq(entityRelationships.relationBId, relationAId),
+					),
 				),
 			)
 			.returning();
@@ -1543,11 +1551,19 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.select()
 			.from(entityRelationships)
 			.where(
-				and(
-					eq(entityRelationships.relationAType, relationAType),
-					eq(entityRelationships.relationId, relationAId),
-					eq(entityRelationships.relationBType, relationBType),
-					eq(entityRelationships.relationBId, relationBId),
+				or(
+					and(
+						eq(entityRelationships.relationAType, relationAType),
+						eq(entityRelationships.relationId, relationAId),
+						eq(entityRelationships.relationBType, relationBType),
+						eq(entityRelationships.relationBId, relationBId),
+					),
+					and(
+						eq(entityRelationships.relationAType, relationBType),
+						eq(entityRelationships.relationId, relationBId),
+						eq(entityRelationships.relationBType, relationAType),
+						eq(entityRelationships.relationBId, relationAId),
+					),
 				),
 			)
 			.limit(1);

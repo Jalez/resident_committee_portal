@@ -230,11 +230,6 @@ export const ENTITY_DEFINITIONS: Record<
 				reasonKey: "treasury.reimbursements.required_receipt_reason",
 			},
 			{
-				type: "transaction",
-				minItems: 1,
-				reasonKey: "treasury.reimbursements.required_transaction_reason",
-			},
-			{
 				type: "minute",
 				minItems: 1,
 				reasonKey: "treasury.reimbursements.required_minute_reason",

@@ -41,6 +41,43 @@ export async function loader({ request }: Route.LoaderArgs) {
         forwardFromMessageId,
     });
 
+    // Copy relationships from the original thread to the new draft
+    const parentMsgId = replyToMessageId || forwardFromMessageId;
+    if (parentMsgId) {
+        const parentMessage = await db.getCommitteeMailMessageById(parentMsgId);
+        if (parentMessage?.threadId) {
+            const threadMessages = await db.getCommitteeMailMessagesByThreadId(parentMessage.threadId);
+            const seenRelations = new Set<string>();
+
+            for (const msg of threadMessages) {
+                const relations = await db.getEntityRelationships("mail", msg.id);
+                for (const rel of relations) {
+                    if (rel.relationAType === "mail" && rel.relationId === msg.id) {
+                        const key = `${rel.relationBType}:${rel.relationBId}`;
+                        if (!seenRelations.has(key)) {
+                            seenRelations.add(key);
+                            const exists = await db.entityRelationshipExists(
+                                "mail",
+                                draft.id,
+                                rel.relationBType as any,
+                                rel.relationBId,
+                            );
+                            if (!exists) {
+                                await db.createEntityRelationship({
+                                    relationAType: "mail",
+                                    relationId: draft.id,
+                                    relationBType: rel.relationBType as any,
+                                    relationBId: rel.relationBId,
+                                    createdBy: null,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Redirect to the new standard edit path
     const targetUrl = new URL(`/mail/drafts/${draft.id}/edit`, request.url);
 

@@ -121,14 +121,21 @@ export default function TreasuryReceiptsEdit({
 		handleFileChange,
 		handleReanalyze,
 		handleCancel,
+		clearDraft,
 	} = useFileUpload({
 		entityType: "receipt",
 		entityId: receipt.id,
 		year,
 		enableAI: analyzeWithAI,
-		onNameSuggestion: setName,
-		onDescriptionSuggestion: setDescription,
+		onNameSuggestion: (val) => setName((prev: string) => prev || val),
+		onDescriptionSuggestion: (val) => setDescription((prev: string) => prev || val),
 	});
+
+	useEffect(() => {
+		if (actionData?.success) {
+			clearDraft();
+		}
+	}, [actionData, clearDraft]);
 
 	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
 	const displayReceiptUrl = tempUrl || receipt.url || undefined;
@@ -167,9 +174,9 @@ export default function TreasuryReceiptsEdit({
 					tempPathname: tempPathname,
 					ocr_data: ocrData
 						? JSON.stringify({
-								rawText: ocrData.rawText,
-								parsedData: ocrData.parsedData,
-							})
+							rawText: ocrData.rawText,
+							parsedData: ocrData.parsedData,
+						})
 						: undefined,
 				}}
 				translationNamespace="treasury.receipts"

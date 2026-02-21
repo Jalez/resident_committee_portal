@@ -98,8 +98,44 @@ export async function handleFileUpload(options: {
 	let nextName = name?.trim() || null;
 
 	if (tempUrl && tempPathname) {
-		nextUrl = tempUrl;
-		nextPathname = tempPathname;
+		// Temp file was uploaded earlier — rename it to the final path
+		const ext = `.${tempPathname.split(".").pop()?.toLowerCase() || "pdf"}`;
+		let finalPathname: string;
+		if (customFileName?.trim()) {
+			const safeName = customFileName
+				.trim()
+				.replace(/[^a-zA-Z0-9._-]/g, "_")
+				.replace(/_+/g, "_")
+				.replace(/^_+|_+$/g, "");
+			const prefix = getEntityPrefix(entityType);
+			const hasExtension = safeName.includes(".");
+			finalPathname = `${prefix}${currentYear}/${hasExtension ? safeName : `${safeName}${ext}`}`;
+		} else {
+			// Use the original temp filename to extract extension
+			finalPathname = buildEntityPath(
+				entityType,
+				currentYear,
+				tempPathname.split("/").pop() || `file${ext}`,
+				nextName || undefined,
+				date,
+			);
+		}
+
+		if (finalPathname !== tempPathname) {
+			const storage = getStorageAdapter(entityType);
+			if (storage && "renameFile" in storage && typeof storage.renameFile === "function") {
+				const renameResult = await storage.renameFile(tempPathname, finalPathname);
+				nextUrl = renameResult.url;
+				nextPathname = renameResult.pathname;
+			} else {
+				// No rename support — keep the temp path as-is
+				nextUrl = tempUrl;
+				nextPathname = tempPathname;
+			}
+		} else {
+			nextUrl = tempUrl;
+			nextPathname = tempPathname;
+		}
 	} else if (file) {
 		const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
 		if (!isAllowedExtension(entityType, ext)) {

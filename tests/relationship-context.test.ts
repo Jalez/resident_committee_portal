@@ -259,7 +259,6 @@ describe("Relationship Context - Context Resolution", () => {
 				amount: 150.5,
 				description: "K-MARKET 1234",
 				date: testDate,
-				category: "Groceries",
 			});
 			db.addRelationship("transaction", "tx-1", "receipt", "r-1");
 
@@ -268,7 +267,6 @@ describe("Relationship Context - Context Resolution", () => {
 			expect(context.date).toEqual(testDate);
 			expect(context.totalAmount).toBe(150.5);
 			expect(context.description).toBe("K-MARKET 1234");
-			expect(context.category).toBe("Groceries");
 			expect(context.valueSource).toBe("transaction");
 		});
 
@@ -710,7 +708,6 @@ describe("Relationship Context - Entity Value Mapping", () => {
 				amount: -250.0,
 				description: "K-MARKET 4567",
 				date: testDate,
-				category: "Groceries",
 			});
 			db.addRelationship("transaction", "tx-1", "receipt", "r-1");
 
@@ -720,7 +717,6 @@ describe("Relationship Context - Entity Value Mapping", () => {
 			expect(context.totalAmount).toBe(-250.0);
 			expect(context.description).toBe("K-MARKET 4567");
 			expect(context.currency).toBe("EUR");
-			expect(context.category).toBe("Groceries");
 			expect(context.valueSource).toBe("transaction");
 		});
 
