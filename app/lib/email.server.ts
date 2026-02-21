@@ -144,6 +144,47 @@ interface EmailAttachment {
 	content: string; // base64
 }
 
+function sanitizeAttachmentFilename(
+	rawName: string | null | undefined,
+	fallbackBaseName: string,
+): string {
+	const baseName = (rawName || "").trim() || fallbackBaseName;
+	const withoutControlChars = baseName
+		.replace(/[\x00-\x1F\x7F]/g, "")
+		.replace(/["'`]/g, "")
+		.replace(/[\\/]/g, "-")
+		.trim();
+	const normalizedWhitespace = withoutControlChars.replace(/\s+/g, " ").trim();
+	return normalizedWhitespace || fallbackBaseName;
+}
+
+function detectAttachmentTypeAndName(
+	name: string,
+	fallbackBaseName: string,
+): { name: string; type: string } {
+	const sanitized = sanitizeAttachmentFilename(name, fallbackBaseName);
+	const match = sanitized.match(/\.([a-zA-Z0-9]+)$/);
+	const extension = (match?.[1] || "").toLowerCase();
+
+	if (extension === "pdf") {
+		return { name: sanitized, type: "application/pdf" };
+	}
+	if (extension === "png") {
+		return { name: sanitized, type: "image/png" };
+	}
+	if (extension === "jpg" || extension === "jpeg") {
+		return { name: sanitized, type: "image/jpeg" };
+	}
+	if (extension === "webp") {
+		return { name: sanitized, type: "image/webp" };
+	}
+
+	return {
+		name: `${sanitized}.pdf`,
+		type: "application/pdf",
+	};
+}
+
 interface SendEmailResult {
 	success: boolean;
 	messageId?: string;
@@ -372,21 +413,29 @@ export async function sendReimbursementEmail(
 				: [];
 
 		for (const minuteFile of minutesFiles) {
+			const safeMinuteName = sanitizeAttachmentFilename(
+				minuteFile.name,
+				"minutes.pdf",
+			);
 			attachments.push({
-				filename: minuteFile.name,
+				filename: safeMinuteName,
 				content: minuteFile.content,
 				contentType: minuteFile.type,
 			});
 		}
 
 		if (receiptFiles && receiptFiles.length > 0) {
-			for (const receipt of receiptFiles) {
+			receiptFiles.forEach((receipt, index) => {
+				const safeReceiptName = sanitizeAttachmentFilename(
+					receipt.name,
+					`receipt-${index + 1}.pdf`,
+				);
 				attachments.push({
-					filename: receipt.name,
+					filename: safeReceiptName,
 					content: receipt.content,
 					contentType: receipt.type,
 				});
-			}
+			});
 		}
 
 		const result = await sendCommitteeEmail({
@@ -559,7 +608,7 @@ export async function buildReceiptAttachments(
 	}
 
 	const attachments = await Promise.all(
-		receiptLinks.map(async (receipt) => {
+		receiptLinks.map(async (receipt, index) => {
 			try {
 				const content = await getReceiptContentBase64(receipt);
 				if (!content) {
@@ -568,9 +617,13 @@ export async function buildReceiptAttachments(
 					);
 					return null;
 				}
+				const detected = detectAttachmentTypeAndName(
+					receipt.name,
+					`receipt-${index + 1}`,
+				);
 				return {
-					name: receipt.name,
-					type: "application/octet-stream",
+					name: detected.name,
+					type: detected.type,
 					content,
 				};
 			} catch (error) {

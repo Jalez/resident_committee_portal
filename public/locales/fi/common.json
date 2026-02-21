@@ -1260,7 +1260,7 @@
 			"subject": "Kulukorvaus pyyntö",
 			"title": "Kulukorvaus pyyntö",
 			"greeting": "Hei,",
-			"intro": "Käsittele seuraava kulukorvauspyyntö:",
+			"intro": "Pyydämme, että käsittelette seuraavan kulukorvauspyyntön:",
 			"id_label": "Kulukorvaus ID",
 			"item": "Tavara",
 			"amount": "Summa",
