@@ -1,10 +1,14 @@
-import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form } from "react-router";
+import { Form, Link } from "react-router";
+import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
-import { Button } from "~/components/ui/button";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { EmptyState } from "~/components/ui/empty-state";
+import { RelationsColumn } from "~/components/relations-column";
+import { type SearchField, SearchMenu } from "~/components/search-menu";
+import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
+import {
+	TREASURY_TABLE_STYLES,
+	TreasuryTable,
+} from "~/components/treasury/treasury-table";
 import {
 	getDatabase,
 	type Submission,
@@ -13,6 +17,8 @@ import {
 import { hasPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SUBMISSION_STATUSES } from "~/lib/constants";
+import type { RelationBadgeData } from "~/lib/relations-column.server";
+import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/_index";
@@ -26,6 +32,8 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
+const SUBMISSION_TYPES = ["committee", "events", "purchases", "questions"];
+
 export async function loader({ request }: Route.LoaderArgs) {
 	const user = await requirePermission(
 		request,
@@ -34,19 +42,55 @@ export async function loader({ request }: Route.LoaderArgs) {
 	);
 	const db = getDatabase();
 	const submissions = await db.getSubmissions();
+	const url = new URL(request.url);
+	const typeFilter = url.searchParams.get("type") || "";
+	const statusFilter = url.searchParams.get("status") || "";
+	const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+
+	let filtered = submissions;
+	if (typeFilter && typeFilter !== "all") {
+		filtered = filtered.filter((s) => s.type === typeFilter);
+	}
+	if (statusFilter && statusFilter !== "all") {
+		filtered = filtered.filter((s) => s.status === statusFilter);
+	}
+	if (q) {
+		filtered = filtered.filter(
+			(s) =>
+				s.name.toLowerCase().includes(q) ||
+				s.email.toLowerCase().includes(q) ||
+				s.message.toLowerCase().includes(q),
+		);
+	}
 
 	// Sort by createdAt descending (newest first)
-	const sortedSubmissions = submissions.sort(
-		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+	const sortedSubmissions = filtered.sort(
+		(a, b) =>
+			new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
+	const relationsMap = await loadRelationsMapForEntities(
+		db,
+		"submission",
+		sortedSubmissions.map((s) => s.id),
+		undefined,
+		user.permissions,
+	);
+	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
+	for (const [id, relations] of relationsMap) {
+		serializedRelationsMap[id] = relations;
+	}
+
+	const canWrite = hasPermission(user, "submissions:write");
+	const canDelete = hasPermission(user, "submissions:delete");
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
-		session: user,
 		submissions: sortedSubmissions,
-		canDelete: hasPermission(user, "submissions:delete"),
+		canWrite,
+		canDelete,
 		systemLanguages,
+		relationsMap: serializedRelationsMap,
 	};
 }
 
@@ -63,7 +107,6 @@ export async function action({ request }: Route.ActionArgs) {
 	const submissionId = formData.get("submissionId") as string;
 
 	if (actionType === "delete" && submissionId) {
-		// Check for delete permission
 		if (!hasPermission(user, "submissions:delete")) {
 			throw new Response("Forbidden - Missing submissions:delete permission", {
 				status: 403,
@@ -84,7 +127,8 @@ export async function action({ request }: Route.ActionArgs) {
 const TYPE_COLORS: Record<string, string> = {
 	committee:
 		"bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-	events: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+	events:
+		"bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
 	purchases:
 		"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 	questions:
@@ -106,8 +150,17 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Submissions({ loaderData }: Route.ComponentProps) {
-	const { session, submissions, canDelete, systemLanguages } = loaderData;
+	const {
+		submissions,
+		canWrite,
+		canDelete,
+		systemLanguages,
+		relationsMap: relationsMapRaw,
+	} = loaderData;
 	const { t, i18n } = useTranslation();
+	const relationsMap = new Map(
+		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
+	);
 
 	const getStatusLabel = (status: string) => {
 		if (!status) return status;
@@ -115,36 +168,157 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 		return i18n.language === "fi" ? parts[0] : parts[1] || parts[0];
 	};
 
-	const [deleteConfirmSubmissionId, setDeleteConfirmSubmissionId] = useState<
-		string | null
-	>(null);
-	const deleteFormRef = useRef<HTMLFormElement>(null);
+	const statusTranslationKeys: Record<string, string> = {
+		"Uusi / New": "submissions.statuses.new",
+		"Käsittelyssä / In Progress": "submissions.statuses.in_progress",
+		"Hyväksytty / Approved": "submissions.statuses.approved",
+		"Hylätty / Rejected": "submissions.statuses.rejected",
+		"Valmis / Done": "submissions.statuses.done",
+	};
+
+	const searchFields: SearchField[] = [
+		{
+			name: "q",
+			label: t("submissions.search_placeholder", "Search..."),
+			type: "text",
+			placeholder: t("submissions.search_placeholder", "Search..."),
+		},
+		{
+			name: "type",
+			label: t("submissions.table.type"),
+			type: "select",
+			placeholder: t("submissions.table.type"),
+			options: [
+				{ value: "all", label: t("submissions.filter_all") },
+				...SUBMISSION_TYPES.map((type) => ({
+					value: type,
+					label: t(`submissions.types.${type}`, { defaultValue: type }),
+				})),
+			],
+		},
+		{
+			name: "status",
+			label: t("submissions.table.status"),
+			type: "select",
+			placeholder: t("submissions.table.status"),
+			options: [
+				{ value: "all", label: t("submissions.filter_all") },
+				...SUBMISSION_STATUSES.map((status) => ({
+					value: status,
+					label: t(statusTranslationKeys[status] || status),
+				})),
+			],
+		},
+	];
+
+	const footerContent = (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+			<SearchMenu fields={searchFields} />
+			{canWrite && (
+				<AddItemButton
+					title={t("submissions.add", "New Submission")}
+					variant="icon"
+					createType="submission"
+				/>
+			)}
+		</div>
+	);
+
+	const columns = [
+		{
+			key: "createdAt",
+			header: t("submissions.table.time"),
+			cell: (row: Submission) =>
+				new Date(row.createdAt).toLocaleDateString(i18n.language, {
+					day: "numeric",
+					month: "short",
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
+			cellClassName: TREASURY_TABLE_STYLES.DATE_CELL,
+		},
+		{
+			key: "type",
+			header: t("submissions.table.type"),
+			cell: (row: Submission) => (
+				<span
+					className={cn(
+						"px-2 py-1 rounded-full text-xs font-bold uppercase",
+						TYPE_COLORS[row.type] || "bg-gray-100 text-gray-700",
+					)}
+				>
+					{t(`submissions.types.${row.type}`, {
+						defaultValue: row.type,
+					})}
+				</span>
+			),
+		},
+		{
+			key: "sender",
+			header: t("submissions.table.sender"),
+			cell: (row: Submission) => (
+				<div>
+					<Link
+						to={`/submissions/${row.id}`}
+						className="font-medium text-foreground hover:text-primary transition-colors"
+					>
+						{row.name}
+					</Link>
+					<p className="text-sm text-muted-foreground">{row.email}</p>
+					{row.apartmentNumber && (
+						<p className="text-xs text-muted-foreground/70">
+							{t("submissions.apartment")}: {row.apartmentNumber}
+						</p>
+					)}
+				</div>
+			),
+		},
+		{
+			key: "message",
+			header: t("submissions.table.message"),
+			cell: (row: Submission) => (
+				<p className="text-sm text-muted-foreground line-clamp-2 max-w-md">
+					{row.message}
+				</p>
+			),
+		},
+		{
+			key: "relations",
+			header: t("common.relations.title"),
+			cell: (row: Submission) => (
+				<RelationsColumn relations={relationsMap.get(row.id) || []} />
+			),
+			cellClassName: "min-w-[170px]",
+		},
+		{
+			key: "status",
+			header: t("submissions.table.status"),
+			cell: (row: Submission) => (
+				<Form method="post" className="flex items-center">
+					<input type="hidden" name="_action" value="status" />
+					<input type="hidden" name="submissionId" value={row.id} />
+					<select
+						name="status"
+						defaultValue={row.status}
+						onChange={(e) => e.target.form?.requestSubmit()}
+						className={cn(
+							"px-3 py-1.5 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors",
+							STATUS_COLORS[row.status] || "bg-gray-100",
+						)}
+					>
+						{SUBMISSION_STATUSES.map((status) => (
+							<option key={status} value={status}>
+								{getStatusLabel(status)}
+							</option>
+						))}
+					</select>
+				</Form>
+			),
+		},
+	];
 
 	return (
 		<PageWrapper>
-			{canDelete && (
-				<Form method="post" className="hidden" ref={deleteFormRef}>
-					<input type="hidden" name="_action" value="delete" />
-					<input
-						type="hidden"
-						name="submissionId"
-						value={deleteConfirmSubmissionId ?? ""}
-					/>
-				</Form>
-			)}
-			<ConfirmDialog
-				open={deleteConfirmSubmissionId !== null}
-				onOpenChange={(open) => !open && setDeleteConfirmSubmissionId(null)}
-				title={t("common.actions.delete")}
-				description={t("submissions.delete_confirm")}
-				confirmLabel={t("common.actions.delete")}
-				cancelLabel={t("common.actions.cancel")}
-				variant="destructive"
-				onConfirm={() => {
-					deleteFormRef.current?.requestSubmit();
-					setDeleteConfirmSubmissionId(null);
-				}}
-			/>
 			<SplitLayout
 				header={{
 					primary: t("submissions.title", { lng: systemLanguages.primary }),
@@ -152,261 +326,42 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 						lng: systemLanguages.secondary ?? systemLanguages.primary,
 					}),
 				}}
-				footer={
-					<div className="text-right">
-						<p className="text-sm font-medium text-gray-900 dark:text-white">
-							{session.name || session.email}
-						</p>
-						<p className="text-xs text-gray-500">{session.email}</p>
-					</div>
-				}
+				footer={footerContent}
 			>
-				{/* Submissions List - Card View for Mobile */}
-				<div className="space-y-4 md:hidden mb-8">
-					{submissions.length === 0 ? (
-						<EmptyState message={t("submissions.no_submissions")} icon="mail" />
-					) : (
-						submissions.map((submission) => (
-							<div
-								key={submission.id}
-								className="bg-card p-4 rounded-xl shadow-sm border border-border space-y-4"
-							>
-								<div className="flex items-center justify-between">
-									<span className="text-xs text-muted-foreground font-medium">
-										{new Date(submission.createdAt).toLocaleDateString(
-											i18n.language,
-											{
-												day: "numeric",
-												month: "short",
-												hour: "2-digit",
-												minute: "2-digit",
-											},
-										)}
-									</span>
-									<span
-										className={cn(
-											"px-2 py-1 rounded-full text-xs font-bold uppercase",
-											TYPE_COLORS[submission.type] ||
-												"bg-gray-100 text-gray-700",
-										)}
-									>
-										{t(`contact.types.${submission.type}.title`, {
-											defaultValue: submission.type,
-										})}
-									</span>
-								</div>
-
-								<div>
-									<h3 className="font-bold text-foreground">
-										{submission.name}
-									</h3>
-									<p className="text-sm text-muted-foreground">
-										{submission.email}
-									</p>
-									{submission.apartmentNumber && (
-										<p className="text-xs text-muted-foreground/70 mt-0.5">
-											{t("submissions.apartment")}: {submission.apartmentNumber}
-										</p>
-									)}
-								</div>
-
-								<div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
-									{submission.message}
-								</div>
-
-								<div className="flex items-center justify-between pt-2 border-t border-border">
-									<Form method="post" className="flex-1 mr-4">
-										<input type="hidden" name="_action" value="status" />
-										<input
-											type="hidden"
-											name="submissionId"
-											value={submission.id}
-										/>
-										<select
-											name="status"
-											defaultValue={submission.status}
-											onChange={(e) => e.target.form?.requestSubmit()}
-											className={cn(
-												"w-full px-3 py-2 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors appearance-none",
-												STATUS_COLORS[submission.status] || "bg-gray-100",
-											)}
-										>
-											{SUBMISSION_STATUSES.map((status) => (
-												<option key={status} value={status}>
-													{getStatusLabel(status)}
-												</option>
-											))}
-										</select>
-									</Form>
-
-									{canDelete && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-											title={t("common.actions.delete")}
-											onClick={() =>
-												setDeleteConfirmSubmissionId(submission.id)
+				<div className="space-y-6">
+					<TreasuryTable<Submission>
+						data={submissions}
+						columns={columns}
+						getRowKey={(row) => row.id}
+						renderActions={(submission) => (
+							<TreasuryActionCell
+								viewTo={`/submissions/${submission.id}`}
+								viewTitle={t("common.actions.view", "View")}
+								editTo={
+									canWrite
+										? `/submissions/${submission.id}/edit`
+										: undefined
+								}
+								editTitle={t("common.actions.edit")}
+								canEdit={canWrite}
+								deleteProps={
+									canDelete
+										? {
+												action: `/submissions/${submission.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t("submissions.delete_confirm"),
+												title: t("common.actions.delete"),
 											}
-										>
-											<span className="material-symbols-outlined text-xl">
-												delete
-											</span>
-										</Button>
-									)}
-								</div>
-							</div>
-						))
-					)}
-				</div>
-
-				{/* Submissions Table */}
-				<div className="hidden md:block bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-					<div className="overflow-x-auto">
-						<table className="w-full">
-							<thead className="bg-muted/50">
-								<tr>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-										{t("submissions.table.time")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-										{t("submissions.table.type")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-										{t("submissions.table.sender")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-										{t("submissions.table.message")}
-									</th>
-									<th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-										{t("submissions.table.status")}
-									</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-border">
-								{submissions.length === 0 ? (
-									<tr>
-										<td colSpan={5} className="p-0">
-											<EmptyState
-												message={t("submissions.no_submissions")}
-												icon="mail"
-											/>
-										</td>
-									</tr>
-								) : (
-									submissions.map((submission) => (
-										<SubmissionRow
-											key={submission.id}
-											submission={submission}
-											canDelete={canDelete}
-											onDeleteClick={
-												canDelete ? setDeleteConfirmSubmissionId : undefined
-											}
-										/>
-									))
-								)}
-							</tbody>
-						</table>
-					</div>
+										: undefined
+								}
+							/>
+						)}
+						emptyState={{
+							title: t("submissions.no_submissions"),
+						}}
+					/>
 				</div>
 			</SplitLayout>
 		</PageWrapper>
-	);
-}
-
-function SubmissionRow({
-	submission,
-	canDelete,
-	onDeleteClick,
-}: {
-	submission: Submission;
-	canDelete?: boolean;
-	onDeleteClick?: (id: string) => void;
-}) {
-	const { t, i18n } = useTranslation();
-	const formattedDate = new Date(submission.createdAt).toLocaleDateString(
-		i18n.language,
-		{
-			day: "numeric",
-			month: "short",
-			hour: "2-digit",
-			minute: "2-digit",
-		},
-	);
-
-	const getStatusLabel = (status: string) => {
-		if (!status) return status;
-		const parts = status.split(" / ");
-		return i18n.language === "fi" ? parts[0] : parts[1] || parts[0];
-	};
-
-	return (
-		<tr className="hover:bg-muted/50 transition-colors">
-			<td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
-				{formattedDate}
-			</td>
-			<td className="px-4 py-4 whitespace-nowrap">
-				<span
-					className={cn(
-						"px-2 py-1 rounded-full text-xs font-bold uppercase",
-						TYPE_COLORS[submission.type] || "bg-gray-100 text-gray-700",
-					)}
-				>
-					{t(`contact.types.${submission.type}.title`, {
-						defaultValue: submission.type,
-					})}
-				</span>
-			</td>
-			<td className="px-4 py-4">
-				<p className="font-medium text-foreground">{submission.name}</p>
-				<p className="text-sm text-muted-foreground">{submission.email}</p>
-				{submission.apartmentNumber && (
-					<p className="text-xs text-muted-foreground/70">
-						{t("submissions.apartment")}: {submission.apartmentNumber}
-					</p>
-				)}
-			</td>
-			<td className="px-4 py-4 max-w-md">
-				<p className="text-sm text-muted-foreground line-clamp-2">
-					{submission.message}
-				</p>
-			</td>
-			<td className="px-4 py-4">
-				<div className="flex items-center gap-2">
-					<Form method="post" className="flex items-center">
-						<input type="hidden" name="_action" value="status" />
-						<input type="hidden" name="submissionId" value={submission.id} />
-						<select
-							name="status"
-							defaultValue={submission.status}
-							onChange={(e) => e.target.form?.requestSubmit()}
-							className={cn(
-								"px-3 py-1.5 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors",
-								STATUS_COLORS[submission.status] || "bg-gray-100",
-							)}
-						>
-							{SUBMISSION_STATUSES.map((status) => (
-								<option key={status} value={status}>
-									{getStatusLabel(status)}
-								</option>
-							))}
-						</select>
-					</Form>
-					{canDelete && onDeleteClick && (
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9"
-							title={t("common.actions.delete")}
-							onClick={() => onDeleteClick(submission.id)}
-						>
-							<span className="material-symbols-outlined text-xl">delete</span>
-						</Button>
-					)}
-				</div>
-			</td>
-		</tr>
 	);
 }
