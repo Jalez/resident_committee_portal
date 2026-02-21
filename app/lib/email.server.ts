@@ -201,14 +201,47 @@ export async function parseReimbursementReply(
 		"./openrouter.server"
 	);
 
-	const lowerContent = content.toLowerCase();
+	const normalizeReplyContent = (raw: string): string => {
+		const normalized = raw.replace(/\r\n/g, "\n").trim();
+		if (!normalized) return "";
+
+		const withoutQuotedLines = normalized
+			.split("\n")
+			.filter((line) => !line.trimStart().startsWith(">"))
+			.join("\n");
+
+		const splitMarkers = [
+			/^On .+ wrote:\s*$/im,
+			/^-----Original Message-----\s*$/im,
+			/^From:\s.+$/im,
+			/^_{2,}\s*$/m,
+			/^Sent from my /im,
+		];
+
+		let primarySegment = withoutQuotedLines;
+		for (const marker of splitMarkers) {
+			const match = marker.exec(primarySegment);
+			if (match?.index !== undefined && match.index >= 0) {
+				primarySegment = primarySegment.slice(0, match.index);
+				break;
+			}
+		}
+
+		const cleaned = primarySegment.trim();
+		return cleaned || normalized;
+	};
+
+	const decisionContent = normalizeReplyContent(content);
+	if (!decisionContent) return "unclear";
+
+	const lowerContent = decisionContent.toLowerCase();
 
 	// First, try AI parsing if enabled
 	const aiConfig = await isAIParsingEnabled();
 	if (aiConfig.enabled && aiConfig.apiKey && aiConfig.model) {
 		console.log("[Email] Attempting AI parsing with model:", aiConfig.model);
 		const aiDecision = await parseReplyWithAI(
-			content,
+			decisionContent,
 			aiConfig.apiKey,
 			aiConfig.model,
 		);

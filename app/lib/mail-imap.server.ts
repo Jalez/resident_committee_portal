@@ -85,6 +85,10 @@ async function applyReimbursementReply(
 ): Promise<void> {
 	const purchase = await db.getPurchaseById(purchaseId);
 	if (!purchase) return;
+	const isFinalStatus =
+		purchase.status === "approved" ||
+		purchase.status === "rejected" ||
+		purchase.status === "reimbursed";
 
 	const decision = await parseReimbursementReply(content);
 	const updateData: {
@@ -96,12 +100,14 @@ async function applyReimbursementReply(
 		emailReplyContent: content.substring(0, 1000),
 	};
 
-	if (decision === "approved") updateData.status = "approved";
-	if (decision === "rejected") updateData.status = "rejected";
+	if (!isFinalStatus) {
+		if (decision === "approved") updateData.status = "approved";
+		if (decision === "rejected") updateData.status = "rejected";
+	}
 
 	await db.updatePurchase(purchaseId, updateData);
 
-	if (decision === "approved" || decision === "rejected") {
+	if (!isFinalStatus && (decision === "approved" || decision === "rejected")) {
 		const updatedPurchase = await db.getPurchaseById(purchaseId);
 		if (updatedPurchase) {
 			await createReimbursementStatusNotification(
@@ -112,7 +118,7 @@ async function applyReimbursementReply(
 		}
 	}
 
-	if (decision === "approved" || decision === "rejected") {
+	if (!isFinalStatus && (decision === "approved" || decision === "rejected")) {
 		// Find linked transaction via entity relationships
 		const relationships = await db.getEntityRelationships(
 			"reimbursement",
