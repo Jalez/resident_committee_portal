@@ -279,7 +279,11 @@ export default function TreasuryTransactions({
 		{
 			key: "description",
 			header: t("treasury.breakdown.description"),
-			cell: (row: Transaction) => row.description,
+			cell: (row: Transaction) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.description}
+				</div>
+			),
 			cellClassName: "font-medium",
 		},
 		{

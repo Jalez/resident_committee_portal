@@ -236,9 +236,13 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 		},
 		{
 			key: "description",
-			header: t("common.fields.description"),
-			cell: (row: Receipt) => row.description || "—",
-			cellClassName: "text-gray-500",
+			header: t("treasury.breakdown.description"),
+			cell: (row: Receipt) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.description}
+				</div>
+			),
+			cellClassName: TREASURY_TABLE_STYLES.DESCRIPTION_CELL,
 		},
 		{
 			key: "createdBy",

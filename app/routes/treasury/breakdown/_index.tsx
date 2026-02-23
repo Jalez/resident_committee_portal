@@ -437,7 +437,11 @@ export default function TreasuryBreakdown({
 		{
 			key: "description",
 			header: t("treasury.breakdown.description"),
-			cell: (row: Transaction) => row.description,
+			cell: (row: Transaction) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.description}
+				</div>
+			),
 			cellClassName: "font-medium",
 		},
 		{
@@ -503,14 +507,11 @@ export default function TreasuryBreakdown({
 		{
 			key: "description",
 			header: t("treasury.budgets.description"),
-			cell: (row: BudgetRow) =>
-				row.description ? (
-					<p className="text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
-						{row.description}
-					</p>
-				) : (
-					"—"
-				),
+			cell: (row: BudgetRow) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.description || "—"}
+				</div>
+			),
 			cellClassName: "text-gray-500 dark:text-gray-400",
 		},
 		{
@@ -589,8 +590,8 @@ export default function TreasuryBreakdown({
 							</p>
 							<p
 								className={`text-3xl font-black ${available >= 0
-										? "text-blue-600 dark:text-blue-400"
-										: "text-red-600 dark:text-red-400"
+									? "text-blue-600 dark:text-blue-400"
+									: "text-red-600 dark:text-red-400"
 									}`}
 							>
 								{formatCurrency(available)}

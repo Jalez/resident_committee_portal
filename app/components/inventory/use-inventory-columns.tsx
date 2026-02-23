@@ -102,7 +102,11 @@ export function useInventoryColumns({
 		columns.push({
 			accessorKey: "description",
 			header: t("inventory.columns.description"),
-			cell: ({ row }) => <span>{row.getValue("description")}</span>,
+			cell: ({ row }) => (
+				<span className="block max-w-xs break-words line-clamp-3">
+					{row.getValue("description")}
+				</span>
+			),
 		});
 	}
 

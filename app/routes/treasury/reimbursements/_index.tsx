@@ -335,9 +335,12 @@ export default function BudgetReimbursements({
 		{
 			key: "description",
 			header: t("common.fields.description"),
-			cell: (row: PurchaseRow) =>
-				row.inventoryItem?.name || row.description || "—",
-			cellClassName: "font-medium max-w-[200px] truncate",
+			cell: (row: PurchaseRow) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.inventoryItem?.name || row.description || "—"}
+				</div>
+			),
+			cellClassName: "font-medium",
 		},
 		{
 			key: "purchaser",

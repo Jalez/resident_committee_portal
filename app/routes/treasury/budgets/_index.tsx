@@ -302,14 +302,11 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 		{
 			key: "description",
 			header: t("treasury.budgets.description"),
-			cell: (row: BudgetRow) =>
-				row.description ? (
-					<p className="text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
-						{row.description}
-					</p>
-				) : (
-					"—"
-				),
+			cell: (row: BudgetRow) => (
+				<div className={TREASURY_TABLE_STYLES.DESCRIPTION_CELL}>
+					{row.description || "—"}
+				</div>
+			),
 			cellClassName: "text-gray-500 dark:text-gray-400",
 		},
 		{
