@@ -138,9 +138,8 @@ export default function TreasuryReceiptsEdit({
 	}, [actionData, clearDraft]);
 
 	const currentFileName = receipt.pathname?.split("/").pop() || "receipt";
-	const displayReceiptUrl = tempUrl || receipt.url || undefined;
-	const displayFileName =
-		tempPathname?.split("/").pop() || currentFileName;
+	const displayReceiptUrl = receipt.url || undefined;
+	const displayFileName = currentFileName;
 
 	return (
 		<PageWrapper>

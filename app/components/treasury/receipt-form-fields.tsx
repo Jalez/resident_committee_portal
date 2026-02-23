@@ -93,8 +93,8 @@ export function ReceiptFormFields({
 					</label>
 				</div>
 
-				{/* Show existing receipt file if editing */}
-				{existingReceiptUrl && existingFileName && (
+				{/* Show existing receipt file if editing and NO new file is uploaded */}
+				{!tempUrl && existingReceiptUrl && existingFileName && (
 					<TreasuryField
 						label={t("treasury.receipts.receipt_file", "Receipt File")}
 						valueClassName="text-foreground"
@@ -124,7 +124,7 @@ export function ReceiptFormFields({
 				)}
 
 				{/* Show uploaded temp file for new receipts */}
-				{!existingReceiptUrl && tempUrl && (
+				{tempUrl && (
 					<TreasuryField
 						label={t("treasury.receipts.uploaded_file", "Uploaded File")}
 						valueClassName="text-foreground"
@@ -164,9 +164,9 @@ export function ReceiptFormFields({
 						helperText={
 							tempUrl && !existingReceiptUrl
 								? t(
-										"treasury.receipts.optional_replace",
-										"Optional: upload a different file",
-									)
+									"treasury.receipts.optional_replace",
+									"Optional: upload a different file",
+								)
 								: `${t("treasury.receipts.allowed_types")}: ${RECEIPT_ALLOWED_TYPES.join(", ")}`
 						}
 						onFileChange={onFileChange}
@@ -222,17 +222,17 @@ export function ReceiptFormFields({
 				/>
 			</div>
 
-			{/* Display parsed receipt content or retry button */}
-			{tempUrl && !existingReceiptUrl && (
+			{/* Display parsed receipt content or retry button for NEW uploads */}
+			{tempUrl ? (
 				<div className="mt-6 space-y-4">
 					<div className="flex justify-between items-center">
 						<h3 className="text-lg font-medium">
 							{ocrData
 								? t("treasury.receipts.parsed_content", "Parsed Content")
 								: t(
-										"treasury.receipts.extract_content",
-										"Extract Receipt Content",
-									)}
+									"treasury.receipts.extract_content",
+									"Extract Receipt Content",
+								)}
 						</h3>
 						{onReanalyze && (
 							<Button
@@ -268,8 +268,7 @@ export function ReceiptFormFields({
 						</div>
 					)}
 				</div>
-			)}
-			{existingReceipt && existingReceiptUrl ? (
+			) : existingReceipt && existingReceiptUrl ? (
 				<div className="mt-6">
 					<ReceiptContentsDisplay
 						receiptId={receiptId}

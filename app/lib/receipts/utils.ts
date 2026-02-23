@@ -15,22 +15,22 @@ export function sanitizeReceiptDescription(description: string): string {
 
 export function buildReceiptFilename(
 	originalName: string,
-	description: string,
+	name: string,
 	date = new Date(),
 ): string {
 	const dateStamp = date.toISOString().split("T")[0];
 	const ext = originalName.split(".").pop() || "pdf";
-	const safeDescription =
-		sanitizeReceiptDescription(description || "kuitti") || "kuitti";
-	return `${dateStamp}_kuitti_${safeDescription}.${ext}`;
+	const safeName =
+		sanitizeReceiptDescription(name || "kuitti") || "kuitti";
+	return `${dateStamp}_${safeName}.${ext}`;
 }
 
 export function buildReceiptPath(
 	year: string,
 	originalName: string,
-	description: string,
+	name: string,
 	date = new Date(),
 ): string {
-	const filename = buildReceiptFilename(originalName, description, date);
+	const filename = buildReceiptFilename(originalName, name, date);
 	return `${RECEIPT_PREFIX}/${year}/${filename}`;
 }
