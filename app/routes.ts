@@ -180,8 +180,16 @@ export default [
 	route("social/new", "routes/social/new/_index.tsx"),
 	route("submissions", "routes/submissions/_index.tsx"),
 	route(
+		"submissions/:submissionId",
+		"routes/submissions/$submissionId/_index.tsx",
+	),
+	route(
 		"submissions/:submissionId/delete",
 		"routes/submissions/$submissionId/delete/_index.tsx",
+	),
+	route(
+		"submissions/:submissionId/edit",
+		"routes/submissions/$submissionId/edit/_index.tsx",
 	),
 	route("treasury", "routes/treasury/_index.tsx"),
 	route("treasury/breakdown", "routes/treasury/breakdown/_index.tsx"),

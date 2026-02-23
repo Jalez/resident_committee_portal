@@ -139,14 +139,14 @@ export const NAV_ITEMS: NavItem[] = [
 	// Submissions - requires submissions:read permission
 	{
 		path: "/submissions",
-		icon: "mail",
+		icon: ENTITY_REGISTRY.submission.icon,
 		i18nKey: "nav.submissions",
 		permission: "submissions:read",
 	},
 	// Mail (direct communication) - requires committee:email; sub-items in nav
 	{
 		path: "/mail",
-		icon: "send",
+		icon: ENTITY_REGISTRY.mail.icon,
 		i18nKey: "nav.committee_mail",
 		permission: "committee:email",
 		children: [

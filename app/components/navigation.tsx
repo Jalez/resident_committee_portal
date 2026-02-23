@@ -336,7 +336,7 @@ export function Navigation({ variant }: NavigationProps) {
 			<Link
 				to={to}
 				onClick={onNavigate}
-				prefetch="intent"
+				prefetch={to === "/auth/logout" ? "none" : "intent"}
 				className={cn(
 					"flex items-center gap-3 px-2 py-2 rounded-xl transition-all w-full shrink-0",
 					"hover:bg-primary/10 hover:text-primary",
