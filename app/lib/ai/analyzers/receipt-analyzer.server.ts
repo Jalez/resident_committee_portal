@@ -17,6 +17,7 @@ import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import type { Receipt } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import { formatDate } from "~/lib/format-utils";
 import type {
 	AnalysisResult,
 	EntityAnalyzer,
@@ -222,7 +223,7 @@ class ReceiptAnalyzer implements EntityAnalyzer<Receipt> {
 
 Store: ${receipt.storeName || "Unknown"}
 Total Amount: €${receipt.totalAmount || 0}
-Purchase Date: ${receipt.purchaseDate ? new Date(receipt.purchaseDate).toLocaleDateString() : "Unknown"}
+Purchase Date: ${formatDate(receipt.purchaseDate)}
 
 Line Items:
 ${itemsList || "No items"}

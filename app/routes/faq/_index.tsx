@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
@@ -92,6 +93,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Faq({ loaderData }: Route.ComponentProps) {
 	const { items, searchQ, systemLanguages, relationsMap } = loaderData;
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const { hasPermission } = useUser();
 	const canWrite = hasPermission("faq:write");
 	const canUpdate = hasPermission("faq:update");
@@ -180,7 +182,7 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 											<div className="flex items-center gap-3 mb-1">
 												<span className="text-sm font-medium text-gray-500 dark:text-gray-500 flex items-center gap-1.5">
 													<span className="material-symbols-outlined text-base">calendar_today</span>
-													{new Date(item.createdAt).toLocaleDateString()}
+													{formatDate(new Date(item.createdAt))}
 												</span>
 												{(item as any).status === "draft" && (
 													<span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">

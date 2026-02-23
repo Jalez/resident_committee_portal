@@ -14,6 +14,7 @@ import type { DatabaseAdapter } from "~/db/adapters/types";
 import type { NewEntityRelationship } from "~/db/schema";
 import type { RelationshipEntityType } from "~/db/types";
 import { SETTINGS_KEYS } from "../openrouter.server";
+import { formatDate } from "~/lib/format-utils";
 
 export interface SuggestedEntity {
 	entityType: RelationshipEntityType;
@@ -595,7 +596,7 @@ export async function analyzeMinute(
 				name: `News: ${minute.title}`,
 				data: {
 					title: minute.title,
-					content: `From meeting minutes dated ${minute.date?.toLocaleDateString() || "Unknown"}.`,
+					content: `From meeting minutes dated ${formatDate(minute.date)}.`,
 					summary: minute.description,
 				},
 				confidence: 0.6, // Lower confidence - requires user review

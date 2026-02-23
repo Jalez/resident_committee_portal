@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { TREASURY_BUDGET_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
@@ -215,6 +216,7 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 		return canDelete && budget.usedAmount === 0;
 	};
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	// Handle success/error toast messages
@@ -249,12 +251,6 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 
 	const formatCurrency = (value: number) => {
 		return `${value.toFixed(2).replace(".", ",")} €`;
-	};
-
-	const formatDate = (date: Date | string) => {
-		return new Date(date).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
 	};
 
 	// Configure search fields
@@ -360,10 +356,9 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 			header: t("treasury.budgets.remaining"),
 			cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
 			cellClassName: (row: BudgetRow) =>
-				`font-semibold ${
-					row.remainingAmount > 0
-						? "text-green-600 dark:text-green-400"
-						: "text-gray-500"
+				`font-semibold ${row.remainingAmount > 0
+					? "text-green-600 dark:text-green-400"
+					: "text-gray-500"
 				}`,
 		},
 		{
@@ -403,11 +398,11 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDeleteBudget(budget)
 										? {
-												action: `/treasury/budgets/${budget.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("treasury.budgets.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/budgets/${budget.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("treasury.budgets.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

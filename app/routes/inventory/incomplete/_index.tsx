@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, type LoaderFunctionArgs, useLoaderData } from "react-router";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
@@ -39,6 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function IncompleteInventoryItems() {
 	const { incompleteItems } = useLoaderData() as LoaderData;
 	const { t } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	return (
 		<PageWrapper>
@@ -120,7 +122,7 @@ export default function IncompleteInventoryItems() {
 															{t("common.fields.purchased_at")}:
 														</span>
 														<span>
-															{new Date(item.purchasedAt).toLocaleDateString()}
+															{formatDate(new Date(item.purchasedAt))}
 														</span>
 													</div>
 												)}

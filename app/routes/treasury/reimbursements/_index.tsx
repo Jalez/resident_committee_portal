@@ -7,6 +7,7 @@ import {
 	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { TREASURY_PURCHASE_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
@@ -192,10 +193,10 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 		const linkedTransaction = txRel
 			? await db.getTransactionById(
-					txRel.relationBType === "transaction"
-						? txRel.relationBId
-						: txRel.relationId,
-				)
+				txRel.relationBType === "transaction"
+					? txRel.relationBId
+					: txRel.relationId,
+			)
 			: null;
 		if (linkedTransaction) {
 			let newReimbursementStatus:
@@ -247,6 +248,7 @@ export default function BudgetReimbursements({
 	const [searchParams, setSearchParams] = useSearchParams();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const navigate = useNavigate();
 	const { setTemplate } = useReimbursementTemplate();
 
@@ -267,11 +269,6 @@ export default function BudgetReimbursements({
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
 	};
-
-	const formatDate = (date: Date | string) =>
-		new Date(date).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
 
 	const handleUseAsTemplate = (purchase: Purchase) => {
 		setTemplate({
@@ -482,13 +479,13 @@ export default function BudgetReimbursements({
 									deleteProps={
 										canDelete
 											? {
-													action: `/treasury/reimbursements/${purchase.id}/delete`,
-													hiddenFields: {},
-													confirmMessage: t(
-														"treasury.reimbursements.delete_confirm",
-													),
-													title: t("common.actions.delete"),
-												}
+												action: `/treasury/reimbursements/${purchase.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t(
+													"treasury.reimbursements.delete_confirm",
+												),
+												title: t("common.actions.delete"),
+											}
 											: undefined
 									}
 								/>

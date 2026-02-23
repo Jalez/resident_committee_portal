@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
@@ -158,6 +159,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 		relationsMap: relationsMapRaw,
 	} = loaderData;
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const relationsMap = new Map(
 		Object.entries(relationsMapRaw ?? {}) as [string, RelationBadgeData[]][],
 	);
@@ -229,7 +231,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 			key: "createdAt",
 			header: t("submissions.table.time"),
 			cell: (row: Submission) =>
-				new Date(row.createdAt).toLocaleDateString(i18n.language, {
+				formatDate(row.createdAt, {
 					day: "numeric",
 					month: "short",
 					hour: "2-digit",
@@ -347,11 +349,11 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDelete
 										? {
-												action: `/submissions/${submission.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("submissions.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/submissions/${submission.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("submissions.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

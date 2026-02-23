@@ -15,6 +15,7 @@ import type {
 } from "~/db/schema";
 import type { RelationshipEntityType } from "~/db/types";
 import { ENTITY_REGISTRY } from "./entity-registry";
+import { formatDate } from "./format-utils";
 
 /**
  * Union type for all possible entity objects
@@ -32,15 +33,15 @@ export type AnyEntity =
 	| SocialLink
 	| CommitteeMailMessage
 	| {
-			id: string;
-			summary: string;
-			title?: string;
-			name?: string;
-			description?: string;
-			status?: string;
-			createdAt?: Date;
-			start?: { dateTime: string; date: string };
-	  };
+		id: string;
+		summary: string;
+		title?: string;
+		name?: string;
+		description?: string;
+		status?: string;
+		createdAt?: Date;
+		start?: { dateTime: string; date: string };
+	};
 
 /**
  * Helper to get a consistent display title for any entity
@@ -72,7 +73,7 @@ export function getEntityTitle(
 			return (entity as any).name;
 		case "minute":
 			return (entity as any).date
-				? `${new Date((entity as any).date!).toLocaleDateString()} - ${(entity as any).title || "Minutes"}`
+				? `${formatDate(new Date((entity as any).date!))} - ${(entity as any).title || "Minutes"}`
 				: (entity as any).title || "Draft Minutes";
 		case "news":
 			return (entity as any).title;
@@ -138,7 +139,7 @@ export function entityToRelationItem(
 	// Type-specific descriptions
 	if (type === "transaction") {
 		const t = entity as Transaction;
-		subtitle = `${parseFloat(t.amount || "0").toFixed(2)} € | ${new Date(t.date).toLocaleDateString()}`;
+		subtitle = `${parseFloat(t.amount || "0").toFixed(2)} € | ${formatDate(new Date(t.date))}`;
 	} else if (type === "reimbursement") {
 		const p = entity as Purchase;
 		subtitle = `${parseFloat(p.amount || "0").toFixed(2)} € | ${p.purchaserName}`;

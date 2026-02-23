@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
@@ -136,6 +137,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	useEffect(() => {
 		const success = searchParams.get("success");
@@ -152,11 +154,6 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 			});
 		}
 	}, [searchParams, setSearchParams, t]);
-
-	const formatDate = (date: Date | string) =>
-		new Date(date).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
 
 	const searchFields: SearchField[] = [
 		{

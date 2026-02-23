@@ -1,26 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
-import { Form, Link } from "react-router";
+import { Form } from "react-router";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { RelationsColumn } from "~/components/relations-column";
 import { Checkbox } from "~/components/ui/checkbox";
 import type { RelationBadgeData } from "~/lib/relations-column.server";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
-import { EditableCell } from "~/components/ui/editable-cell";
 import type { InventoryItem } from "~/db";
 import type { ColumnKey } from "./inventory-constants";
 
-interface TransactionLink {
-	transaction: { id: string; description: string; date: Date; type: string };
-	quantity: number;
-}
+
 
 interface UseInventoryColumnsProps {
 	visibleColumns: Set<ColumnKey>;
@@ -61,6 +49,7 @@ export function useInventoryColumns({
 	relationsMap = {},
 }: UseInventoryColumnsProps): ColumnDef<InventoryItem>[] {
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	// Build columns - order: status, name, location, category, description, updatedAt, unitValue, quantity, totalValue, showInInfoReel, actions
 	const columns: ColumnDef<InventoryItem>[] = [];
@@ -125,7 +114,7 @@ export function useInventoryColumns({
 				const date = new Date(row.getValue("updatedAt"));
 				return (
 					<span className="text-gray-500 text-xs text-nowrap">
-						{date.toLocaleDateString(i18n.language)}
+						{formatDate(date)}
 					</span>
 				);
 			},

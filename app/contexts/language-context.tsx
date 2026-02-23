@@ -20,6 +20,7 @@ interface LanguageContextValue {
 	secondaryLanguage: string;
 	supportedLanguages: string[];
 	languageNames: Record<string, string>;
+	dateLocale: string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -33,6 +34,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 	const rootData = useRouteLoaderData<typeof import("~/root").loader>("root");
 	const supportedLanguages = rootData?.supportedLanguages || ["en", "fi", "sv"];
 	const languageNames = rootData?.languageNames || {};
+	const dateLocale = rootData?.dateLocale || "fi";
 
 	// Default to fi/en if user not loaded yet (though this provider is inside UserProvider)
 	// or if user is somehow null (shouldn't be for guest context)
@@ -70,6 +72,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 				secondaryLanguage,
 				supportedLanguages,
 				languageNames,
+				dateLocale,
 			}}
 		>
 			{children}
@@ -84,3 +87,4 @@ export function useLanguage() {
 	}
 	return context;
 }
+

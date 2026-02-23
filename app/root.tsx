@@ -17,7 +17,7 @@ import i18next, { getSupportedLanguages } from "~/i18next.server";
 import { getAuthenticatedUser, getGuestContext } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { getLanguageNames } from "~/lib/language-names.server";
-import { getThemePrimaryColor } from "~/lib/settings.server";
+import { getDefaultDateLocale, getThemePrimaryColor } from "~/lib/settings.server";
 import {
 	generateDarkThemePalette,
 	generateLightThemePalette,
@@ -115,8 +115,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 	}
 
-	// Get theme primary color
-	const themePrimary = await getThemePrimaryColor();
+	// Get theme primary color and date locale
+	const [themePrimary, dateLocale] = await Promise.all([
+		getThemePrimaryColor(),
+		getDefaultDateLocale(),
+	]);
 
 	return {
 		user,
@@ -127,6 +130,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		unreadMessageCount,
 		unreadMessages,
 		themePrimary,
+		dateLocale,
 	};
 }
 

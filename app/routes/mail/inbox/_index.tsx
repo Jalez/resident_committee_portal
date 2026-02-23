@@ -12,6 +12,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MailItem } from "~/components/mail/mail-item";
 import { Button } from "~/components/ui/button";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -120,34 +121,38 @@ function formatRecipients(toJson: string, direction: string): string {
 	}
 }
 
-function formatDate(date: Date | string): string {
-	const d = typeof date === "string" ? new Date(date) : date;
-	const now = new Date();
-	const sameDay =
-		d.getDate() === now.getDate() &&
-		d.getMonth() === now.getMonth() &&
-		d.getFullYear() === now.getFullYear();
-	if (sameDay) {
-		return d.toLocaleTimeString(undefined, {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	}
-	return d.toLocaleDateString(undefined, {
-		month: "short",
-		day: "numeric",
-		year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-	});
-}
-
 export default function MailInbox({ loaderData }: Route.ComponentProps) {
 	const { direction, dataPromise } = loaderData;
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const { formatDate: formatLocaleDate } = useFormatDate();
 	const actionData = useActionData<typeof action>();
 	const deleteFetcher = useFetcher();
 	const navigation = useNavigation();
 	const revalidator = useRevalidator();
 	const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
+	const formatDate = useCallback(
+		(date: Date | string): string => {
+			const d = typeof date === "string" ? new Date(date) : date;
+			const now = new Date();
+			const sameDay =
+				d.getDate() === now.getDate() &&
+				d.getMonth() === now.getMonth() &&
+				d.getFullYear() === now.getFullYear();
+			if (sameDay) {
+				return d.toLocaleTimeString(i18n.language, {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+			}
+			return formatLocaleDate(d, {
+				month: "short",
+				day: "numeric",
+				year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+			});
+		},
+		[i18n.language, formatLocaleDate],
+	);
 
 	const handleDeleteMessage = useCallback(
 		(messageId: string) => {

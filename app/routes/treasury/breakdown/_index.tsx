@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import {
 	TREASURY_BUDGET_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
@@ -39,7 +40,7 @@ export function meta({ data }: Route.MetaArgs) {
 	];
 }
 
-export async function action({ request }: Route.ActionArgs) {}
+export async function action({ request }: Route.ActionArgs) { }
 
 export async function loader({ request }: Route.LoaderArgs) {
 	// Require either treasury:breakdown:read or treasury:breakdown:read-self permission
@@ -379,14 +380,11 @@ export default function TreasuryBreakdown({
 			budget.createdBy &&
 			user?.userId === budget.createdBy);
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	const formatCurrency = (value: number | string) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
-	};
-
-	const formatDate = (date: Date | string) => {
-		return new Date(date).toLocaleDateString(i18n.language);
 	};
 
 	// Configure search fields
@@ -483,10 +481,9 @@ export default function TreasuryBreakdown({
 				</>
 			),
 			cellClassName: (row: Transaction) =>
-				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${
-					row.type === "expense"
-						? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
-						: TREASURY_TABLE_STYLES.AMOUNT_INCOME
+				`${TREASURY_TABLE_STYLES.AMOUNT_CELL} ${row.type === "expense"
+					? TREASURY_TABLE_STYLES.AMOUNT_EXPENSE
+					: TREASURY_TABLE_STYLES.AMOUNT_INCOME
 				}`,
 		},
 	];
@@ -560,10 +557,9 @@ export default function TreasuryBreakdown({
 			header: t("treasury.budgets.remaining"),
 			cell: (row: BudgetRow) => formatCurrency(row.remainingAmount),
 			cellClassName: (row: BudgetRow) =>
-				`font-semibold ${
-					row.remainingAmount > 0
-						? "text-green-600 dark:text-green-400"
-						: "text-gray-500"
+				`font-semibold ${row.remainingAmount > 0
+					? "text-green-600 dark:text-green-400"
+					: "text-gray-500"
 				}`,
 		},
 		{
@@ -592,11 +588,10 @@ export default function TreasuryBreakdown({
 								{t("treasury.available", { defaultValue: "Available" })}
 							</p>
 							<p
-								className={`text-3xl font-black ${
-									available >= 0
+								className={`text-3xl font-black ${available >= 0
 										? "text-blue-600 dark:text-blue-400"
 										: "text-red-600 dark:text-red-400"
-								}`}
+									}`}
 							>
 								{formatCurrency(available)}
 							</p>
@@ -678,35 +673,35 @@ export default function TreasuryBreakdown({
 							emptyState={{
 								title: t("treasury.budgets.no_budgets", {
 									defaultValue: "No budgets",
-							}),
-						}}
+								}),
+							}}
 							totals={{
 								labelColSpan: 7,
-							columns: [
-								{
-									value: budgetSummaries.reduce(
-										(sum, r) => sum + r.usedAmount,
-										0,
-									),
-								},
-								{
-									value: budgetSummaries.reduce(
-										(sum, r) => sum + r.reservedAmount,
-										0,
-									),
-								},
-								{
-									value: budgetSummaries.reduce(
-										(sum, r) => sum + r.remainingAmount,
-										0,
-									),
-								},
-								{
-									value: budgetSummaries.reduce(
-										(sum, r) => sum + Number.parseFloat(r.amount),
-										0,
-									),
-								},
+								columns: [
+									{
+										value: budgetSummaries.reduce(
+											(sum, r) => sum + r.usedAmount,
+											0,
+										),
+									},
+									{
+										value: budgetSummaries.reduce(
+											(sum, r) => sum + r.reservedAmount,
+											0,
+										),
+									},
+									{
+										value: budgetSummaries.reduce(
+											(sum, r) => sum + r.remainingAmount,
+											0,
+										),
+									},
+									{
+										value: budgetSummaries.reduce(
+											(sum, r) => sum + Number.parseFloat(r.amount),
+											0,
+										),
+									},
 								],
 								trailingColSpan: 1,
 								formatCurrency,
@@ -736,19 +731,19 @@ export default function TreasuryBreakdown({
 									viewTitle={t("common.actions.view")}
 								/>
 							)}
-						emptyState={{
-							title: t("treasury.breakdown.no_transactions"),
-						}}
+							emptyState={{
+								title: t("treasury.breakdown.no_transactions"),
+							}}
 							totals={{
 								labelColSpan: 6,
-							columns: [
-								{
-									value: transactions.reduce((sum, tx) => {
-										const amount = parseFloat(tx.amount);
-										return sum + (tx.type === "expense" ? -amount : amount);
-									}, 0),
-								},
-							],
+								columns: [
+									{
+										value: transactions.reduce((sum, tx) => {
+											const amount = parseFloat(tx.amount);
+											return sum + (tx.type === "expense" ? -amount : amount);
+										}, 0),
+									},
+								],
 								trailingColSpan: 1,
 								formatCurrency,
 							}}

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { RolePicker } from "~/components/role-picker";
 import type { Role } from "~/db";
 
@@ -75,14 +76,12 @@ interface UserRowProps {
 function UserRow({ user, roles }: UserRowProps) {
 	const fetcher = useFetcher<{ success: boolean; error?: string }>();
 	const { t, i18n } = useTranslation();
-	const formattedDate = new Date(user.createdAt).toLocaleDateString(
-		i18n.language,
-		{
-			day: "numeric",
-			month: "short",
-			year: "numeric",
-		},
-	);
+	const { formatDate } = useFormatDate();
+	const formattedDate = formatDate(user.createdAt, {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+	});
 
 	// Show toast when role update completes
 	useEffect(() => {
@@ -93,7 +92,7 @@ function UserRow({ user, roles }: UserRowProps) {
 				if (fetcher.data.error === "super_admin_protected") {
 					toast.error(
 						t("settings.users.cannot_change_super_admin") ||
-							"Cannot change super admin role",
+						"Cannot change super admin role",
 					);
 				} else {
 					toast.error(t("settings.users.update_failed") || "Update failed");

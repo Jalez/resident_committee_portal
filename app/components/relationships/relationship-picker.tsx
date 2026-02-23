@@ -213,17 +213,57 @@ function RelationshipSectionComponent({
 	]);
 
 	// Revalidate after link/unlink API calls succeed
+	const prevLinkStateRef = useRef(linkFetcher.state);
 	useEffect(() => {
-		if (linkFetcher.data?.success && linkFetcher.state === "idle") {
-			revalidator.revalidate();
+		if (
+			prevLinkStateRef.current !== "idle" &&
+			linkFetcher.state === "idle" &&
+			linkFetcher.data
+		) {
+			if (linkFetcher.data.success) {
+				toast.success(
+					t("common.relationships.linked", {
+						defaultValue: "Item linked",
+					}),
+				);
+				revalidator.revalidate();
+			} else {
+				toast.error(
+					(linkFetcher.data as any).error ||
+					t("common.relationships.link_failed", {
+						defaultValue: "Failed to link item",
+					}),
+				);
+			}
 		}
-	}, [linkFetcher.data, linkFetcher.state, revalidator]);
+		prevLinkStateRef.current = linkFetcher.state;
+	}, [linkFetcher.state, linkFetcher.data, revalidator, t]);
 
+	const prevUnlinkStateRef = useRef(unlinkFetcher.state);
 	useEffect(() => {
-		if (unlinkFetcher.data?.success && unlinkFetcher.state === "idle") {
-			revalidator.revalidate();
+		if (
+			prevUnlinkStateRef.current !== "idle" &&
+			unlinkFetcher.state === "idle" &&
+			unlinkFetcher.data
+		) {
+			if (unlinkFetcher.data.success) {
+				toast.success(
+					t("common.relationships.unlinked", {
+						defaultValue: "Item unlinked",
+					}),
+				);
+				revalidator.revalidate();
+			} else {
+				toast.error(
+					(unlinkFetcher.data as any).error ||
+					t("common.relationships.unlink_failed", {
+						defaultValue: "Failed to unlink item",
+					}),
+				);
+			}
 		}
-	}, [unlinkFetcher.data, unlinkFetcher.state, revalidator]);
+		prevUnlinkStateRef.current = unlinkFetcher.state;
+	}, [unlinkFetcher.state, unlinkFetcher.data, revalidator, t]);
 
 	const config = ENTITY_REGISTRY[section.relationBType];
 	const storageKey = `${storageKeyPrefix}-${section.relationBType}`;
@@ -333,12 +373,6 @@ function RelationshipSectionComponent({
 				method: "POST",
 				action: "/api/entities/unlink",
 			});
-
-			toast.success(
-				t("common.relationships.unlinked", {
-					defaultValue: "Item unlinked",
-				}),
-			);
 		}
 	};
 
@@ -370,12 +404,6 @@ function RelationshipSectionComponent({
 					method: "POST",
 					action: "/api/entities/link",
 				});
-
-				toast.success(
-					t("common.relationships.linked", {
-						defaultValue: "Item linked",
-					}),
-				);
 			}}
 			maxItems={section.maxItems}
 			storageKey={storageKey}

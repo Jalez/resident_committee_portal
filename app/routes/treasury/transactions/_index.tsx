@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import {
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
@@ -210,14 +211,11 @@ export default function TreasuryTransactions({
 		return canDeleteGeneral || canDeleteSelf;
 	};
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	const formatCurrency = (value: number | string) => {
 		const num = typeof value === "string" ? parseFloat(value) : value;
 		return `${num.toFixed(2).replace(".", ",")} €`;
-	};
-
-	const formatDate = (date: Date | string) => {
-		return new Date(date).toLocaleDateString(i18n.language);
 	};
 
 	useEffect(() => {

@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { SettingsPageLayout } from "~/components/layout/settings-page-layout";
 import { ApiKeySettings } from "~/components/settings/api-key-settings";
 import { handleApiKeySettingsAction } from "~/components/settings/api-key-settings.server";
+import { DateLocaleSettings } from "~/components/settings/date-locale-settings";
+import { handleDateLocaleSettingsAction } from "~/components/settings/date-locale-settings.server";
 import { LanguageSettings } from "~/components/settings/language-settings";
 import { handleLanguageSettingsAction } from "~/components/settings/language-settings.server";
 import { ThemeSettings } from "~/components/settings/theme-settings";
@@ -13,6 +15,7 @@ import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
 import {
+	getDefaultDateLocale,
 	getDefaultTimezone,
 	getSystemLanguageDefaults,
 	getThemePrimaryColor,
@@ -32,11 +35,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 	await requirePermission(request, "settings:general", getDatabase);
 
 	const db = getDatabase();
-	const [defaults, apiKey, themePrimary, defaultTimezone] = await Promise.all([
+	const [defaults, apiKey, themePrimary, defaultTimezone, dateLocale] = await Promise.all([
 		getSystemLanguageDefaults(),
 		db.getSetting(SETTINGS_KEYS.OPENROUTER_API_KEY),
 		getThemePrimaryColor(),
 		getDefaultTimezone(),
+		getDefaultDateLocale(),
 	]);
 
 	return {
@@ -46,6 +50,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		hasApiKey: !!apiKey,
 		themePrimary,
 		defaultTimezone,
+		dateLocale,
 	};
 }
 
@@ -64,11 +69,15 @@ export async function action({ request }: Route.ActionArgs) {
 		return await handleTimezoneSettingsAction(formData);
 	}
 
+	if (intent === "save-date-locale") {
+		return await handleDateLocaleSettingsAction(formData);
+	}
+
 	return await handleLanguageSettingsAction(formData);
 }
 
 export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
-	const { defaults, apiKey, hasApiKey, themePrimary, defaultTimezone } = loaderData;
+	const { defaults, apiKey, hasApiKey, themePrimary, defaultTimezone, dateLocale } = loaderData;
 	const { t } = useTranslation();
 	const { supportedLanguages, languageNames } = useLanguage();
 
@@ -86,6 +95,7 @@ export default function GeneralSettings({ loaderData }: Route.ComponentProps) {
 				supportedLanguages={supportedLanguages}
 				languageNames={languageNames}
 			/>
+			<DateLocaleSettings currentLocale={dateLocale} />
 			<TimezoneSettings
 				currentTimezone={defaultTimezone}
 				detectedTimezone={detectedTimezone}

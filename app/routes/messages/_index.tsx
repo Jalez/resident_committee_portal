@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useRevalidator, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { PageHeader } from "~/components/layout/page-header";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
@@ -125,6 +126,7 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Messages({ loaderData }: Route.ComponentProps) {
 	const { messages, unreadCount } = loaderData;
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const revalidator = useRevalidator();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [selectedMessages, setSelectedMessages] = useState<Set<string>>(
@@ -143,17 +145,14 @@ export default function Messages({ loaderData }: Route.ComponentProps) {
 		}
 	}, [searchParams, setSearchParams, t, revalidator]);
 
-	const formatDate = (date: Date | string) => {
-		return new Date(date).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-			{
-				year: "numeric",
-				month: "short",
-				day: "numeric",
-				hour: "2-digit",
-				minute: "2-digit",
-			},
-		);
+	const formatDateTime = (date: Date | string) => {
+		return formatDate(date, {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	};
 
 	return (
@@ -375,7 +374,7 @@ export default function Messages({ loaderData }: Route.ComponentProps) {
 												<span className="inline-block w-2 h-2 bg-blue-500 rounded-full shrink-0" />
 											)}
 											<p className="font-mono text-xs text-muted-foreground">
-												{formatDate(message.createdAt)}
+												{formatDateTime(message.createdAt)}
 											</p>
 										</div>
 										<p className="font-medium text-sm">{message.title}</p>

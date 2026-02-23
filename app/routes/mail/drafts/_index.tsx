@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
 import { MailItem } from "~/components/mail/mail-item";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -47,27 +48,6 @@ function firstLine(body: string | null): string {
 	return line.length > 60 ? `${line.slice(0, 57)}...` : line;
 }
 
-function formatDraftDate(updatedAt: Date | string | null): string {
-	if (!updatedAt) return "";
-	const d = typeof updatedAt === "string" ? new Date(updatedAt) : updatedAt;
-	const now = new Date();
-	const sameDay =
-		d.getDate() === now.getDate() &&
-		d.getMonth() === now.getMonth() &&
-		d.getFullYear() === now.getFullYear();
-	if (sameDay) {
-		return d.toLocaleTimeString(undefined, {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	}
-	return d.toLocaleDateString(undefined, {
-		month: "short",
-		day: "numeric",
-		year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-	});
-}
-
 function formatDraftRecipients(toJson: string | null): string {
 	if (!toJson) return "";
 	try {
@@ -81,7 +61,29 @@ function formatDraftRecipients(toJson: string | null): string {
 
 export default function MailDrafts({ loaderData }: Route.ComponentProps) {
 	const { drafts, relationsMap: relationsMapRaw } = loaderData;
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
+
+	function formatDraftDate(updatedAt: Date | string | null): string {
+		if (!updatedAt) return "";
+		const d = typeof updatedAt === "string" ? new Date(updatedAt) : updatedAt;
+		const now = new Date();
+		const sameDay =
+			d.getDate() === now.getDate() &&
+			d.getMonth() === now.getMonth() &&
+			d.getFullYear() === now.getFullYear();
+		if (sameDay) {
+			return d.toLocaleTimeString(i18n.language, {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+		}
+		return formatDate(d, {
+			month: "short",
+			day: "numeric",
+			year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+		});
+	}
 	const relationsMap = new Map(
 		Object.entries((relationsMapRaw ?? {}) as Record<string, RelationBadgeData[]>),
 	);

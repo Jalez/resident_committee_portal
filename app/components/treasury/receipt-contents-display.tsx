@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -46,6 +47,7 @@ export function ReceiptContentsDisplay({
 	receipt,
 }: ReceiptContentsDisplayProps) {
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const fetcher = useFetcher();
 	const isAnalyzing = fetcher.state === "submitting";
 	const fetcherData = fetcher.data as OCRResult | undefined;
@@ -146,11 +148,9 @@ export function ReceiptContentsDisplay({
 		console.error("Failed to parse items JSON", e);
 	}
 
-	const formatDate = (dateString: Date | string | null) => {
+	const formatReceiptDate = (dateString: Date | string | null) => {
 		if (!dateString) return "-";
-		return new Date(dateString).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
+		return formatDate(dateString);
 	};
 
 	return (
@@ -179,7 +179,7 @@ export function ReceiptContentsDisplay({
 								{t("treasury.receipts.date", { defaultValue: "Date" })}
 							</span>
 							<p className="text-lg font-medium text-foreground">
-								{formatDate(receipt.purchaseDate)}
+								{formatReceiptDate(receipt.purchaseDate)}
 							</p>
 						</div>
 						<div className="rounded-lg border border-border bg-muted/40 p-3">

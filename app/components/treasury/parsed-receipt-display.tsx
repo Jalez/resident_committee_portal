@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
@@ -32,12 +33,11 @@ export function ParsedReceiptDisplay({
 	aiModel = "OpenRouter via analyze API",
 }: ParsedReceiptDisplayProps) {
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
-	const formatDate = (dateString: string | undefined) => {
+	const formatReceiptDate = (dateString: string | undefined) => {
 		if (!dateString) return "-";
-		return new Date(dateString).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
+		return formatDate(dateString);
 	};
 
 	const hasStructuredData =
@@ -82,7 +82,7 @@ export function ParsedReceiptDisplay({
 								{t("treasury.receipts.date", { defaultValue: "Date" })}
 							</span>
 							<p className="font-medium text-lg">
-								{formatDate(parsedData.purchaseDate)}
+								{formatReceiptDate(parsedData.purchaseDate)}
 							</p>
 						</div>
 						<div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">

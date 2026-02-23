@@ -8,6 +8,7 @@ import {
 } from "react-router";
 import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
+import { useFormatDate } from "~/hooks/use-format-date";
 import {
 	EventsTable,
 	type EventTableRow,
@@ -248,6 +249,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	const { isInfoReel } = useLanguage();
 	const { hasPermission } = useUser();
 	const { t, i18n } = useTranslation();
+	const { formatDate: formatLocaleDate } = useFormatDate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const deleteFetcher = useFetcher<typeof action>();
 	const revalidator = useRevalidator();
@@ -321,7 +323,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	// Helper to format month name
 	const formatMonth = (isoDate: string) => {
 		const date = new Date(isoDate);
-		const monthName = date.toLocaleDateString(currentLocale, { month: "long" });
+		const monthName = formatLocaleDate(date, { month: "long" });
 		const year = date.getFullYear();
 		return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
 	};
@@ -336,7 +338,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 
 	// Helper to format event day (Mon, Tue...)
 	const formatDay = (isoDate: string) => {
-		return new Date(isoDate).toLocaleDateString(currentLocale, {
+		return formatLocaleDate(new Date(isoDate), {
 			weekday: "short",
 		});
 	};
@@ -356,7 +358,7 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 		}
 		const date = new Date(event.startDate);
 		const tz = event.timezone || undefined;
-		return date.toLocaleTimeString(currentLocale, {
+		return date.toLocaleTimeString(i18n.language, {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZone: tz,
@@ -376,13 +378,13 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	// Filter events client-side based on title filter
 	const filteredMonths: GroupedMonth[] = filters?.title
 		? groupedMonths
-				.map((month: GroupedMonth) => ({
-					...month,
-					events: month.events.filter((event: DisplayEvent) =>
-						event.title.toLowerCase().includes(filters.title.toLowerCase()),
-					),
-				}))
-				.filter((month: GroupedMonth) => month.events.length > 0)
+			.map((month: GroupedMonth) => ({
+				...month,
+				events: month.events.filter((event: DisplayEvent) =>
+					event.title.toLowerCase().includes(filters.title.toLowerCase()),
+				),
+			}))
+			.filter((month: GroupedMonth) => month.events.length > 0)
 		: groupedMonths;
 
 	// QR Panel only shown in info reel mode

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
@@ -179,6 +180,7 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 	);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 
 	useEffect(() => {
 		const success = searchParams.get("success");
@@ -192,11 +194,6 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 			});
 		}
 	}, [searchParams, setSearchParams, t]);
-
-	const formatDate = (date: Date | string) =>
-		new Date(date).toLocaleDateString(
-			i18n.language === "fi" ? "fi-FI" : "en-US",
-		);
 
 	const searchFields: SearchField[] = [
 		{
@@ -294,11 +291,11 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 								deleteProps={
 									canDelete
 										? {
-												action: `/treasury/receipts/${receipt.id}/delete`,
-												hiddenFields: {},
-												confirmMessage: t("treasury.receipts.delete_confirm"),
-												title: t("common.actions.delete"),
-											}
+											action: `/treasury/receipts/${receipt.id}/delete`,
+											hiddenFields: {},
+											confirmMessage: t("treasury.receipts.delete_confirm"),
+											title: t("common.actions.delete"),
+										}
 										: undefined
 								}
 							/>

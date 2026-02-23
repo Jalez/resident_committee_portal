@@ -1,6 +1,7 @@
 import { Link, type useFetcher } from "react-router";
 import { RelationsColumn } from "~/components/relations-column";
 import { Button } from "~/components/ui/button";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { EmptyState } from "~/components/ui/empty-state";
 import type { EventStatus, EventType } from "~/db/client";
 import type { RelationBadgeData } from "~/lib/relations-column.server";
@@ -45,6 +46,7 @@ export function EventsTable({
 	t,
 	relationsMap,
 }: EventsTableProps) {
+	const { formatDate } = useFormatDate();
 	return (
 		<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
 			<div className="overflow-x-auto">
@@ -91,14 +93,14 @@ export function EventsTable({
 									</Link>
 								</td>
 								<td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-									{event.startDate.toLocaleDateString(currentLocale, {
+									{formatDate(event.startDate, {
 										year: "numeric",
 										month: "short",
 										day: "numeric",
 									})}
 									{!event.isAllDay && (
 										<span className="text-gray-400 ml-1">
-											{event.startDate.toLocaleTimeString(currentLocale, {
+											{event.startDate.toLocaleTimeString(undefined, {
 												hour: "2-digit",
 												minute: "2-digit",
 												timeZone: event.timezone || undefined,
@@ -111,28 +113,26 @@ export function EventsTable({
 								</td>
 								<td className="px-4 py-3">
 									<span
-										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${
-											event.eventType === "meeting"
+										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${event.eventType === "meeting"
 												? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
 												: event.eventType === "private"
 													? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
 													: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-										}`}
+											}`}
 									>
 										{t(`events.types.${event.eventType}`)}
 									</span>
 								</td>
 								<td className="px-4 py-3">
 									<span
-										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${
-											event.status === "draft"
+										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${event.status === "draft"
 												? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
 												: event.status === "cancelled"
 													? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
 													: event.status === "completed"
 														? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
 														: "bg-primary/10 text-primary dark:bg-primary/20"
-										}`}
+											}`}
 									>
 										{t(`events.statuses.${event.status}`)}
 									</span>

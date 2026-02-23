@@ -16,6 +16,7 @@ import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import type { Transaction } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import { formatDate } from "~/lib/format-utils";
 import type {
 	AnalysisResult,
 	EntityAnalyzer,
@@ -96,7 +97,7 @@ class TransactionAnalyzer implements EntityAnalyzer<Transaction> {
 
 Description: ${transaction.description}
 Amount: €${transaction.amount}
-Date: ${new Date(transaction.date).toLocaleDateString()}
+Date: ${formatDate(transaction.date)}
 
 Available Budgets for ${transaction.year}:
 ${budgetList || "No budgets available"}

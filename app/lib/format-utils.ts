@@ -7,13 +7,30 @@ export function formatCurrency(
 	return `${num.toFixed(2).replace(".", ",")} €`;
 }
 
+/**
+ * Map short locale codes to BCP 47 locale strings for Intl.DateTimeFormat
+ */
+const DATE_LOCALE_MAP: Record<string, string> = {
+	fi: "fi-FI",
+	sv: "sv-SE",
+	en: "en-GB",
+	"en-GB": "en-GB",
+	"en-US": "en-US",
+	"fi-FI": "fi-FI",
+	"sv-SE": "sv-SE",
+};
+
+export function getDateLocaleString(locale: string): string {
+	return DATE_LOCALE_MAP[locale] || locale;
+}
+
 export function formatDate(
 	date: Date | string | null | undefined,
 	locale: string = "fi",
+	options?: Intl.DateTimeFormatOptions,
 ): string {
 	if (!date) return "—";
-	const localeStr = locale === "fi" ? "fi-FI" : "en-US";
-	return new Date(date).toLocaleDateString(localeStr);
+	return new Date(date).toLocaleDateString(getDateLocaleString(locale), options);
 }
 
 export function formatBoolean(
@@ -25,3 +42,4 @@ export function formatBoolean(
 	const boolValue = value === true || value === "true" || value === "on";
 	return boolValue ? yesLabel : noLabel;
 }
+

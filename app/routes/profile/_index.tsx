@@ -12,6 +12,7 @@ import { getAuthenticatedUser } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { FILE_TYPE_CONFIGS } from "~/lib/file-upload-types";
 import { hasPermission } from "~/lib/auth.server";
+import { useFormatDate } from "~/hooks/use-format-date";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -112,6 +113,7 @@ export default function Profile({
 }: Route.ComponentProps) {
 	const { user, canManageReimbursementDefaults } = loaderData;
 	const { t, i18n } = useTranslation();
+	const { formatDate } = useFormatDate();
 	const revalidator = useRevalidator();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [localOllamaEnabled, setLocalOllamaEnabled] = useState(
@@ -162,7 +164,7 @@ export default function Profile({
 		async (file: File) => {
 			const ext = file.name.split(".").pop()?.toLowerCase();
 			const allowedExtensions = FILE_TYPE_CONFIGS.avatar.extensions.map(e => e.replace(/^\./, ""));
-			
+
 			if (!ext || !allowedExtensions.includes(ext)) {
 				toast.error(t("profile.picture_invalid_type"));
 				return;
@@ -378,11 +380,7 @@ export default function Profile({
 							<Label className="mb-2">{t("profile.member_since_label")}</Label>
 							<div className="bg-muted rounded-xl px-4 py-3">
 								<span className="text-foreground">
-									{new Date(user.createdAt).toLocaleDateString(i18n.language, {
-										day: "numeric",
-										month: "long",
-										year: "numeric",
-									})}
+									{formatDate(new Date(user.createdAt))}
 								</span>
 							</div>
 						</div>

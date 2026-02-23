@@ -16,6 +16,7 @@ import { generateText } from "ai";
 import type { DatabaseAdapter } from "~/db/adapters/types";
 import type { Minute } from "~/db/schema";
 import { SETTINGS_KEYS } from "~/lib/openrouter.server";
+import { formatDate } from "~/lib/format-utils";
 import type {
 	AnalysisResult,
 	EntityAnalyzer,
@@ -133,7 +134,7 @@ class MinuteAnalyzer implements EntityAnalyzer<Minute> {
 			const prompt = `Analyze these meeting minutes for content worth sharing:
 
 Meeting Title: ${minute.title || "Untitled"}
-Date: ${minute.date ? new Date(minute.date).toLocaleDateString() : "No date"}
+Date: ${formatDate(minute.date)}
 Content:
 ${content}
 
