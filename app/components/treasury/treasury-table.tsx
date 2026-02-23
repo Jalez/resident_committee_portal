@@ -17,7 +17,7 @@ import { cn } from "~/lib/utils";
 export const TREASURY_TABLE_STYLES = {
 	INDEX_CELL: "text-gray-500 dark:text-gray-400 text-sm font-mono",
 	DATE_CELL: "font-mono text-sm",
-	DESCRIPTION_CELL: "max-w-xs break-words line-clamp-3",
+	DESCRIPTION_CELL: "max-w-xs break-words whitespace-normal line-clamp-3",
 	AMOUNT_CELL: "text-right font-bold",
 	AMOUNT_EXPENSE: "text-red-600 dark:text-red-400",
 	AMOUNT_INCOME: "text-green-600 dark:text-green-400",

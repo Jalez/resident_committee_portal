@@ -11,7 +11,7 @@ export function RelationsColumn({ relations }: RelationsColumnProps) {
 	}
 
 	return (
-		<div className="flex flex-wrap gap-1 justify-center">
+		<div className="flex flex-wrap gap-1 justify-center min-w-[100px]">
 			{relations.map((rel) => (
 				<RelationIconBadge
 					key={`${rel.type}-${rel.id}`}

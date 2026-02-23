@@ -103,7 +103,7 @@ export function useInventoryColumns({
 			accessorKey: "description",
 			header: t("inventory.columns.description"),
 			cell: ({ row }) => (
-				<span className="block max-w-xs break-words line-clamp-3">
+				<span className="block max-w-xs break-words whitespace-normal line-clamp-3">
 					{row.getValue("description")}
 				</span>
 			),
