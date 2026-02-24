@@ -1,5 +1,6 @@
 import { getDatabase, type InventoryItem } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
+import { buildCsvResponse, escapeCSV } from "~/lib/csv-utils";
 import type { Route } from "./+types/_index";
 
 /**
@@ -42,24 +43,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		].join(",");
 	});
 
-	const csv = `\uFEFF${[headers.join(","), ...rows].join("\n")}`;
-
 	const date = new Date().toISOString().split("T")[0];
 	const filename = `inventory-${date}.csv`;
 
-	return new Response(csv, {
-		headers: {
-			"Content-Type": "text/csv; charset=utf-8",
-			"Content-Disposition": `attachment; filename="${filename}"`,
-		},
-	});
-}
-
-function escapeCSV(value: string): string {
-	if (!value) return "";
-	// If value contains comma, newline, or quote, wrap in quotes and escape quotes
-	if (value.includes(",") || value.includes("\n") || value.includes('"')) {
-		return `"${value.replace(/"/g, '""')}"`;
-	}
-	return value;
+	return buildCsvResponse([headers.join(","), ...rows], filename);
 }
