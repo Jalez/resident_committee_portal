@@ -16,7 +16,11 @@
 			"search": "Suchen"
 		},
 		"actions": {
-			"update": "Aktualisieren"
+			"update": "Aktualisieren",
+			"export": "Exportieren",
+			"import": "Importieren",
+			"delete": "Löschen",
+			"edit": "Bearbeiten"
 		},
 		"filters": {
 			"all": "Alle Kategorien"

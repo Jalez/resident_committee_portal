@@ -45,7 +45,7 @@ export const PERMISSIONS = {
 		category: "Users",
 	},
 	"users:delete": {
-		translationKey: "permissions.users.delete",
+		translationKey: "common.actions.delete",
 		category: "Users",
 	},
 	"users:manage_roles": {
@@ -63,15 +63,15 @@ export const PERMISSIONS = {
 		category: "Inventory",
 	},
 	"inventory:delete": {
-		translationKey: "permissions.inventory.delete",
+		translationKey: "common.actions.delete",
 		category: "Inventory",
 	},
 	"inventory:export": {
-		translationKey: "permissions.inventory.export",
+		translationKey: "common.actions.export",
 		category: "Inventory",
 	},
 	"inventory:import": {
-		translationKey: "permissions.inventory.import",
+		translationKey: "common.actions.import",
 		category: "Inventory",
 	},
 
@@ -85,11 +85,11 @@ export const PERMISSIONS = {
 		category: "Treasury",
 	},
 	"treasury:export": {
-		translationKey: "permissions.treasury.export",
+		translationKey: "common.actions.export",
 		category: "Treasury",
 	},
 	"treasury:import": {
-		translationKey: "permissions.treasury.import",
+		translationKey: "common.actions.import",
 		category: "Treasury",
 	},
 	"treasury:transactions:read": {
@@ -105,23 +105,31 @@ export const PERMISSIONS = {
 		category: "Treasury",
 	},
 	"treasury:transactions:update": {
-		translationKey: "permissions.treasury.transactions.update",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:transactions:delete": {
-		translationKey: "permissions.treasury.transactions.delete",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:transactions:update-self": {
-		translationKey: "permissions.treasury.transactions.update-self",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:transactions:delete-self": {
-		translationKey: "permissions.treasury.transactions.delete-self",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:transactions:read-self": {
 		translationKey: "permissions.treasury.transactions.read-self",
+		category: "Treasury",
+	},
+	"treasury:transactions:export": {
+		translationKey: "common.actions.export",
+		category: "Treasury",
+	},
+	"treasury:transactions:import": {
+		translationKey: "common.actions.import",
 		category: "Treasury",
 	},
 	"treasury:reimbursements:read": {
@@ -137,23 +145,35 @@ export const PERMISSIONS = {
 		category: "Treasury",
 	},
 	"treasury:reimbursements:update": {
-		translationKey: "permissions.treasury.reimbursements.update",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:reimbursements:delete": {
-		translationKey: "permissions.treasury.reimbursements.delete",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:reimbursements:update-self": {
-		translationKey: "permissions.treasury.reimbursements.update-self",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:reimbursements:delete-self": {
-		translationKey: "permissions.treasury.reimbursements.delete-self",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:reimbursements:read-self": {
 		translationKey: "permissions.treasury.reimbursements.read-self",
+		category: "Treasury",
+	},
+	"treasury:reimbursements:export": {
+		translationKey: "common.actions.export",
+		category: "Treasury",
+	},
+	"treasury:budgets:export": {
+		translationKey: "common.actions.export",
+		category: "Treasury",
+	},
+	"treasury:budgets:import": {
+		translationKey: "common.actions.import",
 		category: "Treasury",
 	},
 	"treasury:budgets:read": {
@@ -173,19 +193,23 @@ export const PERMISSIONS = {
 		category: "Treasury",
 	},
 	"treasury:budgets:update": {
-		translationKey: "permissions.treasury.budgets.update",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:budgets:delete": {
-		translationKey: "permissions.treasury.budgets.delete",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:budgets:update-self": {
-		translationKey: "permissions.treasury.budgets.update-self",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:budgets:delete-self": {
-		translationKey: "permissions.treasury.budgets.delete-self",
+		translationKey: "common.actions.delete",
+		category: "Treasury",
+	},
+	"treasury:receipts:export": {
+		translationKey: "common.actions.export",
 		category: "Treasury",
 	},
 	"treasury:receipts:read": {
@@ -205,19 +229,19 @@ export const PERMISSIONS = {
 		category: "Treasury",
 	},
 	"treasury:receipts:update": {
-		translationKey: "permissions.treasury.receipts.update",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:receipts:delete": {
-		translationKey: "permissions.treasury.receipts.delete",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 	"treasury:receipts:update-self": {
-		translationKey: "permissions.treasury.receipts.update-self",
+		translationKey: "common.actions.edit",
 		category: "Treasury",
 	},
 	"treasury:receipts:delete-self": {
-		translationKey: "permissions.treasury.receipts.delete-self",
+		translationKey: "common.actions.delete",
 		category: "Treasury",
 	},
 
@@ -231,7 +255,7 @@ export const PERMISSIONS = {
 		category: "Purchases",
 	},
 	"purchases:delete": {
-		translationKey: "permissions.purchases.delete",
+		translationKey: "common.actions.delete",
 		category: "Purchases",
 	},
 
@@ -240,12 +264,16 @@ export const PERMISSIONS = {
 		translationKey: "permissions.submissions.read",
 		category: "Submissions",
 	},
+	"submissions:export": {
+		translationKey: "common.actions.export",
+		category: "Submissions",
+	},
 	"submissions:write": {
 		translationKey: "permissions.submissions.write",
 		category: "Submissions",
 	},
 	"submissions:delete": {
-		translationKey: "permissions.submissions.delete",
+		translationKey: "common.actions.delete",
 		category: "Submissions",
 	},
 
@@ -259,13 +287,17 @@ export const PERMISSIONS = {
 		category: "Social",
 	},
 	"social:delete": {
-		translationKey: "permissions.social.delete",
+		translationKey: "common.actions.delete",
 		category: "Social",
 	},
 
 	// Minutes
 	"minutes:read": {
 		translationKey: "permissions.minutes.read",
+		category: "Minutes",
+	},
+	"minutes:export": {
+		translationKey: "common.actions.export",
 		category: "Minutes",
 	},
 	"minutes:guide": {
@@ -277,11 +309,11 @@ export const PERMISSIONS = {
 		category: "Minutes",
 	},
 	"minutes:update": {
-		translationKey: "permissions.minutes.update",
+		translationKey: "common.actions.edit",
 		category: "Minutes",
 	},
 	"minutes:delete": {
-		translationKey: "permissions.minutes.delete",
+		translationKey: "common.actions.delete",
 		category: "Minutes",
 	},
 
@@ -290,16 +322,24 @@ export const PERMISSIONS = {
 		translationKey: "permissions.events.read",
 		category: "Events",
 	},
+	"events:export": {
+		translationKey: "common.actions.export",
+		category: "Events",
+	},
+	"events:import": {
+		translationKey: "common.actions.import",
+		category: "Events",
+	},
 	"events:write": {
 		translationKey: "permissions.events.write",
 		category: "Events",
 	},
 	"events:update": {
-		translationKey: "permissions.events.update",
+		translationKey: "common.actions.edit",
 		category: "Events",
 	},
 	"events:delete": {
-		translationKey: "permissions.events.delete",
+		translationKey: "common.actions.delete",
 		category: "Events",
 	},
 
@@ -308,16 +348,24 @@ export const PERMISSIONS = {
 		translationKey: "permissions.news.read",
 		category: "News",
 	},
+	"news:export": {
+		translationKey: "common.actions.export",
+		category: "News",
+	},
+	"news:import": {
+		translationKey: "common.actions.import",
+		category: "News",
+	},
 	"news:write": {
 		translationKey: "permissions.news.write",
 		category: "News",
 	},
 	"news:update": {
-		translationKey: "permissions.news.update",
+		translationKey: "common.actions.edit",
 		category: "News",
 	},
 	"news:delete": {
-		translationKey: "permissions.news.delete",
+		translationKey: "common.actions.delete",
 		category: "News",
 	},
 
@@ -326,16 +374,24 @@ export const PERMISSIONS = {
 		translationKey: "permissions.faq.read",
 		category: "FAQ",
 	},
+	"faq:export": {
+		translationKey: "common.actions.export",
+		category: "FAQ",
+	},
+	"faq:import": {
+		translationKey: "common.actions.import",
+		category: "FAQ",
+	},
 	"faq:write": {
 		translationKey: "permissions.faq.write",
 		category: "FAQ",
 	},
 	"faq:update": {
-		translationKey: "permissions.faq.update",
+		translationKey: "common.actions.edit",
 		category: "FAQ",
 	},
 	"faq:delete": {
-		translationKey: "permissions.faq.delete",
+		translationKey: "common.actions.delete",
 		category: "FAQ",
 	},
 
@@ -345,7 +401,7 @@ export const PERMISSIONS = {
 		category: "Forms",
 	},
 	"forms:export": {
-		translationKey: "permissions.forms.export",
+		translationKey: "common.actions.export",
 		category: "Forms",
 	},
 
@@ -354,16 +410,24 @@ export const PERMISSIONS = {
 		translationKey: "permissions.polls.read",
 		category: "Polls",
 	},
+	"polls:export": {
+		translationKey: "common.actions.export",
+		category: "Polls",
+	},
+	"polls:import": {
+		translationKey: "common.actions.import",
+		category: "Polls",
+	},
 	"polls:write": {
 		translationKey: "permissions.polls.write",
 		category: "Polls",
 	},
 	"polls:update": {
-		translationKey: "permissions.polls.update",
+		translationKey: "common.actions.edit",
 		category: "Polls",
 	},
 	"polls:delete": {
-		translationKey: "permissions.polls.delete",
+		translationKey: "common.actions.delete",
 		category: "Polls",
 	},
 
@@ -393,7 +457,7 @@ export const PERMISSIONS = {
 		category: "Storage",
 	},
 	"avatars:delete": {
-		translationKey: "permissions.avatars.delete",
+		translationKey: "common.actions.delete",
 		category: "Storage",
 	},
 
@@ -407,7 +471,7 @@ export const PERMISSIONS = {
 		category: "Roles",
 	},
 	"roles:delete": {
-		translationKey: "permissions.roles.delete",
+		translationKey: "common.actions.delete",
 		category: "Roles",
 	},
 

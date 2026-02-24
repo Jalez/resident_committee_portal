@@ -30,7 +30,9 @@
 			"link_existing": "",
 			"create_new": "",
 			"save": "",
-			"cancel": ""
+			"cancel": "",
+			"export": "Esporta",
+			"import": "Importa"
 		},
 		"filters": {
 			"all": ""

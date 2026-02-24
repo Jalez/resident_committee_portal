@@ -49,7 +49,9 @@
 			"link_existing": "Linkitä olemassa oleva",
 			"create_new": "Luo uusi",
 			"save": "Tallenna",
-			"cancel": "Peruuta"
+			"cancel": "Peruuta",
+			"export": "Vie",
+			"import": "Tuo"
 		},
 		"filters": {
 			"all": "Kaikki kategoriat"
@@ -1333,7 +1335,9 @@
 				"delete": "Poista tapahtumia",
 				"update-self": "Muokkaa omia tapahtumia",
 				"delete-self": "Poista omia tapahtumia",
-				"read-self": "Näytä omia tapahtumia"
+				"read-self": "Näytä omia tapahtumia",
+				"export": "Vie tapahtumat CSV-tiedostoon",
+				"import": "Tuo tapahtumat tiedostosta"
 			},
 			"reimbursements": {
 				"read": "Näytä korvausvaatimukset",
@@ -1343,7 +1347,8 @@
 				"delete": "Poista korvausvaatimuksia",
 				"update-self": "Muokkaa omia korvausvaatimuksia",
 				"delete-self": "Poista omia korvausvaatimuksia",
-				"read-self": "Näytä omia korvausvaatimuksia"
+				"read-self": "Näytä omia korvausvaatimuksia",
+				"export": "Vie korvausvaatimukset CSV-tiedostoon"
 			},
 			"budgets": {
 				"read": "Näytä budjetit",
@@ -1353,7 +1358,9 @@
 				"update": "Muokkaa budjetteja",
 				"delete": "Poista budjetteja",
 				"update-self": "Muokkaa omia budjetteja",
-				"delete-self": "Poista omia budjetteja"
+				"delete-self": "Poista omia budjetteja",
+				"export": "Vie budjetit CSV-tiedostoon",
+				"import": "Tuo budjetit tiedostosta"
 			},
 			"receipts": {
 				"read": "Näytä kuitit",
@@ -1363,7 +1370,8 @@
 				"update": "Muokkaa kuitteja",
 				"delete": "Poista kuitteja",
 				"update-self": "Muokkaa omia kuitteja",
-				"delete-self": "Poista omia kuitteja"
+				"delete-self": "Poista omia kuitteja",
+				"export": "Vie kuitit CSV-tiedostoon"
 			},
 			"view_scope": {
 				"all": "Näet kaikki {{itemType}}",
@@ -1384,7 +1392,8 @@
 		"submissions": {
 			"read": "Näytä yhteydenottolomakkeet",
 			"write": "Päivitä yhteydenoton tila",
-			"delete": "Poista yhteydenottoja"
+			"delete": "Poista yhteydenottoja",
+			"export": "Vie yhteydenotot CSV-tiedostoon"
 		},
 		"social": {
 			"read": "Näytä some-linkit",
@@ -1393,25 +1402,35 @@
 		},
 		"minutes": {
 			"read": "Näytä ja lataa pöytäkirjat",
-			"guide": "Näytä nimeämiskäytäntöohje"
+			"guide": "Näytä nimeämiskäytäntöohje",
+			"export": "Vie pöytäkirjalista CSV-tiedostoon",
+			"write": "Lataa pöytäkirjoja",
+			"update": "Muokkaa pöytäkirjoja",
+			"delete": "Poista pöytäkirjoja"
 		},
 		"events": {
 			"read": "Näytä kalenteritapahtumat",
 			"write": "Luo kalenteritapahtumia",
 			"update": "Muokkaa kalenteritapahtumia",
-			"delete": "Poista kalenteritapahtumia"
+			"delete": "Poista kalenteritapahtumia",
+			"export": "Vie tapahtumat CSV-tiedostoon",
+			"import": "Tuo tapahtumat tiedostosta"
 		},
 		"news": {
 			"read": "Näytä uutiset",
 			"write": "Luo uutisia",
 			"update": "Muokkaa uutisia",
-			"delete": "Poista uutisia"
+			"delete": "Poista uutisia",
+			"export": "Vie uutiset CSV-tiedostoon",
+			"import": "Tuo uutisia tiedostosta"
 		},
 		"faq": {
 			"read": "Näytä UKK",
 			"write": "Luo UKK-kohtia",
 			"update": "Muokkaa UKK-kohtia",
-			"delete": "Poista UKK-kohtia"
+			"delete": "Poista UKK-kohtia",
+			"export": "Vie UKK CSV-tiedostoon",
+			"import": "Tuo UKK tiedostosta"
 		},
 		"forms": {
 			"read": "Näytä lomaketiedot ja analytiikka",
@@ -1420,7 +1439,10 @@
 		"polls": {
 			"read": "Näytä kyselyt",
 			"write": "Luo ja hallinnoi omia kyselyitä",
-			"delete": "Poista mikä tahansa kysely"
+			"update": "Muokkaa kyselyitä",
+			"delete": "Poista mikä tahansa kysely",
+			"export": "Vie kyselyt CSV-tiedostoon",
+			"import": "Tuo kyselyitä tiedostosta"
 		},
 		"profile": {
 			"read": {
