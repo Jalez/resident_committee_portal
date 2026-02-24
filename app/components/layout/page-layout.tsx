@@ -1,7 +1,10 @@
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "react-router";
+import { ExportButton, ImportButton } from "~/components/export-import-buttons";
 import { DynamicQR } from "~/components/dynamic-qr";
 import { useInfoReel } from "~/contexts/info-reel-context";
 import { useLanguage } from "~/contexts/language-context";
+import { getExportImportPaths } from "~/lib/export-import-utils";
 import {
 	CONTENT_AREA_HEIGHT,
 	CONTENT_AREA_WIDTH,
@@ -105,6 +108,14 @@ interface SplitLayoutProps {
 	className?: string;
 	/** Optional footer content shown below main content (e.g., action buttons) */
 	footer?: React.ReactNode;
+	/** Show export control; API path derived from current route */
+	canExport?: boolean;
+	/** Show import control; API path derived from current route */
+	canImport?: boolean;
+	/** Query params appended to export URL (e.g. { year, status }) */
+	exportQueryParams?: Record<string, string>;
+	/** Extra form fields sent with import POST (e.g. { year }) */
+	importExtraFields?: Record<string, string>;
 }
 
 export function SplitLayout({
@@ -113,9 +124,45 @@ export function SplitLayout({
 	header,
 	className,
 	footer,
+	canExport,
+	canImport,
+	exportQueryParams,
+	importExtraFields,
 }: SplitLayoutProps) {
 	const { isInfoReel } = useInfoReel();
 	const { language, secondaryLanguage } = useLanguage();
+	const { pathname } = useLocation();
+	const { t } = useTranslation();
+	const paths = getExportImportPaths(pathname);
+	const exportHref =
+		paths && canExport
+			? paths.exportPath +
+				(exportQueryParams && Object.keys(exportQueryParams).length > 0
+					? "?" + new URLSearchParams(exportQueryParams).toString()
+					: "")
+			: null;
+	const importActionUrl = paths && canImport ? paths.importPath : null;
+	const footerContent =
+		exportHref || importActionUrl || footer ? (
+		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+			{exportHref && (
+				<ExportButton
+					href={exportHref}
+					title={t("treasury.breakdown.export")}
+				/>
+			)}
+			{importActionUrl && (
+				<ImportButton
+					actionUrl={importActionUrl}
+					extraFields={importExtraFields}
+					title={t("treasury.breakdown.import")}
+				/>
+			)}
+			{footer}
+		</div>
+	) : footer ? (
+		<>{footer}</>
+	) : null;
 
 	// Info Reel mode: split layout with QR panel
 	if (isInfoReel && right) {
@@ -182,15 +229,21 @@ export function SplitLayout({
 								</span>
 							)}
 						</h1>
-						{footer && <div className="shrink-0">{footer}</div>}
+						{footerContent && (
+							<div className="shrink-0">{footerContent}</div>
+						)}
 					</div>
 				)}
 				{/* Mobile: just show footer if present */}
-				{footer && (
-					<div className="md:hidden mb-4 flex justify-end">{footer}</div>
+				{footerContent && (
+					<div className="md:hidden mb-4 flex justify-end">
+						{footerContent}
+					</div>
 				)}
 				{/* If no header but has footer, show footer separately */}
-				{!header && footer && <div className="mb-8">{footer}</div>}
+				{!header && footerContent && (
+					<div className="mb-8">{footerContent}</div>
+				)}
 				{children}
 			</div>
 		</div>
