@@ -259,6 +259,8 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 
 	const canUpdate = hasPermission("events:update");
 	const canDelete = hasPermission("events:delete");
+	const canExport = !isInfoReel && hasPermission("events:export");
+	const canImport = !isInfoReel && hasPermission("events:import");
 	const hasActions = canUpdate || canDelete;
 
 	useEffect(() => {
@@ -446,6 +448,8 @@ export default function Events({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
 				right={RightContent}
 				footer={FooterContent}
 				header={{

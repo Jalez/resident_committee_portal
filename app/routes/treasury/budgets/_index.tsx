@@ -200,6 +200,8 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 	);
 	const { hasPermission, user } = useUser();
 	const canWrite = hasPermission("treasury:budgets:write");
+	const canExport = hasPermission("treasury:budgets:export");
+	const canImport = hasPermission("treasury:budgets:import");
 	const canUpdateBudget = (budget: (typeof budgets)[0]) =>
 		hasPermission("treasury:budgets:update") ||
 		(hasPermission("treasury:budgets:update-self") &&
@@ -371,6 +373,10 @@ export default function TreasuryBudgets({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
+				exportQueryParams={{ year: String(selectedYear) }}
+				importExtraFields={{ year: String(selectedYear) }}
 				footer={FooterContent}
 				header={{
 					primary: t("treasury.budgets.title", { lng: languages.primary }),

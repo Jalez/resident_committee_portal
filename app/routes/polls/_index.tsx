@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
+import { toast } from "sonner";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
@@ -54,6 +55,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 	);
 	const canViewAnalytics = authUser.permissions.some(
 		(p) => p === "forms:read" || p === "*",
+	);
+	const canExport = authUser.permissions.some(
+		(p) => p === "polls:export" || p === "*",
+	);
+	const canImport = authUser.permissions.some(
+		(p) => p === "polls:import" || p === "*",
 	);
 
 	const db = getDatabase();
@@ -115,6 +122,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 		canUpdate,
 		canDelete,
 		canViewAnalytics,
+		canExport,
+		canImport,
 		currentYear,
 		systemLanguages,
 	};
@@ -325,6 +334,9 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
 		canUpdate,
 		canDelete,
 		canViewAnalytics,
+		canExport,
+		canImport,
+		currentYear,
 		systemLanguages,
 	} = loaderData;
 	const [deleteConfirmPollId, setDeleteConfirmPollId] = useState<string | null>(
@@ -361,6 +373,9 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
 				}}
 			/>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
+				importExtraFields={{ year: String(currentYear) }}
 				header={{
 					primary: t("polls.title", { lng: systemLanguages.primary }),
 					secondary: t("polls.title", {
@@ -368,7 +383,7 @@ export default function Polls({ loaderData }: Route.ComponentProps) {
 					}),
 				}}
 				footer={
-					<div className="flex gap-2">
+					<div className="flex gap-2 items-center">
 						{canWrite && (
 							<AddItemButton
 								title={t("polls.add_poll")}

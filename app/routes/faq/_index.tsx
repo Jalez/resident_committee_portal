@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
+import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
@@ -98,6 +99,8 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 	const canWrite = hasPermission("faq:write");
 	const canUpdate = hasPermission("faq:update");
 	const canDelete = hasPermission("faq:delete");
+	const canExport = hasPermission("faq:export");
+	const canImport = hasPermission("faq:import");
 	const useSecondary =
 		systemLanguages.secondary && i18n.language === systemLanguages.secondary;
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -127,6 +130,8 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 				loading={deleteFetcher.state !== "idle"}
 			/>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
 				header={{
 					primary: t("faq.title", { lng: systemLanguages.primary }),
 					secondary: t("faq.title", {

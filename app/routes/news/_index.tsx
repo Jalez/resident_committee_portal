@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
+import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
@@ -103,6 +104,8 @@ export default function News({ loaderData }: Route.ComponentProps) {
 	const canWrite = hasPermission("news:write");
 	const canUpdate = hasPermission("news:update");
 	const canDelete = hasPermission("news:delete");
+	const canExport = hasPermission("news:export");
+	const canImport = hasPermission("news:import");
 	const useSecondary =
 		systemLanguages.secondary && i18n.language === systemLanguages.secondary;
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -132,6 +135,8 @@ export default function News({ loaderData }: Route.ComponentProps) {
 				loading={deleteFetcher.state !== "idle"}
 			/>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
 				header={{
 					primary: t("news.title", { lng: systemLanguages.primary }),
 					secondary: t("news.title", {

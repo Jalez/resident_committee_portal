@@ -1,13 +1,13 @@
 import { getDatabase, type Transaction } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
+import { buildCsvResponse, escapeCSV } from "~/lib/csv-utils";
 import type { Route } from "./+types/_index";
 
 /**
- * Export treasury transactions as CSV (requires treasury:export permission)
+ * Export treasury transactions as CSV (requires treasury:transactions:export permission)
  */
 export async function loader({ request }: Route.LoaderArgs) {
-	// Requires treasury:export permission
-	await requirePermission(request, "treasury:export", getDatabase);
+	await requirePermission(request, "treasury:transactions:export", getDatabase);
 
 	const db = getDatabase();
 	const url = new URL(request.url);
@@ -43,7 +43,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 		"amount",
 		"status",
 		"reimbursementStatus",
-		// "purchaser", // Not directly available
 		"createdAt",
 	];
 
@@ -57,29 +56,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 			t.amount,
 			t.status,
 			t.reimbursementStatus || "",
-			// Purchaser is not vertically available on strict Transaction type without join, skipping for now
-			// t.purchaseId ? "Yes" : "",
 			t.createdAt ? new Date(t.createdAt).toISOString() : "",
 		].join(",");
 	});
 
-	const csv = `\uFEFF${[headers.join(","), ...rows].join("\n")}`;
-
 	const filename = `transactions-${year}.csv`;
 
-	return new Response(csv, {
-		headers: {
-			"Content-Type": "text/csv; charset=utf-8",
-			"Content-Disposition": `attachment; filename="${filename}"`,
-		},
-	});
-}
-
-function escapeCSV(value: string): string {
-	if (!value) return "";
-	// If value contains comma, newline, or quote, wrap in quotes and escape quotes
-	if (value.includes(",") || value.includes("\n") || value.includes('"')) {
-		return `"${value.replace(/"/g, '""')}"`;
-	}
-	return value;
+	return buildCsvResponse([headers.join(","), ...rows], filename);
 }

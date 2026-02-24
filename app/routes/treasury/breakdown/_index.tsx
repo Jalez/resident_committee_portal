@@ -1,6 +1,4 @@
-import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import {
 	TREASURY_BUDGET_STATUS_VARIANTS,
@@ -255,80 +253,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 	};
 }
 
-/**
- * Import button component with file input
- */
-function ImportButton({ year }: { year: number }) {
-	const { t } = useTranslation();
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [isImporting, setIsImporting] = useState(false);
-
-	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-
-		setIsImporting(true);
-
-		const formData = new FormData();
-		formData.append("file", file);
-		formData.append("year", String(year));
-
-		try {
-			const response = await fetch("/api/treasury/import", {
-				method: "POST",
-				body: formData,
-			});
-
-			const result = await response.json();
-
-			if (result.success) {
-				toast.success(
-					t("treasury.breakdown.import_success", { count: result.imported }),
-				);
-				// Reload the page to show new transactions
-				window.location.reload();
-			} else {
-				toast.error(result.error || t("treasury.breakdown.import_error"));
-			}
-		} catch (_error) {
-			toast.error(t("treasury.breakdown.import_error"));
-		} finally {
-			setIsImporting(false);
-			// Reset the file input
-			if (fileInputRef.current) {
-				fileInputRef.current.value = "";
-			}
-		}
-	};
-
-	return (
-		<>
-			<input
-				ref={fileInputRef}
-				type="file"
-				accept=".csv,.xlsx,.xls"
-				className="hidden"
-				onChange={handleFileChange}
-			/>
-			<button
-				type="button"
-				onClick={() => fileInputRef.current?.click()}
-				className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
-				title={t("treasury.breakdown.import")}
-				disabled={isImporting}
-			>
-				{isImporting ? (
-					<span className="material-symbols-outlined text-xl animate-spin">
-						progress_activity
-					</span>
-				) : (
-					<span className="material-symbols-outlined text-xl">upload</span>
-				)}
-			</button>
-		</>
-	);
-}
-
 export default function TreasuryBreakdown({
 	loaderData,
 }: Route.ComponentProps) {
@@ -365,8 +289,6 @@ export default function TreasuryBreakdown({
 		][],
 	);
 	const { hasPermission, user } = useUser();
-	const canExport = hasPermission("treasury:export");
-	const canImport = hasPermission("treasury:import");
 
 	// Helper to check if user can edit a specific transaction
 	const canViewTransaction = (transaction: Transaction) =>
@@ -411,17 +333,6 @@ export default function TreasuryBreakdown({
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
 			<SearchMenu fields={searchFields} />
-			{canImport && <ImportButton year={year} />}
-			{canExport && (
-				<a
-					href={`/api/treasury/export?year=${year}`}
-					download={`transactions-${year}.csv`}
-					className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-					title={t("treasury.breakdown.export")}
-				>
-					<span className="material-symbols-outlined text-xl">download</span>
-				</a>
-			)}
 		</div>
 	);
 

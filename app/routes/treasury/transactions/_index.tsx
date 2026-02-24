@@ -165,6 +165,7 @@ export default function TreasuryTransactions({
 	loaderData,
 }: Route.ComponentProps) {
 	const {
+		year,
 		transactions,
 		years,
 		status,
@@ -188,6 +189,8 @@ export default function TreasuryTransactions({
 	const canEditGeneral = hasPermission("treasury:transactions:update");
 	const canEditSelf = hasPermission("treasury:transactions:update-self");
 	const canWrite = hasPermission("treasury:transactions:write");
+	const canExport = hasPermission("treasury:transactions:export");
+	const canImport = hasPermission("treasury:transactions:import");
 
 	const canEditTransaction = (transaction: Transaction) => {
 		if (canEditGeneral) return true;
@@ -358,6 +361,10 @@ export default function TreasuryTransactions({
 						lng: systemLanguages.secondary ?? systemLanguages.primary,
 					}),
 				}}
+				canExport={canExport}
+				canImport={canImport}
+				exportQueryParams={{ year: String(year) }}
+				importExtraFields={{ year: String(year) }}
 				footer={footerContent}
 			>
 				<div className="space-y-6">

@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
-import { ColoredStatusLinkBadge } from "~/components/colored-status-link-badge";
 import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
@@ -40,17 +39,16 @@ export function meta({ data }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
 
 
-	console.log("loader for minutes");
 	const user = await requireAnyPermission(
 		request,
 		["minutes:read", "minutes:write"],
 		getDatabase as unknown as () => RBACDatabaseAdapter,
 	);
-	console.log("user", user);
 
 	const canWrite = hasAnyPermission(user, ["minutes:write"]);
 	const canUpdate = hasAnyPermission(user, ["minutes:update"]);
 	const canDelete = hasAnyPermission(user, ["minutes:delete"]);
+	const canExport = hasAnyPermission(user, ["minutes:export"]);
 
 	const systemLanguages = await getSystemLanguageDefaults();
 	const db = getDatabase();
@@ -109,9 +107,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 		canWrite,
 		canUpdate,
 		canDelete,
+		canExport,
 		systemLanguages,
 		minutes: sortedMinutes,
 		years,
+		yearParam: yearParam ?? String(currentYear),
 		currentYear: year,
 		creatorsMap: Object.fromEntries(creatorsMap),
 		relationsMap: serializedRelationsMap,
@@ -122,12 +122,14 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	const {
 		minutes,
 		years,
+		yearParam,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 		relationsMap: relationsMapRaw,
 		canWrite,
 		canUpdate,
 		canDelete,
+		canExport,
 	} = loaderData;
 	const creatorsMap = new Map(
 		Object.entries(creatorsMapRaw ?? {}) as [string, string][],
@@ -233,6 +235,10 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
+				exportQueryParams={
+					yearParam && yearParam !== "all" ? { year: yearParam } : undefined
+				}
 				header={{
 					primary: t("minutes.title", {
 						lng: systemLanguages.primary,

@@ -84,12 +84,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const canWrite = hasPermission(user, "submissions:write");
 	const canDelete = hasPermission(user, "submissions:delete");
+	const canExport = hasPermission(user, "submissions:export");
 	const systemLanguages = await getSystemLanguageDefaults();
 	return {
 		siteConfig: SITE_CONFIG,
 		submissions: sortedSubmissions,
 		canWrite,
 		canDelete,
+		canExport,
 		systemLanguages,
 		relationsMap: serializedRelationsMap,
 	};
@@ -155,6 +157,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 		submissions,
 		canWrite,
 		canDelete,
+		canExport,
 		systemLanguages,
 		relationsMap: relationsMapRaw,
 	} = loaderData;
@@ -322,6 +325,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
 				header={{
 					primary: t("submissions.title", { lng: systemLanguages.primary }),
 					secondary: t("submissions.title", {

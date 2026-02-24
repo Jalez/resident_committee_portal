@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher, useNavigate, useNavigation, useRouteLoaderData } from "react-router";
-import { toast } from "sonner";
+import { useNavigation, useRouteLoaderData } from "react-router";
 import { AddItemButton } from "~/components/add-item-button";
 import type { loader as rootLoader } from "~/root";
 import {
@@ -18,11 +16,8 @@ import {
 	SplitLayout,
 } from "~/components/layout/page-layout";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
-import { Button } from "~/components/ui/button";
 import { DataTable } from "~/components/ui/data-table";
 
-import { useLanguage } from "~/contexts/language-context";
-import { useNewTransaction } from "~/contexts/new-transaction-context";
 import { useUser } from "~/contexts/user-context";
 import {
 	getDatabase,
@@ -301,6 +296,8 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 	const { hasPermission } = useUser();
 	const canWrite = hasPermission("inventory:write");
 	const canDelete = hasPermission("inventory:delete");
+	const canExport = hasPermission("inventory:export");
+	const canImport = hasPermission("inventory:import");
 
 	return (
 		<InventoryProvider
@@ -318,7 +315,11 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 			{isInfoReel ? (
 				<InventoryInfoReelPage languages={languages} />
 			) : (
-				<InventoryTablePage languages={languages} />
+				<InventoryTablePage
+					languages={languages}
+					canExport={canExport}
+					canImport={canImport}
+				/>
 			)}
 		</InventoryProvider>
 	);
@@ -359,8 +360,12 @@ function InventoryInfoReelPage({
 
 function InventoryTablePage({
 	languages,
+	canExport,
+	canImport,
 }: {
 	languages: { primary: string; secondary: string };
+	canExport: boolean;
+	canImport: boolean;
 }) {
 	const {
 		items,
@@ -379,7 +384,6 @@ function InventoryTablePage({
 	} = useInventory();
 
 	const navigation = useNavigation();
-	const fetcher = useFetcher();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
 	const isLoading = navigation.state === "loading";
 
@@ -424,57 +428,11 @@ function InventoryTablePage({
 		<div className="flex flex-wrap items-center gap-2">
 			<SearchMenu fields={searchFields} />
 			{isStaff && (
-				<>
-					<AddItemButton
-						title={t("inventory.actions.add")}
-						variant="icon"
-						createType="inventory"
-					/>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 text-muted-foreground hover:text-foreground"
-						asChild
-						title={t("inventory.actions.export")}
-					>
-						<a href="/api/inventory/export" download>
-							<span className="material-symbols-outlined text-lg">
-								download
-							</span>
-						</a>
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 text-muted-foreground hover:text-foreground relative cursor-pointer"
-						title={t("inventory.actions.import")}
-					>
-						<label htmlFor="csv-upload" className="absolute inset-0 cursor-pointer">
-							<span className="sr-only">Upload</span>
-						</label>
-						<span className="material-symbols-outlined text-lg pointer-events-none">upload</span>
-						<input
-							type="file"
-							id="csv-upload"
-							className="hidden"
-							accept=".csv, .xlsx, .xls"
-							onChange={(e) => {
-								const file = e.target.files?.[0];
-								if (file) {
-									const formData = new FormData();
-									formData.set("file", file);
-									fetcher.submit(formData, {
-										method: "POST",
-										action: "/api/inventory/import",
-										encType: "multipart/form-data",
-									});
-									e.target.value = "";
-									toast.info(t("inventory.messages.importing"));
-								}
-							}}
-						/>
-					</Button>
-				</>
+				<AddItemButton
+					title={t("inventory.actions.add")}
+					variant="icon"
+					createType="inventory"
+				/>
 			)}
 		</div>
 	);
@@ -482,6 +440,8 @@ function InventoryTablePage({
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
+				canImport={canImport}
 				header={{
 					primary: t("inventory.title", { lng: languages.primary }),
 					secondary: t("inventory.title", { lng: languages.secondary }),

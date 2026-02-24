@@ -21,6 +21,7 @@ import {
 } from "~/components/treasury/treasury-table";
 import { ViewScopeDisclaimer } from "~/components/treasury/view-scope-disclaimer";
 import { useReimbursementTemplate } from "~/contexts/reimbursement-template-context";
+import { useUser } from "~/contexts/user-context";
 import {
 	getDatabase,
 	type InventoryItem,
@@ -140,6 +141,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		siteConfig: SITE_CONFIG,
 		purchases: enrichedPurchases,
 		years,
+		yearParam: year,
 		currentYear: parseInt(year, 10) || new Date().getFullYear(),
 		currentStatus: status,
 		canReadAll,
@@ -233,6 +235,8 @@ export default function BudgetReimbursements({
 	const {
 		purchases,
 		years,
+		yearParam,
+		currentStatus,
 		systemLanguages,
 		creatorsMap: creatorsMapRaw,
 		canReadAll,
@@ -251,6 +255,8 @@ export default function BudgetReimbursements({
 	const { formatDate } = useFormatDate();
 	const navigate = useNavigate();
 	const { setTemplate } = useReimbursementTemplate();
+	const { hasPermission } = useUser();
+	const canExport = hasPermission("treasury:reimbursements:export");
 
 	useEffect(() => {
 		const success = searchParams.get("success");
@@ -425,6 +431,9 @@ export default function BudgetReimbursements({
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
+				exportQueryParams={{ year: yearParam, status: currentStatus }}
+				footer={footerContent}
 				header={{
 					primary: t("treasury.reimbursements.title", {
 						lng: systemLanguages.primary,
@@ -433,7 +442,6 @@ export default function BudgetReimbursements({
 						lng: systemLanguages.secondary ?? systemLanguages.primary,
 					}),
 				}}
-				footer={footerContent}
 			>
 				<div className="space-y-6">
 					<ViewScopeDisclaimer

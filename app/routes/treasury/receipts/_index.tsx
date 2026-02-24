@@ -20,6 +20,7 @@ import {
 	type RBACDatabaseAdapter,
 	requireAnyPermission,
 } from "~/lib/auth.server";
+import { useUser } from "~/contexts/user-context";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { loadRelationsMapForEntities } from "~/lib/relations-column.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
@@ -181,6 +182,8 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
 	const { formatDate } = useFormatDate();
+	const { hasPermission } = useUser();
+	const canExport = hasPermission("treasury:receipts:export");
 
 	useEffect(() => {
 		const success = searchParams.get("success");
@@ -265,6 +268,7 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				canExport={canExport}
 				header={{
 					primary: t("treasury.receipts.title", {
 						lng: systemLanguages.primary,
