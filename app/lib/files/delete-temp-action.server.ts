@@ -7,7 +7,7 @@ import type { FileEntityType } from "~/lib/file-upload-types";
 const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
-	avatar: ["profile:edit"],
+	avatar: ["profile:write:own"],
 };
 
 export async function action({ request }: ActionFunctionArgs) {

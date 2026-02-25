@@ -11,7 +11,7 @@ const VALID_ENTITY_TYPES: FileEntityType[] = ["receipt", "minute", "avatar"];
 const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
-	avatar: ["profile:edit"],
+	avatar: ["profile:write:own"],
 };
 
 function isValidPathname(pathname: string, entityType: FileEntityType, userId?: string): boolean {
@@ -90,6 +90,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		return Response.json(jsonResponse);
 	} catch (error) {
+		console.error("[upload-token] Error:", error);
 		const message = error instanceof Error ? error.message : "Upload failed";
 		return Response.json({ error: message }, { status: 400 });
 	}
