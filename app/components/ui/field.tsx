@@ -185,7 +185,13 @@ export function Field({
 
 	// If options are strings, we need translation context to generate labels
 	const getOptionLabel = (opt: FieldOption | string) => {
-		if (typeof opt !== "string") return opt.label;
+		if (typeof opt !== "string") {
+			if (!translationNamespace) return opt.label;
+			return t(
+				`${translationNamespace}.${name}es.${opt.value}`,
+				opt.label,
+			);
+		}
 		return translationNamespace
 			? t(`${translationNamespace}.${name}es.${opt}`)
 			: opt;

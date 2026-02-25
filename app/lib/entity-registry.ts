@@ -225,7 +225,7 @@ export const ENTITY_REGISTRY: Record<RelationshipEntityType, EntityTypeConfig> =
 			statusVariants: GENERIC_VARIANTS,
 			supportsUpload: false,
 			supportsAIDraft: false,
-			supportsDraft: false,
+			supportsDraft: true,
 		},
 		message: {
 			type: "message",

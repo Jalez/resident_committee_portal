@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useRevalidator } from "react-router";
+import { useFetcher, useNavigate, useRevalidator } from "react-router";
 import { toast } from "sonner";
 import { RelationActions } from "~/components/relation-actions";
 import { Button } from "~/components/ui/button";
@@ -72,6 +72,7 @@ interface CreateDraftResponse {
 		status: string;
 	};
 	linked?: boolean;
+	redirectUrl?: string;
 	error?: string;
 }
 
@@ -117,6 +118,7 @@ function RelationshipSectionComponent({
 	sourceEntityType: EntityType;
 }) {
 	const { t } = useTranslation();
+	const navigate = useNavigate();
 	const revalidator = useRevalidator();
 	const fetcher = useFetcher<CreateDraftResponse>();
 	const importFetcher = useFetcher<ImportFromSourceResponse>();
@@ -173,6 +175,10 @@ function RelationshipSectionComponent({
 
 			// Revalidate to get fresh data from server
 			revalidator.revalidate();
+
+			if (fetcher.data.redirectUrl) {
+				navigate(fetcher.data.redirectUrl);
+			}
 		} else if (fetcher.data?.error) {
 			toast.error(
 				t("common.relationships.create_failed", {
@@ -180,7 +186,14 @@ function RelationshipSectionComponent({
 				}),
 			);
 		}
-	}, [fetcher.data, section.relationBType, revalidator, t, clearRemovedId]);
+	}, [
+		fetcher.data,
+		section.relationBType,
+		revalidator,
+		t,
+		clearRemovedId,
+		navigate,
+	]);
 
 	// When entities are imported, track them and revalidate
 	useEffect(() => {

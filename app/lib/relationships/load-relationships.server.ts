@@ -180,7 +180,15 @@ async function fetchEntityById(
 		case "social":
 			return db.getSocialLinkById(id);
 		case "mail_thread":
-			return db.getCommitteeMailThreadById(id);
+			const thread = await db.getCommitteeMailThreadById(id);
+			if (!thread) return null;
+			const drafts = await db.getMailDrafts(200);
+			const linkedDraft = drafts.find((draft) => draft.threadId === id);
+			return {
+				...thread,
+				draftId: linkedDraft?.id,
+				status: linkedDraft ? "draft" : "active",
+			};
 		case "event":
 			return db.getEventById(id);
 		case "submission":
@@ -234,7 +242,24 @@ async function fetchAvailableEntities(
 			allEntities = await db.getSocialLinks();
 			break;
 		case "mail_thread":
-			allEntities = [];
+			const drafts = await db.getMailDrafts(200);
+			const draftByThreadId = new Map(
+				drafts
+					.filter((draft) => Boolean(draft.threadId))
+					.map((draft) => [draft.threadId as string, draft.id]),
+			);
+			allEntities = (await db.getCommitteeMailThreads(undefined, 100, 0)).map(
+				(thread) => {
+					const draftId = draftByThreadId.get(thread.threadId);
+					return {
+						id: thread.threadId,
+						subject: thread.latestMessage.subject || "Email thread",
+						createdAt: thread.latestMessage.date,
+						draftId,
+						status: draftId ? "draft" : "active",
+					};
+				},
+			);
 			break;
 		case "event":
 			allEntities = await db.getEvents();

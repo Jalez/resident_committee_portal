@@ -39,6 +39,7 @@ export type AnyEntity =
 		name?: string;
 		description?: string;
 		status?: string;
+		draftId?: string;
 		createdAt?: Date;
 		start?: { dateTime: string; date: string };
 	};
@@ -105,6 +106,9 @@ export function getEntityStatus(
 
 	// Mail threads always show as active
 	if (type === "mail_thread") {
+		if ("status" in entity && typeof (entity as any).status === "string") {
+			return (entity as any).status;
+		}
 		return "active";
 	}
 
@@ -148,6 +152,13 @@ export function entityToRelationItem(
 		status === "draft"
 			? config.editUrl(entity.id)
 			: config.detailUrl(entity.id);
+
+	if (type === "mail_thread") {
+		const draftId = (entity as any).draftId as string | undefined;
+		if (draftId) {
+			targetUrl = `/mail/drafts/${draftId}/edit`;
+		}
+	}
 	if (currentPath) {
 		targetUrl += `?returnUrl=${encodeURIComponent(currentPath)}`;
 	}

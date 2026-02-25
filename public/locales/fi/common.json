@@ -11,6 +11,8 @@
 			"minute": "Pöytäkirja",
 			"news": "Uutiset",
 			"faq": "UKK",
+			"mail_thread": "Sähköpostiketju",
+			"message": "Viesti",
 			"submission": "Yhteydenotto"
 		},
 		"relations": {
@@ -28,8 +30,25 @@
 			"poll": "Äänestys",
 			"social": "Sosiaalinen linkki",
 			"mail": "Sähköposti",
+			"mail_thread": "Sähköpostiketju",
 			"event": "Tapahtuma",
-			"submission": "Yhteydenotto"
+			"submission": "Yhteydenotto",
+			"message": "Viesti"
+		},
+		"relationships": {
+			"draft_created": "Luonnos luotu ja linkitetty",
+			"create_failed": "Luonnoksen luonti epäonnistui",
+			"imported": "{{count}} kohde(tta) tuotu ja linkitetty",
+			"import_failed": "Kohteiden tuonti epäonnistui",
+			"linked": "Kohde linkitetty",
+			"link_failed": "Linkitys epäonnistui",
+			"unlinked": "Linkitys poistettu",
+			"unlink_failed": "Linkityksen poisto epäonnistui",
+			"draft_removed": "Luonnos poistettu",
+			"remove_failed": "Poisto epäonnistui",
+			"add_type": "Lisää linkitys",
+			"add_new_type": "Lisää uusi {{type}}",
+			"select_type": "Valitse {{type}}"
 		},
 		"actions": {
 			"delete": "Poista",

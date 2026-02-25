@@ -58,6 +58,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const userId = user.userId || null;
 
 	try {
+		let mailThreadDraftId: string | null = null;
 		let entity: {
 			id: string;
 			name?: string | null;
@@ -217,6 +218,34 @@ export async function action({ request }: Route.ActionArgs) {
 				break;
 			}
 
+			case "mail_thread": {
+				const threadId = crypto.randomUUID();
+				await db.insertCommitteeMailThread({
+					id: threadId,
+					subject: "",
+				});
+
+				const draft = await db.insertMailDraft({
+					toJson: "[]",
+					ccJson: null,
+					bccJson: null,
+					subject: null,
+					body: null,
+					draftType: "new",
+					replyToMessageId: null,
+					forwardFromMessageId: null,
+					threadId,
+				});
+
+				mailThreadDraftId = draft.id;
+				entity = {
+					id: threadId,
+					name: "Draft email thread",
+					status: "draft",
+				};
+				break;
+			}
+
 			default:
 				return data(
 					{ success: false, error: `Unknown entity type: ${type}` },
@@ -311,7 +340,9 @@ export async function action({ request }: Route.ActionArgs) {
 			poll: `/polls/${entity.id}/edit`,
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
-			mail_thread: `/mail/thread/${entity.id}`,
+			mail_thread: mailThreadDraftId
+				? `/mail/drafts/${mailThreadDraftId}/edit`
+				: `/mail/thread/${entity.id}`,
 			submission: `/submissions/${entity.id}/edit`,
 			message: `/messages`,
 		};
@@ -345,6 +376,10 @@ export async function action({ request }: Route.ActionArgs) {
 				status: entity.status || "draft",
 			},
 			linked: !!(sourceType && sourceId),
+			redirectUrl:
+				type === "mail_thread" && mailThreadDraftId
+					? `/mail/drafts/${mailThreadDraftId}/edit`
+					: undefined,
 		});
 	} catch (error) {
 		console.error(`[CreateDraft] Failed to create ${type} draft:`, error);

@@ -11,6 +11,8 @@
 			"minute": "Minute",
 			"news": "News",
 			"faq": "FAQ",
+			"mail_thread": "Email Thread",
+			"message": "Message",
 			"submission": "Submission"
 		},
 		"relations": {
@@ -28,8 +30,10 @@
 			"poll": "Poll",
 			"social": "Social Link",
 			"mail": "Email",
+			"mail_thread": "Email Thread",
 			"event": "Event",
-			"submission": "Submission"
+			"submission": "Submission",
+			"message": "Message"
 		},
 		"actions": {
 			"save": "Save",
