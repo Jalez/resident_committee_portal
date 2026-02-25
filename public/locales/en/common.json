@@ -11,7 +11,8 @@
 			"minute": "Minute",
 			"news": "News",
 			"faq": "FAQ",
-			"submission": "Submission"
+			"submission": "Submission",
+			"mail_thread": "Email Thread"
 		},
 		"relations": {
 			"title": "Relations"

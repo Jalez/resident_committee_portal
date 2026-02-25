@@ -11,7 +11,8 @@
 			"minute": "Pöytäkirja",
 			"news": "Uutiset",
 			"faq": "UKK",
-			"submission": "Yhteydenotto"
+			"submission": "Yhteydenotto",
+			"mail_thread": "Sähköpostikeskustelu"
 		},
 		"relations": {
 			"title": "Liittyvät"
