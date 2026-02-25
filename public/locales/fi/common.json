@@ -47,8 +47,8 @@
 			"draft_removed": "Luonnos poistettu",
 			"remove_failed": "Poisto epäonnistui",
 			"add_type": "Lisää linkitys",
-			"add_new_type": "Lisää uusi {{type}}",
-			"select_type": "Valitse {{type}}"
+			"add_new_type": "Lisää tyyppi",
+			"select_type": "Valitse tyyppi"
 		},
 		"actions": {
 			"delete": "Poista",

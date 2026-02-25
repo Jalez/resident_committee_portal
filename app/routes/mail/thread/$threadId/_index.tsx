@@ -256,8 +256,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	const relationshipTypes: RelationshipEntityType[] = [
 		"reimbursement",
 		"transaction",
-		"event",
+		"receipt",
+		"budget",
+		"inventory",
 		"minute",
+		"news",
+		"faq",
+		"poll",
+		"social",
+		"event",
+		"submission",
+		"message",
 	];
 
 	// Load relationships
