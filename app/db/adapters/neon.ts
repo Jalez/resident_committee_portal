@@ -1100,6 +1100,18 @@ export class NeonAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
+	async updateCommitteeMailMessage(
+		id: string,
+		data: Partial<Omit<NewCommitteeMailMessage, "id">>,
+	): Promise<CommitteeMailMessage | null> {
+		const result = await this.db
+			.update(committeeMailMessages)
+			.set(data)
+			.where(eq(committeeMailMessages.id, id))
+			.returning();
+		return result[0] ?? null;
+	}
+
 	async committeeMailMessageExistsByMessageId(
 		messageId: string,
 	): Promise<boolean> {

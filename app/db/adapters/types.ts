@@ -208,6 +208,10 @@ export interface DatabaseAdapter {
 		offset?: number,
 	): Promise<CommitteeMailMessage[]>;
 	getCommitteeMailMessageById(id: string): Promise<CommitteeMailMessage | null>;
+	updateCommitteeMailMessage(
+		id: string,
+		data: Partial<Omit<NewCommitteeMailMessage, "id">>,
+	): Promise<CommitteeMailMessage | null>;
 	/** Check if a message with this message_id (inbox) already exists */
 	committeeMailMessageExistsByMessageId(messageId: string): Promise<boolean>;
 	deleteCommitteeMailMessage(id: string): Promise<boolean>;

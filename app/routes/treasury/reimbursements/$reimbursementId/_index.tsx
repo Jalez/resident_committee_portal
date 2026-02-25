@@ -112,16 +112,28 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 			const orphanedMessages = allSubjectMatches.filter(
 				(m) => !threadMessageIds.has(m.id),
 			);
-			if (orphanedMessages.length > 0 && mailThread) {
-				// Merge orphaned messages into the thread count
-				mailThread.messageCount += orphanedMessages.length;
-			} else if (orphanedMessages.length > 0 && !mailThread) {
-				// No threaded mail found, but we have subject matches
-				mailThread = {
-					id: orphanedMessages[0].threadId || orphanedMessages[0].id,
-					subject: orphanedMessages[0].subject,
-					messageCount: orphanedMessages.length,
-				};
+			if (orphanedMessages.length > 0) {
+				let targetThreadId: string;
+				if (mailThread) {
+					// Merge orphaned messages into the thread count
+					mailThread.messageCount += orphanedMessages.length;
+					targetThreadId = mailThread.id;
+				} else {
+					// No threaded mail found, but we have subject matches
+					targetThreadId = orphanedMessages[0].threadId || orphanedMessages[0].id;
+					mailThread = {
+						id: targetThreadId,
+						subject: orphanedMessages[0].subject,
+						messageCount: orphanedMessages.length,
+					};
+				}
+
+				// Fire and forget updating the orphaned messages to the correct threadId
+				Promise.all(
+					orphanedMessages.map((m) =>
+						db.updateCommitteeMailMessage(m.id, { threadId: targetThreadId }),
+					),
+				).catch(console.error);
 			}
 
 			const allRelationships = await db.getEntityRelationships(
