@@ -362,6 +362,7 @@ export default function EditTransaction({ loaderData }: Route.ComponentProps) {
 		budget: {
 			linked: relationships.budget?.linked || [],
 			available: openBudgets || [],
+			canWrite: relationships.budget?.canWrite ?? false,
 		},
 	};
 
