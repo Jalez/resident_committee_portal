@@ -1006,5 +1006,54 @@ describe("Reimbursement Request Flow", () => {
 			);
 			expect(threadMessages).toHaveLength(1);
 		});
+
+		it("should find orphaned messages using legacy exact subject match", async () => {
+			const purchaseId = "c3d4e5f6-a789-01bc-def1-234567890123";
+			const legacySubject = "Kulukorvaus pyyntö: Biljarditarvike ostoksia: Keppiteline, keppien korjaustyökalut sekä keppien päitä. (59.25 EUR)";
+
+			// 1. Insert original sent message (NO UUID TAG in subject)
+			await db.insertCommitteeMailMessage({
+				direction: "sent",
+				messageId: "legacy-sent@example.com",
+				threadId: "legacy-thread",
+				subject: legacySubject,
+			});
+
+			// 2. Insert orphaned reply (Responder changed subject or thread broke)
+			await db.insertCommitteeMailMessage({
+				direction: "inbox",
+				messageId: "legacy-reply@example.com",
+				threadId: "legacy-reply-thread", // Different thread
+				subject: `VS: ${legacySubject} [TSK61373_b07fa8]`, // Reply might have extra stuff
+			});
+
+			// 3. Simulate view loader legacy fallback logic
+			// Our loader first searches by [Reimbursement <purchaseId>] which will return empty
+			const primaryMatches = await db.getCommitteeMailMessagesBySubjectPattern(
+				`[Reimbursement ${purchaseId}]`
+			);
+			expect(primaryMatches).toHaveLength(0);
+
+			// Then it falls back to the cleaned original thread subject
+			const threadMessages = await db.getCommitteeMailMessagesByThreadId("legacy-thread");
+			const originalSubject = threadMessages[0].subject;
+
+			const cleanOriginalSubject = originalSubject
+				.replace(/^(Re|Fwd|VS|VL|SV|WG|AW|Vast|Vs):\s*/i, "")
+				.trim();
+
+			let legacyMatches: any[] = [];
+			if (cleanOriginalSubject.length > 15) {
+				legacyMatches = await db.getCommitteeMailMessagesBySubjectPattern(cleanOriginalSubject);
+			}
+
+			// We should find both the sent message and the orphaned reply
+			expect(legacyMatches).toHaveLength(2);
+
+			// Verify it specifically found both by their IDs
+			const ids = legacyMatches.map(m => m.messageId);
+			expect(ids).toContain("legacy-sent@example.com");
+			expect(ids).toContain("legacy-reply@example.com");
+		});
 	});
 });

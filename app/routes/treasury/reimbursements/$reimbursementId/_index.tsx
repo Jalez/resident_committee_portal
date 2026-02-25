@@ -86,7 +86,30 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 			const subjectMatches = await db.getCommitteeMailMessagesBySubjectPattern(
 				subjectTag,
 			);
-			const orphanedMessages = subjectMatches.filter(
+
+			// Secondary fallback for legacy emails: if the thread exists, its original subject
+			// didn't have the UUID tag. Look for orphaned replies matching the original subject exactly.
+			let legacyMatches: typeof subjectMatches = [];
+			if (mailThread?.subject) {
+				const cleanOriginalSubject = mailThread.subject
+					.replace(/^(Re|Fwd|VS|VL|SV|WG|AW|Vast|Vs):\s*/i, "")
+					.trim();
+				// Only use legacy match if the subject is reasonably long to avoid false positives
+				if (cleanOriginalSubject.length > 15) {
+					legacyMatches = await db.getCommitteeMailMessagesBySubjectPattern(
+						cleanOriginalSubject,
+					);
+				}
+			}
+
+			// Combine all matches and filter out ones already in the thread
+			const allSubjectMatches = [...subjectMatches, ...legacyMatches].reduce((acc, current) => {
+				const x = acc.find(item => item.id === current.id);
+				if (!x) return acc.concat([current]);
+				return acc;
+			}, [] as typeof subjectMatches);
+
+			const orphanedMessages = allSubjectMatches.filter(
 				(m) => !threadMessageIds.has(m.id),
 			);
 			if (orphanedMessages.length > 0 && mailThread) {
