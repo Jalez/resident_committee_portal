@@ -5,7 +5,7 @@ WORKDIR /app
 # Install dependencies (including dev dependencies for build)
 FROM base AS deps
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN rm bun.lock && bun install
 
 # Build the application
 FROM base AS builder
@@ -24,7 +24,7 @@ COPY --from=builder /app/package.json ./package.json
 
 # Install only production dependencies
 COPY --from=deps /app/bun.lock ./bun.lock
-RUN bun install --frozen-lockfile --production
+RUN rm bun.lock && bun install --production
 
 # Expose the port the app runs on
 EXPOSE 3000
