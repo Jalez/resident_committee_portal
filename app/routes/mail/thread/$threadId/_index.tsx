@@ -504,9 +504,9 @@ export default function MailThread({
 			</div>
 			{linkedReimbursements.length > 0 && canUpdateReimbursementVerdict && (
 				<div className="bg-muted/40 border-border flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
-					<span className="text-muted-foreground">
-						{t("mail.override_ai_verdict", {
-							defaultValue: "Override AI verdict",
+					<span className="text-muted-foreground font-medium mr-1">
+						{t("mail.reimbursement_status", {
+							defaultValue: "Reimbursement Status:",
 						})}
 					</span>
 					{linkedReimbursements.map((reimbursement) => (
@@ -517,7 +517,7 @@ export default function MailThread({
 								name="reimbursementId"
 								value={reimbursement.id}
 							/>
-							<span className="text-foreground max-w-64 truncate" title={reimbursement.description}>
+							<span className="text-foreground max-w-64 truncate font-semibold" title={reimbursement.description}>
 								{reimbursement.description}
 							</span>
 							<select
@@ -544,17 +544,16 @@ export default function MailThread({
 							</Button>
 						</Form>
 					))}
-					{linkedReimbursements.some(r => r.status === "pending" || r.status === "draft") && (
-						<analyticsFetcher.Form method="post" className="ml-auto flex items-center">
-							<input type="hidden" name="_action" value="run_ai_analytics" />
-							{/* Pass the first pending reimbursement ID to the action to re-run analytics for it */}
-							<input type="hidden" name="reimbursementId" value={linkedReimbursements.find(r => r.status === "pending" || r.status === "draft")?.id} />
-							<Button size="sm" variant="secondary" type="submit" disabled={analyticsFetcher.state !== "idle"} title={t("mail.run_ai_analytics", { defaultValue: "Manually re-run AI analytics to determine status from emails" })}>
-								<Sparkles className="mr-1.5 size-3.5 text-blue-500" />
-								{analyticsFetcher.state !== "idle" ? t("common.actions.loading", { defaultValue: "Loading..." }) : t("mail.run_ai_analytics_button", { defaultValue: "Run Analytics" })}
-							</Button>
-						</analyticsFetcher.Form>
-					)}
+
+					<analyticsFetcher.Form method="post" className="ml-auto flex items-center">
+						<input type="hidden" name="_action" value="run_ai_analytics" />
+						{/* Pass the first reimbursement ID to the action to re-run analytics for it */}
+						<input type="hidden" name="reimbursementId" value={linkedReimbursements[0]?.id} />
+						<Button size="sm" variant="secondary" type="submit" disabled={analyticsFetcher.state !== "idle"} title={t("mail.run_ai_analytics", { defaultValue: "Manually run AI analytics to determine status from emails" })}>
+							<Sparkles className="mr-1.5 size-3.5 text-blue-500" />
+							{analyticsFetcher.state !== "idle" ? t("common.actions.loading", { defaultValue: "Loading..." }) : t("mail.run_ai_analytics_button", { defaultValue: "Run Analytics" })}
+						</Button>
+					</analyticsFetcher.Form>
 				</div>
 			)}
 
