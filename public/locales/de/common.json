@@ -99,6 +99,7 @@
 		"select_placeholder": "Select..."
 	},
 	"mail": {
+		"header": "E-Mail-Verläufe",
 		"inbox": "Posteingang",
 		"sent": "Gesendet",
 		"compose": "Verfassen",

@@ -597,6 +597,7 @@
 		}
 	},
 	"mail": {
+		"header": "E-posttrådar",
 		"inbox": "Inkorg",
 		"sent": "Skickat",
 		"compose": "Nytt meddelande",

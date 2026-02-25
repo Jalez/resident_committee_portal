@@ -50,37 +50,19 @@ export async function loader({ request }: Route.LoaderArgs) {
 const FORM_TYPES = [
 	{
 		id: "committee",
-		titleFi: "Hae toimikuntaan",
-		titleEn: "Apply for Committee",
 		icon: "diversity_3",
-		placeholderFi: "Kerro itsestäsi ja miksi haluaisit liittyä toimikuntaan...",
-		placeholderEn:
-			"Tell us about yourself and why you'd like to join the committee...",
 	},
 	{
 		id: "events",
-		titleFi: "Ehdota tapahtumaa",
-		titleEn: "Suggest an Event",
 		icon: "celebration",
-		placeholderFi: "Kuvaile tapahtumaidea: mitä, milloin, missä...",
-		placeholderEn: "Describe your event idea: what, when, where...",
 	},
 	{
 		id: "purchases",
-		titleFi: "Pyydä hankintaa",
-		titleEn: "Request a Purchase",
 		icon: "shopping_cart",
-		placeholderFi: "Mitä haluaisit hankkia ja miksi se hyödyttäisi asukkaita?",
-		placeholderEn:
-			"What would you like to purchase and how would it benefit residents?",
 	},
 	{
 		id: "questions",
-		titleFi: "Esitä kysymys",
-		titleEn: "Ask a Question",
 		icon: "question_mark",
-		placeholderFi: "Kirjoita kysymyksesi tähän...",
-		placeholderEn: "Write your question here...",
 	},
 ];
 
@@ -175,10 +157,10 @@ export default function Contact({
 						<span className="material-symbols-outlined text-5xl">check</span>
 					</div>
 					<div>
-						<h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+						<h2 className="text-2xl font-black text-foreground mb-2">
 							{t("contact.success.title")}
 						</h2>
-						<p className="text-gray-500 dark:text-gray-400 font-medium">
+						<p className="text-muted-foreground font-medium">
 							{t("contact.success.message")}
 						</p>
 					</div>
@@ -201,14 +183,14 @@ export default function Contact({
 			<div className="w-full max-w-2xl mx-auto">
 				{/* Header */}
 				<div className="text-center mb-8">
-					<h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+					<h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
 						{t("contact.header")}
 					</h1>
 				</div>
 
 				{/* Type Selection */}
 				<div className="mb-8">
-					<span className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 ml-1">
+					<span className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 ml-1">
 						{t("contact.select_topic")}
 					</span>
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -222,7 +204,7 @@ export default function Contact({
 									"flex flex-col items-center justify-center p-4 h-auto rounded-2xl border-2 transition-all duration-200",
 									selectedType === type.id
 										? "bg-primary/10 text-primary border-primary hover:bg-primary/20 hover:text-primary"
-										: "border-transparent bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-200 dark:hover:border-gray-700",
+										: "border-transparent bg-muted text-muted-foreground hover:border-border",
 								)}
 							>
 								<span className="material-symbols-outlined text-3xl mb-2">
@@ -248,7 +230,7 @@ export default function Contact({
 							<div className="space-y-1.5">
 								<label
 									htmlFor="name"
-									className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1"
+									className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1"
 								>
 									{t("contact.form.name")}
 								</label>
@@ -258,14 +240,14 @@ export default function Contact({
 									id="name"
 									required
 									defaultValue={userDetails?.name || ""}
-									className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium"
+									className="w-full h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium"
 								/>
 							</div>
 
 							<div className="space-y-1.5">
 								<label
 									htmlFor="email"
-									className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1"
+									className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1"
 								>
 									{t("contact.form.email")}
 								</label>
@@ -275,14 +257,14 @@ export default function Contact({
 									id="email"
 									required
 									defaultValue={userDetails?.email || ""}
-									className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium"
+									className="w-full h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium"
 								/>
 							</div>
 
 							<div className="space-y-1.5">
 								<label
 									htmlFor="apartmentNumber"
-									className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1"
+									className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1"
 								>
 									{t("contact.form.apartment")}
 								</label>
@@ -293,7 +275,7 @@ export default function Contact({
 									required
 									placeholder={t("contact.form.apartment_placeholder")}
 									defaultValue={userDetails?.apartmentNumber || ""}
-									className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium placeholder:text-gray-400 placeholder:opacity-60"
+									className="w-full h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium placeholder:text-muted-foreground placeholder:opacity-60"
 								/>
 							</div>
 						</div>
@@ -305,9 +287,9 @@ export default function Contact({
 									type="checkbox"
 									name="updateApartment"
 									defaultChecked={!userDetails.apartmentNumber}
-									className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+									className="w-5 h-5 rounded border-2 border-input text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
 								/>
-								<span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+								<span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
 									{t("contact.form.update_apartment_profile")}
 								</span>
 							</label>
@@ -316,7 +298,7 @@ export default function Contact({
 						<div className="space-y-1.5">
 							<label
 								htmlFor="message"
-								className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 ml-1"
+								className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1"
 							>
 								{t("contact.form.message")}
 							</label>
@@ -326,7 +308,7 @@ export default function Contact({
 								rows={6}
 								required
 								placeholder={selectedFormType?.placeholder}
-								className="w-full p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-gray-900 outline-none transition-all font-medium resize-none placeholder:text-gray-400 placeholder:opacity-60"
+								className="w-full p-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium resize-none placeholder:text-muted-foreground placeholder:opacity-60"
 							/>
 						</div>
 
@@ -341,7 +323,7 @@ export default function Contact({
 
 				{/* Prompt to select type */}
 				{!selectedType && (
-					<div className="text-center py-12 text-gray-400">
+					<div className="text-center py-12 text-muted-foreground">
 						<span className="material-symbols-outlined text-5xl mb-4 block opacity-50">
 							arrow_upward
 						</span>

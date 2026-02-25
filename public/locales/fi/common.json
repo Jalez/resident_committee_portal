@@ -972,6 +972,7 @@
 		}
 	},
 	"mail": {
+		"header": "Sähköpostiketjut",
 		"inbox": "Saapuneet",
 		"sent": "Lähetetyt",
 		"compose": "Uusi viesti",
@@ -1013,10 +1014,22 @@
 		"select_topic": "Valitse aihe",
 		"select_topic_prompt": "Valitse aihe aloittaaksesi",
 		"types": {
-			"committee": {},
-			"events": {},
-			"purchases": {},
-			"questions": {}
+			"committee": {
+				"title": "Hae toimikuntaan",
+				"placeholder": "Kerro itsestäsi ja miksi haluaisit liittyä toimikuntaan..."
+			},
+			"events": {
+				"title": "Ehdota tapahtumaa",
+				"placeholder": "Kuvaile tapahtumaidea: mitä, milloin, missä..."
+			},
+			"purchases": {
+				"title": "Pyydä hankintaa",
+				"placeholder": "Mitä haluaisit hankkia ja miksi se hyödyttäisi asukkaita?"
+			},
+			"questions": {
+				"title": "Esitä kysymys",
+				"placeholder": "Kirjoita kysymyksesi tähän..."
+			}
 		},
 		"form": {
 			"name": "Nimi",

@@ -957,6 +957,7 @@
 		}
 	},
 	"mail": {
+		"header": "Email Threads",
 		"inbox": "Inbox",
 		"sent": "Sent",
 		"compose": "Compose",
@@ -998,10 +999,22 @@
 		"select_topic": "Select Topic",
 		"select_topic_prompt": "Select a topic to begin",
 		"types": {
-			"committee": {},
-			"events": {},
-			"purchases": {},
-			"questions": {}
+			"committee": {
+				"title": "Apply for Committee",
+				"placeholder": "Tell us about yourself and why you'd like to join the committee..."
+			},
+			"events": {
+				"title": "Suggest an Event",
+				"placeholder": "Describe your event idea: what, when, where..."
+			},
+			"purchases": {
+				"title": "Request a Purchase",
+				"placeholder": "What would you like to purchase and how would it benefit residents?"
+			},
+			"questions": {
+				"title": "Ask a Question",
+				"placeholder": "Write your question here..."
+			}
 		},
 		"form": {
 			"name": "Name",

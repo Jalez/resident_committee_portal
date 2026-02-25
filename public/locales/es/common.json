@@ -90,6 +90,7 @@
 		"select_placeholder": "Select..."
 	},
 	"mail": {
+		"header": "Hilos de correo electrónico",
 		"inbox": "Bandeja de entrada",
 		"sent": "Enviados",
 		"compose": "Redactar",
