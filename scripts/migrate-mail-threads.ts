@@ -91,8 +91,51 @@ async function run() {
 		// ── Step 4: Migrate entity_relationships ──
 		console.log("\n==> Step 4: Migrating entity_relationships from 'mail' to 'mail_thread'");
 
-		// 4a: Migrate relations where mail is on the A side (relation_a_type = 'mail')
-		// The relation_a_id points to a message ID or draft ID — need to resolve to threadId
+		// Strategy: multiple messages in the same thread may each have a "mail" relation
+		// to the same entity. We keep the oldest one per (threadId, otherType, otherId)
+		// group and delete the rest, then update the survivors.
+
+		// 4a: Pre-deduplicate A-side mail relations (keep oldest per thread+target)
+		const preDedupeA = await sql`
+			DELETE FROM entity_relationships
+			WHERE id IN (
+				SELECT er.id FROM entity_relationships er
+				JOIN committee_mail_messages m ON er.relation_a_id = m.id::text
+				WHERE er.relation_a_type = 'mail' AND m.thread_id IS NOT NULL
+				AND er.id NOT IN (
+					SELECT DISTINCT ON (m2.thread_id, er2.relation_b_type, er2.relation_b_id)
+						er2.id
+					FROM entity_relationships er2
+					JOIN committee_mail_messages m2 ON er2.relation_a_id = m2.id::text
+					WHERE er2.relation_a_type = 'mail' AND m2.thread_id IS NOT NULL
+					ORDER BY m2.thread_id, er2.relation_b_type, er2.relation_b_id, er2.created_at ASC
+				)
+			)
+			RETURNING id
+		`;
+		console.log(`  Pre-deduplicated ${preDedupeA.length} A-side message relations`);
+
+		// 4b: Pre-deduplicate B-side mail relations
+		const preDedupeB = await sql`
+			DELETE FROM entity_relationships
+			WHERE id IN (
+				SELECT er.id FROM entity_relationships er
+				JOIN committee_mail_messages m ON er.relation_b_id = m.id::text
+				WHERE er.relation_b_type = 'mail' AND m.thread_id IS NOT NULL
+				AND er.id NOT IN (
+					SELECT DISTINCT ON (m2.thread_id, er2.relation_a_type, er2.relation_a_id)
+						er2.id
+					FROM entity_relationships er2
+					JOIN committee_mail_messages m2 ON er2.relation_b_id = m2.id::text
+					WHERE er2.relation_b_type = 'mail' AND m2.thread_id IS NOT NULL
+					ORDER BY m2.thread_id, er2.relation_a_type, er2.relation_a_id, er2.created_at ASC
+				)
+			)
+			RETURNING id
+		`;
+		console.log(`  Pre-deduplicated ${preDedupeB.length} B-side message relations`);
+
+		// 4c: Now safely update survivors — each is unique per thread
 		const migratedA = await sql`
 			UPDATE entity_relationships er
 			SET relation_a_type = 'mail_thread',
@@ -104,7 +147,6 @@ async function run() {
 		`;
 		console.log(`  Migrated ${migratedA.count} A-side relations (message → thread)`);
 
-		// 4b: Migrate relations where mail is on the B side (relation_b_type = 'mail')
 		const migratedB = await sql`
 			UPDATE entity_relationships er
 			SET relation_b_type = 'mail_thread',
@@ -116,7 +158,7 @@ async function run() {
 		`;
 		console.log(`  Migrated ${migratedB.count} B-side relations (message → thread)`);
 
-		// 4c: Try to migrate draft-based relations (where the ID is a draft ID)
+		// 4d: Handle draft-based relations (same dedup + update pattern)
 		const migratedDraftA = await sql`
 			UPDATE entity_relationships er
 			SET relation_a_type = 'mail_thread',
@@ -125,6 +167,13 @@ async function run() {
 			WHERE er.relation_a_type = 'mail'
 			  AND er.relation_a_id = d.id::text
 			  AND d.thread_id IS NOT NULL
+			  AND NOT EXISTS (
+				SELECT 1 FROM entity_relationships ex
+				WHERE ex.relation_a_type = 'mail_thread'
+				  AND ex.relation_a_id = d.thread_id
+				  AND ex.relation_b_type = er.relation_b_type
+				  AND ex.relation_b_id = er.relation_b_id
+			  )
 		`;
 		console.log(`  Migrated ${migratedDraftA.count} A-side relations (draft → thread)`);
 
@@ -136,29 +185,15 @@ async function run() {
 			WHERE er.relation_b_type = 'mail'
 			  AND er.relation_b_id = d.id::text
 			  AND d.thread_id IS NOT NULL
+			  AND NOT EXISTS (
+				SELECT 1 FROM entity_relationships ex
+				WHERE ex.relation_b_type = 'mail_thread'
+				  AND ex.relation_b_id = d.thread_id
+				  AND ex.relation_a_type = er.relation_a_type
+				  AND ex.relation_a_id = er.relation_a_id
+			  )
 		`;
 		console.log(`  Migrated ${migratedDraftB.count} B-side relations (draft → thread)`);
-
-		// ── Step 5: Deduplicate ──
-		console.log("\n==> Step 5: Deduplicating relationships");
-
-		const duplicatesRemoved = await sql`
-			DELETE FROM entity_relationships
-			WHERE id IN (
-				SELECT id FROM (
-					SELECT id,
-						ROW_NUMBER() OVER (
-							PARTITION BY relation_a_type, relation_a_id, relation_b_type, relation_b_id
-							ORDER BY created_at ASC
-						) as rn
-					FROM entity_relationships
-					WHERE relation_a_type = 'mail_thread' OR relation_b_type = 'mail_thread'
-				) sub
-				WHERE sub.rn > 1
-			)
-			RETURNING id
-		`;
-		console.log(`  Removed ${duplicatesRemoved.length} duplicate relationships`);
 
 		// ── Step 6: Remove unmigrated 'mail' relations ──
 		console.log("\n==> Step 6: Removing unmigrated 'mail' relations");
