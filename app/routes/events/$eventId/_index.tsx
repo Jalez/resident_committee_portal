@@ -1,6 +1,7 @@
 import { useRouteLoaderData } from "react-router";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { ViewForm } from "~/components/ui/view-form";
+import { useFormatDate } from "~/hooks/use-format-date";
 import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
@@ -53,6 +54,7 @@ export async function loader({
 export default function ViewEvent({ loaderData }: { loaderData: any }) {
 	const { event, relationships } = loaderData;
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
+	const { formatDate } = useFormatDate();
 
 	const canUpdate = rootData?.user?.permissions?.some(
 		(p) => p === "events:update" || p === "*",
@@ -96,9 +98,9 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 		title: event.title,
 		description: { value: event.description, hide: !event.description },
 		location: { value: event.location, hide: !event.location },
-		startDate,
+		startDate: formatDate(startDate),
 		startTime: { value: startTime, hide: isAllDay || !startTime },
-		endDate,
+		endDate: { value: endDate ? formatDate(endDate) : null, hide: !endDate },
 		endTime: { value: endTime, hide: isAllDay || !endTime },
 		isAllDay: { value: isAllDay, type: "checkbox" },
 		attendees: {
