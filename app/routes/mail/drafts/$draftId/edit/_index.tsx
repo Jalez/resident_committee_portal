@@ -628,6 +628,18 @@ export async function action({ request }: Route.ActionArgs) {
 					rel.relationBType as any,
 					rel.relationBId,
 				);
+
+				// If this mail is linked to a reimbursement that doesn't have a primary thread,
+				// set this newly sent email as its primary thread.
+				const isReimbA = rel.relationAType === "reimbursement";
+				const isReimbB = rel.relationBType === "reimbursement";
+				if (isReimbA || isReimbB) {
+					const reimbursementId = isReimbA ? rel.relationId : rel.relationBId;
+					const purchase = await db.getPurchaseById(reimbursementId);
+					if (purchase && !purchase.emailMessageId && sentMessageId) {
+						await db.updatePurchase(reimbursementId, { emailMessageId: sentMessageId });
+					}
+				}
 			}
 		}
 

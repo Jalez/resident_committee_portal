@@ -166,6 +166,33 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				linkedMailDrafts.find(
 					(draft): draft is NonNullable<typeof draft> => draft !== null,
 				) ?? null;
+
+			// If we still don't have a mail thread, but we have linked mail, it might be a sent email
+			// that was created from the mail UI and linked to this reimbursement without backfilling emailMessageId.
+			if (!mailThread && linkedMailIds.length > 0) {
+				const linkedMails = await Promise.all(
+					linkedMailIds.map((mailId) => db.getCommitteeMailMessageById(mailId)),
+				);
+				const firstSentMail = linkedMails.find(
+					(m): m is NonNullable<typeof m> => m !== null,
+				);
+				if (firstSentMail) {
+					mailThread = {
+						id: firstSentMail.threadId || firstSentMail.id,
+						subject: firstSentMail.subject,
+						messageCount: 1,
+					};
+					// Update count if there are more
+					const existingThreadMessages = await db.getCommitteeMailMessagesByThreadId(mailThread.id);
+					if (existingThreadMessages.length > 0) {
+						mailThread.messageCount = existingThreadMessages.length;
+					}
+					// Self-heal: backfill the reimbursement's emailMessageId so it works normally next time
+					if (firstSentMail.messageId) {
+						db.updatePurchase(purchase.id, { emailMessageId: firstSentMail.messageId }).catch(console.error);
+					}
+				}
+			}
 			const linkedMinuteIds = Array.from(
 				new Set(
 					allRelationships
