@@ -39,6 +39,7 @@ import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationshi
 import { addForwardPrefix, addReplyPrefix } from "~/lib/mail-utils";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
+import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import type { Route } from "./+types/_index";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
@@ -1425,13 +1426,9 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 								defaultValue: `On ${new Date(originalMessage.date).toLocaleString()}, ${originalMessage.fromName || originalMessage.fromAddress} wrote:`,
 							})}
 						</p>
-						<div
-							className="prose prose-sm dark:prose-invert max-w-none border-l-2 border-gray-300 pl-3 text-gray-500 dark:border-gray-600 dark:text-gray-400"
-							// biome-ignore lint/security/noDangerouslySetInnerHtml: original email body from DB
-							dangerouslySetInnerHTML={{
-								__html: originalMessage.bodyHtml ?? "",
-							}}
-						/>
+						<div className="border-l-2 border-gray-300 pl-3 dark:border-gray-600">
+							<IsolatedEmailContent html={originalMessage.bodyHtml ?? ""} />
+						</div>
 					</div>
 				)}
 
@@ -1460,14 +1457,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 							{t("committee.mail.subject")}: {originalMessage.subject}
 						</p>
 					</div>
-					<div className="prose prose-sm dark:prose-invert max-w-none text-gray-500 dark:text-gray-400">
-						<div
-							// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
-							className="[&_*]:!bg-transparent [&_*]:text-inherit"
-							// biome-ignore lint/security/noDangerouslySetInnerHtml: forwarded email body from DB
-							dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
-						/>
-					</div>
+					<IsolatedEmailContent html={originalMessage.bodyHtml ?? ""} />
 				</div>
 			)}
 		</Form>

@@ -32,6 +32,7 @@ import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import type { AnyEntity } from "~/lib/entity-converters";
+import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import type { Route } from "./+types/_index";
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -505,36 +506,36 @@ export default function MailThread({
 												{t("mail.sent")}
 											</span>
 										)}
-											{msg.direction === "inbox" && replyVerdicts?.[msg.id] && (
-												<Badge
-													variant={
-														replyVerdicts[msg.id] === "approved"
-															? "default"
-															: replyVerdicts[msg.id] === "rejected"
-																? "destructive"
-																: "secondary"
-													}
-												>
-													{replyVerdicts[msg.id] === "approved"
-														? t("mail.ai_verdict_approved", {
-																defaultValue: "AI: Approve",
-															})
+										{msg.direction === "inbox" && replyVerdicts?.[msg.id] && (
+											<Badge
+												variant={
+													replyVerdicts[msg.id] === "approved"
+														? "default"
 														: replyVerdicts[msg.id] === "rejected"
-															? t("mail.ai_verdict_rejected", {
-																	defaultValue: "AI: Decline",
-																})
-															: t("mail.ai_verdict_unclear", {
-																	defaultValue: "AI: Needs more info",
-																})}
-												</Badge>
-											)}
-											{msg.direction === "inbox" && isManualOverrideForMessage(msg.id) && (
-												<Badge variant="outline">
-													{t("mail.ai_verdict_manual_override", {
-														defaultValue: "Manual override",
-													})}
-												</Badge>
-											)}
+															? "destructive"
+															: "secondary"
+												}
+											>
+												{replyVerdicts[msg.id] === "approved"
+													? t("mail.ai_verdict_approved", {
+														defaultValue: "AI: Approve",
+													})
+													: replyVerdicts[msg.id] === "rejected"
+														? t("mail.ai_verdict_rejected", {
+															defaultValue: "AI: Decline",
+														})
+														: t("mail.ai_verdict_unclear", {
+															defaultValue: "AI: Needs more info",
+														})}
+											</Badge>
+										)}
+										{msg.direction === "inbox" && isManualOverrideForMessage(msg.id) && (
+											<Badge variant="outline">
+												{t("mail.ai_verdict_manual_override", {
+													defaultValue: "Manual override",
+												})}
+											</Badge>
+										)}
 									</div>
 									{!isExpanded && (
 										<p className="text-muted-foreground truncate text-xs">
@@ -590,14 +591,7 @@ export default function MailThread({
 
 									{/* Body */}
 									<div className="prose prose-sm dark:prose-invert text-foreground max-w-none">
-										<div
-											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
-											className="[&_*]:!bg-transparent [&_*]:text-inherit"
-											// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
-											dangerouslySetInnerHTML={{
-												__html: msg.bodyHtml,
-											}}
-										/>
+										<IsolatedEmailContent html={msg.bodyHtml} />
 									</div>
 
 									{/* Actions */}

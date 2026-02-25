@@ -22,4 +22,4 @@ test-*.png
 test-*.jpg
 *.tmp
 
-.claude
+.claude.env.vercel

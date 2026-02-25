@@ -16,6 +16,7 @@ import { Button } from "~/components/ui/button";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -173,11 +174,9 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				{/* Body */}
-				<div
-					className="prose prose-sm dark:prose-invert max-w-none px-4 py-4 text-foreground"
-					// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB (sent by us or fetched via IMAP)
-					dangerouslySetInnerHTML={{ __html: message.bodyHtml }}
-				/>
+				<div className="px-4 py-4">
+					<IsolatedEmailContent html={message.bodyHtml} />
+				</div>
 			</div>
 		</div>
 	);
