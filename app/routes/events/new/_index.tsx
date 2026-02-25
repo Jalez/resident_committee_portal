@@ -18,6 +18,32 @@ import {
 } from "~/lib/google.server";
 import type { Route } from "./+types/_index";
 
+/**
+ * Parse a date string + time string in a given timezone to a UTC Date.
+ */
+function parseDateTimeWithTimezone(dateStr: string, timeStr: string, timezone?: string): Date {
+	if (!timezone) {
+		return new Date(`${dateStr}T${timeStr}:00`);
+	}
+	const utcDate = new Date(`${dateStr}T${timeStr}:00Z`);
+	const formatter = new Intl.DateTimeFormat("en-US", {
+		timeZone: timezone,
+		year: "numeric", month: "2-digit", day: "2-digit",
+		hour: "2-digit", minute: "2-digit", second: "2-digit",
+		hour12: false,
+	});
+	const parts = formatter.formatToParts(utcDate);
+	const getPart = (type: string) => parts.find(p => p.type === type)?.value || "0";
+	const tzMinutes = Number.parseInt(getPart("hour")) * 60 + Number.parseInt(getPart("minute"));
+	const utcMinutes = utcDate.getUTCHours() * 60 + utcDate.getUTCMinutes();
+	let offsetMinutes = tzMinutes - utcMinutes;
+	if (offsetMinutes > 720) offsetMinutes -= 1440;
+	if (offsetMinutes < -720) offsetMinutes += 1440;
+	const result = new Date(`${dateStr}T${timeStr}:00Z`);
+	result.setUTCMinutes(result.getUTCMinutes() - offsetMinutes);
+	return result;
+}
+
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
@@ -70,9 +96,9 @@ export async function action({ request }: Route.ActionArgs) {
 	const attendeesRaw = formData.get("attendees") as string;
 	const attendees = attendeesRaw
 		? attendeesRaw
-				.split(/[,;\n]/)
-				.map((e) => e.trim())
-				.filter((e) => e.includes("@"))
+			.split(/[,;\n]/)
+			.map((e) => e.trim())
+			.filter((e) => e.includes("@"))
 		: undefined;
 
 	// Build the event input
@@ -149,7 +175,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 		const eventType: EventType =
 			description?.includes("#meeting") ||
-			title.toLowerCase().includes("kokous")
+				title.toLowerCase().includes("kokous")
 				? "meeting"
 				: description?.includes("#private")
 					? "private"
@@ -157,12 +183,12 @@ export async function action({ request }: Route.ActionArgs) {
 
 		const startDateTime = isAllDay
 			? new Date(startDate)
-			: new Date(`${startDate}T${startTime || "09:00"}:00`);
+			: parseDateTimeWithTimezone(startDate, startTime || "09:00", timezone);
 
 		const endDateTime = endDate
 			? isAllDay
 				? new Date(endDate)
-				: new Date(`${endDate}T${endTime || "10:00"}:00`)
+				: parseDateTimeWithTimezone(endDate, endTime || "10:00", timezone)
 			: null;
 
 		await db.createEvent({
@@ -212,7 +238,7 @@ export default function EventsNew({ actionData, loaderData }: Route.ComponentPro
 	>([]);
 
 	const isSubmitting = navigation.state === "submitting";
-	
+
 	const userTimezone =
 		typeof window !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone

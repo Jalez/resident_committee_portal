@@ -14,6 +14,67 @@ import {
 } from "~/lib/google.server";
 import type { Route } from "./+types/_index";
 
+/**
+ * Parse a date string + time string in a given timezone to a UTC Date.
+ * e.g. parseDateTimeWithTimezone("2026-02-25", "17:00", "Europe/Helsinki")
+ * will correctly produce a Date representing 15:00 UTC (17:00 Helsinki = UTC+2)
+ */
+function parseDateTimeWithTimezone(dateStr: string, timeStr: string, timezone?: string): Date {
+	if (!timezone) {
+		return new Date(`${dateStr}T${timeStr}:00`);
+	}
+	// Create a date string that we know the timezone for
+	// We use the timezone offset to calculate the correct UTC time
+	const localDate = new Date(`${dateStr}T${timeStr}:00`);
+
+	// Get what the offset is in the target timezone at this approximate time
+	const formatter = new Intl.DateTimeFormat("en-US", {
+		timeZone: timezone,
+		year: "numeric", month: "2-digit", day: "2-digit",
+		hour: "2-digit", minute: "2-digit", second: "2-digit",
+		hour12: false,
+	});
+
+	// Find the offset: format a known UTC time in the target timezone
+	// and compare to figure out the offset
+	const utcDate = new Date(`${dateStr}T${timeStr}:00Z`);
+	const parts = formatter.formatToParts(utcDate);
+	const getPart = (type: string) => parts.find(p => p.type === type)?.value || "0";
+	const tzHour = Number.parseInt(getPart("hour"));
+	const tzMinute = Number.parseInt(getPart("minute"));
+
+	// The difference between UTC and timezone-local tells us the offset
+	const utcMinutes = utcDate.getUTCHours() * 60 + utcDate.getUTCMinutes();
+	const tzMinutes = tzHour * 60 + tzMinute;
+	let offsetMinutes = tzMinutes - utcMinutes;
+
+	// Handle day boundary crossings
+	if (offsetMinutes > 720) offsetMinutes -= 1440;
+	if (offsetMinutes < -720) offsetMinutes += 1440;
+
+	// Now construct the correct UTC date:
+	// User entered time in their timezone, so subtract the offset to get UTC
+	const result = new Date(`${dateStr}T${timeStr}:00Z`);
+	result.setUTCMinutes(result.getUTCMinutes() - offsetMinutes);
+	return result;
+}
+
+/**
+ * Format a Date as YYYY-MM-DD in a specific timezone
+ */
+function formatDateInTimezone(date: Date, timezone: string): string {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(date);
+	const year = parts.find(p => p.type === "year")?.value;
+	const month = parts.find(p => p.type === "month")?.value;
+	const day = parts.find(p => p.type === "day")?.value;
+	return `${year}-${month}-${day}`;
+}
+
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
@@ -80,12 +141,12 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 			const startDateTime = isAllDay
 				? new Date(startDate)
-				: new Date(`${startDate}T${startTime || "09:00"}:00`);
+				: parseDateTimeWithTimezone(startDate, startTime || "09:00", timezone);
 
 			const endDateTime = endDate
 				? isAllDay
 					? new Date(endDate)
-					: new Date(`${endDate}T${endTime || "10:00"}:00`)
+					: parseDateTimeWithTimezone(endDate, endTime || "10:00", timezone)
 				: null;
 
 			const eventType: EventType =
@@ -159,7 +220,9 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 	const existingIsAllDay = event.isAllDay;
 	const eventTimezone = event.timezone;
 	const eventStartDate = new Date(event.startDate);
-	const existingStartDate = eventStartDate.toISOString().split("T")[0];
+	const existingStartDate = eventTimezone
+		? formatDateInTimezone(eventStartDate, eventTimezone)
+		: eventStartDate.toISOString().split("T")[0];
 	const existingStartTime = eventTimezone
 		? eventStartDate.toLocaleTimeString("sv-SE", {
 			timeZone: eventTimezone,
@@ -171,7 +234,9 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 			minute: "2-digit",
 		});
 	const eventEndDate = event.endDate ? new Date(event.endDate) : eventStartDate;
-	const existingEndDate = eventEndDate.toISOString().split("T")[0];
+	const existingEndDate = eventTimezone
+		? formatDateInTimezone(eventEndDate, eventTimezone)
+		: eventEndDate.toISOString().split("T")[0];
 	const existingEndTime = eventTimezone
 		? eventEndDate.toLocaleTimeString("sv-SE", {
 			timeZone: eventTimezone,

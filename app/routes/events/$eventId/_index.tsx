@@ -6,6 +6,22 @@ import { getAuthenticatedUser } from "~/lib/auth.server";
 import { createViewLoader } from "~/lib/view-handlers.server";
 import type { loader as rootLoader } from "~/root";
 
+/**
+ * Format a Date as YYYY-MM-DD in a specific timezone
+ */
+function formatDateInTimezone(date: Date, timezone: string): string {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(date);
+	const year = parts.find(p => p.type === "year")?.value;
+	const month = parts.find(p => p.type === "month")?.value;
+	const day = parts.find(p => p.type === "day")?.value;
+	return `${year}-${month}-${day}`;
+}
+
 export function meta({ data }: { data: any }) {
 	const title = data?.event?.title || "Event";
 	return [
@@ -45,27 +61,33 @@ export default function ViewEvent({ loaderData }: { loaderData: any }) {
 	const isAllDay = event.isAllDay;
 	const eventTimezone = event.timezone;
 	const eventStartDate = new Date(event.startDate);
-	const startDate = eventStartDate.toISOString().split("T")[0];
+	const startDate = eventTimezone
+		? formatDateInTimezone(eventStartDate, eventTimezone)
+		: eventStartDate.toISOString().split("T")[0];
 	const startTime = isAllDay
 		? null
 		: eventTimezone
 			? eventStartDate.toLocaleTimeString("sv-SE", {
-					timeZone: eventTimezone,
-					hour: "2-digit",
-					minute: "2-digit",
-				})
+				timeZone: eventTimezone,
+				hour: "2-digit",
+				minute: "2-digit",
+			})
 			: eventStartDate.toTimeString().substring(0, 5);
 	const eventEndDate = event.endDate ? new Date(event.endDate) : null;
-	const endDate = eventEndDate?.toISOString().split("T")[0];
+	const endDate = eventEndDate
+		? eventTimezone
+			? formatDateInTimezone(eventEndDate, eventTimezone)
+			: eventEndDate.toISOString().split("T")[0]
+		: null;
 	const endTime =
 		isAllDay || !eventEndDate
 			? null
 			: eventTimezone
 				? eventEndDate.toLocaleTimeString("sv-SE", {
-						timeZone: eventTimezone,
-						hour: "2-digit",
-						minute: "2-digit",
-					})
+					timeZone: eventTimezone,
+					hour: "2-digit",
+					minute: "2-digit",
+				})
 				: eventEndDate.toTimeString().substring(0, 5);
 
 	const attendees = event.attendees ? JSON.parse(event.attendees) : [];
