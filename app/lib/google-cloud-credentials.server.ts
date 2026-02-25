@@ -28,7 +28,7 @@ export function getGoogleCloudCredentials() {
 		projectId,
 		credentials: {
 			client_email: serviceAccountEmail,
-			private_key: privateKey.replace(/\\n/g, "\n"),
+			private_key: privateKey.replace(/\\\\n/g, "\n").replace(/\\n/g, "\n"),
 		},
 	};
 }

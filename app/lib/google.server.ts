@@ -24,7 +24,7 @@ export const config: GoogleConfig = {
 	serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "",
 	serviceAccountPrivateKey: (
 		process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || ""
-	).replace(/\\n/g, "\n"),
+	).replace(/\\\\n/g, "\n").replace(/\\n/g, "\n"),
 	submissionsSheetId: process.env.GOOGLE_SUBMISSIONS_SHEET_ID || "",
 };
 
