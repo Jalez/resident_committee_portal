@@ -11,8 +11,7 @@
 			"minute": "Pöytäkirja",
 			"news": "Uutiset",
 			"faq": "UKK",
-			"submission": "Yhteydenotto",
-			"mail_thread": "Sähköpostikeskustelu"
+			"submission": "Yhteydenotto"
 		},
 		"relations": {
 			"title": "Liittyvät"
@@ -28,7 +27,7 @@
 			"faq": "UKK",
 			"poll": "Äänestys",
 			"social": "Sosiaalinen linkki",
-			"mail_thread": "Sähköpostikeskustelu",
+			"mail": "Sähköposti",
 			"event": "Tapahtuma",
 			"submission": "Yhteydenotto"
 		},
@@ -50,9 +49,7 @@
 			"link_existing": "Linkitä olemassa oleva",
 			"create_new": "Luo uusi",
 			"save": "Tallenna",
-			"cancel": "Peruuta",
-			"export": "Vie",
-			"import": "Tuo"
+			"cancel": "Peruuta"
 		},
 		"filters": {
 			"all": "Kaikki kategoriat"
@@ -1336,9 +1333,7 @@
 				"delete": "Poista tapahtumia",
 				"update-self": "Muokkaa omia tapahtumia",
 				"delete-self": "Poista omia tapahtumia",
-				"read-self": "Näytä omia tapahtumia",
-				"export": "Vie tapahtumat CSV-tiedostoon",
-				"import": "Tuo tapahtumat tiedostosta"
+				"read-self": "Näytä omia tapahtumia"
 			},
 			"reimbursements": {
 				"read": "Näytä korvausvaatimukset",
@@ -1348,8 +1343,7 @@
 				"delete": "Poista korvausvaatimuksia",
 				"update-self": "Muokkaa omia korvausvaatimuksia",
 				"delete-self": "Poista omia korvausvaatimuksia",
-				"read-self": "Näytä omia korvausvaatimuksia",
-				"export": "Vie korvausvaatimukset CSV-tiedostoon"
+				"read-self": "Näytä omia korvausvaatimuksia"
 			},
 			"budgets": {
 				"read": "Näytä budjetit",
@@ -1359,9 +1353,7 @@
 				"update": "Muokkaa budjetteja",
 				"delete": "Poista budjetteja",
 				"update-self": "Muokkaa omia budjetteja",
-				"delete-self": "Poista omia budjetteja",
-				"export": "Vie budjetit CSV-tiedostoon",
-				"import": "Tuo budjetit tiedostosta"
+				"delete-self": "Poista omia budjetteja"
 			},
 			"receipts": {
 				"read": "Näytä kuitit",
@@ -1371,8 +1363,7 @@
 				"update": "Muokkaa kuitteja",
 				"delete": "Poista kuitteja",
 				"update-self": "Muokkaa omia kuitteja",
-				"delete-self": "Poista omia kuitteja",
-				"export": "Vie kuitit CSV-tiedostoon"
+				"delete-self": "Poista omia kuitteja"
 			},
 			"view_scope": {
 				"all": "Näet kaikki {{itemType}}",
@@ -1393,8 +1384,7 @@
 		"submissions": {
 			"read": "Näytä yhteydenottolomakkeet",
 			"write": "Päivitä yhteydenoton tila",
-			"delete": "Poista yhteydenottoja",
-			"export": "Vie yhteydenotot CSV-tiedostoon"
+			"delete": "Poista yhteydenottoja"
 		},
 		"social": {
 			"read": "Näytä some-linkit",
@@ -1403,35 +1393,25 @@
 		},
 		"minutes": {
 			"read": "Näytä ja lataa pöytäkirjat",
-			"guide": "Näytä nimeämiskäytäntöohje",
-			"export": "Vie pöytäkirjalista CSV-tiedostoon",
-			"write": "Lataa pöytäkirjoja",
-			"update": "Muokkaa pöytäkirjoja",
-			"delete": "Poista pöytäkirjoja"
+			"guide": "Näytä nimeämiskäytäntöohje"
 		},
 		"events": {
 			"read": "Näytä kalenteritapahtumat",
 			"write": "Luo kalenteritapahtumia",
 			"update": "Muokkaa kalenteritapahtumia",
-			"delete": "Poista kalenteritapahtumia",
-			"export": "Vie tapahtumat CSV-tiedostoon",
-			"import": "Tuo tapahtumat tiedostosta"
+			"delete": "Poista kalenteritapahtumia"
 		},
 		"news": {
 			"read": "Näytä uutiset",
 			"write": "Luo uutisia",
 			"update": "Muokkaa uutisia",
-			"delete": "Poista uutisia",
-			"export": "Vie uutiset CSV-tiedostoon",
-			"import": "Tuo uutisia tiedostosta"
+			"delete": "Poista uutisia"
 		},
 		"faq": {
 			"read": "Näytä UKK",
 			"write": "Luo UKK-kohtia",
 			"update": "Muokkaa UKK-kohtia",
-			"delete": "Poista UKK-kohtia",
-			"export": "Vie UKK CSV-tiedostoon",
-			"import": "Tuo UKK tiedostosta"
+			"delete": "Poista UKK-kohtia"
 		},
 		"forms": {
 			"read": "Näytä lomaketiedot ja analytiikka",
@@ -1440,10 +1420,7 @@
 		"polls": {
 			"read": "Näytä kyselyt",
 			"write": "Luo ja hallinnoi omia kyselyitä",
-			"update": "Muokkaa kyselyitä",
-			"delete": "Poista mikä tahansa kysely",
-			"export": "Vie kyselyt CSV-tiedostoon",
-			"import": "Tuo kyselyitä tiedostosta"
+			"delete": "Poista mikä tahansa kysely"
 		},
 		"profile": {
 			"read": {

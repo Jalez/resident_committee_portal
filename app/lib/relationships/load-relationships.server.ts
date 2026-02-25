@@ -44,7 +44,6 @@ const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
 	polls: "poll",
 	socials: "social",
 	mails: "mail_thread",
-	mail: "mail_thread",
 	events: "event",
 	submissions: "submission",
 };
@@ -235,8 +234,6 @@ async function fetchAvailableEntities(
 			allEntities = await db.getSocialLinks();
 			break;
 		case "mail_thread":
-			// Mail threads are not listed as available for manual linking;
-			// they are auto-linked when emails are sent/received
 			allEntities = [];
 			break;
 		case "event":

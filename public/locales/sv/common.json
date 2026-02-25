@@ -16,11 +16,7 @@
 			"search": "Sök"
 		},
 		"actions": {
-			"update": "Uppdatera",
-			"export": "Exportera",
-			"import": "Importera",
-			"delete": "Ta bort",
-			"edit": "Redigera"
+			"update": "Uppdatera"
 		},
 		"filters": {
 			"all": "Alla kategorier"

@@ -120,7 +120,11 @@ function RelationshipSectionComponent({
 	const revalidator = useRevalidator();
 	const fetcher = useFetcher<CreateDraftResponse>();
 	const importFetcher = useFetcher<ImportFromSourceResponse>();
-	const linkFetcher = useFetcher<{ success: boolean }>();
+	const linkFetcher = useFetcher<{
+		success: boolean;
+		error?: string;
+		alreadyExists?: boolean;
+	}>();
 	const unlinkFetcher = useFetcher<{ success: boolean }>();
 
 	const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
@@ -138,6 +142,13 @@ function RelationshipSectionComponent({
 	onLinkRef.current = onLink;
 	const processedDraftRef = useRef<string | null>(null);
 	const processedImportRef = useRef<string | null>(null);
+	const [pendingLink, setPendingLink] = useState<{
+		relationBType: RelationshipEntityType;
+		relationBId: string;
+	} | null>(null);
+	const linkDataAtSubmitRef = useRef<typeof linkFetcher.data | undefined>(
+		undefined,
+	);
 
 	// When a draft is created, track it and revalidate to get fresh data
 	useEffect(() => {
@@ -218,9 +229,16 @@ function RelationshipSectionComponent({
 		if (
 			prevLinkStateRef.current !== "idle" &&
 			linkFetcher.state === "idle" &&
-			linkFetcher.data
+			pendingLink
 		) {
-			if (linkFetcher.data.success) {
+			const hasFreshResponseData =
+				linkFetcher.data !== linkDataAtSubmitRef.current;
+
+			if (hasFreshResponseData && linkFetcher.data?.success) {
+				onLinkRef.current?.(
+					pendingLink.relationBType,
+					pendingLink.relationBId,
+				);
 				toast.success(
 					t("common.relationships.linked", {
 						defaultValue: "Item linked",
@@ -229,15 +247,16 @@ function RelationshipSectionComponent({
 				revalidator.revalidate();
 			} else {
 				toast.error(
-					(linkFetcher.data as any).error ||
+					linkFetcher.data?.error ||
 					t("common.relationships.link_failed", {
 						defaultValue: "Failed to link item",
 					}),
 				);
 			}
+			setPendingLink(null);
 		}
 		prevLinkStateRef.current = linkFetcher.state;
-	}, [linkFetcher.state, linkFetcher.data, revalidator, t]);
+	}, [linkFetcher.state, linkFetcher.data, pendingLink, revalidator, t]);
 
 	const prevUnlinkStateRef = useRef(unlinkFetcher.state);
 	useEffect(() => {
@@ -393,7 +412,11 @@ function RelationshipSectionComponent({
 			onRemove={handleRemove}
 			onSelectionChange={(id) => {
 				clearRemovedId(id);
-				onLink?.(section.relationBType, id);
+				setPendingLink({
+					relationBType: section.relationBType,
+					relationBId: id,
+				});
+				linkDataAtSubmitRef.current = linkFetcher.data;
 
 				const fd = new FormData();
 				fd.append("relationAType", relationAType);

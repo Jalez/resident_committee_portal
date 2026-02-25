@@ -39,7 +39,6 @@ import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationshi
 import { addForwardPrefix, addReplyPrefix } from "~/lib/mail-utils";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
-import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import type { Route } from "./+types/_index";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
@@ -180,12 +179,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"event",
 		"minute",
 	] as const;
-	// Load thread-level relationships if draft has a threadId
-	const threadRelId = draft?.threadId || draftId;
+	const threadRelationId = draft?.threadId || draftId;
 	const relationships = await loadRelationshipsForEntity(
 		db,
 		"mail_thread",
-		threadRelId,
+		threadRelationId,
 		[...relationshipTypes],
 		{ userPermissions: currentUser.permissions },
 	);
@@ -218,6 +216,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		originalMessage,
 		composeMode,
 		relationships,
+		threadRelationId,
 		signatureRegards,
 	};
 }
@@ -304,6 +303,8 @@ export async function action({ request }: Route.ActionArgs) {
 	if (intent === "saveDraft") {
 		const draftId = formData.get("draftId") as string;
 		if (!draftId) return { saved: false, error: "Missing draftId" };
+		const threadRelationId =
+			(formData.get("relationAId") as string) || draftId;
 
 		const toJson = (formData.get("to_json") as string) ?? "[]";
 		const ccJson = (formData.get("cc_json") as string) || null;
@@ -314,18 +315,14 @@ export async function action({ request }: Route.ActionArgs) {
 			? ensureSignedBody(body, currentUser.name, signatureRegards)
 			: body;
 
-		// Save relationship changes at thread level
-		const saveDraft = await db.getMailDraftById(draftId);
-		if (saveDraft?.threadId) {
-			await saveRelationshipChanges(
-				db,
-				"mail_thread",
-				saveDraft.threadId,
-				formData,
-				currentUser.userId || null,
-				currentUser.permissions,
-			);
-		}
+		await saveRelationshipChanges(
+			db,
+			"mail_thread",
+			threadRelationId,
+			formData,
+			currentUser.userId || null,
+			currentUser.permissions,
+		);
 		const updated = await db.updateMailDraft(draftId, {
 			toJson,
 			ccJson,
@@ -346,6 +343,8 @@ export async function action({ request }: Route.ActionArgs) {
 		const ccEmails = (formData.getAll("cc") as string[]).filter(Boolean);
 		const bccEmails = (formData.getAll("bcc") as string[]).filter(Boolean);
 		const draftId = (formData.get("draftId") as string) || null;
+		const threadRelationId =
+			(formData.get("relationAId") as string) || draftId || "";
 		const replyToMessageId =
 			(formData.get("replyToMessageId") as string) || null;
 		const forwardFromMessageId =
@@ -374,23 +373,19 @@ export async function action({ request }: Route.ActionArgs) {
 			contentType?: string;
 		}[] = [];
 		if (draftId) {
-			const sendDraft = await db.getMailDraftById(draftId);
-			if (sendDraft?.threadId) {
-				await saveRelationshipChanges(
-					db,
-					"mail_thread",
-					sendDraft.threadId,
-					formData,
-					currentUser.userId || null,
-					currentUser.permissions,
-				);
-			}
+			await saveRelationshipChanges(
+				db,
+				"mail_thread",
+				threadRelationId,
+				formData,
+				currentUser.userId || null,
+				currentUser.permissions,
+			);
 
-			const sendThreadRelId = sendDraft?.threadId || draftId;
 			const relationshipData = await loadRelationshipsForEntity(
 				db,
 				"mail_thread",
-				sendThreadRelId,
+				threadRelationId,
 				["receipt", "reimbursement", "minute"],
 				{ userPermissions: currentUser.permissions },
 			);
@@ -601,26 +596,51 @@ export async function action({ request }: Route.ActionArgs) {
 			threadId,
 		});
 
-		// Ensure thread record exists and backfill reimbursement emailMessageId
-		if (threadId) {
-			await db.upsertCommitteeMailThread({
-				id: threadId,
-				subject: subject || "(No subject)",
-			});
+		if (threadRelationId) {
+			const draftRelationships = await db.getEntityRelationships(
+				"mail_thread",
+				threadRelationId,
+			);
+			for (const rel of draftRelationships) {
+				const relationAType = rel.relationAType;
+				const relationId =
+					rel.relationAType === "mail_thread" &&
+						rel.relationId === threadRelationId &&
+						threadId
+						? threadId
+						: rel.relationId;
+				const relationBType = rel.relationBType;
+				const relationBId =
+					rel.relationBType === "mail_thread" &&
+						rel.relationBId === threadRelationId &&
+						threadId
+						? threadId
+						: rel.relationBId;
 
-			// If this thread is linked to a reimbursement, backfill emailMessageId
-			if (sentMessageId) {
-				const threadRels = await db.getEntityRelationships("mail_thread", threadId);
-				for (const rel of threadRels) {
-					const isReimbA = rel.relationAType === "reimbursement";
-					const isReimbB = rel.relationBType === "reimbursement";
-					if (isReimbA || isReimbB) {
-						const reimbursementId = isReimbA ? rel.relationId : rel.relationBId;
-						const purchase = await db.getPurchaseById(reimbursementId);
-						if (purchase && !purchase.emailMessageId) {
-							await db.updatePurchase(reimbursementId, { emailMessageId: sentMessageId });
-						}
-					}
+				const exists = await db.entityRelationshipExists(
+					relationAType as any,
+					relationId,
+					relationBType as any,
+					relationBId,
+				);
+
+				if (!exists) {
+					await db.createEntityRelationship({
+						relationAType: relationAType as any,
+						relationId,
+						relationBType: relationBType as any,
+						relationBId,
+						createdBy: null,
+					});
+				}
+
+				if (threadId && threadRelationId !== threadId) {
+					await db.deleteEntityRelationshipByPair(
+						rel.relationAType as any,
+						rel.relationId,
+						rel.relationBType as any,
+						rel.relationBId,
+					);
 				}
 			}
 		}
@@ -666,6 +686,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 		originalMessage,
 		composeMode: initialComposeMode,
 		relationships,
+		threadRelationId,
 		signatureRegards,
 	} = loaderData;
 	const { t } = useTranslation();
@@ -783,11 +804,11 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 	updateFetcherRef.current = updateFetcher;
 
 	const draftId = initialDraft?.id as string;
-	const draftThreadId = (initialDraft as any)?.threadId as string | null;
+	const relationAId = threadRelationId || draftId;
 	const _isNew = !draftId;
 	const relationshipPicker = useRelationshipPicker({
 		relationAType: "mail_thread",
-		relationAId: draftThreadId || draftId || "",
+		relationAId: relationAId || "",
 		initialRelationships: [],
 	});
 	const signature = useMemo(
@@ -1180,7 +1201,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					{draftId && (
 						<SmartAutofillButton
 							entityType="mail_thread"
-							entityId={draftId}
+							entityId={relationAId}
 							getCurrentValues={() => ({
 								subject,
 								body,
@@ -1324,7 +1345,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 					<div className="lg:col-span-1">
 						<RelationshipPicker
 							relationAType="mail_thread"
-							relationAId={draftThreadId || draftId}
+							relationAId={relationAId}
 							relationAName={subject || t("mail.no_subject")}
 							mode="edit"
 							currentPath={`/mail/drafts/${draftId}/edit`}
@@ -1421,9 +1442,13 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 								defaultValue: `On ${new Date(originalMessage.date).toLocaleString()}, ${originalMessage.fromName || originalMessage.fromAddress} wrote:`,
 							})}
 						</p>
-						<div className="border-l-2 border-gray-300 pl-3 dark:border-gray-600">
-							<IsolatedEmailContent html={originalMessage.bodyHtml ?? ""} />
-						</div>
+						<div
+							className="prose prose-sm dark:prose-invert max-w-none border-l-2 border-gray-300 pl-3 text-gray-500 dark:border-gray-600 dark:text-gray-400"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: original email body from DB
+							dangerouslySetInnerHTML={{
+								__html: originalMessage.bodyHtml ?? "",
+							}}
+						/>
 					</div>
 				)}
 
@@ -1452,7 +1477,14 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 							{t("committee.mail.subject")}: {originalMessage.subject}
 						</p>
 					</div>
-					<IsolatedEmailContent html={originalMessage.bodyHtml ?? ""} />
+					<div className="prose prose-sm dark:prose-invert max-w-none text-gray-500 dark:text-gray-400">
+						<div
+							// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
+							className="[&_*]:!bg-transparent [&_*]:text-inherit"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: forwarded email body from DB
+							dangerouslySetInnerHTML={{ __html: originalMessage.bodyHtml ?? "" }}
+						/>
+					</div>
 				</div>
 			)}
 		</Form>

@@ -293,37 +293,8 @@ export async function syncCommitteeMail(
 						: null;
 					const subject = envelope?.subject?.trim() || "(No subject)";
 					const date = envelope?.date || new Date();
-					let threadId = computeThreadId(messageId, inReplyTo, references);
+					const threadId = computeThreadId(messageId, inReplyTo, references);
 
-					// Subject-based thread fallback: when the responder creates a new email
-					// instead of replying (no In-Reply-To / References headers), the threadId
-					// falls back to the message's own messageId. In that case, check the
-					// subject for a reimbursement tag and adopt the original thread's threadId
-					// so the response joins the correct conversation thread.
-					if (
-						threadId &&
-						threadId === messageId &&
-						!inReplyTo &&
-						(!references || references.length === 0)
-					) {
-						const subjectPurchaseId = extractPurchaseIdFromSubject(subject);
-						if (subjectPurchaseId) {
-							const purchase = await db.getPurchaseById(subjectPurchaseId);
-							if (purchase?.emailMessageId) {
-								const originalSentMsg = await db.getCommitteeMailMessageByMessageId(
-									purchase.emailMessageId,
-								);
-								if (originalSentMsg?.threadId) {
-									console.log(
-										`[IMAP Sync] Subject-based thread fallback: adopting threadId ${originalSentMsg.threadId} for message with subject "${subject}"`,
-									);
-									threadId = originalSentMsg.threadId;
-								}
-							}
-						}
-					}
-
-					// Look up existing thread-level relations for inheritance
 					const inheritedThreadRelations = new Map<
 						string,
 						{ type: string; id: string }
@@ -387,28 +358,20 @@ export async function syncCommitteeMail(
 						threadId,
 					});
 
-					// Ensure the thread record exists
-					if (threadId) {
-						await db.upsertCommitteeMailThread({
-							id: threadId,
-							subject,
-						});
-					}
-
-					// Reimbursement auto-link: create a mail_thread relation if one doesn't exist
-					if (purchaseId && threadId) {
+					for (const relation of inheritedThreadRelations.values()) {
+						if (!threadId) continue;
 						const exists = await db.entityRelationshipExists(
 							"mail_thread",
 							threadId,
-							"reimbursement",
-							purchaseId,
+							relation.type as any,
+							relation.id,
 						);
 						if (!exists) {
 							await db.createEntityRelationship({
 								relationAType: "mail_thread",
 								relationId: threadId,
-								relationBType: "reimbursement",
-								relationBId: purchaseId,
+								relationBType: relation.type as any,
+								relationBId: relation.id,
 								createdBy: null,
 							});
 						}

@@ -11,8 +11,7 @@
 			"minute": "Minute",
 			"news": "News",
 			"faq": "FAQ",
-			"submission": "Submission",
-			"mail_thread": "Email Thread"
+			"submission": "Submission"
 		},
 		"relations": {
 			"title": "Relations"
@@ -28,7 +27,7 @@
 			"faq": "FAQ",
 			"poll": "Poll",
 			"social": "Social Link",
-			"mail_thread": "Email Thread",
+			"mail": "Email",
 			"event": "Event",
 			"submission": "Submission"
 		},
@@ -49,9 +48,7 @@
 			"all": "All",
 			"loading": "Loading...",
 			"link_existing": "Link Existing",
-			"create_new": "Create New",
-			"export": "Export",
-			"import": "Import"
+			"create_new": "Create New"
 		},
 		"filters": {
 			"all": "All Categories"
@@ -1336,9 +1333,7 @@
 				"delete": "Delete transactions",
 				"update-self": "Edit own transactions",
 				"delete-self": "Delete own transactions",
-				"read-self": "View own transactions",
-				"export": "Export transactions to CSV",
-				"import": "Import transactions from file"
+				"read-self": "View own transactions"
 			},
 			"reimbursements": {
 				"read": "View reimbursement requests",
@@ -1348,8 +1343,7 @@
 				"delete": "Delete reimbursement requests",
 				"update-self": "Edit own reimbursement requests",
 				"delete-self": "Delete own reimbursement requests",
-				"read-self": "View own reimbursement requests",
-				"export": "Export reimbursements to CSV"
+				"read-self": "View own reimbursement requests"
 			},
 			"budgets": {
 				"read": "View budgets",
@@ -1359,9 +1353,7 @@
 				"update": "Edit budgets",
 				"delete": "Delete budgets",
 				"update-self": "Edit own budgets",
-				"delete-self": "Delete own budgets",
-				"export": "Export budgets to CSV",
-				"import": "Import budgets from file"
+				"delete-self": "Delete own budgets"
 			},
 			"receipts": {
 				"read": "View receipts",
@@ -1371,8 +1363,7 @@
 				"update": "Edit receipts",
 				"delete": "Delete receipts",
 				"update-self": "Edit own receipts",
-				"delete-self": "Delete own receipts",
-				"export": "Export receipts to CSV"
+				"delete-self": "Delete own receipts"
 			},
 			"view_scope": {
 				"all": "You are viewing all {{itemType}}",
@@ -1393,8 +1384,7 @@
 		"submissions": {
 			"read": "View contact form submissions",
 			"write": "Update submission status",
-			"delete": "Delete submissions",
-			"export": "Export submissions to CSV"
+			"delete": "Delete submissions"
 		},
 		"social": {
 			"read": "View social links",
@@ -1403,35 +1393,25 @@
 		},
 		"minutes": {
 			"read": "View and download minutes",
-			"guide": "View naming convention guide",
-			"export": "Export minutes list to CSV",
-			"write": "Upload minutes",
-			"update": "Edit minutes",
-			"delete": "Delete minutes"
+			"guide": "View naming convention guide"
 		},
 		"events": {
 			"read": "View calendar events",
 			"write": "Create calendar events",
 			"update": "Edit calendar events",
-			"delete": "Delete calendar events",
-			"export": "Export events to CSV",
-			"import": "Import events from file"
+			"delete": "Delete calendar events"
 		},
 		"news": {
 			"read": "View news",
 			"write": "Create news",
 			"update": "Edit news",
-			"delete": "Delete news",
-			"export": "Export news to CSV",
-			"import": "Import news from file"
+			"delete": "Delete news"
 		},
 		"faq": {
 			"read": "View FAQ",
 			"write": "Create FAQ entries",
 			"update": "Edit FAQ entries",
-			"delete": "Delete FAQ entries",
-			"export": "Export FAQ to CSV",
-			"import": "Import FAQ from file"
+			"delete": "Delete FAQ entries"
 		},
 		"forms": {
 			"read": "View form responses and analytics",
@@ -1440,10 +1420,7 @@
 		"polls": {
 			"read": "View polls",
 			"write": "Create and manage own polls",
-			"update": "Edit polls",
-			"delete": "Delete any poll",
-			"export": "Export polls to CSV",
-			"import": "Import polls from file"
+			"delete": "Delete any poll"
 		},
 		"profile": {
 			"read": {

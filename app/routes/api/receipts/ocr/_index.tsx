@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, data } from "react-router";
-import { getAuthenticatedUser } from "~/lib/auth.server";
+import { canEditSelf, getAuthenticatedUser, hasPermission } from "~/lib/auth.server";
 import { processReceiptOCR } from "~/lib/receipt-ocr.server";
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -10,16 +10,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	if (!user) {
 		return data({ success: false, error: "Unauthorized" }, { status: 401 });
-	}
-
-	const hasPermission =
-		user.permissions.includes("treasury:receipts:write") ||
-		user.permissions.includes("treasury:transactions:write") ||
-		user.permissions.includes("treasury:reimbursements:write") ||
-		user.permissions.includes("*");
-
-	if (!hasPermission) {
-		return data({ success: false, error: "Forbidden" }, { status: 403 });
 	}
 
 	// 2. Parse Input
@@ -40,6 +30,27 @@ export async function action({ request }: ActionFunctionArgs) {
 			{ success: false, error: "Missing receiptUrl" },
 			{ status: 400 },
 		);
+	}
+
+	const receipt = await db.getReceiptById(receiptId);
+	if (!receipt) {
+		return data({ success: false, error: "Receipt not found" }, { status: 404 });
+	}
+
+	const canRunOcrWithGeneralPermission =
+		hasPermission(user, "treasury:receipts:write") ||
+		hasPermission(user, "treasury:receipts:update") ||
+		hasPermission(user, "treasury:transactions:write") ||
+		hasPermission(user, "treasury:reimbursements:write");
+
+	const canRunOcrWithSelfPermission = canEditSelf(
+		user,
+		receipt.createdBy,
+		"treasury:receipts:update-self",
+	);
+
+	if (!canRunOcrWithGeneralPermission && !canRunOcrWithSelfPermission) {
+		return data({ success: false, error: "Forbidden" }, { status: 403 });
 	}
 
 	// 3. Process OCR

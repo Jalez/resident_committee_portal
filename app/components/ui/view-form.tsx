@@ -282,6 +282,7 @@ export function ViewForm({
 			"event",
 			"mail_thread",
 			"submission",
+			"message",
 		];
 
 		return allEntityTypes
