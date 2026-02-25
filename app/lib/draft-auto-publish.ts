@@ -26,6 +26,8 @@ function getPublishedStatus(type: RelationshipEntityType): string | null {
 			return "active";
 		case "poll":
 			return "active";
+		case "event":
+			return "active";
 		default:
 			return null;
 	}
