@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -923,6 +923,16 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.select()
 			.from(committeeMailMessages)
 			.where(eq(committeeMailMessages.threadId, threadId))
+			.orderBy(asc(committeeMailMessages.date));
+	}
+
+	async getCommitteeMailMessagesBySubjectPattern(
+		pattern: string,
+	): Promise<CommitteeMailMessage[]> {
+		return this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(ilike(committeeMailMessages.subject, `%${pattern}%`))
 			.orderBy(asc(committeeMailMessages.date));
 	}
 

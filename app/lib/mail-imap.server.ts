@@ -293,7 +293,35 @@ export async function syncCommitteeMail(
 						: null;
 					const subject = envelope?.subject?.trim() || "(No subject)";
 					const date = envelope?.date || new Date();
-					const threadId = computeThreadId(messageId, inReplyTo, references);
+					let threadId = computeThreadId(messageId, inReplyTo, references);
+
+					// Subject-based thread fallback: when the responder creates a new email
+					// instead of replying (no In-Reply-To / References headers), the threadId
+					// falls back to the message's own messageId. In that case, check the
+					// subject for a reimbursement tag and adopt the original thread's threadId
+					// so the response joins the correct conversation thread.
+					if (
+						threadId &&
+						threadId === messageId &&
+						!inReplyTo &&
+						(!references || references.length === 0)
+					) {
+						const subjectPurchaseId = extractPurchaseIdFromSubject(subject);
+						if (subjectPurchaseId) {
+							const purchase = await db.getPurchaseById(subjectPurchaseId);
+							if (purchase?.emailMessageId) {
+								const originalSentMsg = await db.getCommitteeMailMessageByMessageId(
+									purchase.emailMessageId,
+								);
+								if (originalSentMsg?.threadId) {
+									console.log(
+										`[IMAP Sync] Subject-based thread fallback: adopting threadId ${originalSentMsg.threadId} for message with subject "${subject}"`,
+									);
+									threadId = originalSentMsg.threadId;
+								}
+							}
+						}
+					}
 
 					const inheritedThreadRelations = new Map<
 						string,

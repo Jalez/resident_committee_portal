@@ -231,6 +231,10 @@ export interface DatabaseAdapter {
 	getCommitteeMailMessageByMessageId(
 		messageId: string,
 	): Promise<CommitteeMailMessage | null>;
+	/** Find mail messages whose subject contains a specific pattern (case-insensitive) */
+	getCommitteeMailMessagesBySubjectPattern(
+		pattern: string,
+	): Promise<CommitteeMailMessage[]>;
 
 	// ==================== Mail Drafts Methods ====================
 	insertMailDraft(draft: NewMailDraft): Promise<MailDraft>;

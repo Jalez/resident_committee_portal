@@ -12,6 +12,7 @@ import {
 	parseReimbursementReply,
 } from "../app/lib/email.server";
 import { ENTITY_DEFINITIONS } from "../app/lib/entity-definitions";
+import { computeThreadId } from "../app/lib/mail-threading.server";
 import { validateRequiredRelationships } from "../app/lib/required-relationships";
 
 vi.mock("../app/lib/openrouter.server", () => ({
@@ -74,6 +75,32 @@ function createMockDatabase() {
 
 		async getCommitteeMailMessageByMessageId(messageId: string) {
 			return mailMessages.get(messageId) || null;
+		},
+
+		async getCommitteeMailMessagesByThreadId(threadId: string) {
+			const seen = new Set<string>();
+			return Array.from(mailMessages.values()).filter(
+				(m: any) => {
+					if (m.threadId !== threadId || seen.has(m.id)) return false;
+					seen.add(m.id);
+					return true;
+				},
+			);
+		},
+
+		async getCommitteeMailMessagesBySubjectPattern(pattern: string) {
+			const lowerPattern = pattern.toLowerCase();
+			const seen = new Set<string>();
+			return Array.from(mailMessages.values()).filter(
+				(m: any) => {
+					if (seen.has(m.id)) return false;
+					seen.add(m.id);
+					return (
+						typeof m.subject === "string" &&
+						m.subject.toLowerCase().includes(lowerPattern)
+					);
+				},
+			);
 		},
 
 		async getPurchaseById(id: string) {
@@ -855,6 +882,129 @@ describe("Reimbursement Request Flow", () => {
 				transaction.id,
 			);
 			expect(updatedTransaction?.reimbursementStatus).toBe("approved");
+		});
+	});
+
+	describe("Subject-Based Thread Matching", () => {
+		beforeEach(() => {
+			db.clear();
+		});
+
+		it("should adopt original threadId when reply lacks threading headers but has reimbursement subject tag", async () => {
+			// 1. Create a purchase and simulate sending a reimbursement email
+			const purchaseId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+			await db.createPurchase({
+				id: purchaseId,
+				description: "Thread Matching Test",
+				amount: "100.00",
+				purchaserName: "Test User",
+				bankAccount: "FI1234567890",
+				status: "pending",
+				emailMessageId: "original-msg-id@example.com",
+				emailSent: true,
+			});
+
+			// 2. Insert the original sent mail message
+			const originalThread = computeThreadId("original-msg-id@example.com", null, null);
+			await db.insertCommitteeMailMessage({
+				direction: "sent",
+				messageId: "original-msg-id@example.com",
+				threadId: originalThread,
+				subject: `[Reimbursement ${purchaseId}] Test Reimbursement`,
+			});
+
+			// 3. Simulate an incoming reply WITHOUT In-Reply-To/References headers
+			//    (recipient composed a new email with same subject)
+			const replyMessageId = "reply-new-thread@example.com";
+			const inReplyTo = null;
+			const references: string[] | null = null;
+
+			// Without fallback, computeThreadId would return the reply's own messageId
+			const naiveThreadId = computeThreadId(replyMessageId, inReplyTo, references);
+			expect(naiveThreadId).toBe(replyMessageId);
+			expect(naiveThreadId).not.toBe(originalThread);
+
+			// 4. Apply the subject-based fallback logic (mirrors mail-imap.server.ts)
+			const subject = `Re: [Reimbursement ${purchaseId}] Test Reimbursement`;
+			let threadId = naiveThreadId;
+
+			if (
+				threadId &&
+				threadId === replyMessageId &&
+				!inReplyTo &&
+				(!references || references.length === 0)
+			) {
+				const subjectPurchaseId = extractPurchaseIdFromSubject(subject);
+				if (subjectPurchaseId) {
+					const purchase = await db.getPurchaseById(subjectPurchaseId);
+					if (purchase?.emailMessageId) {
+						const originalSentMsg = await db.getCommitteeMailMessageByMessageId(
+							purchase.emailMessageId,
+						);
+						if (originalSentMsg?.threadId) {
+							threadId = originalSentMsg.threadId;
+						}
+					}
+				}
+			}
+
+			// 5. Verify the reply now adopts the original thread's threadId
+			expect(threadId).toBe(originalThread);
+
+			// 6. Insert the reply with the corrected threadId
+			await db.insertCommitteeMailMessage({
+				direction: "inbox",
+				messageId: replyMessageId,
+				threadId,
+				subject,
+			});
+
+			// 7. Verify both messages are now in the same thread
+			const threadMessages = await db.getCommitteeMailMessagesByThreadId(originalThread!);
+			expect(threadMessages).toHaveLength(2);
+		});
+
+		it("should not modify threadId when reply has proper threading headers", async () => {
+			const replyMessageId = "proper-reply@example.com";
+			const parentMessageId = "parent@example.com";
+
+			// With In-Reply-To set, computeThreadId uses that
+			const threadId = computeThreadId(replyMessageId, parentMessageId, [parentMessageId]);
+
+			// Should use the first reference (parent), not the reply's own ID
+			expect(threadId).toBe(parentMessageId);
+			expect(threadId).not.toBe(replyMessageId);
+		});
+
+		it("should find orphaned messages by subject pattern", async () => {
+			const purchaseId = "b2c3d4e5-f6a7-8901-bcde-f12345678901";
+
+			// Insert messages with matching subject but different threadIds
+			await db.insertCommitteeMailMessage({
+				direction: "sent",
+				messageId: "sent-msg@example.com",
+				threadId: "sent-msg@example.com",
+				subject: `[Reimbursement ${purchaseId}] Purchase request`,
+			});
+
+			await db.insertCommitteeMailMessage({
+				direction: "inbox",
+				messageId: "orphan-reply@example.com",
+				threadId: "orphan-reply@example.com", // Different threadId
+				subject: `Re: [Reimbursement ${purchaseId}] Purchase request`,
+			});
+
+			// Subject pattern search should find both
+			const matches = await db.getCommitteeMailMessagesBySubjectPattern(
+				`[Reimbursement ${purchaseId}]`,
+			);
+			expect(matches).toHaveLength(2);
+
+			// Thread lookup with original threadId finds only the sent one
+			const threadMessages = await db.getCommitteeMailMessagesByThreadId(
+				"sent-msg@example.com",
+			);
+			expect(threadMessages).toHaveLength(1);
 		});
 	});
 });

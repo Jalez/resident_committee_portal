@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { and, asc, desc, eq, gt, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import {
 	type AppSetting,
@@ -1125,6 +1125,16 @@ export class NeonAdapter implements DatabaseAdapter {
 			.select()
 			.from(committeeMailMessages)
 			.where(eq(committeeMailMessages.threadId, threadId))
+			.orderBy(asc(committeeMailMessages.date));
+	}
+
+	async getCommitteeMailMessagesBySubjectPattern(
+		pattern: string,
+	): Promise<CommitteeMailMessage[]> {
+		return this.db
+			.select()
+			.from(committeeMailMessages)
+			.where(ilike(committeeMailMessages.subject, `%${pattern}%`))
 			.orderBy(asc(committeeMailMessages.date));
 	}
 

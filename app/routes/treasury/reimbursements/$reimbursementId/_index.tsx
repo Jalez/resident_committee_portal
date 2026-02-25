@@ -59,6 +59,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		fetchEntity: (db, id) => db.getPurchaseById(id),
 		extend: async ({ db, entity: purchase }) => {
 			let mailThread = null;
+			let threadMessageIds = new Set<string>();
 			if (purchase.emailMessageId) {
 				const mailMessage = await db.getCommitteeMailMessageByMessageId(
 					purchase.emailMessageId,
@@ -68,6 +69,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 						mailMessage.threadId,
 					);
 					if (threadMessages.length > 0) {
+						threadMessageIds = new Set(threadMessages.map((m) => m.id));
 						mailThread = {
 							id: mailMessage.threadId,
 							subject: threadMessages[0].subject,
@@ -75,6 +77,28 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 						};
 					}
 				}
+			}
+
+			// Subject-based fallback: find orphaned replies that match the
+			// reimbursement subject tag but have a different threadId (e.g. the
+			// responder composed a new email instead of replying to the thread).
+			const subjectTag = `[Reimbursement ${purchase.id}]`;
+			const subjectMatches = await db.getCommitteeMailMessagesBySubjectPattern(
+				subjectTag,
+			);
+			const orphanedMessages = subjectMatches.filter(
+				(m) => !threadMessageIds.has(m.id),
+			);
+			if (orphanedMessages.length > 0 && mailThread) {
+				// Merge orphaned messages into the thread count
+				mailThread.messageCount += orphanedMessages.length;
+			} else if (orphanedMessages.length > 0 && !mailThread) {
+				// No threaded mail found, but we have subject matches
+				mailThread = {
+					id: orphanedMessages[0].threadId || orphanedMessages[0].id,
+					subject: orphanedMessages[0].subject,
+					messageCount: orphanedMessages.length,
+				};
 			}
 
 			const allRelationships = await db.getEntityRelationships(
@@ -146,9 +170,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				hasLinkedMailRelation: linkedMailIds.length > 0,
 				linkedMailDraft: linkedMailDraft
 					? {
-							id: linkedMailDraft.id,
-							subject: linkedMailDraft.subject,
-						}
+						id: linkedMailDraft.id,
+						subject: linkedMailDraft.subject,
+					}
 					: null,
 			};
 		},
@@ -338,11 +362,11 @@ export async function action({ request, params }: Route.ActionArgs) {
 				const bodyHtml = body.replace(/\n/g, "<br>\n");
 				let quotedReply:
 					| {
-							date: string;
-							fromName: string;
-							fromEmail: string;
-							bodyHtml: string;
-					  }
+						date: string;
+						fromName: string;
+						fromEmail: string;
+						bodyHtml: string;
+					}
 					| undefined;
 				if (
 					parentMessage &&
@@ -416,8 +440,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 					: null;
 				const bccJson = bccRecipients.length
 					? JSON.stringify(
-							bccRecipients.map((r) => ({ email: r.email, name: r.name })),
-						)
+						bccRecipients.map((r) => ({ email: r.email, name: r.name })),
+					)
 					: null;
 
 				const sentMessageId = result.messageId || null;
@@ -456,13 +480,13 @@ export async function action({ request, params }: Route.ActionArgs) {
 					const relationAType = rel.relationAType;
 					const relationId =
 						rel.relationAType === "mail" &&
-						rel.relationId === linkedMailDraft.id
+							rel.relationId === linkedMailDraft.id
 							? inserted.id
 							: rel.relationId;
 					const relationBType = rel.relationBType;
 					const relationBId =
 						rel.relationBType === "mail" &&
-						rel.relationBId === linkedMailDraft.id
+							rel.relationBId === linkedMailDraft.id
 							? inserted.id
 							: rel.relationBId;
 
@@ -590,10 +614,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 		const linkedMinutes =
 			linkedMinuteIds.length > 0
 				? await Promise.all(
-						linkedMinuteIds.map((id) => db.getMinuteById(id)),
-					).then((minutes) =>
-						minutes.filter((m): m is NonNullable<typeof m> => m !== null),
-					)
+					linkedMinuteIds.map((id) => db.getMinuteById(id)),
+				).then((minutes) =>
+					minutes.filter((m): m is NonNullable<typeof m> => m !== null),
+				)
 				: [];
 
 		if (
@@ -623,10 +647,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 		const linkedReceipts =
 			linkedReceiptIds.length > 0
 				? await Promise.all(
-						linkedReceiptIds.map((id) => db.getReceiptById(id)),
-					).then((receipts) =>
-						receipts.filter((r): r is NonNullable<typeof r> => r !== null),
-					)
+					linkedReceiptIds.map((id) => db.getReceiptById(id)),
+				).then((receipts) =>
+					receipts.filter((r): r is NonNullable<typeof r> => r !== null),
+				)
 				: [];
 
 		if (linkedReceipts.length === 0) {
@@ -838,16 +862,16 @@ export default function ViewReimbursement({
 
 	const mailRelationships = mailThread
 		? {
-				mail: {
-					linked: [
-						{
-							id: mailThread.id,
-							name: mailThread.subject || "Email Thread",
-							__type: "mail",
-						},
-					],
-				},
-			}
+			mail: {
+				linked: [
+					{
+						id: mailThread.id,
+						name: mailThread.subject || "Email Thread",
+						__type: "mail",
+					},
+				],
+			},
+		}
 		: relationships.mail
 			? { mail: relationships.mail }
 			: {};
@@ -964,15 +988,15 @@ export default function ViewReimbursement({
 				description={
 					linkedMailDraft
 						? t("treasury.reimbursements.send_linked_mail_confirm_desc", {
-								subject: linkedMailDraft.subject,
-								defaultValue: linkedMailDraft.subject
-									? `This will send the linked mail draft "${linkedMailDraft.subject}" and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.`
-									: "This will send the linked mail draft and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.",
-							})
+							subject: linkedMailDraft.subject,
+							defaultValue: linkedMailDraft.subject
+								? `This will send the linked mail draft "${linkedMailDraft.subject}" and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.`
+								: "This will send the linked mail draft and then track responses in its thread. Sending is blocked if that mail is missing linked minutes or receipts.",
+						})
 						: t("treasury.reimbursements.send_confirm_desc", {
-								defaultValue:
-									"Are you sure you want to send this reimbursement request email now?",
-							})
+							defaultValue:
+								"Are you sure you want to send this reimbursement request email now?",
+						})
 				}
 				confirmLabel={t("treasury.reimbursements.send_request")}
 				cancelLabel={t("common.actions.cancel")}
