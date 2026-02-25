@@ -6,6 +6,8 @@ import { getEntityPrefix } from "~/lib/file-upload.server";
 import type { FileEntityType } from "~/lib/file-upload-types";
 import { FILE_TYPE_CONFIGS } from "~/lib/file-upload-types";
 
+const VALID_ENTITY_TYPES: FileEntityType[] = ["receipt", "minute", "avatar"];
+
 const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
@@ -16,7 +18,7 @@ function isValidPathname(pathname: string, entityType: FileEntityType, userId?: 
 	const prefix = getEntityPrefix(entityType);
 	if (!pathname || !pathname.startsWith(prefix)) return false;
 	if (pathname.includes("..")) return false;
-	
+
 	if (entityType === "avatar" && userId) {
 		const rest = pathname.slice(prefix.length);
 		const parts = rest.split("/").filter(Boolean);
@@ -27,8 +29,22 @@ function isValidPathname(pathname: string, entityType: FileEntityType, userId?: 
 		const pathUserId = file.slice(0, dot);
 		if (pathUserId !== userId) return false;
 	}
-	
+
 	return true;
+}
+
+function parseEntityType(clientPayload: string | null): FileEntityType | null {
+	if (!clientPayload) return null;
+	try {
+		const parsed = JSON.parse(clientPayload);
+		const type = parsed?.entityType as string | undefined;
+		if (type && VALID_ENTITY_TYPES.includes(type as FileEntityType)) {
+			return type as FileEntityType;
+		}
+	} catch {
+		// invalid JSON
+	}
+	return null;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -41,33 +57,31 @@ export async function action({ request }: ActionFunctionArgs) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const body = (await request.json()) as HandleUploadBody & {
-		entityType?: FileEntityType;
-	};
-
-	const entityType = (body as any).entityType as FileEntityType | undefined;
-	if (!entityType || !["receipt", "minute", "avatar"].includes(entityType)) {
-		return Response.json({ error: "Valid entityType is required" }, { status: 400 });
-	}
-
-	const permissions = PERMISSION_MAP[entityType];
-	const hasPermission = user.permissions.some((p) => 
-		permissions.includes(p) || p === "*"
-	);
-	if (!hasPermission) {
-		return Response.json({ error: "Forbidden" }, { status: 403 });
-	}
-
-	const config = FILE_TYPE_CONFIGS[entityType];
+	const body = (await request.json()) as HandleUploadBody;
 
 	try {
 		const jsonResponse = await handleUpload({
 			body,
 			request,
-			onBeforeGenerateToken: async (pathname: string) => {
+			onBeforeGenerateToken: async (pathname: string, clientPayload: string | null) => {
+				const entityType = parseEntityType(clientPayload);
+				if (!entityType) {
+					throw new Error("Valid entityType is required in clientPayload");
+				}
+
+				const permissions = PERMISSION_MAP[entityType];
+				const hasPermission = user.permissions.some((p) =>
+					permissions.includes(p) || p === "*"
+				);
+				if (!hasPermission) {
+					throw new Error("Forbidden");
+				}
+
 				if (!isValidPathname(pathname, entityType, user.userId)) {
 					throw new Error("Invalid upload path");
 				}
+
+				const config = FILE_TYPE_CONFIGS[entityType];
 				return {
 					allowedContentTypes: [...config.mimeTypes],
 				};
