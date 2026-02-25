@@ -161,7 +161,7 @@ describe("Relationship Context - Priority Scale", () => {
 			expect(getEntityPriority("poll")).toBe(0);
 			expect(getEntityPriority("social")).toBe(0);
 			expect(getEntityPriority("event")).toBe(0);
-			expect(getEntityPriority("mail")).toBe(0);
+			expect(getEntityPriority("mail_thread")).toBe(0);
 		});
 	});
 

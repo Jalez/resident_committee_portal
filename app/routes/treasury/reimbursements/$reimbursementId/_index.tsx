@@ -140,7 +140,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				"reimbursement",
 				purchase.id,
 			);
-			const linkedMailIds = Array.from(
+			const linkedThreadIds = Array.from(
 				new Set(
 					allRelationships
 						.filter((r) => {
@@ -154,42 +154,34 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 							const otherType = isReimbursementA
 								? r.relationBType
 								: r.relationAType;
-							return otherType === "mail";
+							return otherType === "mail_thread";
 						})
-						.map((r) => (r.relationAType === "mail" ? r.relationId : r.relationBId)),
+						.map((r) => (r.relationAType === "mail_thread" ? r.relationId : r.relationBId)),
 				),
 			);
-			const linkedMailDrafts = await Promise.all(
-				linkedMailIds.map((mailId) => db.getMailDraftById(mailId)),
-			);
-			const linkedMailDraft =
-				linkedMailDrafts.find(
-					(draft): draft is NonNullable<typeof draft> => draft !== null,
-				) ?? null;
+			// Find drafts linked to any of the thread IDs
+			const allDrafts = await db.getMailDrafts(50);
+			const linkedMailDraft = allDrafts.find(
+				(draft) => draft.threadId && linkedThreadIds.includes(draft.threadId),
+			) ?? null;
 
-			// If we still don't have a mail thread, but we have linked mail, it might be a sent email
-			// that was created from the mail UI and linked to this reimbursement without backfilling emailMessageId.
-			if (!mailThread && linkedMailIds.length > 0) {
-				const linkedMails = await Promise.all(
-					linkedMailIds.map((mailId) => db.getCommitteeMailMessageById(mailId)),
-				);
-				const firstSentMail = linkedMails.find(
-					(m): m is NonNullable<typeof m> => m !== null,
-				);
-				if (firstSentMail) {
-					mailThread = {
-						id: firstSentMail.threadId || firstSentMail.id,
-						subject: firstSentMail.subject,
-						messageCount: 1,
-					};
-					// Update count if there are more
-					const existingThreadMessages = await db.getCommitteeMailMessagesByThreadId(mailThread.id);
-					if (existingThreadMessages.length > 0) {
-						mailThread.messageCount = existingThreadMessages.length;
-					}
-					// Self-heal: backfill the reimbursement's emailMessageId so it works normally next time
-					if (firstSentMail.messageId) {
-						db.updatePurchase(purchase.id, { emailMessageId: firstSentMail.messageId }).catch(console.error);
+			// If we still don't have a mail thread, but we have linked thread relations,
+			// look up the thread directly.
+			if (!mailThread && linkedThreadIds.length > 0) {
+				for (const tid of linkedThreadIds) {
+					const threadMessages = await db.getCommitteeMailMessagesByThreadId(tid);
+					if (threadMessages.length > 0) {
+						mailThread = {
+							id: tid,
+							subject: threadMessages[0].subject,
+							messageCount: threadMessages.length,
+						};
+						// Self-heal: backfill the reimbursement's emailMessageId
+						const sentMsg = threadMessages.find((m) => m.direction === "sent" && m.messageId);
+						if (sentMsg?.messageId) {
+							db.updatePurchase(purchase.id, { emailMessageId: sentMsg.messageId }).catch(console.error);
+						}
+						break;
 					}
 				}
 			}
@@ -229,7 +221,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				mailThread,
 				emailConfigured: await isEmailConfigured(),
 				hasMinutesFile,
-				hasLinkedMailRelation: linkedMailIds.length > 0,
+				hasLinkedMailRelation: linkedThreadIds.length > 0,
 				linkedMailDraft: linkedMailDraft
 					? {
 						id: linkedMailDraft.id,
@@ -260,7 +252,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 			"reimbursement",
 			purchase.id,
 		);
-		const linkedMailIds = Array.from(
+		const linkedMailThreadIds = Array.from(
 			new Set(
 				allRelationships
 					.filter((r) => {
@@ -270,19 +262,17 @@ export async function action({ request, params }: Route.ActionArgs) {
 							r.relationBType === "reimbursement" && r.relationBId === purchase.id;
 						if (!isReimbursementA && !isReimbursementB) return false;
 						const otherType = isReimbursementA ? r.relationBType : r.relationAType;
-						return otherType === "mail";
+						return otherType === "mail_thread";
 					})
-					.map((r) => (r.relationAType === "mail" ? r.relationId : r.relationBId)),
+					.map((r) => (r.relationAType === "mail_thread" ? r.relationId : r.relationBId)),
 			),
 		);
-		const linkedMailDrafts = await Promise.all(
-			linkedMailIds.map((mailId) => db.getMailDraftById(mailId)),
-		);
-		const linkedMailDraft =
-			linkedMailDrafts.find(
-				(draft): draft is NonNullable<typeof draft> => draft !== null,
-			) ?? null;
-		if (linkedMailIds.length > 0) {
+		// Find linked mail draft by checking drafts whose threadId matches a linked thread
+		const actionDrafts = await db.getMailDrafts(50);
+		const linkedMailDraft = actionDrafts.find(
+			(draft) => draft.threadId && linkedMailThreadIds.includes(draft.threadId),
+		) ?? null;
+		if (linkedMailThreadIds.length > 0) {
 			if (!linkedMailDraft) {
 				return {
 					success: false,
@@ -312,8 +302,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 			const relationshipData = await loadRelationshipsForEntity(
 				db,
-				"mail",
-				linkedMailDraft.id,
+				"mail_thread",
+				linkedMailDraft.threadId || linkedMailDraft.id,
 				["reimbursement", "minute", "receipt"],
 			);
 			const linkedReimbursements = (
@@ -534,67 +524,34 @@ export async function action({ request, params }: Route.ActionArgs) {
 					threadId,
 				});
 
-				const draftRelationships = await db.getEntityRelationships(
-					"mail",
-					linkedMailDraft.id,
-				);
-				for (const rel of draftRelationships) {
-					const relationAType = rel.relationAType;
-					const relationId =
-						rel.relationAType === "mail" &&
-							rel.relationId === linkedMailDraft.id
-							? inserted.id
-							: rel.relationId;
-					const relationBType = rel.relationBType;
-					const relationBId =
-						rel.relationBType === "mail" &&
-							rel.relationBId === linkedMailDraft.id
-							? inserted.id
-							: rel.relationBId;
-
-					const exists = await db.entityRelationshipExists(
-						relationAType as any,
-						relationId,
-						relationBType as any,
-						relationBId,
-					);
-					if (!exists) {
-						await db.createEntityRelationship({
-							relationAType: relationAType as any,
-							relationId,
-							relationBType: relationBType as any,
-							relationBId,
-							createdBy: null,
-						});
-					}
-					await db.deleteEntityRelationshipByPair(
-						rel.relationAType as any,
-						rel.relationId,
-						rel.relationBType as any,
-						rel.relationBId,
-					);
-				}
-
 				await db.updatePurchase(purchase.id, {
 					emailSent: true,
 					emailMessageId: result.messageId || null,
 					emailError: null,
 				});
 
-				const reimbursementMailRelationExists = await db.entityRelationshipExists(
-					"reimbursement" as any,
-					purchase.id,
-					"mail" as any,
-					inserted.id,
-				);
-				if (!reimbursementMailRelationExists) {
-					await db.createEntityRelationship({
-						relationAType: "reimbursement",
-						relationId: purchase.id,
-						relationBType: "mail",
-						relationBId: inserted.id,
-						createdBy: null,
+				// Ensure thread record and thread-level relationship exist
+				if (threadId) {
+					await db.upsertCommitteeMailThread({
+						id: threadId,
+						subject: linkedMailDraft.subject || "(No subject)",
 					});
+
+					const reimbursementThreadRelExists = await db.entityRelationshipExists(
+						"reimbursement" as any,
+						purchase.id,
+						"mail_thread" as any,
+						threadId,
+					);
+					if (!reimbursementThreadRelExists) {
+						await db.createEntityRelationship({
+							relationAType: "reimbursement",
+							relationId: purchase.id,
+							relationBType: "mail_thread",
+							relationBId: threadId,
+							createdBy: null,
+						});
+					}
 				}
 
 				return {
@@ -784,14 +741,26 @@ export async function action({ request, params }: Route.ActionArgs) {
 				const mailMessage = await db.getCommitteeMailMessageByMessageId(
 					emailResult.messageId,
 				);
-				if (mailMessage) {
-					await db.createEntityRelationship({
-						relationAType: "reimbursement",
-						relationId: purchase.id,
-						relationBType: "mail",
-						relationBId: mailMessage.id,
-						createdBy: null,
+				if (mailMessage?.threadId) {
+					await db.upsertCommitteeMailThread({
+						id: mailMessage.threadId,
+						subject: mailMessage.subject,
 					});
+					const threadRelExists = await db.entityRelationshipExists(
+						"reimbursement" as any,
+						purchase.id,
+						"mail_thread" as any,
+						mailMessage.threadId,
+					);
+					if (!threadRelExists) {
+						await db.createEntityRelationship({
+							relationAType: "reimbursement",
+							relationId: purchase.id,
+							relationBType: "mail_thread",
+							relationBId: mailMessage.threadId,
+							createdBy: null,
+						});
+					}
 				}
 
 				return {
@@ -924,18 +893,17 @@ export default function ViewReimbursement({
 
 	const mailRelationships = mailThread
 		? {
-			mail: {
+			mail_thread: {
 				linked: [
 					{
 						id: mailThread.id,
-						name: mailThread.subject || "Email Thread",
-						__type: "mail",
+						subject: mailThread.subject || "Email Thread",
 					},
 				],
 			},
 		}
-		: relationships.mail
-			? { mail: relationships.mail }
+		: relationships.mail_thread
+			? { mail_thread: relationships.mail_thread }
 			: {};
 
 	const handleSendRequest = () => {

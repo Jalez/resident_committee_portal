@@ -26,8 +26,6 @@ function getPublishedStatus(type: RelationshipEntityType): string | null {
 			return "active";
 		case "poll":
 			return "active";
-		case "mail":
-			return "sent";
 		default:
 			return null;
 	}
@@ -226,9 +224,6 @@ export function getDraftAutoPublishStatus(
 			break;
 		case "event":
 			isReady = isEventReady(fields);
-			break;
-		case "mail":
-			isReady = isMailReady(fields);
 			break;
 		default:
 			return null;

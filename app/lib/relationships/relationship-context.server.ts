@@ -61,7 +61,7 @@ const PRIORITY_LEVELS: Record<RelationshipEntityType | "manual", number> = {
 	poll: 0,
 	social: 0,
 	event: 0,
-	mail: 0,
+	mail_thread: 0,
 	submission: 0,
 	message: 0,
 };

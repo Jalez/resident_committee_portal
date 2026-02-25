@@ -323,30 +323,28 @@ export async function syncCommitteeMail(
 						}
 					}
 
+					// Look up existing thread-level relations for inheritance
 					const inheritedThreadRelations = new Map<
 						string,
 						{ type: string; id: string }
 					>();
 					if (threadId) {
-						const threadMessages = await db.getCommitteeMailMessagesByThreadId(threadId);
-						for (const threadMessage of threadMessages) {
-							const rels = await db.getEntityRelationships("mail", threadMessage.id);
-							for (const rel of rels) {
-								const isMailA =
-									rel.relationAType === "mail" && rel.relationId === threadMessage.id;
-								const isMailB =
-									rel.relationBType === "mail" && rel.relationBId === threadMessage.id;
-								if (!isMailA && !isMailB) continue;
+						const rels = await db.getEntityRelationships("mail_thread", threadId);
+						for (const rel of rels) {
+							const isThreadA =
+								rel.relationAType === "mail_thread" && rel.relationId === threadId;
+							const isThreadB =
+								rel.relationBType === "mail_thread" && rel.relationBId === threadId;
+							if (!isThreadA && !isThreadB) continue;
 
-								const relatedType = isMailA ? rel.relationBType : rel.relationAType;
-								const relatedId = isMailA ? rel.relationBId : rel.relationId;
-								if (!relatedId || relatedType === "mail") continue;
+							const relatedType = isThreadA ? rel.relationBType : rel.relationAType;
+							const relatedId = isThreadA ? rel.relationBId : rel.relationId;
+							if (!relatedId || relatedType === "mail_thread") continue;
 
-								inheritedThreadRelations.set(`${relatedType}:${relatedId}`, {
-									type: relatedType,
-									id: relatedId,
-								});
-							}
+							inheritedThreadRelations.set(`${relatedType}:${relatedId}`, {
+								type: relatedType,
+								id: relatedId,
+							});
 						}
 					}
 
@@ -389,19 +387,28 @@ export async function syncCommitteeMail(
 						threadId,
 					});
 
-					for (const relation of inheritedThreadRelations.values()) {
+					// Ensure the thread record exists
+					if (threadId) {
+						await db.upsertCommitteeMailThread({
+							id: threadId,
+							subject,
+						});
+					}
+
+					// Reimbursement auto-link: create a mail_thread relation if one doesn't exist
+					if (purchaseId && threadId) {
 						const exists = await db.entityRelationshipExists(
-							"mail",
-							inserted.id,
-							relation.type as any,
-							relation.id,
+							"mail_thread",
+							threadId,
+							"reimbursement",
+							purchaseId,
 						);
 						if (!exists) {
 							await db.createEntityRelationship({
-								relationAType: "mail",
-								relationId: inserted.id,
-								relationBType: relation.type as any,
-								relationBId: relation.id,
+								relationAType: "mail_thread",
+								relationId: threadId,
+								relationBType: "reimbursement",
+								relationBId: purchaseId,
 								createdBy: null,
 							});
 						}

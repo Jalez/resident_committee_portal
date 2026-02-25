@@ -180,10 +180,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"event",
 		"minute",
 	] as const;
+	// Load thread-level relationships if draft has a threadId
+	const threadRelId = draft?.threadId || draftId;
 	const relationships = await loadRelationshipsForEntity(
 		db,
-		"mail",
-		draftId,
+		"mail_thread",
+		threadRelId,
 		[...relationshipTypes],
 		{ userPermissions: currentUser.permissions },
 	);
@@ -312,14 +314,18 @@ export async function action({ request }: Route.ActionArgs) {
 			? ensureSignedBody(body, currentUser.name, signatureRegards)
 			: body;
 
-		await saveRelationshipChanges(
-			db,
-			"mail",
-			draftId,
-			formData,
-			currentUser.userId || null,
-			currentUser.permissions,
-		);
+		// Save relationship changes at thread level
+		const saveDraft = await db.getMailDraftById(draftId);
+		if (saveDraft?.threadId) {
+			await saveRelationshipChanges(
+				db,
+				"mail_thread",
+				saveDraft.threadId,
+				formData,
+				currentUser.userId || null,
+				currentUser.permissions,
+			);
+		}
 		const updated = await db.updateMailDraft(draftId, {
 			toJson,
 			ccJson,
@@ -368,19 +374,23 @@ export async function action({ request }: Route.ActionArgs) {
 			contentType?: string;
 		}[] = [];
 		if (draftId) {
-			await saveRelationshipChanges(
-				db,
-				"mail",
-				draftId,
-				formData,
-				currentUser.userId || null,
-				currentUser.permissions,
-			);
+			const sendDraft = await db.getMailDraftById(draftId);
+			if (sendDraft?.threadId) {
+				await saveRelationshipChanges(
+					db,
+					"mail_thread",
+					sendDraft.threadId,
+					formData,
+					currentUser.userId || null,
+					currentUser.permissions,
+				);
+			}
 
+			const sendThreadRelId = sendDraft?.threadId || draftId;
 			const relationshipData = await loadRelationshipsForEntity(
 				db,
-				"mail",
-				draftId,
+				"mail_thread",
+				sendThreadRelId,
 				["receipt", "reimbursement", "minute"],
 				{ userPermissions: currentUser.permissions },
 			);
@@ -591,53 +601,25 @@ export async function action({ request }: Route.ActionArgs) {
 			threadId,
 		});
 
-		if (draftId) {
-			const draftRelationships = await db.getEntityRelationships("mail", draftId);
-			for (const rel of draftRelationships) {
-				const relationAType = rel.relationAType;
-				const relationId =
-					rel.relationAType === "mail" && rel.relationId === draftId
-						? inserted.id
-						: rel.relationId;
-				const relationBType = rel.relationBType;
-				const relationBId =
-					rel.relationBType === "mail" && rel.relationBId === draftId
-						? inserted.id
-						: rel.relationBId;
+		// Ensure thread record exists and backfill reimbursement emailMessageId
+		if (threadId) {
+			await db.upsertCommitteeMailThread({
+				id: threadId,
+				subject: subject || "(No subject)",
+			});
 
-				const exists = await db.entityRelationshipExists(
-					relationAType as any,
-					relationId,
-					relationBType as any,
-					relationBId,
-				);
-
-				if (!exists) {
-					await db.createEntityRelationship({
-						relationAType: relationAType as any,
-						relationId,
-						relationBType: relationBType as any,
-						relationBId,
-						createdBy: null,
-					});
-				}
-
-				await db.deleteEntityRelationshipByPair(
-					rel.relationAType as any,
-					rel.relationId,
-					rel.relationBType as any,
-					rel.relationBId,
-				);
-
-				// If this mail is linked to a reimbursement that doesn't have a primary thread,
-				// set this newly sent email as its primary thread.
-				const isReimbA = rel.relationAType === "reimbursement";
-				const isReimbB = rel.relationBType === "reimbursement";
-				if (isReimbA || isReimbB) {
-					const reimbursementId = isReimbA ? rel.relationId : rel.relationBId;
-					const purchase = await db.getPurchaseById(reimbursementId);
-					if (purchase && !purchase.emailMessageId && sentMessageId) {
-						await db.updatePurchase(reimbursementId, { emailMessageId: sentMessageId });
+			// If this thread is linked to a reimbursement, backfill emailMessageId
+			if (sentMessageId) {
+				const threadRels = await db.getEntityRelationships("mail_thread", threadId);
+				for (const rel of threadRels) {
+					const isReimbA = rel.relationAType === "reimbursement";
+					const isReimbB = rel.relationBType === "reimbursement";
+					if (isReimbA || isReimbB) {
+						const reimbursementId = isReimbA ? rel.relationId : rel.relationBId;
+						const purchase = await db.getPurchaseById(reimbursementId);
+						if (purchase && !purchase.emailMessageId) {
+							await db.updatePurchase(reimbursementId, { emailMessageId: sentMessageId });
+						}
 					}
 				}
 			}
@@ -801,10 +783,11 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 	updateFetcherRef.current = updateFetcher;
 
 	const draftId = initialDraft?.id as string;
+	const draftThreadId = (initialDraft as any)?.threadId as string | null;
 	const _isNew = !draftId;
 	const relationshipPicker = useRelationshipPicker({
-		relationAType: "mail",
-		relationAId: draftId || "",
+		relationAType: "mail_thread",
+		relationAId: draftThreadId || draftId || "",
 		initialRelationships: [],
 	});
 	const signature = useMemo(
@@ -1196,7 +1179,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 				<div className="flex items-center gap-2">
 					{draftId && (
 						<SmartAutofillButton
-							entityType="mail"
+							entityType="mail_thread"
 							entityId={draftId}
 							getCurrentValues={() => ({
 								subject,
@@ -1340,8 +1323,8 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 				{draftId && (
 					<div className="lg:col-span-1">
 						<RelationshipPicker
-							relationAType="mail"
-							relationAId={draftId}
+							relationAType="mail_thread"
+							relationAId={draftThreadId || draftId}
 							relationAName={subject || t("mail.no_subject")}
 							mode="edit"
 							currentPath={`/mail/drafts/${draftId}/edit`}

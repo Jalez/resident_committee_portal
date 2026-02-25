@@ -253,10 +253,14 @@ async function getMailAutofillSuggestions(
 	const greeting = t("email.reimbursement.greeting");
 	const intro = t("email.reimbursement.intro");
 
+	// Look up the draft's threadId to find thread-level relationships
+	const draft = await db.getMailDraftById(entityId);
+	const threadRelEntityId = draft?.threadId || entityId;
+	const threadRelEntityType = draft?.threadId ? "mail_thread" : "mail_thread";
 	const relationshipData = await loadRelationshipsForEntity(
 		db,
-		"mail",
-		entityId,
+		threadRelEntityType as any,
+		threadRelEntityId,
 		["reimbursement", "receipt", "minute"],
 		{ userPermissions },
 	);
@@ -467,23 +471,26 @@ export async function action({ request }: Route.ActionArgs) {
 		"poll",
 		"social",
 		"event",
-		"mail",
+		"mail_thread",
 	];
 	const isRelationshipEntityType = relationshipEntityTypes.includes(
 		entityType as RelationshipEntityType,
 	);
 
-	// For mail, persist pending relationship changes first so expansion and suggestions
+	// For mail drafts, persist pending relationship changes first so expansion and suggestions
 	// include links added in the current unsaved edit state.
-	if (entityType === "mail") {
-		await saveRelationshipChanges(
-			db,
-			"mail",
-			entityId,
-			formData,
-			authUser.userId || null,
-			authUser.permissions,
-		);
+	if (entityType === "mail_thread") {
+		const mailDraft = await db.getMailDraftById(entityId);
+		if (mailDraft?.threadId) {
+			await saveRelationshipChanges(
+				db,
+				"mail_thread",
+				mailDraft.threadId,
+				formData,
+				authUser.userId || null,
+				authUser.permissions,
+			);
+		}
 	}
 
 	// Global smart-autofill behavior: optionally expand one-hop relationships
@@ -523,7 +530,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const isEmptyValue = (value: string | undefined) =>
 		!value || value.trim() === "";
 
-	if (entityType === "mail") {
+	if (entityType === "mail_thread") {
 		const mailSuggestions = await getMailAutofillSuggestions(
 			db,
 			entityId,

@@ -16,7 +16,7 @@ export type EntityType =
 	| "poll"
 	| "social"
 	| "event"
-	| "mail";
+	| "mail_thread";
 
 export interface SourceContext {
 	/** Type of the source entity */

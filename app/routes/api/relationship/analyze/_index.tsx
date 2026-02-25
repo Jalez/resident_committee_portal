@@ -157,7 +157,7 @@ async function checkPermissions(
 		poll: "polls:update",
 		social: "social:write",
 		event: "events:write",
-		mail: "mail:read",
+		mail_thread: "mail:read",
 		submission: "submissions:write",
 		message: "admin",
 	};
@@ -191,8 +191,8 @@ async function fetchEntity(
 			return db.getTransactionById(entityId);
 		case "minute":
 			return db.getMinuteById(entityId);
-		case "mail":
-			return db.getCommitteeMailMessageById(entityId);
+		case "mail_thread":
+			return db.getCommitteeMailThreadById(entityId);
 		default:
 			return null;
 	}
@@ -227,8 +227,8 @@ async function createDraftEntity(
 			);
 		case "receipt":
 			return db.createReceipt(data as Parameters<typeof db.createReceipt>[0]);
-		case "mail":
-			return db.insertMailDraft(data as Parameters<typeof db.insertMailDraft>[0]);
+		case "mail_thread":
+			return null; // Threads are auto-created, not drafted
 		default:
 			return null;
 	}

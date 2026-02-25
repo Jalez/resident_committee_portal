@@ -198,10 +198,10 @@ export const RELATION_CONFIG: Record<
 		getName: (entity) => getEntityName(entity, "name"),
 		getStatus: getEntityStatus,
 	},
-	mail: {
-		icon: ENTITY_REGISTRY.mail.icon,
-		route: "/mail/messages",
-		labelKey: "common.relation_types.mail",
+	mail_thread: {
+		icon: ENTITY_REGISTRY.mail_thread.icon,
+		route: "/mail/thread",
+		labelKey: "common.relation_types.mail_thread",
 		statusVariantMap: {},
 		getName: (entity) => getEntityName(entity, "subject"),
 		getStatus: () => null,

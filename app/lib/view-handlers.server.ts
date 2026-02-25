@@ -17,7 +17,7 @@ const ALL_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
 	"poll",
 	"social",
 	"event",
-	"mail",
+	"mail_thread",
 	"submission",
 ];
 

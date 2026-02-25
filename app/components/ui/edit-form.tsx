@@ -296,7 +296,7 @@ export function EditForm({
 				"poll",
 				"social",
 				"event",
-				"mail",
+				"mail_thread",
 				"submission",
 			];
 

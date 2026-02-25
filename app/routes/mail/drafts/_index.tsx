@@ -23,17 +23,27 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const user = await requirePermission(request, "committee:email", getDatabase);
 	const db = getDatabase();
 	const drafts = await db.getMailDrafts(50);
-	const draftIds = drafts.map((draft) => draft.id);
-	const relationsMap = await loadRelationsMapForEntities(
-		db,
-		"mail",
-		draftIds,
-		undefined,
-		user.permissions,
-	);
+	// Look up thread-level relationships for drafts that have a threadId
+	const threadIds = drafts
+		.map((draft) => draft.threadId)
+		.filter((id): id is string => !!id);
+	const uniqueThreadIds = [...new Set(threadIds)];
+	const relationsMap = uniqueThreadIds.length > 0
+		? await loadRelationsMapForEntities(
+			db,
+			"mail_thread",
+			uniqueThreadIds,
+			undefined,
+			user.permissions,
+		)
+		: new Map<string, RelationBadgeData[]>();
+	// Map back to draftId for UI consumption
 	const serializedRelationsMap: Record<string, RelationBadgeData[]> = {};
-	for (const [id, relations] of relationsMap) {
-		serializedRelationsMap[id] = relations;
+	for (const draft of drafts) {
+		if (draft.threadId) {
+			const relations = relationsMap.get(draft.threadId);
+			if (relations) serializedRelationsMap[draft.id] = relations;
+		}
 	}
 	return {
 		siteConfig: SITE_CONFIG,

@@ -46,14 +46,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 	const db = getDatabase();
 
 	if (intent === "save_relationships") {
-		const messageId = formData.get("relationAId") as string;
-		if (!messageId) return { success: false, error: "Missing messageId" };
+		const threadIdFromForm = formData.get("relationAId") as string;
+		if (!threadIdFromForm) return { success: false, error: "Missing threadId" };
 
-		// Save relationship changes using the universal system
+		// Save relationship changes using the universal system (thread-level)
 		await saveRelationshipChanges(
 			db,
-			"mail",
-			messageId,
+			"mail_thread",
+			threadIdFromForm,
 			formData,
 			currentUser.userId || null,
 			currentUser.permissions,
@@ -66,15 +66,15 @@ export async function action({ request, params }: Route.ActionArgs) {
 			const exists = await db.entityRelationshipExists(
 				sourceType as any,
 				sourceId,
-				"mail",
-				messageId,
+				"mail_thread",
+				threadIdFromForm,
 			);
 			if (!exists) {
 				await db.createEntityRelationship({
 					relationAType: sourceType as any,
 					relationId: sourceId,
-					relationBType: "mail",
-					relationBId: messageId,
+					relationBType: "mail_thread",
+					relationBId: threadIdFromForm,
 					createdBy: null,
 				});
 			}
@@ -198,17 +198,21 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
+	// Ensure thread record exists
+	await db.upsertCommitteeMailThread({
+		id: threadId,
+		subject: messages[0].subject,
+	});
+
 	const reimbursementIds = new Set<string>();
-	for (const message of messages) {
-		const rels = await db.getEntityRelationships("mail", message.id);
-		for (const rel of rels) {
-			const isMailA = rel.relationAType === "mail" && rel.relationId === message.id;
-			const isMailB = rel.relationBType === "mail" && rel.relationBId === message.id;
-			if (!isMailA && !isMailB) continue;
-			const relatedType = isMailA ? rel.relationBType : rel.relationAType;
-			const relatedId = isMailA ? rel.relationBId : rel.relationId;
-			if (relatedType === "reimbursement") reimbursementIds.add(relatedId);
-		}
+	const threadRels = await db.getEntityRelationships("mail_thread", threadId);
+	for (const rel of threadRels) {
+		const isThreadA = rel.relationAType === "mail_thread" && rel.relationId === threadId;
+		const isThreadB = rel.relationBType === "mail_thread" && rel.relationBId === threadId;
+		if (!isThreadA && !isThreadB) continue;
+		const relatedType = isThreadA ? rel.relationBType : rel.relationAType;
+		const relatedId = isThreadA ? rel.relationBId : rel.relationId;
+		if (relatedType === "reimbursement") reimbursementIds.add(relatedId);
 	}
 
 	let hasPendingLinkedReimbursement = false;
@@ -251,8 +255,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		}
 	}
 
-	// Use the latest message as the main anchor for relationships in this thread
-	let mainMessage = messages[messages.length - 1];
+	// Relationships are now at the thread level
+	const mainMessage = messages[messages.length - 1];
 	const relationshipTypes: RelationshipEntityType[] = [
 		"reimbursement",
 		"transaction",
@@ -260,38 +264,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"minute",
 	];
 
-	// Load relationships
-	let relationships = await loadRelationshipsForEntity(
+	// Load thread-level relationships
+	const relationships = await loadRelationshipsForEntity(
 		db,
-		"mail",
-		mainMessage.id,
+		"mail_thread",
+		threadId,
 		relationshipTypes,
 		{ userPermissions: currentUser.permissions },
 	);
 
-	const hasLinkedRelationships = (value: typeof relationships) =>
-		relationshipTypes.some((type) => (value as any)[type]?.linked?.length > 0);
-
-	if (!hasLinkedRelationships(relationships)) {
-		for (let i = messages.length - 2; i >= 0; i--) {
-			const candidate = messages[i];
-			const candidateRelationships = await loadRelationshipsForEntity(
-				db,
-				"mail",
-				candidate.id,
-				relationshipTypes,
-				{ userPermissions: currentUser.permissions },
-			);
-			if (hasLinkedRelationships(candidateRelationships)) {
-				mainMessage = candidate;
-				relationships = candidateRelationships;
-				break;
-			}
-		}
-	}
-
 	// Get context
-	const contextValues = await getRelationshipContext(db, "mail", mainMessage.id);
+	const contextValues = await getRelationshipContext(db, "mail_thread", threadId);
 
 	return {
 		siteConfig: SITE_CONFIG,
@@ -344,8 +327,8 @@ export default function MailThread({
 
 	// Use relationship picker hook
 	const relationshipPicker = useRelationshipPicker({
-		relationAType: "mail",
-		relationAId: mainMessageId,
+		relationAType: "mail_thread",
+		relationAId: threadId,
 		initialRelationships: [],
 	});
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(() => {
@@ -646,8 +629,8 @@ export default function MailThread({
 					})}
 				</h2>
 				<RelationshipPicker
-					relationAType="mail"
-					relationAId={mainMessageId}
+					relationAType="mail_thread"
+					relationAId={threadId}
 					relationAName={threadSubject}
 					mode="edit"
 					currentPath={`/mail/thread/${encodeURIComponent(threadId)}`}

@@ -146,7 +146,7 @@ export const NAV_ITEMS: NavItem[] = [
 	// Mail (direct communication) - requires committee:email; sub-items in nav
 	{
 		path: "/mail",
-		icon: ENTITY_REGISTRY.mail.icon,
+		icon: ENTITY_REGISTRY.mail_thread.icon,
 		i18nKey: "nav.committee_mail",
 		permission: "committee:email",
 		children: [

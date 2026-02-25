@@ -280,7 +280,7 @@ export function ViewForm({
 			"poll",
 			"social",
 			"event",
-			"mail",
+			"mail_thread",
 			"submission",
 		];
 

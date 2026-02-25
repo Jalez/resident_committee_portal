@@ -214,18 +214,18 @@ export const ENTITY_REGISTRY: Record<RelationshipEntityType, EntityTypeConfig> =
 			supportsAIDraft: false,
 			supportsDraft: false,
 		},
-		mail: {
-			type: "mail",
-			labelKey: "common.entity_types.mail",
+		mail_thread: {
+			type: "mail_thread",
+			labelKey: "common.entity_types.mail_thread",
 			pluralKey: "mail.header",
 			icon: "mail",
-			detailUrl: (id) => `/mail/messages/${id}`,
-			editUrl: (id) => `/mail/drafts/${id}/edit`,
-			deleteUrl: (id) => `/mail/drafts/${id}/delete`,
+			detailUrl: (id) => `/mail/thread/${id}`,
+			editUrl: (_id) => `/mail`,
+			deleteUrl: (_id) => `/mail`,
 			statusVariants: GENERIC_VARIANTS,
 			supportsUpload: false,
-			supportsAIDraft: true, // Can act as source
-			supportsDraft: true,
+			supportsAIDraft: false,
+			supportsDraft: false,
 		},
 		message: {
 			type: "message",

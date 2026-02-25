@@ -78,9 +78,6 @@ export async function action({
 			case "social":
 				await db.deleteSocialLink(entityId);
 				break;
-			case "mail":
-				// Mail might not have a delete method, skip for now
-				break;
 			case "event":
 				// Events are managed via Google Calendar, would need special handling
 				break;

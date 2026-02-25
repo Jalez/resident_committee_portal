@@ -28,7 +28,7 @@ function hasAnyPermission(
 export function getReadPermissionsForType(
 	entityType: RelationshipEntityType,
 ): string[] {
-	if (entityType === "mail") {
+	if (entityType === "mail_thread") {
 		return ["committee:email"];
 	}
 
@@ -59,7 +59,7 @@ export function getReadPermissionsForType(
 export function getWritePermissionsForType(
 	entityType: RelationshipEntityType,
 ): string[] {
-	if (entityType === "mail") {
+	if (entityType === "mail_thread") {
 		return ["committee:email"];
 	}
 

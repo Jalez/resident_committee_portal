@@ -224,7 +224,7 @@ export const ENTITY_DEFINITIONS: Record<
 			poll: {},
 			social: {},
 			event: {},
-			mail: {},
+			mail_thread: {},
 			message: {},
 		},
 		requiredRelationships: [
@@ -387,8 +387,8 @@ export const ENTITY_DEFINITIONS: Record<
 			news: { maxItems: 1 },
 		},
 	},
-	mail: {
-		type: "mail",
+	mail_thread: {
+		type: "mail_thread",
 		permissionPrefix: "committee",
 		requiredFields: [],
 		defaultRedirect: "/mail",

@@ -1,6 +1,7 @@
 import type {
 	AppSetting,
 	CommitteeMailMessage,
+	CommitteeMailThread,
 	EntityRelationship,
 	Event,
 	Faq,
@@ -239,6 +240,22 @@ export interface DatabaseAdapter {
 	getCommitteeMailMessagesBySubjectPattern(
 		pattern: string,
 	): Promise<CommitteeMailMessage[]>;
+
+	// ==================== Mail Thread Methods ====================
+	/** Insert a new mail thread record */
+	insertCommitteeMailThread(thread: {
+		id: string;
+		subject: string;
+	}): Promise<CommitteeMailThread>;
+	/** Get a mail thread by its ID */
+	getCommitteeMailThreadById(
+		id: string,
+	): Promise<CommitteeMailThread | null>;
+	/** Insert or update a mail thread record (upsert by id) */
+	upsertCommitteeMailThread(thread: {
+		id: string;
+		subject: string;
+	}): Promise<CommitteeMailThread>;
 
 	// ==================== Mail Drafts Methods ====================
 	insertMailDraft(draft: NewMailDraft): Promise<MailDraft>;

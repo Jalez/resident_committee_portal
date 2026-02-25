@@ -41,46 +41,12 @@ export async function loader({ request }: Route.LoaderArgs) {
         forwardFromMessageId,
     });
 
-    // Copy relationships from the original thread to the new draft
+    // Link draft to the parent thread so it inherits thread-level relationships
     const parentMsgId = replyToMessageId || forwardFromMessageId;
     if (parentMsgId) {
         const parentMessage = await db.getCommitteeMailMessageById(parentMsgId);
         if (parentMessage?.threadId) {
-            const threadMessages = await db.getCommitteeMailMessagesByThreadId(parentMessage.threadId);
-            const seenRelations = new Set<string>();
-
-            for (const msg of threadMessages) {
-                const relations = await db.getEntityRelationships("mail", msg.id);
-                for (const rel of relations) {
-                    const isMailA = rel.relationAType === "mail" && rel.relationId === msg.id;
-                    const isMailB = rel.relationBType === "mail" && rel.relationBId === msg.id;
-                    if (!isMailA && !isMailB) continue;
-
-                    const relatedType = isMailA ? rel.relationBType : rel.relationAType;
-                    const relatedId = isMailA ? rel.relationBId : rel.relationId;
-                    if (relatedType === "mail") continue;
-
-                    const key = `${relatedType}:${relatedId}`;
-                    if (!seenRelations.has(key)) {
-                        seenRelations.add(key);
-                        const exists = await db.entityRelationshipExists(
-                            "mail",
-                            draft.id,
-                            relatedType as any,
-                            relatedId,
-                        );
-                        if (!exists) {
-                            await db.createEntityRelationship({
-                                relationAType: "mail",
-                                relationId: draft.id,
-                                relationBType: relatedType as any,
-                                relationBId: relatedId,
-                                createdBy: null,
-                            });
-                        }
-                    }
-                }
-            }
+            await db.updateMailDraft(draft.id, { threadId: parentMessage.threadId });
         }
     }
 

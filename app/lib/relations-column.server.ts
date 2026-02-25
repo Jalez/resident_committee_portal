@@ -29,7 +29,7 @@ const ALL_RELATION_TYPES: RelationshipEntityType[] = [
 	"faq",
 	"poll",
 	"social",
-	"mail",
+	"mail_thread",
 	"event",
 	"submission",
 ];
@@ -88,17 +88,8 @@ export async function loadRelationsForTableColumn(
 			const shortId = id.slice(0, 8);
 			const tooltipSubtitle = name !== "—" ? `${name} (${shortId})` : shortId;
 			const href =
-				typedRelType === "mail"
-					? (() => {
-						const threadId = record.threadId;
-						if ("draftType" in record) {
-							return `/mail/drafts/${id}/edit`;
-						}
-						if (typeof threadId === "string" && threadId.trim().length > 0) {
-							return `/mail/thread/${encodeURIComponent(threadId)}`;
-						}
-						return `/mail/messages/${id}`;
-					})()
+				typedRelType === "mail_thread"
+					? `/mail/thread/${encodeURIComponent(id)}`
 					: `${config.route}/${id}`;
 
 			badgeData.push({

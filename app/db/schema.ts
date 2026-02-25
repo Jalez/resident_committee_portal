@@ -461,6 +461,24 @@ export type CommitteeMailMessage = typeof committeeMailMessages.$inferSelect;
 export type NewCommitteeMailMessage = typeof committeeMailMessages.$inferInsert;
 
 // ============================================
+// MAIL THREADS (thread entity for relationships)
+// ============================================
+
+/**
+ * Committee mail threads – acts as the entity anchor for relationships.
+ * The id is the IMAP thread root message-ID (same as threadId in committee_mail_messages).
+ */
+export const committeeMailThreads = pgTable("committee_mail_threads", {
+	id: text("id").primaryKey(),
+	subject: text("subject").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type CommitteeMailThread = typeof committeeMailThreads.$inferSelect;
+export type NewCommitteeMailThread = typeof committeeMailThreads.$inferInsert;
+
+// ============================================
 // MAIL DRAFTS (unsent compose)
 // ============================================
 
@@ -478,6 +496,7 @@ export const mailDrafts = pgTable("mail_drafts", {
 	body: text("body"),
 	replyToMessageId: text("reply_to_message_id"), // DB id of message being replied to
 	forwardFromMessageId: text("forward_from_message_id"), // DB id of message being forwarded
+	threadId: text("thread_id"), // thread root message-ID linking draft to a conversation
 	draftType: text("draft_type").$type<MailDraftType>().notNull().default("new"),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),

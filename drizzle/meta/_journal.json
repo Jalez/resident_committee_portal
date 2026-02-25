@@ -232,6 +232,13 @@
       "when": 1771701207129,
       "tag": "0032_good_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1772025225350,
+      "tag": "0033_white_risque",
+      "breakpoints": true
     }
   ]
 }

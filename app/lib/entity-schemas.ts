@@ -238,19 +238,13 @@ export const ENTITY_SCHEMAS: Record<RelationshipEntityType, EntitySchema> = {
 		deleteItem: async () => false,
 		extractFields: () => ({}),
 	} as any,
-	mail: {
-		...ENTITY_DEFINITIONS.mail,
-		fetchById: (db, id) => db.getMailDraftById(id),
-		updateItem: (db, id, data) => db.updateMailDraft(id, data),
-		deleteItem: (db, id) => db.deleteMailDraft(id),
-		extractFields: (formData) => ({
-			toJson: (formData.get("to_json") as string) ?? "[]",
-			ccJson: (formData.get("cc_json") as string) || null,
-			bccJson: (formData.get("bcc_json") as string) || null,
-			subject: (formData.get("subject") as string) ?? null,
-			body: (formData.get("body") as string) ?? null,
-		}),
-	},
+	mail_thread: {
+		...ENTITY_DEFINITIONS.mail_thread,
+		fetchById: async () => null,
+		updateItem: async () => null,
+		deleteItem: async () => false,
+		extractFields: () => ({}),
+	} as any,
 	submission: {
 		...ENTITY_DEFINITIONS.submission,
 		fetchById: (db, id) => db.getSubmissionById(id),

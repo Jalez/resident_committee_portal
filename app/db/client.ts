@@ -10,7 +10,7 @@ export type RelationshipEntityType =
 	| "poll"
 	| "social"
 	| "event"
-	| "mail"
+	| "mail_thread"
 	| "submission"
 	| "message";
 
@@ -324,6 +324,18 @@ export type NewCommitteeMailMessage = Partial<
 	date: Date;
 };
 
+export interface CommitteeMailThread {
+	id: string;
+	subject: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export type NewCommitteeMailThread = {
+	id: string;
+	subject: string;
+};
+
 export interface MailDraft {
 	id: string;
 	toJson: string;
@@ -333,6 +345,7 @@ export interface MailDraft {
 	body: string | null;
 	replyToMessageId: string | null;
 	forwardFromMessageId: string | null;
+	threadId: string | null;
 	draftType: MailDraftType;
 	updatedAt: Date;
 	createdAt: Date;

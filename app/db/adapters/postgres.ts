@@ -8,6 +8,8 @@ import {
 	budgetTransactions,
 	type CommitteeMailMessage,
 	committeeMailMessages,
+	type CommitteeMailThread,
+	committeeMailThreads,
 	type EntityRelationship,
 	type Event,
 	entityRelationships,
@@ -1022,6 +1024,47 @@ export class PostgresAdapter implements DatabaseAdapter {
 			.where(eq(committeeMailMessages.messageId, messageId))
 			.limit(1);
 		return result[0] || null;
+	}
+
+	// ==================== Mail Thread Methods ====================
+	async insertCommitteeMailThread(thread: {
+		id: string;
+		subject: string;
+	}): Promise<CommitteeMailThread> {
+		const result = await this.db
+			.insert(committeeMailThreads)
+			.values(thread)
+			.returning();
+		return result[0];
+	}
+
+	async getCommitteeMailThreadById(
+		id: string,
+	): Promise<CommitteeMailThread | null> {
+		const result = await this.db
+			.select()
+			.from(committeeMailThreads)
+			.where(eq(committeeMailThreads.id, id))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
+	async upsertCommitteeMailThread(thread: {
+		id: string;
+		subject: string;
+	}): Promise<CommitteeMailThread> {
+		const result = await this.db
+			.insert(committeeMailThreads)
+			.values(thread)
+			.onConflictDoUpdate({
+				target: committeeMailThreads.id,
+				set: {
+					subject: thread.subject,
+					updatedAt: new Date(),
+				},
+			})
+			.returning();
+		return result[0];
 	}
 
 	// ==================== Mail Drafts Methods ====================

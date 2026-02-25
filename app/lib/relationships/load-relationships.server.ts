@@ -25,7 +25,7 @@ const VALID_RELATIONSHIP_TYPES: RelationshipEntityType[] = [
 	"faq",
 	"poll",
 	"social",
-	"mail",
+	"mail_thread",
 	"event",
 	"submission",
 	"message",
@@ -43,7 +43,8 @@ const LEGACY_TYPE_ALIASES: Record<string, RelationshipEntityType> = {
 	faqs: "faq",
 	polls: "poll",
 	socials: "social",
-	mails: "mail",
+	mails: "mail_thread",
+	mail: "mail_thread",
 	events: "event",
 	submissions: "submission",
 };
@@ -179,11 +180,8 @@ async function fetchEntityById(
 			return db.getPollById(id);
 		case "social":
 			return db.getSocialLinkById(id);
-		case "mail":
-			return (
-				(await db.getCommitteeMailMessageById(id)) ||
-				(await db.getMailDraftById(id))
-			);
+		case "mail_thread":
+			return db.getCommitteeMailThreadById(id);
 		case "event":
 			return db.getEventById(id);
 		case "submission":
@@ -236,12 +234,10 @@ async function fetchAvailableEntities(
 		case "social":
 			allEntities = await db.getSocialLinks();
 			break;
-		case "mail":
-			allEntities = [
-				...(await db.getMailDrafts(50)),
-				...(await db.getCommitteeMailMessages("inbox", 50)),
-				...(await db.getCommitteeMailMessages("sent", 50)),
-			];
+		case "mail_thread":
+			// Mail threads are not listed as available for manual linking;
+			// they are auto-linked when emails are sent/received
+			allEntities = [];
 			break;
 		case "event":
 			allEntities = await db.getEvents();

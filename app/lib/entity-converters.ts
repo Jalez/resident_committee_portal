@@ -83,8 +83,8 @@ export function getEntityTitle(
 			return (entity as any).name;
 		case "social":
 			return (entity as any).name;
-		case "mail":
-			return (entity as any).subject || "Draft email";
+		case "mail_thread":
+			return (entity as any).subject || "Email thread";
 		case "event":
 			return (
 				(entity as any).summary || (entity as any).title || "Untitled Event"
@@ -103,12 +103,9 @@ export function getEntityStatus(
 ): string {
 	if (!entity) return "unknown";
 
-	// Mail drafts do not have a status field in DB, but should behave like draft entities.
-	if (type === "mail") {
-		const record = entity as Record<string, unknown>;
-		if ("draftType" in record) {
-			return "draft";
-		}
+	// Mail threads always show as active
+	if (type === "mail_thread") {
+		return "active";
 	}
 
 	// Most entities have a 'status' field, but some might not or have different names
@@ -204,12 +201,8 @@ export function entityToLinkableItem(
 		description = (entity as any).content?.slice(0, 100);
 	} else if (type === "faq") {
 		description = (entity as any).answer?.slice(0, 100);
-	} else if (type === "mail") {
-		const m = entity as any;
-		description =
-			m.bodyText || m.bodyHtml?.replace(/<[^>]+>/g, "").slice(0, 100);
-		purchaserName = m.fromName || m.fromAddress;
-		createdAt = m.date;
+	} else if (type === "mail_thread") {
+		createdAt = (entity as any).createdAt;
 	} else if (type === "event") {
 		const e = entity as any;
 		description = e.description?.slice(0, 100);

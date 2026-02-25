@@ -47,7 +47,7 @@ export async function action({ request }: Route.ActionArgs) {
 		poll: ["polls:write"],
 		social: ["social:write"],
 		event: ["events:write"],
-		mail: ["committee:email"],
+		mail_thread: ["committee:email"],
 		submission: ["submissions:write"],
 		message: ["admin"],
 	};
@@ -206,15 +206,6 @@ export async function action({ request }: Route.ActionArgs) {
 				};
 				break;
 			}
-			case "mail": {
-				entity = await db.insertMailDraft({
-					toJson: "[]",
-					subject: "",
-					body: "",
-					draftType: "new",
-				});
-				break;
-			}
 			case "submission": {
 				entity = await db.createSubmission({
 					name: "",
@@ -320,7 +311,7 @@ export async function action({ request }: Route.ActionArgs) {
 			poll: `/polls/${entity.id}/edit`,
 			social: `/social?edit=${entity.id}`,
 			event: `/events/${entity.id}/edit`,
-			mail: `/mail/drafts/${entity.id}/edit`,
+			mail_thread: `/mail/thread/${entity.id}`,
 			submission: `/submissions/${entity.id}/edit`,
 			message: `/messages`,
 		};

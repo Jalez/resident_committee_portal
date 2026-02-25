@@ -228,18 +228,14 @@ async function simulateSendReimbursementRequest(
 			subject: `Reimbursement request for ${purchase.description}`,
 		});
 
-		const mailMessage = await db.getCommitteeMailMessageByMessageId(
-			mockEmailResult.messageId,
-		);
-		if (mailMessage) {
-			await db.createEntityRelationship({
-				relationAType: "reimbursement",
-				relationId: purchase.id,
-				relationBType: "mail",
-				relationBId: mailMessage.id,
-				createdBy: null,
-			});
-		}
+		// Create thread-level relationship
+		await db.createEntityRelationship({
+			relationAType: "reimbursement",
+			relationId: purchase.id,
+			relationBType: "mail_thread",
+			relationBId: threadId,
+			createdBy: null,
+		});
 	}
 
 	return { success: true, messageId: mockEmailResult.messageId };
@@ -576,11 +572,11 @@ describe("Reimbursement Request Flow", () => {
 				purchase.id,
 			);
 			const mailRelationship = allRelationships.find(
-				(r) => r.relationBType === "mail" || r.relationAType === "mail",
+				(r) => r.relationBType === "mail_thread" || r.relationAType === "mail_thread",
 			);
 
 			expect(mailRelationship).toBeDefined();
-			expect(mailRelationship?.relationBType).toBe("mail");
+			expect(mailRelationship?.relationBType).toBe("mail_thread");
 		});
 
 		it("should update purchase with emailSent flag after successful send", async () => {
@@ -869,7 +865,7 @@ describe("Reimbursement Request Flow", () => {
 				"reimbursement",
 				purchase.id,
 			);
-			const mailRel = allRels.find((r) => r.relationBType === "mail");
+			const mailRel = allRels.find((r) => r.relationBType === "mail_thread");
 			expect(mailRel).toBeDefined();
 
 			await simulateReplyProcessing(db, purchase.id, "approved");
@@ -932,7 +928,7 @@ describe("Reimbursement Request Flow", () => {
 				threadId &&
 				threadId === replyMessageId &&
 				!inReplyTo &&
-				(!references || references.length === 0)
+				(!references || (references as string[]).length === 0)
 			) {
 				const subjectPurchaseId = extractPurchaseIdFromSubject(subject);
 				if (subjectPurchaseId) {
