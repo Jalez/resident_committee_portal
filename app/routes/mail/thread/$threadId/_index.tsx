@@ -5,11 +5,12 @@ import {
 	Forward,
 	Reply,
 	ReplyAll,
+	Sparkles,
 	Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, useFetcher } from "react-router";
+import { Form, Link, useFetcher, useSubmit } from "react-router";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -167,6 +168,113 @@ export async function action({ request, params }: Route.ActionArgs) {
 		return { success: true };
 	}
 
+	if (intent === "run_ai_analytics") {
+		const reimbursementId = formData.get("reimbursementId") as string;
+		if (!reimbursementId) {
+			return { success: false, error: "Missing reimbursementId" };
+		}
+
+		const canUpdateReimbursements = hasAnyPermission(currentUser, [
+			"treasury:reimbursements:update",
+			"treasury:reimbursements:write",
+			"*",
+		]);
+
+		if (!canUpdateReimbursements) {
+			return { success: false, error: "Insufficient permissions" };
+		}
+
+		const purchase = await db.getPurchaseById(reimbursementId);
+		if (!purchase) {
+			return { success: false, error: "Reimbursement not found" };
+		}
+
+		const threadIdParam = params.threadId;
+		if (!threadIdParam) return { success: false, error: "Missing threadId" };
+		const decodedThreadId = decodeURIComponent(threadIdParam);
+		const messages = await db.getCommitteeMailMessagesByThreadId(decodedThreadId);
+
+		const { parseReimbursementReply } = await import("~/lib/email.server");
+		const inboundMessages = messages.filter((m) => m.direction === "inbox").slice(-8);
+
+		let aiVerdict: "approved" | "rejected" | "unclear" = "unclear";
+		let analyzedContent = "";
+
+		// Evaluate from newest to oldest to find latest definitive verdict
+		for (const message of [...inboundMessages].reverse()) {
+			const content =
+				message.bodyText?.trim() ||
+				message.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() ||
+				message.subject;
+			if (!content) continue;
+
+			// Save the most recent non-empty content we analyzed
+			if (!analyzedContent) {
+				analyzedContent = content.substring(0, 1000);
+			}
+
+			const decision = await parseReimbursementReply(content);
+			if (decision !== "unclear") {
+				aiVerdict = decision;
+				analyzedContent = content.substring(0, 1000);
+				break;
+			}
+		}
+
+		// Always mark that we've received/processed replies, and save the content
+		const updateData: any = {
+			emailReplyReceived: true,
+		};
+		if (analyzedContent) {
+			updateData.emailReplyContent = analyzedContent;
+		}
+
+		if (aiVerdict === "approved" || aiVerdict === "rejected") {
+			updateData.status = aiVerdict;
+			await db.updatePurchase(reimbursementId, updateData);
+
+			const relationships = await db.getEntityRelationships(
+				"reimbursement",
+				reimbursementId,
+			);
+			const transactionId =
+				relationships.find(
+					(r) =>
+						r.relationBType === "transaction" || r.relationAType === "transaction",
+				)?.relationBType === "transaction"
+					? relationships.find((r) => r.relationBType === "transaction")
+						?.relationBId
+					: relationships.find((r) => r.relationAType === "transaction")
+						?.relationId;
+
+			if (transactionId) {
+				const linkedTransaction = await db.getTransactionById(transactionId);
+				if (linkedTransaction) {
+					const reimbursementStatus = aiVerdict === "approved" ? "approved" : aiVerdict === "rejected" ? "declined" : "requested";
+					const transactionStatus = aiVerdict === "approved" ? "complete" : "declined";
+					await db.updateTransaction(linkedTransaction.id, {
+						reimbursementStatus,
+						status: transactionStatus,
+					});
+				}
+			}
+
+			const { createReimbursementStatusNotification } = await import(
+				"~/lib/notifications.server"
+			);
+			await createReimbursementStatusNotification(
+				{ ...purchase, status: aiVerdict },
+				aiVerdict,
+				db,
+			);
+		} else {
+			// Even if unclear, we update the DB so we don't auto-run again
+			await db.updatePurchase(reimbursementId, updateData);
+		}
+
+		return { success: true };
+	}
+
 	return { success: false, error: "Unknown action" };
 }
 
@@ -220,6 +328,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		id: string;
 		description: string;
 		status: "draft" | "pending" | "approved" | "rejected" | "reimbursed";
+		emailReplyReceived: boolean;
 	}> = [];
 	for (const reimbursementId of reimbursementIds) {
 		const reimbursement = await db.getPurchaseById(reimbursementId);
@@ -230,6 +339,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				reimbursement.description?.trim() ||
 				`Reimbursement ${reimbursement.id.slice(0, 8)}`,
 			status: reimbursement.status,
+			emailReplyReceived: reimbursement.emailReplyReceived || false,
 		});
 		if (
 			reimbursement.status !== "approved" &&
@@ -238,20 +348,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		) {
 			hasPendingLinkedReimbursement = true;
 			break;
-		}
-	}
-
-	const replyVerdicts: Record<string, "approved" | "rejected" | "unclear"> = {};
-	if (hasPendingLinkedReimbursement) {
-		const { parseReimbursementReply } = await import("~/lib/email.server");
-		const inboundMessages = messages.filter((m) => m.direction === "inbox").slice(-8);
-		for (const message of inboundMessages) {
-			const content =
-				message.bodyText?.trim() ||
-				message.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() ||
-				message.subject;
-			if (!content) continue;
-			replyVerdicts[message.id] = await parseReimbursementReply(content);
 		}
 	}
 
@@ -283,7 +379,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		relationships,
 		contextValues,
 		mainMessageId: mainMessage.id,
-		replyVerdicts,
 		hasPendingLinkedReimbursement,
 		linkedReimbursements,
 		canUpdateReimbursementVerdict: hasAnyPermission(currentUser, [
@@ -311,19 +406,35 @@ export default function MailThread({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { messages, threadId, mainMessageId, replyVerdicts, hasPendingLinkedReimbursement } =
+	const { messages, threadId, mainMessageId, hasPendingLinkedReimbursement } =
 		loaderData;
 	const linkedReimbursements =
 		(loaderData.linkedReimbursements as Array<{
 			id: string;
 			description: string;
 			status: "draft" | "pending" | "approved" | "rejected" | "reimbursed";
+			emailReplyReceived: boolean;
 		}>) || [];
 	const canUpdateReimbursementVerdict = Boolean(
 		(loaderData as any).canUpdateReimbursementVerdict,
 	);
 	const { t } = useTranslation();
 	const deleteFetcher = useFetcher();
+	const analyticsFetcher = useFetcher();
+
+	// Auto-run analytics if there's a pending reimbursement that hasn't received any email replies yet
+	useEffect(() => {
+		const unanalyzedPending = linkedReimbursements.find(
+			(r) => (r.status === "pending" || r.status === "draft") && !r.emailReplyReceived
+		);
+
+		if (unanalyzedPending && analyticsFetcher.state === "idle" && !analyticsFetcher.data) {
+			const formData = new FormData();
+			formData.set("_action", "run_ai_analytics");
+			formData.set("reimbursementId", unanalyzedPending.id);
+			analyticsFetcher.submit(formData, { method: "post" });
+		}
+	}, [linkedReimbursements, analyticsFetcher]);
 
 	// Use relationship picker hook
 	const relationshipPicker = useRelationshipPicker({
@@ -344,26 +455,6 @@ export default function MailThread({
 	const threadSubject =
 		messages[0]?.subject?.replace(/^(Re|Fwd|Fw):\s*/gi, "") ||
 		t("mail.no_subject");
-
-	const primaryReimbursementVerdict =
-		linkedReimbursements.length === 1
-			? linkedReimbursements[0].status === "approved"
-				? "approved"
-				: linkedReimbursements[0].status === "rejected"
-					? "rejected"
-					: "pending"
-			: null;
-
-	const isManualOverrideForMessage = (messageId: string) => {
-		const aiVerdict = replyVerdicts?.[messageId] as
-			| "approved"
-			| "rejected"
-			| "unclear"
-			| undefined;
-		if (!aiVerdict || !primaryReimbursementVerdict) return false;
-		const aiAsVerdict = aiVerdict === "unclear" ? "pending" : aiVerdict;
-		return aiAsVerdict !== primaryReimbursementVerdict;
-	};
 
 	const toggleExpand = (id: string) => {
 		setExpandedMessages((prev) => {
@@ -453,6 +544,17 @@ export default function MailThread({
 							</Button>
 						</Form>
 					))}
+					{linkedReimbursements.some(r => r.status === "pending" || r.status === "draft") && (
+						<analyticsFetcher.Form method="post" className="ml-auto flex items-center">
+							<input type="hidden" name="_action" value="run_ai_analytics" />
+							{/* Pass the first pending reimbursement ID to the action to re-run analytics for it */}
+							<input type="hidden" name="reimbursementId" value={linkedReimbursements.find(r => r.status === "pending" || r.status === "draft")?.id} />
+							<Button size="sm" variant="secondary" type="submit" disabled={analyticsFetcher.state !== "idle"} title={t("mail.run_ai_analytics", { defaultValue: "Manually re-run AI analytics to determine status from emails" })}>
+								<Sparkles className="mr-1.5 size-3.5 text-blue-500" />
+								{analyticsFetcher.state !== "idle" ? t("common.actions.loading", { defaultValue: "Loading..." }) : t("mail.run_ai_analytics_button", { defaultValue: "Run Analytics" })}
+							</Button>
+						</analyticsFetcher.Form>
+					)}
 				</div>
 			)}
 
@@ -488,36 +590,6 @@ export default function MailThread({
 											<span className="bg-secondary text-secondary-foreground shrink-0 rounded px-1.5 py-0.5 text-xs">
 												{t("mail.sent")}
 											</span>
-										)}
-										{msg.direction === "inbox" && replyVerdicts?.[msg.id] && (
-											<Badge
-												variant={
-													replyVerdicts[msg.id] === "approved"
-														? "default"
-														: replyVerdicts[msg.id] === "rejected"
-															? "destructive"
-															: "secondary"
-												}
-											>
-												{replyVerdicts[msg.id] === "approved"
-													? t("mail.ai_verdict_approved", {
-														defaultValue: "AI: Approve",
-													})
-													: replyVerdicts[msg.id] === "rejected"
-														? t("mail.ai_verdict_rejected", {
-															defaultValue: "AI: Decline",
-														})
-														: t("mail.ai_verdict_unclear", {
-															defaultValue: "AI: Needs more info",
-														})}
-											</Badge>
-										)}
-										{msg.direction === "inbox" && isManualOverrideForMessage(msg.id) && (
-											<Badge variant="outline">
-												{t("mail.ai_verdict_manual_override", {
-													defaultValue: "Manual override",
-												})}
-											</Badge>
 										)}
 									</div>
 									{!isExpanded && (
