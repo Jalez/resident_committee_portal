@@ -1463,7 +1463,20 @@ export class NeonAdapter implements DatabaseAdapter {
 				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
 			const tx = await this.getTransactionById(txId);
 			if (tx && tx.type === "expense" && tx.status === "complete") {
-				total += parseFloat(tx.amount);
+				let amountToUse = parseFloat(tx.amount);
+				if (rel.metadata) {
+					try {
+						const metadataStr =
+							typeof rel.metadata === "string"
+								? rel.metadata
+								: JSON.stringify(rel.metadata);
+						const md = JSON.parse(metadataStr);
+						if (md.amount) amountToUse = parseFloat(String(md.amount));
+					} catch (e) {
+						// Ignore
+					}
+				}
+				total += amountToUse;
 			}
 		}
 		return total;
@@ -1492,7 +1505,20 @@ export class NeonAdapter implements DatabaseAdapter {
 					tx.status === "paused" ||
 					tx.status === "draft")
 			) {
-				total += parseFloat(tx.amount);
+				let amountToUse = parseFloat(tx.amount);
+				if (rel.metadata) {
+					try {
+						const metadataStr =
+							typeof rel.metadata === "string"
+								? rel.metadata
+								: JSON.stringify(rel.metadata);
+						const md = JSON.parse(metadataStr);
+						if (md.amount) amountToUse = parseFloat(String(md.amount));
+					} catch (e) {
+						// Ignore
+					}
+				}
+				total += amountToUse;
 			}
 		}
 		return total;

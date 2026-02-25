@@ -1231,13 +1231,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}
 
 	async deleteFundBudget(id: string): Promise<boolean> {
-		// Check if there are linked transactions
-		const links = await this.db
-			.select()
-			.from(budgetTransactions)
-			.where(eq(budgetTransactions.budgetId, id));
-
-		if (links.length > 0) {
+		// Check if there are linked transactions via entity relationships
+		const relationships = await this.getEntityRelationships("budget", id);
+		if (relationships.length > 0) {
 			return false; // Cannot delete if there are linked transactions
 		}
 
@@ -1248,43 +1244,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result.length > 0;
 	}
 
-	async linkTransactionToBudget(
-		transactionId: string,
-		budgetId: string,
-		amount: string,
-	): Promise<BudgetTransaction> {
-		const result = await this.db
-			.insert(budgetTransactions)
-			.values({
-				transactionId,
-				budgetId,
-				amount,
-			})
-			.returning();
-		return result[0];
-	}
-
-	async unlinkTransactionFromBudget(
-		transactionId: string,
-		budgetId: string,
-	): Promise<boolean> {
-		const result = await this.db
-			.delete(budgetTransactions)
-			.where(
-				and(
-					eq(budgetTransactions.transactionId, transactionId),
-					eq(budgetTransactions.budgetId, budgetId),
-				),
-			)
-			.returning();
-		return result.length > 0;
-	}
-
-	async getBudgetTransactions(
-		budgetId: string,
-	): Promise<{ transaction: Transaction; amount: string }[]> {
-		const result: { transaction: Transaction; amount: string }[] = [];
+	async getBudgetUsedAmount(budgetId: string): Promise<number> {
 		const relationships = await this.getEntityRelationships("budget", budgetId);
+		let total = 0;
 		for (const rel of relationships) {
 			const isBudgetTransactionRel =
 				(rel.relationAType === "budget" &&
@@ -1295,49 +1257,69 @@ export class PostgresAdapter implements DatabaseAdapter {
 					rel.relationAType === "transaction");
 			if (!isBudgetTransactionRel) continue;
 
-			const transactionId =
-				rel.relationAType === "transaction" ? rel.relationId : rel.relationBId;
-			const txResult = await this.db
-				.select()
-				.from(transactions)
-				.where(eq(transactions.id, transactionId))
-				.limit(1);
-			if (txResult[0]) {
-				result.push({
-					transaction: txResult[0],
-					amount: txResult[0].amount,
-				});
+			const txId =
+				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+			const tx = await this.getTransactionById(txId);
+			if (tx && tx.type === "expense" && tx.status === "complete") {
+				let amountToUse = parseFloat(tx.amount);
+				if (rel.metadata) {
+					try {
+						const metadataStr =
+							typeof rel.metadata === "string"
+								? rel.metadata
+								: JSON.stringify(rel.metadata);
+						const md = JSON.parse(metadataStr);
+						if (md.amount) amountToUse = parseFloat(String(md.amount));
+					} catch (e) {
+						// Ignore
+					}
+				}
+				total += amountToUse;
 			}
 		}
-
-		return result;
-	}
-
-	async getBudgetUsedAmount(budgetId: string): Promise<number> {
-		const links = await this.getBudgetTransactions(budgetId);
-		return links.reduce((sum, link) => {
-			const tx = link.transaction;
-			if (tx.type === "expense" && tx.status === "complete") {
-				return sum + parseFloat(link.amount);
-			}
-			return sum;
-		}, 0);
+		return total;
 	}
 
 	async getBudgetReservedAmount(budgetId: string): Promise<number> {
-		const links = await this.getBudgetTransactions(budgetId);
-		return links.reduce((sum, link) => {
-			const tx = link.transaction;
+		const relationships = await this.getEntityRelationships("budget", budgetId);
+		let total = 0;
+		for (const rel of relationships) {
+			const isBudgetTransactionRel =
+				(rel.relationAType === "budget" &&
+					rel.relationId === budgetId &&
+					rel.relationBType === "transaction") ||
+				(rel.relationBType === "budget" &&
+					rel.relationBId === budgetId &&
+					rel.relationAType === "transaction");
+			if (!isBudgetTransactionRel) continue;
+
+			const txId =
+				rel.relationBType === "transaction" ? rel.relationBId : rel.relationId;
+			const tx = await this.getTransactionById(txId);
 			if (
+				tx &&
 				tx.type === "expense" &&
 				(tx.status === "pending" ||
 					tx.status === "paused" ||
 					tx.status === "draft")
 			) {
-				return sum + parseFloat(link.amount);
+				let amountToUse = parseFloat(tx.amount);
+				if (rel.metadata) {
+					try {
+						const metadataStr =
+							typeof rel.metadata === "string"
+								? rel.metadata
+								: JSON.stringify(rel.metadata);
+						const md = JSON.parse(metadataStr);
+						if (md.amount) amountToUse = parseFloat(String(md.amount));
+					} catch (e) {
+						// Ignore
+					}
+				}
+				total += amountToUse;
 			}
-			return sum;
-		}, 0);
+		}
+		return total;
 	}
 
 	async getAvailableFundsForYear(year: number): Promise<number> {
@@ -1352,14 +1334,21 @@ export class PostgresAdapter implements DatabaseAdapter {
 				t.reimbursementStatus === "approved",
 		);
 
-		// Get all transaction IDs that are linked to budgets
+		// Get all transaction IDs that are linked to budgets via entity relationships
 		// These should be excluded from expenses calculation to avoid double-counting
 		const allBudgets = await this.getFundBudgetsByYear(year);
 		const budgetLinkedTransactionIds = new Set<string>();
 		for (const budget of allBudgets) {
-			const budgetTxs = await this.getBudgetTransactions(budget.id);
-			for (const { transaction } of budgetTxs) {
-				budgetLinkedTransactionIds.add(transaction.id);
+			const relationships = await this.getEntityRelationships(
+				"budget",
+				budget.id,
+			);
+			for (const rel of relationships) {
+				const txId =
+					rel.relationBType === "transaction"
+						? rel.relationBId
+						: rel.relationId;
+				budgetLinkedTransactionIds.add(txId);
 			}
 		}
 
@@ -1386,26 +1375,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 		}
 
 		return balance - totalReserved;
-	}
-
-	async getBudgetForTransaction(
-		transactionId: string,
-	): Promise<{ budget: FundBudget; amount: string } | null> {
-		const link = await this.db
-			.select()
-			.from(budgetTransactions)
-			.where(eq(budgetTransactions.transactionId, transactionId))
-			.limit(1);
-
-		if (link.length === 0) return null;
-
-		const budget = await this.getFundBudgetById(link[0].budgetId);
-		if (!budget) return null;
-
-		return {
-			budget,
-			amount: link[0].amount,
-		};
 	}
 
 	// ==================== Poll Methods ====================
