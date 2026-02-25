@@ -992,21 +992,6 @@ export default function ViewReimbursement({
 								</div>
 							</div>
 						)}
-
-						{mailThread && (
-							<Link
-								to={`/mail/thread/${encodeURIComponent(mailThread.id)}`}
-								className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
-							>
-								<span className="material-symbols-outlined text-sm">mail</span>
-								{t("treasury.reimbursements.view_email_thread")} (
-								{mailThread.messageCount}{" "}
-								{t("mail.messages_in_thread", {
-									count: mailThread.messageCount,
-								})}
-								)
-							</Link>
-						)}
 					</div>
 				)}
 			</ViewForm>
