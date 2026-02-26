@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Link,
@@ -11,6 +11,12 @@ import {
 import { LanguageSwitcher } from "~/components/language-switcher";
 import { ThemeSwitcher } from "~/components/theme-switcher";
 import { Button } from "~/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import {
 	Sheet,
 	SheetClose,
@@ -36,6 +42,44 @@ const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
 interface NavigationProps {
 	variant: "mobile" | "sidebar";
+}
+
+function CollapsedDropdownTrigger({
+	icon,
+	label,
+	isActive = false,
+}: {
+	icon: string;
+	label: string;
+	isActive?: boolean;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<DropdownMenuTrigger asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						className={cn(
+							"group relative flex items-center justify-center px-3 py-2 rounded-xl transition-all w-full",
+							"hover:bg-primary/10 hover:text-primary",
+							isActive
+								? "text-primary bg-primary/10"
+								: "text-gray-500 dark:text-gray-400",
+						)}
+					>
+						<span className="material-symbols-outlined text-2xl shrink-0 transition-transform duration-150 group-hover:-translate-x-1.5">
+							{icon}
+						</span>
+						<span className="material-symbols-outlined pointer-events-none absolute right-1 text-base opacity-0 -translate-x-3 transition-all duration-150 group-hover:opacity-70 group-hover:translate-x-0">
+							chevron_right
+						</span>
+					</Button>
+				</DropdownMenuTrigger>
+			</TooltipTrigger>
+			<TooltipContent side="right">{label}</TooltipContent>
+		</Tooltip>
+	);
 }
 
 export function Navigation({ variant }: NavigationProps) {
@@ -228,6 +272,7 @@ export function Navigation({ variant }: NavigationProps) {
 		customRender?: (
 			showLabels: boolean,
 			onNavigate?: () => void,
+			inDropdown?: boolean,
 		) => React.ReactNode;
 	};
 
@@ -243,6 +288,47 @@ export function Navigation({ variant }: NavigationProps) {
 	) => {
 		const visibleItems = items.filter((item) => item.show);
 		if (visibleItems.length === 0) return null;
+
+		if (!showLabels) {
+			return (
+				<DropdownMenu key={id}>
+					<CollapsedDropdownTrigger icon={icon} label={label} />
+					<DropdownMenuContent side="right" align="start" className="w-56">
+						{visibleItems.map((item) => {
+							if (item.customRender) {
+								return (
+									<Fragment key={`custom-${item.icon}-${item.label}`}>
+										{item.customRender(true, onNavigate, true)}
+									</Fragment>
+								);
+							}
+							if (!item.to) return null;
+							return (
+								<DropdownMenuItem
+									key={item.to}
+									asChild
+									variant={item.destructive ? "destructive" : "default"}
+									className={cn(
+										pathname === item.to && "bg-primary/10 text-primary",
+									)}
+								>
+									<Link
+										to={item.to}
+										onClick={onNavigate}
+										prefetch={item.to === "/auth/logout" ? "none" : "intent"}
+									>
+										<span className="material-symbols-outlined text-lg shrink-0">
+											{item.icon}
+										</span>
+										<span className="font-medium">{item.label}</span>
+									</Link>
+								</DropdownMenuItem>
+							);
+						})}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			);
+		}
 
 		const trigger = (
 			<button
@@ -280,7 +366,7 @@ export function Navigation({ variant }: NavigationProps) {
 					if (item.customRender) {
 						return (
 							<div key={`custom-${item.icon}-${item.label}`}>
-								{item.customRender(showLabels, onNavigate)}
+								{item.customRender(showLabels, onNavigate, false)}
 							</div>
 						);
 					}
@@ -299,20 +385,6 @@ export function Navigation({ variant }: NavigationProps) {
 				})}
 			</div>
 		);
-
-		if (!showLabels) {
-			return (
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<div className="flex flex-col">
-							{trigger}
-							{content}
-						</div>
-					</TooltipTrigger>
-					<TooltipContent side="right">{label}</TooltipContent>
-				</Tooltip>
-			);
-		}
 
 		return (
 			<div className="flex flex-col">
@@ -392,35 +464,44 @@ export function Navigation({ variant }: NavigationProps) {
 					const isParentActive = pathname.startsWith(item.path);
 					const isOpen = openSubmenus[item.path];
 					if (!showLabels) {
-						// Collapsed sidebar: single link to parent (first child)
-						const link = (
-							<Link
-								key={item.path}
-								to={item.path}
-								onClick={onNavigate}
-								prefetch="intent"
-								className={cn(
-									"relative group flex items-center justify-center gap-3 px-2 py-2 rounded-xl transition-all duration-300 overflow-hidden w-full shrink-0",
-									"hover:bg-primary/10 hover:text-primary",
-									isParentActive && "text-primary bg-primary/10",
-									!isParentActive && "text-gray-500 dark:text-gray-400",
-								)}
-							>
-								<span className="material-symbols-outlined text-2xl shrink-0">
-									{item.icon}
-								</span>
-							</Link>
+						const visibleChildren = item.children.filter(
+							(child) => !child.permission || hasPermission(child.permission),
 						);
-						return (
-							<Tooltip key={item.path}>
-								<TooltipTrigger asChild>{link}</TooltipTrigger>
-								<TooltipContent side="right">
-									{isInfoReel
-										? t(item.i18nKey, { lng: primaryLanguage })
-										: t(item.i18nKey)}
-								</TooltipContent>
-							</Tooltip>
+						if (visibleChildren.length === 0) {
+							return null;
+						}
+						const label = isInfoReel
+							? t(item.i18nKey, { lng: primaryLanguage })
+							: t(item.i18nKey);
+						const trigger = (
+							<DropdownMenu>
+								<CollapsedDropdownTrigger
+									icon={item.icon}
+									label={label}
+									isActive={isParentActive}
+								/>
+								<DropdownMenuContent side="right" align="start" className="w-56">
+									{visibleChildren.map((child) => (
+										<DropdownMenuItem
+											key={child.path}
+											asChild
+											className={cn(
+												isChildActive(item.path, child.path) &&
+													"bg-primary/10 text-primary",
+											)}
+										>
+											<Link to={child.path} onClick={onNavigate} prefetch="intent">
+												<span className="material-symbols-outlined text-lg shrink-0">
+													{child.icon}
+												</span>
+												<span className="font-medium">{t(child.i18nKey)}</span>
+											</Link>
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						);
+						return <Fragment key={item.path}>{trigger}</Fragment>;
 					}
 					// Expanded: parent toggle + children
 					return (
@@ -605,9 +686,11 @@ export function Navigation({ variant }: NavigationProps) {
 								icon: "dark_mode",
 								label: t("theme.label"),
 								show: true,
-								customRender: (showLabels) =>
-									showLabels ? (
-										<ThemeSwitcher />
+								customRender: (showLabels, _onNavigate, inDropdown) =>
+									inDropdown ? (
+										<ThemeSwitcher variant="submenu" />
+									) : showLabels ? (
+										<ThemeSwitcher variant="standalone" />
 									) : (
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -625,8 +708,10 @@ export function Navigation({ variant }: NavigationProps) {
 								icon: "language",
 								label: t("lang.label"),
 								show: true,
-								customRender: (showLabels) =>
-									showLabels ? (
+								customRender: (showLabels, _onNavigate, inDropdown) =>
+									inDropdown ? (
+										<LanguageSwitcher variant="submenu" />
+									) : showLabels ? (
 										<LanguageSwitcher variant="standalone" />
 									) : (
 										<Tooltip>

@@ -80,10 +80,10 @@ export function LanguageSwitcher({
 		return (
 			<DropdownMenuSub>
 				<DropdownMenuSubTrigger className="cursor-pointer">
-					<span className="material-symbols-outlined text-lg mr-2">
+					<span className="material-symbols-outlined text-lg shrink-0">
 						translate
 					</span>
-					{t("lang.label")}
+					<span className="font-medium leading-none">{t("lang.label")}</span>
 				</DropdownMenuSubTrigger>
 				<DropdownMenuSubContent className="w-56">
 					<DropdownMenuLabel className="text-xs text-muted-foreground">

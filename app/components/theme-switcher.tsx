@@ -5,17 +5,22 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { cn } from "~/lib/utils";
 
 interface ThemeSwitcherProps {
 	compact?: boolean;
+	variant?: "standalone" | "submenu";
 	className?: string;
 }
 
 export function ThemeSwitcher({
 	compact = false,
+	variant = "standalone",
 	className,
 }: ThemeSwitcherProps) {
 	const { t } = useTranslation();
@@ -29,6 +34,41 @@ export function ThemeSwitcher({
 
 	const currentTheme =
 		themeOptions.find((opt) => opt.value === theme) || themeOptions[0];
+
+	if (variant === "submenu") {
+		return (
+			<DropdownMenuSub>
+				<DropdownMenuSubTrigger className="cursor-pointer">
+					<span className="material-symbols-outlined text-lg shrink-0">
+						{currentTheme.icon}
+					</span>
+					<span className="font-medium leading-none">{t("theme.label")}</span>
+				</DropdownMenuSubTrigger>
+				<DropdownMenuSubContent className="w-48">
+					{themeOptions.map((option) => (
+						<DropdownMenuItem
+							key={option.value}
+							onClick={() => setTheme(option.value)}
+							className={cn(
+								"cursor-pointer flex items-center justify-between",
+								theme === option.value && "bg-primary/10 text-primary",
+							)}
+						>
+							<span className="flex items-center gap-2">
+								<span className="material-symbols-outlined text-lg">
+									{option.icon}
+								</span>
+								{option.label}
+							</span>
+							{theme === option.value && (
+								<span className="material-symbols-outlined text-sm">check</span>
+							)}
+						</DropdownMenuItem>
+					))}
+				</DropdownMenuSubContent>
+			</DropdownMenuSub>
+		);
+	}
 
 	return (
 		<DropdownMenu>
