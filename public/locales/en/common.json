@@ -231,7 +231,98 @@
 			"transactions": "Transactions",
 			"receipts": "Receipts",
 			"reimbursements": "Reimbursement Requests",
-			"budgets": "Budgets"
+			"budgets": "Budgets",
+			"guide": "Guide"
+		},
+		"guide": {
+			"title": "Treasury Guide",
+			"subtitle": "Scenario-based guide for using treasury features and relationships. Scenarios describe the recommended order of operations to get the most out of auto-fill.",
+			"required_relations": "Required relationships",
+			"optional": "Optional",
+			"no_relations_needed": "No relationships needed",
+			"see_scenario": "See scenario {{number}}",
+			"autofill_tip": "Auto-fill tip",
+			"scenarios": {
+				"1": {
+					"title": "Reimbursement from committee budget",
+					"goal": "I want to file a reimbursement claim for a purchase that is deducted from the committee's budget.",
+					"steps": [
+						"Create a receipt and upload the image — OCR analysis automatically detects the amount, date, store name, and items",
+						"Create a reimbursement request from the receipt's relationship picker ('Create New' → Reimbursement) — the request is linked to the receipt and the receipt's data (amount, description, date) is auto-filled into the request",
+						"Link meeting minute(s) to the request — required, proves meeting approval",
+						"Create a transaction from the request's relationship picker — the transaction is linked to the request and the request's data is auto-filled into the transaction",
+						"Link a budget to the transaction — specifies which appropriation the funds come from",
+						"Optional: Create an email thread from the request's relationship picker, open the thread and press Auto-fill — the email draft is populated with the request, receipt, and minute details (recipient, subject, body)"
+					],
+					"tips": [
+						"Always start from the receipt — its OCR data is the foundation for all auto-fill and it has the highest priority",
+						"When you create a new entity from the relationship picker, it is automatically linked and pre-filled with the source's data",
+						"Email auto-fill collects data from everything linked to the request (receipt, minutes, request details) into a ready-made email template"
+					],
+					"relations": ["Reimbursement ↔ Receipt", "Reimbursement ↔ Minute(s)", "Reimbursement ↔ Transaction", "Transaction ↔ Budget", "Reimbursement ↔ Email Thread (optional)"]
+				},
+				"2": {
+					"title": "Reimbursement without using committee funds",
+					"goal": "I want to file a reimbursement for a purchase covered by the foundation (e.g., small supplies). This does not reduce the committee's funds.",
+					"steps": [
+						"Create a receipt and upload the image — OCR analysis detects the details automatically",
+						"Create a reimbursement request from the receipt's relationship picker — the receipt's data is auto-filled into the request",
+						"Link meeting minute(s) to the request — proves meeting approval",
+						"No transaction needed — the purchase does not affect the committee's treasury",
+						"Optional: Create an email thread from the request's relationship picker and use auto-fill to generate the email template"
+					],
+					"tips": [
+						"Same receipt-first workflow as scenario 1, but without a transaction",
+						"Auto-fill works the same way — the receipt pre-fills the request, and the email collects everything together"
+					],
+					"relations": ["Reimbursement ↔ Receipt", "Reimbursement ↔ Minute(s)", "Reimbursement ↔ Email Thread (optional)"]
+				},
+				"3": {
+					"title": "Budgeted purchase with inventory item",
+					"goal": "I want to record a transaction from the budget and add the purchased item to inventory.",
+					"steps": [
+						"Create a receipt and upload the image — OCR detects the purchase details",
+						"Create an inventory item from the receipt's relationship picker — the item's details (name, value, purchase date) are auto-filled from the receipt",
+						"Create a transaction from the receipt's relationship picker — the transaction's amount, description, and date are auto-filled from the receipt",
+						"Link a budget to the transaction — specifies which appropriation the funds come from",
+						"If reimbursement is needed: create a reimbursement request from the receipt's relationship picker and link minute(s) and the transaction to it (as in scenario 1)"
+					],
+					"tips": [
+						"The receipt is the starting point again — both the inventory item and transaction created from it get auto-filled data",
+						"Inventory item name, value, and category are filled from the receipt's OCR data",
+						"You can use the Auto-fill button in edit mode to fill in any fields that weren't covered by the initial pre-fill"
+					],
+					"relations": ["Transaction ↔ Budget", "Transaction ↔ Receipt", "Receipt ↔ Inventory Item", "Reimbursement ↔ Receipt, Minute(s), Transaction (if needed)"]
+				},
+				"4": {
+					"title": "Recording income",
+					"goal": "I want to record income received by the committee (e.g., foundation grant, donation).",
+					"steps": [
+						"Create a transaction with type 'income'",
+						"Usually no relationships needed — fill in the details manually",
+						"Optional: Link a meeting minute if the income was discussed in a meeting"
+					],
+					"tips": [
+						"Auto-fill is less useful for income transactions since there is usually no receipt or other linked entity to pull data from"
+					],
+					"relations": ["Transaction ↔ Minute (optional)"]
+				},
+				"5": {
+					"title": "Linking a receipt retroactively",
+					"goal": "I want to attach a receipt to an existing transaction or reimbursement request.",
+					"steps": [
+						"Open the existing transaction or reimbursement request",
+						"Use the relationship picker to link an existing or new receipt",
+						"Press the Auto-fill button in edit mode — the receipt's data fills in any empty fields",
+						"If the transaction has a reimbursement request, link the receipt to the request as well"
+					],
+					"tips": [
+						"After linking, Auto-fill recognizes the receipt's data and fills missing fields (amount, description, date)",
+						"The receipt always takes priority — if the transaction and receipt have different amounts, auto-fill suggests the receipt's amount for empty fields"
+					],
+					"relations": ["Transaction ↔ Receipt", "Reimbursement ↔ Receipt"]
+				}
+			}
 		},
 		"new": {
 			"header": "New Transaction",

@@ -70,6 +70,11 @@ export const NAV_ITEMS: NavItem[] = [
 				i18nKey: "treasury.actions.budgets",
 				permission: "treasury:budgets:read",
 			},
+			{
+				path: "/treasury/guide",
+				icon: "menu_book",
+				i18nKey: "treasury.actions.guide",
+			},
 		],
 	},
 	{

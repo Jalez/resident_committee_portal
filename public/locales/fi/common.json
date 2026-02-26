@@ -260,7 +260,98 @@
 			"transactions": "Transaktiovirta",
 			"receipts": "Kuitit",
 			"reimbursements": "Kulukorvaushakemukset",
-			"budgets": "Budjetit"
+			"budgets": "Budjetit",
+			"guide": "Opas"
+		},
+		"guide": {
+			"title": "Rahaston opas",
+			"subtitle": "Skenaariopohjainen opas rahaston toimintojen ja yhteyksien käyttöön. Skenaarioissa kuvataan suositeltu järjestys, joka hyödyntää automaattitäyttöä parhaiten.",
+			"required_relations": "Tarvittavat yhteydet",
+			"optional": "Valinnainen",
+			"no_relations_needed": "Ei yhteyksiä tarvita",
+			"see_scenario": "Katso skenaario {{number}}",
+			"autofill_tip": "Automaattitäyttövinkki",
+			"scenarios": {
+				"1": {
+					"title": "Kulukorvaus toimikunnan budjetista",
+					"goal": "Haluan hakea kulukorvausta hankinnasta, joka vähennetään toimikunnan määrärahoista.",
+					"steps": [
+						"Luo kuitti ja lataa kuva — OCR-analyysi tunnistaa automaattisesti summan, päivämäärän, kaupan nimen ja tuotteet",
+						"Luo kulukorvaushakemus kuitin yhteysvalitsimesta ('Luo uusi' → Kulukorvaus) — hakemus linkittyy kuittiin ja kuitin tiedot (summa, kuvaus, päivämäärä) esitäytetään automaattisesti hakemukseen",
+						"Linkitä hakemukseen pöytäkirja(t) — pakollinen, todistaa kokouksen hyväksynnän",
+						"Luo transaktio hakemuksen yhteysvalitsimesta — transaktio linkittyy hakemukseen ja hakemuksen tiedot esitäytetään transaktioon",
+						"Linkitä transaktioon budjetti — osoittaa mistä määrärahasta raha otetaan",
+						"Valinnainen: Luo sähköpostiketju hakemuksen yhteysvalitsimesta, avaa ketju ja paina Automaattitäyttö — sähköpostiluonnos täyttyy hakemuksen, kuitin ja pöytäkirjan tiedoilla (vastaanottaja, aihe, sisältö)"
+					],
+					"tips": [
+						"Aloita aina kuitista — sen OCR-data on kaiken automaattitäytön perusta ja sillä on korkein prioriteetti",
+						"Kun luot uuden kohteen yhteysvalitsimesta, se linkittyy ja esitäytetään automaattisesti lähteen tiedoilla",
+						"Sähköpostin automaattitäyttö kokoaa tiedot kaikista hakemukseen linkitetyistä kohteista (kuitti, pöytäkirja, hakemuksen tiedot) valmiiksi viestipohjaksi"
+					],
+					"relations": ["Kulukorvaus ↔ Kuitti", "Kulukorvaus ↔ Pöytäkirja(t)", "Kulukorvaus ↔ Transaktio", "Transaktio ↔ Budjetti", "Kulukorvaus ↔ Sähköpostiketju (valinnainen)"]
+				},
+				"2": {
+					"title": "Kulukorvaus ilman omien varojen käyttöä",
+					"goal": "Haluan hakea kulukorvausta hankinnasta, jonka säätiö kustantaa (esim. pientavarahankinnat). Tämä ei vähennä toimikunnan varoja.",
+					"steps": [
+						"Luo kuitti ja lataa kuva — OCR-analyysi tunnistaa tiedot automaattisesti",
+						"Luo kulukorvaushakemus kuitin yhteysvalitsimesta — kuitin tiedot esitäytetään hakemukseen",
+						"Linkitä hakemukseen pöytäkirja(t) — todistaa kokouksen hyväksynnän",
+						"Ei transaktiota — hankinta ei vähennä toimikunnan rahastoa",
+						"Valinnainen: Luo sähköpostiketju hakemuksen yhteysvalitsimesta ja käytä automaattitäyttöä sähköpostipohjan luomiseen"
+					],
+					"tips": [
+						"Sama kuittilähtöinen työnkulku kuin skenaariossa 1, mutta ilman transaktiota",
+						"Automaattitäyttö toimii samalla tavalla — kuitti esitäyttää hakemuksen, ja sähköposti kokoaa kaiken yhteen"
+					],
+					"relations": ["Kulukorvaus ↔ Kuitti", "Kulukorvaus ↔ Pöytäkirja(t)", "Kulukorvaus ↔ Sähköpostiketju (valinnainen)"]
+				},
+				"3": {
+					"title": "Budjetoitu hankinta inventaarioesineellä",
+					"goal": "Haluan kirjata transaktion budjetista ja lisätä hankitun esineen inventaarioon.",
+					"steps": [
+						"Luo kuitti ja lataa kuva — OCR tunnistaa hankinnan tiedot",
+						"Luo inventaarioesine kuitin yhteysvalitsimesta — esineen tiedot (nimi, arvo, hankintapäivä) esitäytetään kuitin tiedoista",
+						"Luo transaktio kuitin yhteysvalitsimesta — transaktion summa, kuvaus ja päivämäärä esitäytetään kuitista",
+						"Linkitä transaktioon budjetti — osoittaa mistä määrärahasta raha otetaan",
+						"Jos kulukorvaus tarvitaan: luo kulukorvaushakemus kuitin yhteysvalitsimesta ja linkitä siihen pöytäkirja(t) ja transaktio (kuten skenaariossa 1)"
+					],
+					"tips": [
+						"Kuitti on jälleen lähtöpiste — siitä luodut inventaarioesine ja transaktio saavat molemmat esitäytetyt tiedot",
+						"Inventaarioesineen nimi, arvo ja kategoria täyttyvät kuitin OCR-datasta",
+						"Voit käyttää Automaattitäyttö-painiketta muokkaustilassa täydentämään kenttiä, joita esitäyttö ei tavoittanut"
+					],
+					"relations": ["Transaktio ↔ Budjetti", "Transaktio ↔ Kuitti", "Kuitti ↔ Inventaarioesine", "Kulukorvaus ↔ Kuitti, Pöytäkirja(t), Transaktio (jos tarvitaan)"]
+				},
+				"4": {
+					"title": "Tulotransaktion kirjaaminen",
+					"goal": "Haluan kirjata toimikunnan saaman tulon (esim. säätiön avustus, lahjoitus).",
+					"steps": [
+						"Luo transaktio tyypillä 'tulo'",
+						"Yleensä ei tarvita yhteyksiä — täytä tiedot käsin",
+						"Valinnainen: Linkitä pöytäkirja, jos tulo on käsitelty kokouksessa"
+					],
+					"tips": [
+						"Tulotransaktioissa automaattitäyttö ei ole yhtä hyödyllistä, koska tietoa ei yleensä ole kuitissa tai muussa linkitetyssä kohteessa"
+					],
+					"relations": ["Transaktio ↔ Pöytäkirja (valinnainen)"]
+				},
+				"5": {
+					"title": "Kuitin linkitys jälkikäteen",
+					"goal": "Haluan liittää kuitin olemassa olevaan transaktioon tai hakemukseen.",
+					"steps": [
+						"Avaa olemassa oleva transaktio tai kulukorvaushakemus",
+						"Käytä yhteysvalitsinta linkittääksesi olemassa olevan tai uuden kuitin",
+						"Paina Automaattitäyttö-painiketta muokkaustilassa — kuitin tiedot täydentävät tyhjät kentät",
+						"Jos transaktiolla on kulukorvaushakemus, linkitä kuitti myös hakemukseen"
+					],
+					"tips": [
+						"Linkityksen jälkeen Automaattitäyttö tunnistaa kuitin tiedot ja täyttää puuttuvat kentät (summa, kuvaus, päivämäärä)",
+						"Kuitti on aina etusijalla — jos transaktiolla ja kuitilla on eri summa, automaattitäyttö ehdottaa kuitin summaa tyhjiin kenttiin"
+					],
+					"relations": ["Transaktio ↔ Kuitti", "Kulukorvaus ↔ Kuitti"]
+				}
+			}
 		},
 		"new": {
 			"header": "Uusi transaktio",

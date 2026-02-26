@@ -217,6 +217,7 @@ export default [
 	),
 	route("treasury", "routes/treasury/_index.tsx"),
 	route("treasury/breakdown", "routes/treasury/breakdown/_index.tsx"),
+	route("treasury/guide", "routes/treasury/guide/_index.tsx"),
 	route("treasury/budgets", "routes/treasury/budgets/_index.tsx"),
 	route(
 		"treasury/budgets/:budgetId",
