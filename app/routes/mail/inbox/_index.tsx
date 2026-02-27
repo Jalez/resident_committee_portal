@@ -126,6 +126,22 @@ function formatDate(date: Date | string): string {
 	});
 }
 
+function MailItemSkeleton() {
+	return (
+		<div className="flex items-start gap-3 px-2 py-3">
+			<div className="h-9 w-9 shrink-0 rounded-full bg-muted animate-pulse" />
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center justify-between gap-2">
+					<div className="h-4 w-32 rounded bg-muted animate-pulse" />
+					<div className="h-3 w-10 rounded bg-muted animate-pulse" />
+				</div>
+				<div className="mt-1.5 h-3.5 w-48 rounded bg-muted animate-pulse" />
+				<div className="mt-2 h-7" />
+			</div>
+		</div>
+	);
+}
+
 export default function MailInbox({ loaderData }: Route.ComponentProps) {
 	const { direction, dataPromise } = loaderData;
 	const { t } = useTranslation();
@@ -134,6 +150,14 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 	const navigation = useNavigation();
 	const revalidator = useRevalidator();
 	const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+	const [pendingRevalidate, setPendingRevalidate] = useState(false);
+
+	const isRefreshSubmitting =
+		navigation.state === "submitting" &&
+		navigation.formData?.get("_action") === "refreshInbox";
+	const isRefreshing =
+		isRefreshSubmitting ||
+		(pendingRevalidate && revalidator.state === "loading");
 
 	const handleDeleteMessage = useCallback(
 		(messageId: string) => {
@@ -155,8 +179,17 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 			if (data.error) toast.error(data.error);
 			else if (typeof data.count === "number" && data.count > 0)
 				toast.success(t("mail.refreshed", { count: data.count }));
+			setPendingRevalidate(true);
+			revalidator.revalidate();
 		}
 	}, [actionData, t]);
+
+	useEffect(() => {
+		if (pendingRevalidate && revalidator.state === "idle") {
+			setPendingRevalidate(false);
+			setLastRefreshed(new Date());
+		}
+	}, [pendingRevalidate, revalidator.state]);
 
 	useEffect(() => {
 		if (deleteFetcher.data && "deleted" in deleteFetcher.data) {
@@ -168,15 +201,6 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 			else if (data.error) toast.error(data.error || t("mail.delete_error"));
 		}
 	}, [deleteFetcher.data, t]);
-
-	useEffect(() => {
-		if (
-			(actionData && "refreshed" in actionData) ||
-			navigation.state === "idle"
-		) {
-			setLastRefreshed(new Date());
-		}
-	}, [actionData, navigation.state]);
 
 	return (
 		<div className="flex flex-col">
@@ -216,6 +240,7 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 			</div>
 
 			<div className="divide-y divide-border">
+				{isRefreshing && <MailItemSkeleton />}
 				<Suspense
 					fallback={
 						<div className="py-12 flex justify-center">
