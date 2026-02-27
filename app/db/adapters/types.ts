@@ -248,6 +248,8 @@ export interface DatabaseAdapter {
 		id: string;
 		subject: string;
 	}): Promise<CommitteeMailThread>;
+	/** Ensure a thread record exists for the given ID; no-op if it already exists */
+	ensureCommitteeMailThread(id: string, subject: string): Promise<void>;
 	/** Get a mail thread by its ID (message-ID) */
 	getCommitteeMailThreadById(
 		id: string,

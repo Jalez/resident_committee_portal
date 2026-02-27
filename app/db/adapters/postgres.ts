@@ -1047,6 +1047,13 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0];
 	}
 
+	async ensureCommitteeMailThread(id: string, subject: string): Promise<void> {
+		await this.db
+			.insert(committeeMailThreads)
+			.values({ id, subject, slug: crypto.randomUUID() })
+			.onConflictDoNothing();
+	}
+
 	async getCommitteeMailThreadById(
 		id: string,
 	): Promise<CommitteeMailThread | null> {
