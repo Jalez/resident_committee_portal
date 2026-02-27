@@ -647,7 +647,11 @@ export async function action({ request }: Route.ActionArgs) {
 
 		// Navigate to thread view if part of a thread, otherwise to the message
 		if (threadId) {
-			return redirect(`/mail/thread/${encodeURIComponent(threadId)}`);
+			const sentThread = await db.getCommitteeMailThreadById(threadId);
+			const dest = sentThread?.slug
+				? `/mail/thread/${sentThread.slug}`
+				: `/mail/thread/${encodeURIComponent(threadId)}`;
+			return redirect(dest);
 		}
 		return redirect(`/mail/messages/${inserted.id}`);
 	}

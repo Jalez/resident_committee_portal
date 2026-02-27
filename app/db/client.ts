@@ -326,6 +326,7 @@ export type NewCommitteeMailMessage = Partial<
 
 export interface CommitteeMailThread {
 	id: string;
+	slug: string;
 	subject: string;
 	createdAt: Date;
 	updatedAt: Date;

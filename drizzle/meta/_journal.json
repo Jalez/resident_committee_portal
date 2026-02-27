@@ -239,6 +239,13 @@
       "when": 1772025225350,
       "tag": "0033_white_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1772198114862,
+      "tag": "0034_lowly_sway",
+      "breakpoints": true
     }
   ]
 }

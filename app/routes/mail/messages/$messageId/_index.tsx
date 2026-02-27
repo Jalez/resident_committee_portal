@@ -41,7 +41,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 	// Redirect to thread view if message has a thread
 	if (message.threadId) {
-		return redirect(`/mail/thread/${encodeURIComponent(message.threadId)}`);
+		const thread = await db.getCommitteeMailThreadById(message.threadId);
+		const dest = thread?.slug
+			? `/mail/thread/${thread.slug}`
+			: `/mail/thread/${encodeURIComponent(message.threadId)}`;
+		return redirect(dest);
 	}
 
 	return {

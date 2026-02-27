@@ -957,6 +957,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 	): Promise<
 		{
 			threadId: string;
+			slug: string | null;
 			latestMessage: CommitteeMailMessage;
 			messageCount: number;
 		}[]
@@ -1001,15 +1002,23 @@ export class PostgresAdapter implements DatabaseAdapter {
 
 		const messageIdsToFetch = threadsMetadata.map((t) => t.latestMessageId);
 
-		const fetchedFullMessages = await this.db
-			.select()
-			.from(committeeMailMessages)
-			.where(inArray(committeeMailMessages.id, messageIdsToFetch));
+		const [fetchedFullMessages, fetchedThreadRows] = await Promise.all([
+			this.db
+				.select()
+				.from(committeeMailMessages)
+				.where(inArray(committeeMailMessages.id, messageIdsToFetch)),
+			this.db
+				.select({ id: committeeMailThreads.id, slug: committeeMailThreads.slug })
+				.from(committeeMailThreads)
+				.where(inArray(committeeMailThreads.id, threadsMetadata.map((t) => t.threadId))),
+		]);
 
 		const messageMap = new Map(fetchedFullMessages.map((m) => [m.id, m]));
+		const slugMap = new Map(fetchedThreadRows.map((t) => [t.id, t.slug]));
 
 		return threadsMetadata.map((t) => ({
 			threadId: t.threadId,
+			slug: slugMap.get(t.threadId) ?? null,
 			latestMessage: messageMap.get(t.latestMessageId) as CommitteeMailMessage,
 			messageCount: t.messageCount,
 		}));
@@ -1033,7 +1042,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 	}): Promise<CommitteeMailThread> {
 		const result = await this.db
 			.insert(committeeMailThreads)
-			.values(thread)
+			.values({ ...thread, slug: crypto.randomUUID() })
 			.returning();
 		return result[0];
 	}
@@ -1049,13 +1058,24 @@ export class PostgresAdapter implements DatabaseAdapter {
 		return result[0] ?? null;
 	}
 
+	async getCommitteeMailThreadBySlug(
+		slug: string,
+	): Promise<CommitteeMailThread | null> {
+		const result = await this.db
+			.select()
+			.from(committeeMailThreads)
+			.where(eq(committeeMailThreads.slug, slug))
+			.limit(1);
+		return result[0] ?? null;
+	}
+
 	async upsertCommitteeMailThread(thread: {
 		id: string;
 		subject: string;
 	}): Promise<CommitteeMailThread> {
 		const result = await this.db
 			.insert(committeeMailThreads)
-			.values(thread)
+			.values({ ...thread, slug: crypto.randomUUID() })
 			.onConflictDoUpdate({
 				target: committeeMailThreads.id,
 				set: {

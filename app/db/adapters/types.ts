@@ -228,6 +228,7 @@ export interface DatabaseAdapter {
 	): Promise<
 		{
 			threadId: string;
+			slug: string | null;
 			latestMessage: CommitteeMailMessage;
 			messageCount: number;
 		}[]
@@ -247,9 +248,13 @@ export interface DatabaseAdapter {
 		id: string;
 		subject: string;
 	}): Promise<CommitteeMailThread>;
-	/** Get a mail thread by its ID */
+	/** Get a mail thread by its ID (message-ID) */
 	getCommitteeMailThreadById(
 		id: string,
+	): Promise<CommitteeMailThread | null>;
+	/** Get a mail thread by its URL slug */
+	getCommitteeMailThreadBySlug(
+		slug: string,
 	): Promise<CommitteeMailThread | null>;
 	/** Insert or update a mail thread record (upsert by id) */
 	upsertCommitteeMailThread(thread: {

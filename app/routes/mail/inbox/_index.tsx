@@ -243,9 +243,11 @@ export default function MailInbox({ loaderData }: Route.ComponentProps) {
 
 							return threads.map((thread) => {
 								const msg = thread.latestMessage;
-								const threadHref = msg.threadId
-									? `/mail/thread/${encodeURIComponent(msg.threadId)}`
-									: `/mail/messages/${msg.id}`;
+								const threadHref = thread.slug
+									? `/mail/thread/${thread.slug}`
+									: msg.threadId
+										? `/mail/thread/${encodeURIComponent(msg.threadId)}`
+										: `/mail/messages/${msg.id}`;
 								return (
 									<MailItem
 										key={thread.threadId}

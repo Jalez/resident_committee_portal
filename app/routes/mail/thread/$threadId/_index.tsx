@@ -189,10 +189,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"committee:email",
 		getDatabase,
 	);
-	const threadId = decodeURIComponent(params.threadId);
-	if (!threadId) throw new Response("Not Found", { status: 404 });
+	const slug = params.threadId;
+	if (!slug) throw new Response("Not Found", { status: 404 });
 
 	const db = getDatabase();
+	const thread = await db.getCommitteeMailThreadBySlug(slug);
+	if (!thread) throw new Response("Not Found", { status: 404 });
+	const threadId = thread.id;
+
 	const messages = await db.getCommitteeMailMessagesByThreadId(threadId);
 
 	if (messages.length === 0) {

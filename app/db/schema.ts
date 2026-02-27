@@ -470,6 +470,7 @@ export type NewCommitteeMailMessage = typeof committeeMailMessages.$inferInsert;
  */
 export const committeeMailThreads = pgTable("committee_mail_threads", {
 	id: text("id").primaryKey(),
+	slug: text("slug").notNull().unique().$defaultFn(() => crypto.randomUUID()),
 	subject: text("subject").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
