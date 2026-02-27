@@ -1,4 +1,4 @@
-import { createCookie } from "react-router";
+import { createCookie, redirect } from "react-router";
 
 // ============================================
 // CONFIGURATION
@@ -265,9 +265,18 @@ async function getOrGuestUser(
 }
 
 /**
+ * Build a login redirect response, preserving the current path as returnTo.
+ */
+function loginRedirect(request: Request): Response {
+	const { pathname, search } = new URL(request.url);
+	const returnTo = encodeURIComponent(pathname + search);
+	return redirect(`/auth/login?returnTo=${returnTo}`);
+}
+
+/**
  * Require user to have a specific permission.
- * Guests (unauthenticated) are checked against the "Guest" role permissions.
- * Throws 401 if a guest lacks permission (to redirect to login), 403 if an authenticated user lacks permission.
+ * Guests (unauthenticated) are redirected to login. Authenticated users without
+ * the permission receive a 403.
  */
 export async function requirePermission(
 	request: Request,
@@ -277,13 +286,10 @@ export async function requirePermission(
 	const user = await getOrGuestUser(request, getDatabase);
 
 	if (!hasPermission(user, permission)) {
-		const isGuest = user.userId === "guest";
-		throw new Response(
-			isGuest
-				? "Unauthorized"
-				: `Forbidden - Missing permission: ${permission}`,
-			{ status: isGuest ? 401 : 403 },
-		);
+		if (user.userId === "guest") throw loginRedirect(request);
+		throw new Response(`Forbidden - Missing permission: ${permission}`, {
+			status: 403,
+		});
 	}
 
 	return user;
@@ -291,8 +297,8 @@ export async function requirePermission(
 
 /**
  * Require user to have any of the specified permissions.
- * Guests (unauthenticated) are checked against the "Guest" role permissions.
- * Throws 401 if a guest lacks permission, 403 if an authenticated user lacks permission.
+ * Guests (unauthenticated) are redirected to login. Authenticated users without
+ * any of the permissions receive a 403.
  */
 export async function requireAnyPermission(
 	request: Request,
@@ -302,12 +308,10 @@ export async function requireAnyPermission(
 	const user = await getOrGuestUser(request, getDatabase);
 
 	if (!hasAnyPermission(user, permissions)) {
-		const isGuest = user.userId === "guest";
+		if (user.userId === "guest") throw loginRedirect(request);
 		throw new Response(
-			isGuest
-				? "Unauthorized"
-				: `Forbidden - Requires one of: ${permissions.join(", ")}`,
-			{ status: isGuest ? 401 : 403 },
+			`Forbidden - Requires one of: ${permissions.join(", ")}`,
+			{ status: 403 },
 		);
 	}
 
@@ -369,18 +373,16 @@ export async function requirePermissionOrSelf(
 		return user;
 	}
 
-	const isGuest = user.userId === "guest";
+	if (user.userId === "guest") throw loginRedirect(request);
 	throw new Response(
-		isGuest
-			? "Unauthorized"
-			: `Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
-		{ status: isGuest ? 401 : 403 },
+		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
+		{ status: 403 },
 	);
 }
 
 /**
  * Require user to have either general delete permission OR self delete permission with ownership.
- * Guests (unauthenticated) are checked against the "Guest" role permissions.
+ * Guests (unauthenticated) are redirected to login. Authenticated users without permission get 403.
  */
 export async function requireDeletePermissionOrSelf(
 	request: Request,
@@ -401,12 +403,10 @@ export async function requireDeletePermissionOrSelf(
 		return user;
 	}
 
-	const isGuest = user.userId === "guest";
+	if (user.userId === "guest") throw loginRedirect(request);
 	throw new Response(
-		isGuest
-			? "Unauthorized"
-			: `Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
-		{ status: isGuest ? 401 : 403 },
+		`Forbidden - Missing permission: ${generalPermission}${selfPermission ? ` or ${selfPermission} (with ownership)` : ""}`,
+		{ status: 403 },
 	);
 }
 
@@ -414,7 +414,7 @@ export async function requireDeletePermissionOrSelf(
 // GOOGLE OAUTH 2.0
 // ============================================
 
-export function getGoogleAuthUrl(): string {
+export function getGoogleAuthUrl(returnTo?: string): string {
 	const params = new URLSearchParams({
 		client_id: config.oauthClientId,
 		redirect_uri: config.redirectUri,
@@ -423,6 +423,7 @@ export function getGoogleAuthUrl(): string {
 		scope: "openid email profile",
 		access_type: "offline", // Required to get a refresh token
 		prompt: "consent select_account", // Force consent screen to ensure we get a refresh token
+		...(returnTo ? { state: returnTo } : {}),
 	});
 
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

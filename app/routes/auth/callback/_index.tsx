@@ -88,8 +88,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		`[OAuth Callback] User logged in: ${userInfo.email} (admin: ${isAdminUser}, language: ${userLanguage})`,
 	);
 
-	// Always redirect to home page
-	return redirect("/", {
+	// Redirect to returnTo (passed via OAuth state) if it's a safe internal path
+	const state = url.searchParams.get("state");
+	const destination =
+		state && state.startsWith("/") && !state.startsWith("//") ? state : "/";
+
+	return redirect(destination, {
 		headers: [
 			["Set-Cookie", sessionCookie],
 			["Set-Cookie", localeCookieHeader],

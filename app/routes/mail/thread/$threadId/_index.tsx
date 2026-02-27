@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useFetcher } from "react-router";
+import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -578,16 +579,7 @@ export default function MailThread({
 									</div>
 
 									{/* Body */}
-									<div className="prose prose-sm dark:prose-invert text-foreground max-w-none">
-										<div
-											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
-											className="[&_*]:!bg-transparent [&_*]:text-inherit"
-											// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
-											dangerouslySetInnerHTML={{
-												__html: msg.bodyHtml,
-											}}
-										/>
-									</div>
+									<IsolatedEmailContent html={msg.bodyHtml} />
 
 									{/* Actions */}
 									<div className="border-border mt-4 flex items-center gap-2 border-t pt-3">

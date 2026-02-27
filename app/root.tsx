@@ -402,6 +402,68 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 		);
 	}
 
+	if (isRouteErrorResponse(error)) {
+		if (error.status === 401) {
+			return (
+				<main className="min-h-screen bg-background flex items-center justify-center p-4">
+					<div className="max-w-md w-full space-y-6 text-center">
+						<div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full">
+							<span className="material-symbols-outlined text-5xl text-primary">
+								lock
+							</span>
+						</div>
+						<h1 className="text-2xl font-bold text-foreground">
+							{t("auth.login_required", { defaultValue: "Login required" })}
+						</h1>
+						<p className="text-muted-foreground">
+							{t("auth.login_required_description", {
+								defaultValue:
+									"You need to be logged in to view this page.",
+							})}
+						</p>
+						<a
+							href="/auth/login"
+							className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+						>
+							<span className="material-symbols-outlined">login</span>
+							{t("auth.login", { defaultValue: "Log in" })}
+						</a>
+					</div>
+				</main>
+			);
+		}
+
+		if (error.status === 403) {
+			return (
+				<main className="min-h-screen bg-background flex items-center justify-center p-4">
+					<div className="max-w-md w-full space-y-6 text-center">
+						<div className="inline-flex items-center justify-center p-4 bg-destructive/10 rounded-full">
+							<span className="material-symbols-outlined text-5xl text-destructive">
+								block
+							</span>
+						</div>
+						<h1 className="text-2xl font-bold text-foreground">
+							{t("auth.access_denied", { defaultValue: "Access denied" })}
+						</h1>
+						<p className="text-muted-foreground">
+							{t("auth.access_denied_description", {
+								defaultValue:
+									"You don't have permission to view this page.",
+							})}
+						</p>
+						<a
+							href="/"
+							className="inline-flex items-center gap-2 bg-muted text-foreground px-6 py-3 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+						>
+							<span className="material-symbols-outlined">home</span>
+							{t("nav.home", { defaultValue: "Go home" })}
+						</a>
+					</div>
+				</main>
+			);
+		}
+	}
+
 	let message = "Oops!";
 	let details = "An unexpected error occurred.";
 	let stack: string | undefined;
