@@ -200,8 +200,8 @@ export default function Treasury({ loaderData }: Route.ComponentProps) {
 		},
 	];
 
-	// QR Panel - only show if user can access breakdown
-	const RightContent = canReadBreakdown ? (
+	// QR Panel in info reel mode should always be visible.
+	const RightContent = (canReadBreakdown || isInfoReel) ? (
 		<QRPanel
 			qrUrl={`/treasury/breakdown?year=${selectedYear}`}
 			title={

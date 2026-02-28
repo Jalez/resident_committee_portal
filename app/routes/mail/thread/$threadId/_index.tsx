@@ -10,7 +10,6 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useFetcher } from "react-router";
-import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -189,14 +188,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"committee:email",
 		getDatabase,
 	);
-	const slug = params.threadId;
-	if (!slug) throw new Response("Not Found", { status: 404 });
+	const threadId = decodeURIComponent(params.threadId);
+	if (!threadId) throw new Response("Not Found", { status: 404 });
 
 	const db = getDatabase();
-	const thread = await db.getCommitteeMailThreadBySlug(slug);
-	if (!thread) throw new Response("Not Found", { status: 404 });
-	const threadId = thread.id;
-
 	const messages = await db.getCommitteeMailMessagesByThreadId(threadId);
 
 	if (messages.length === 0) {
@@ -583,7 +578,16 @@ export default function MailThread({
 									</div>
 
 									{/* Body */}
-									<IsolatedEmailContent html={msg.bodyHtml} />
+									<div className="prose prose-sm dark:prose-invert text-foreground max-w-none">
+										<div
+											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
+											className="[&_*]:!bg-transparent [&_*]:text-inherit"
+											// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
+											dangerouslySetInnerHTML={{
+												__html: msg.bodyHtml,
+											}}
+										/>
+									</div>
 
 									{/* Actions */}
 									<div className="border-border mt-4 flex items-center gap-2 border-t pt-3">

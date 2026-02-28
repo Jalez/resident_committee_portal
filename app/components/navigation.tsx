@@ -506,6 +506,9 @@ export function Navigation({ variant }: NavigationProps) {
 					// Expanded: parent toggle + children
 					return (
 						<div key={item.path}>
+							{(() => {
+								const isAnimating = isInfoReel && isParentActive;
+								return (
 							<button
 								type="button"
 								onClick={() =>
@@ -515,13 +518,30 @@ export function Navigation({ variant }: NavigationProps) {
 									}))
 								}
 								className={cn(
-									"flex items-center gap-3 px-2 py-2 rounded-xl transition-all relative w-full text-left",
+									"flex items-center gap-3 px-2 py-2 rounded-xl transition-all relative w-full text-left overflow-hidden",
 									"hover:bg-primary/10 hover:text-primary",
+									!isAnimating &&
 									isParentActive
 										? "text-primary bg-primary/10"
 										: "text-gray-500 dark:text-gray-400",
 								)}
+								style={
+									isAnimating
+										? {
+											color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+										}
+										: undefined
+								}
 							>
+								{isAnimating && (
+									<div
+										className="absolute inset-0 bg-primary/10"
+										style={{
+											clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+											opacity,
+										}}
+									/>
+								)}
 								<span className="material-symbols-outlined text-2xl shrink-0">
 									{item.icon}
 								</span>
@@ -539,6 +559,8 @@ export function Navigation({ variant }: NavigationProps) {
 									chevron_right
 								</span>
 							</button>
+								);
+							})()}
 							{isOpen && (
 								<div className="pl-4 space-y-0.5 mt-0.5">
 									{item.children

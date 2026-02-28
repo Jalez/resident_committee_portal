@@ -295,10 +295,6 @@ export async function syncCommitteeMail(
 					const date = envelope?.date || new Date();
 					const threadId = computeThreadId(messageId, inReplyTo, references);
 
-					if (threadId) {
-						await db.ensureCommitteeMailThread(threadId, subject);
-					}
-
 					const inheritedThreadRelations = new Map<
 						string,
 						{ type: string; id: string }

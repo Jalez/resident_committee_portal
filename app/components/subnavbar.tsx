@@ -15,6 +15,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { useInfoReel } from "~/contexts/info-reel-context";
 import { useUser } from "~/contexts/user-context";
 import { NAV_ITEMS } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
@@ -47,6 +48,7 @@ export function Subnavbar() {
 	const pathname = location.pathname;
 	const search = typeof location.search === "string" ? location.search : "";
 	const { hasPermission } = useUser();
+	const { isInfoReel, fillProgress, opacity } = useInfoReel();
 	const { t } = useTranslation();
 	const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -154,17 +156,36 @@ export function Subnavbar() {
 					section.path,
 					child.path,
 				);
+				const isAnimating = isInfoReel && active;
 				const link = (
 					<Link
 						key={child.path}
 						to={child.path}
 						prefetch="intent"
 						className={cn(
-							"flex items-center gap-2 px-2 py-2 xl:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0",
+							"relative overflow-hidden flex items-center gap-2 px-2 py-2 xl:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0",
 							"hover:bg-primary/10 hover:text-primary",
-							active ? "bg-primary/10 text-primary" : "text-muted-foreground",
+							!isAnimating &&
+								(active ? "bg-primary/10 text-primary" : "text-muted-foreground"),
+							isAnimating && "text-muted-foreground",
 						)}
+						style={
+							isAnimating
+								? {
+										color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+									}
+								: undefined
+						}
 					>
+						{isAnimating && (
+							<div
+								className="absolute inset-0 bg-primary/10"
+								style={{
+									clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+									opacity,
+								}}
+							/>
+						)}
 						<span className="material-symbols-outlined text-xl shrink-0">
 							{child.icon}
 						</span>

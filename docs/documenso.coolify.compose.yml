@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?documenso}
+      POSTGRES_USER: ${POSTGRES_USER:?documenso}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?change_me}
+    volumes:
+      - documenso_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  documenso:
+    image: documenso/documenso:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+
+      # Core secrets
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?generate_32_plus_chars}
+      NEXT_PRIVATE_ENCRYPTION_KEY: ${NEXT_PRIVATE_ENCRYPTION_KEY:?generate_32_plus_chars}
+      NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY: ${NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY:?generate_32_plus_chars}
+
+      # Public URL (set to your Coolify domain)
+      NEXT_PUBLIC_WEBAPP_URL: ${NEXT_PUBLIC_WEBAPP_URL:?https://sign.example.com}
+      NEXT_PRIVATE_INTERNAL_WEBAPP_URL: http://documenso:3000
+
+      # Database (single Postgres service in this stack)
+      NEXT_PRIVATE_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      NEXT_PRIVATE_DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+
+      # SMTP (Documenso invite/notification emails)
+      NEXT_PRIVATE_SMTP_TRANSPORT: ${NEXT_PRIVATE_SMTP_TRANSPORT:-smtp-auth}
+      NEXT_PRIVATE_SMTP_HOST: ${NEXT_PRIVATE_SMTP_HOST:?smtp_host}
+      NEXT_PRIVATE_SMTP_PORT: ${NEXT_PRIVATE_SMTP_PORT:-587}
+      NEXT_PRIVATE_SMTP_USERNAME: ${NEXT_PRIVATE_SMTP_USERNAME:-}
+      NEXT_PRIVATE_SMTP_PASSWORD: ${NEXT_PRIVATE_SMTP_PASSWORD:-}
+      NEXT_PRIVATE_SMTP_SECURE: ${NEXT_PRIVATE_SMTP_SECURE:-false}
+      NEXT_PRIVATE_SMTP_FROM_NAME: ${NEXT_PRIVATE_SMTP_FROM_NAME:?Hippos Signatures}
+      NEXT_PRIVATE_SMTP_FROM_ADDRESS: ${NEXT_PRIVATE_SMTP_FROM_ADDRESS:?no-reply@example.com}
+
+      # Signing certificate (recommended for production)
+      NEXT_PRIVATE_SIGNING_TRANSPORT: ${NEXT_PRIVATE_SIGNING_TRANSPORT:-local}
+      NEXT_PRIVATE_SIGNING_PASSPHRASE: ${NEXT_PRIVATE_SIGNING_PASSPHRASE:?set_certificate_passphrase}
+      # Option A (recommended in Coolify): set base64 cert content directly via env var
+      NEXT_PRIVATE_SIGNING_LOCAL_FILE_CONTENTS: ${NEXT_PRIVATE_SIGNING_LOCAL_FILE_CONTENTS:-}
+      # Option B: mount cert file and set path
+      NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH: ${NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH:-/opt/documenso/certs/cert.p12}
+
+      # Optional hardening/features
+      NEXT_PUBLIC_DISABLE_SIGNUP: ${NEXT_PUBLIC_DISABLE_SIGNUP:-true}
+      DOCUMENSO_DISABLE_TELEMETRY: ${DOCUMENSO_DISABLE_TELEMETRY:-true}
+
+    # If you use Option B for certificate file path, keep this volume and place cert.p12 there.
+    volumes:
+      - documenso_certs:/opt/documenso/certs
+
+    # Documenso upstream health endpoint
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  documenso_postgres_data:
+  documenso_certs:

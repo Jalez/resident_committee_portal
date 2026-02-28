@@ -196,6 +196,7 @@ export const INFO_REEL_ELIGIBLE_PATHS = [
 	"/",
 	"/events",
 	"/treasury",
+	"/committee",
 	"/minutes",
 	"/news",
 	"/faq",

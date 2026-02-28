@@ -4,7 +4,12 @@ import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	QRPanel,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
@@ -12,6 +17,7 @@ import {
 	TREASURY_TABLE_STYLES,
 	TreasuryTable,
 } from "~/components/treasury/treasury-table";
+import { useInfoReel } from "~/contexts/info-reel-context";
 import {
 	getDatabase,
 	type Minute,
@@ -140,6 +146,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { t, i18n } = useTranslation();
 	const { formatDate } = useFormatDate();
+	const { isInfoReel, opacity } = useInfoReel();
 
 	useEffect(() => {
 		const success = searchParams.get("success");
@@ -173,7 +180,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	const footerContent = (
 		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
 			<SearchMenu fields={searchFields} />
-			{canWrite && (
+			{canWrite && !isInfoReel && (
 				<AddItemButton
 					title={t("minutes.add")}
 					variant="icon"
@@ -182,6 +189,20 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 			)}
 		</div>
 	);
+
+	const rightContent = isInfoReel ? (
+		<QRPanel
+			qrUrl="/minutes"
+			title={
+				<h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+					{t("minutes.title")} <br />
+					<span className="text-lg text-gray-400 font-bold">
+						{t("common.actions.view", { lng: "en", defaultValue: "View" })}
+					</span>
+				</h2>
+			}
+		/>
+	) : undefined;
 
 	const columns = [
 		{
@@ -235,6 +256,7 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 	return (
 		<PageWrapper>
 			<SplitLayout
+				right={rightContent}
 				canExport={canExport}
 				exportQueryParams={
 					yearParam && yearParam !== "all" ? { year: yearParam } : undefined
@@ -249,35 +271,70 @@ export default function Minutes({ loaderData }: Route.ComponentProps) {
 				}}
 				footer={footerContent}
 			>
-				<div className="space-y-6">
-					<TreasuryTable<Minute>
-						data={minutes}
-						columns={columns}
-						getRowKey={(row) => row.id}
-						renderActions={(minute) => (
-							<TreasuryActionCell
-								viewTo={`/minutes/${minute.id}`}
-								viewTitle={t("minutes.view")}
-								editTo={canUpdate ? `/minutes/${minute.id}/edit` : undefined}
-								editTitle={t("common.actions.edit")}
-								canEdit={canUpdate}
-								deleteProps={
-									canDelete
-										? {
-											action: `/minutes/${minute.id}/delete`,
-											hiddenFields: {},
-											confirmMessage: t("minutes.delete_confirm"),
-											title: t("common.actions.delete"),
-										}
-										: undefined
-								}
-							/>
-						)}
-						emptyState={{
-							title: t("minutes.no_minutes"),
-						}}
-					/>
-				</div>
+				<ContentArea className="space-y-6">
+					{isInfoReel ? (
+						<div
+							className="space-y-3 transition-opacity duration-200"
+							style={{ opacity }}
+						>
+							{minutes.slice(0, 8).map((minute) => (
+								<div
+									key={minute.id}
+									className="bg-card rounded-xl border border-border p-4"
+								>
+									<div className="flex items-start justify-between gap-3">
+										<div className="min-w-0">
+											<p className="font-semibold truncate">
+												{minute.title || t("common.fields.untitled", { defaultValue: "Untitled" })}
+											</p>
+											<p className="text-sm text-muted-foreground">
+												{minute.date ? formatDate(minute.date) : "—"}
+											</p>
+										</div>
+										{minute.fileUrl && (
+											<span className="material-symbols-outlined text-primary">
+												description
+											</span>
+										)}
+									</div>
+								</div>
+							))}
+							{minutes.length === 0 && (
+								<div className="text-center py-12 text-muted-foreground">
+									{t("minutes.no_minutes")}
+								</div>
+							)}
+						</div>
+					) : (
+						<TreasuryTable<Minute>
+							data={minutes}
+							columns={columns}
+							getRowKey={(row) => row.id}
+							renderActions={(minute) => (
+								<TreasuryActionCell
+									viewTo={`/minutes/${minute.id}`}
+									viewTitle={t("minutes.view")}
+									editTo={canUpdate ? `/minutes/${minute.id}/edit` : undefined}
+									editTitle={t("common.actions.edit")}
+									canEdit={canUpdate}
+									deleteProps={
+										canDelete
+											? {
+												action: `/minutes/${minute.id}/delete`,
+												hiddenFields: {},
+												confirmMessage: t("minutes.delete_confirm"),
+												title: t("common.actions.delete"),
+											}
+											: undefined
+									}
+								/>
+							)}
+							emptyState={{
+								title: t("minutes.no_minutes"),
+							}}
+						/>
+					)}
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);
