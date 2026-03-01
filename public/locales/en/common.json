@@ -259,7 +259,13 @@
 						"When you create a new entity from the relationship picker, it is automatically linked and pre-filled with the source's data",
 						"Email auto-fill collects data from everything linked to the request (receipt, minutes, request details) into a ready-made email template"
 					],
-					"relations": ["Reimbursement ↔ Receipt", "Reimbursement ↔ Minute(s)", "Reimbursement ↔ Transaction", "Transaction ↔ Budget", "Reimbursement ↔ Email Thread (optional)"]
+					"relations": [
+						"Reimbursement ↔ Receipt",
+						"Reimbursement ↔ Minute(s)",
+						"Reimbursement ↔ Transaction",
+						"Transaction ↔ Budget",
+						"Reimbursement ↔ Email Thread (optional)"
+					]
 				},
 				"2": {
 					"title": "Reimbursement without using committee funds",
@@ -275,7 +281,11 @@
 						"Same receipt-first workflow as scenario 1, but without a transaction",
 						"Auto-fill works the same way — the receipt pre-fills the request, and the email collects everything together"
 					],
-					"relations": ["Reimbursement ↔ Receipt", "Reimbursement ↔ Minute(s)", "Reimbursement ↔ Email Thread (optional)"]
+					"relations": [
+						"Reimbursement ↔ Receipt",
+						"Reimbursement ↔ Minute(s)",
+						"Reimbursement ↔ Email Thread (optional)"
+					]
 				},
 				"3": {
 					"title": "Budgeted purchase with inventory item",
@@ -292,7 +302,12 @@
 						"Inventory item name, value, and category are filled from the receipt's OCR data",
 						"You can use the Auto-fill button in edit mode to fill in any fields that weren't covered by the initial pre-fill"
 					],
-					"relations": ["Transaction ↔ Budget", "Transaction ↔ Receipt", "Receipt ↔ Inventory Item", "Reimbursement ↔ Receipt, Minute(s), Transaction (if needed)"]
+					"relations": [
+						"Transaction ↔ Budget",
+						"Transaction ↔ Receipt",
+						"Receipt ↔ Inventory Item",
+						"Reimbursement ↔ Receipt, Minute(s), Transaction (if needed)"
+					]
 				},
 				"4": {
 					"title": "Recording income",
@@ -305,7 +320,9 @@
 					"tips": [
 						"Auto-fill is less useful for income transactions since there is usually no receipt or other linked entity to pull data from"
 					],
-					"relations": ["Transaction ↔ Minute (optional)"]
+					"relations": [
+						"Transaction ↔ Minute (optional)"
+					]
 				},
 				"5": {
 					"title": "Linking a receipt retroactively",
@@ -320,7 +337,10 @@
 						"After linking, Auto-fill recognizes the receipt's data and fills missing fields (amount, description, date)",
 						"The receipt always takes priority — if the transaction and receipt have different amounts, auto-fill suggests the receipt's amount for empty fields"
 					],
-					"relations": ["Transaction ↔ Receipt", "Reimbursement ↔ Receipt"]
+					"relations": [
+						"Transaction ↔ Receipt",
+						"Reimbursement ↔ Receipt"
+					]
 				}
 			}
 		},
@@ -849,7 +869,7 @@
 		"description_label": "Description",
 		"description_placeholder": "Tell us about yourself...",
 		"picture_label": "Profile Picture",
-		"picture_help": "Profile picture is automatically updated from your Google account when you log in. You can upload your own picture below.",
+		"picture_help": "Profile picture is automatically updated from your Google account when you log in. You can upload your own picture below. For best results on the committee page, please upload a PNG image with a transparent background.",
 		"upload_picture": "Upload new picture",
 		"use_google_picture": "Use Google picture again",
 		"use_google_picture_success": "Profile picture cleared. It will update from Google on next login.",

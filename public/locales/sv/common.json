@@ -442,7 +442,7 @@
 		"description_label": "Beskrivning",
 		"description_placeholder": "Berätta om dig själv...",
 		"picture_label": "Profilbild",
-		"picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in",
+		"picture_help": "Profilbilden uppdateras automatiskt från ditt Google-konto när du loggar in. För bäst resultat på kommittésidan, ladda upp en PNG-bild med transparent bakgrund.",
 		"picture_too_large": "Filen är för stor. Maximal storlek är {{maxSize}}MB.",
 		"picture_too_large_dimensions": "Bildens dimensioner är för stora. Maximal storlek är {{maxDimension}}x{{maxDimension}}px.",
 		"save_changes": "Spara ändringar"

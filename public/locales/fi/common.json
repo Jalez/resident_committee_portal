@@ -288,7 +288,13 @@
 						"Kun luot uuden kohteen yhteysvalitsimesta, se linkittyy ja esitäytetään automaattisesti lähteen tiedoilla",
 						"Sähköpostin automaattitäyttö kokoaa tiedot kaikista hakemukseen linkitetyistä kohteista (kuitti, pöytäkirja, hakemuksen tiedot) valmiiksi viestipohjaksi"
 					],
-					"relations": ["Kulukorvaus ↔ Kuitti", "Kulukorvaus ↔ Pöytäkirja(t)", "Kulukorvaus ↔ Transaktio", "Transaktio ↔ Budjetti", "Kulukorvaus ↔ Sähköpostiketju (valinnainen)"]
+					"relations": [
+						"Kulukorvaus ↔ Kuitti",
+						"Kulukorvaus ↔ Pöytäkirja(t)",
+						"Kulukorvaus ↔ Transaktio",
+						"Transaktio ↔ Budjetti",
+						"Kulukorvaus ↔ Sähköpostiketju (valinnainen)"
+					]
 				},
 				"2": {
 					"title": "Kulukorvaus ilman omien varojen käyttöä",
@@ -304,7 +310,11 @@
 						"Sama kuittilähtöinen työnkulku kuin skenaariossa 1, mutta ilman transaktiota",
 						"Automaattitäyttö toimii samalla tavalla — kuitti esitäyttää hakemuksen, ja sähköposti kokoaa kaiken yhteen"
 					],
-					"relations": ["Kulukorvaus ↔ Kuitti", "Kulukorvaus ↔ Pöytäkirja(t)", "Kulukorvaus ↔ Sähköpostiketju (valinnainen)"]
+					"relations": [
+						"Kulukorvaus ↔ Kuitti",
+						"Kulukorvaus ↔ Pöytäkirja(t)",
+						"Kulukorvaus ↔ Sähköpostiketju (valinnainen)"
+					]
 				},
 				"3": {
 					"title": "Budjetoitu hankinta inventaarioesineellä",
@@ -321,7 +331,12 @@
 						"Inventaarioesineen nimi, arvo ja kategoria täyttyvät kuitin OCR-datasta",
 						"Voit käyttää Automaattitäyttö-painiketta muokkaustilassa täydentämään kenttiä, joita esitäyttö ei tavoittanut"
 					],
-					"relations": ["Transaktio ↔ Budjetti", "Transaktio ↔ Kuitti", "Kuitti ↔ Inventaarioesine", "Kulukorvaus ↔ Kuitti, Pöytäkirja(t), Transaktio (jos tarvitaan)"]
+					"relations": [
+						"Transaktio ↔ Budjetti",
+						"Transaktio ↔ Kuitti",
+						"Kuitti ↔ Inventaarioesine",
+						"Kulukorvaus ↔ Kuitti, Pöytäkirja(t), Transaktio (jos tarvitaan)"
+					]
 				},
 				"4": {
 					"title": "Tulotransaktion kirjaaminen",
@@ -334,7 +349,9 @@
 					"tips": [
 						"Tulotransaktioissa automaattitäyttö ei ole yhtä hyödyllistä, koska tietoa ei yleensä ole kuitissa tai muussa linkitetyssä kohteessa"
 					],
-					"relations": ["Transaktio ↔ Pöytäkirja (valinnainen)"]
+					"relations": [
+						"Transaktio ↔ Pöytäkirja (valinnainen)"
+					]
 				},
 				"5": {
 					"title": "Kuitin linkitys jälkikäteen",
@@ -349,7 +366,10 @@
 						"Linkityksen jälkeen Automaattitäyttö tunnistaa kuitin tiedot ja täyttää puuttuvat kentät (summa, kuvaus, päivämäärä)",
 						"Kuitti on aina etusijalla — jos transaktiolla ja kuitilla on eri summa, automaattitäyttö ehdottaa kuitin summaa tyhjiin kenttiin"
 					],
-					"relations": ["Transaktio ↔ Kuitti", "Kulukorvaus ↔ Kuitti"]
+					"relations": [
+						"Transaktio ↔ Kuitti",
+						"Kulukorvaus ↔ Kuitti"
+					]
 				}
 			}
 		},
@@ -874,7 +894,7 @@
 		"description_label": "Kuvaus",
 		"description_placeholder": "Kerro itsestäsi...",
 		"picture_label": "Profiilikuva",
-		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä. Voit ladata oman kuvasi alla.",
+		"picture_help": "Profiilikuva päivittyy automaattisesti Google-tililtäsi kirjautumisen yhteydessä. Voit ladata oman kuvasi alla. Parhaan tuloksen toimikuntasivulla saat lataamalla läpinäkyvän PNG-kuvan.",
 		"upload_picture": "Lataa uusi kuva",
 		"use_google_picture": "Käytä Google-kuvaa",
 		"use_google_picture_success": "Profiilikuva tyhjennetty. Se päivittyy Google-tilistä seuraavalla kirjautumisella.",

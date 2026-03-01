@@ -231,15 +231,17 @@ body {
 	width: 0%;
 	background: var(--primary);
 	border-radius: 2px;
-	animation: active-channel-underline var(--channel-duration, 4s) linear
-		forwards;
+	animation: active-channel-underline var(--channel-duration, 4s) linear forwards;
 }
 
 /* Committee member avatar shape effect */
 .avatar-effect {
-	--b: 6px; /* border/ring thickness */
-	--s: 96px; /* size — overridden per mode below */
-	--pt: calc(var(--s) / 5); /* top headroom for portrait */
+	--b: 6px;
+	/* border/ring thickness */
+	--s: 96px;
+	/* size — overridden per mode below */
+	--pt: calc(var(--s) / 5);
+	/* top headroom for portrait */
 
 	display: block;
 	position: relative;
@@ -262,20 +264,15 @@ body {
 
 	outline: var(--b) solid var(--c);
 	outline-offset: var(--_o);
-	background: radial-gradient(
-			circle closest-side,
+	background: radial-gradient(circle closest-side,
 			var(--cb) calc(99% - var(--b)),
 			var(--c) calc(100% - var(--b)) 99%,
-			#0000
-		)
-		var(--_g);
+			#0000) var(--_g);
 	-webkit-mask:
-		linear-gradient(#000 0 0) no-repeat
-			50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
+		linear-gradient(#000 0 0) no-repeat 50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
 		radial-gradient(circle closest-side, #000 99%, #0000) var(--_g);
 	mask:
-		linear-gradient(#000 0 0) no-repeat
-			50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
+		linear-gradient(#000 0 0) no-repeat 50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
 		radial-gradient(circle closest-side, #000 99%, #0000) var(--_g);
 }
 
@@ -295,28 +292,48 @@ body {
 	object-fit: cover;
 	object-position: top center;
 	-webkit-mask:
-		linear-gradient(#000 0 0) no-repeat
-			50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
+		linear-gradient(#000 0 0) no-repeat 50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
 		radial-gradient(circle closest-side, #000 99%, #0000) var(--_g);
 	mask:
-		linear-gradient(#000 0 0) no-repeat
-			50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
+		linear-gradient(#000 0 0) no-repeat 50% calc(1px - var(--_o)) / calc(100% - 2 * var(--b) - 2px) 50%,
 		radial-gradient(circle closest-side, #000 99%, #0000) var(--_g);
-	transform: translateY(calc((var(--pop) - 1) * var(--pop-shift))) translateZ(0)
-		scale(var(--pop));
+	transform: translateY(calc((var(--pop) - 1) * var(--pop-shift))) translateZ(0) scale(var(--pop));
 	transform-origin: center bottom;
 	will-change: transform;
 	transition: transform 0.5s ease;
 }
 
 .avatar-effect--static {
+	/* Reset the complex dome-mask and replace with a simple perfect circle */
+	padding-top: 0;
+	margin-top: var(--pt);
+	height: var(--s);
+	/* Use explicit height since padding-top is gone */
+	border-radius: 50%;
+	mask: none;
+	-webkit-mask: none;
+	background: var(--cb);
+	border: var(--b) solid var(--c);
+	outline: none;
+	box-sizing: border-box;
+	/* total size stays var(--s) to match original layout */
 	overflow: hidden;
 }
 
 .avatar-effect-portrait--static {
-	transform: none;
-	transition: none;
-	z-index: 0;
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding-top: 0;
+	border-radius: 0;
+	mask: none;
+	-webkit-mask: none;
+	transform: none !important;
+	transition: none !important;
+	z-index: 1;
+	object-fit: cover !important;
+	object-position: center !important;
 }
 
 @media (min-width: 768px) {

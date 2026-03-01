@@ -71,7 +71,16 @@
 		"delete": "Eliminar",
 		"select_existing_or_upload": "Selecciona recibos existentes o sube uno nuevo.",
 		"allowed": "Permitidos",
-		"selected_count": "seleccionados"
+		"selected_count": "seleccionados",
+		"process_receipt": "Procesar recibo",
+		"processed": "Procesado",
+		"processing": "Procesando...",
+		"auto_filled_from_receipt": "Autocompletado desde recibo: {{name}}",
+		"create_reimbursement": "Crear reembolso",
+		"analyze_with_ai": "Analizar con IA (OCR)",
+		"analyzing": "Analizando recibo...",
+		"analysis_complete": "Recibo analizado exitosamente",
+		"analysis_failed": "Error al analizar recibo"
 	},
 	"lang": {
 		"label": "Idioma"
@@ -195,7 +204,7 @@
 		"description_label": "Descripción",
 		"description_placeholder": "Cuéntanos sobre ti...",
 		"picture_label": "Foto de perfil",
-		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión",
+		"picture_help": "La foto de perfil se actualiza automáticamente desde tu cuenta de Google cuando inicias sesión. Para obtener el mejor resultado en la página del comité, carga una imagen PNG con fondo transparente.",
 		"picture_too_large": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
 		"picture_too_large_dimensions": "Las dimensiones de la imagen son demasiado grandes. El tamaño máximo es {{maxDimension}}x{{maxDimension}}px."
 	},
@@ -543,17 +552,6 @@
 				"write": "Gestionar administración de almacenamiento"
 			}
 		}
-	},
-	"receipts": {
-		"process_receipt": "Procesar recibo",
-		"processed": "Procesado",
-		"processing": "Procesando...",
-		"auto_filled_from_receipt": "Autocompletado desde recibo: {{name}}",
-		"create_reimbursement": "Crear reembolso",
-		"analyze_with_ai": "Analizar con IA (OCR)",
-		"analyzing": "Analizando recibo...",
-		"analysis_complete": "Recibo analizado exitosamente",
-		"analysis_failed": "Error al analizar recibo"
 	},
 	"inventory": {
 		"created_items": "Artículos de inventario creados",
