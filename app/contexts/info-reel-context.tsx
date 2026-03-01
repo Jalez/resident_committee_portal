@@ -49,6 +49,8 @@ interface InfoReelContextValue {
 	fillProgress: number; // 0-100, the fill animation progress
 	opacity: number; // 0-1, for fade in/out
 	currentRouteDuration: number; // Duration for current route in ms
+	/** Allow a route to dynamically override its info reel duration (e.g. based on item count) */
+	setDurationOverride: (duration: number | null) => void;
 }
 
 const InfoReelContext = createContext<InfoReelContextValue>({
@@ -57,6 +59,7 @@ const InfoReelContext = createContext<InfoReelContextValue>({
 	fillProgress: 0,
 	opacity: 1,
 	currentRouteDuration: DEFAULT_REEL_DURATION,
+	setDurationOverride: () => { },
 });
 
 export function useInfoReel() {
@@ -169,6 +172,7 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
 	const [progress, setProgress] = useState(100);
 	const [fillProgress, setFillProgress] = useState(0);
 	const [opacity, setOpacity] = useState(1);
+	const [durationOverride, setDurationOverride] = useState<number | null>(null);
 
 	// Track if we're currently navigating to prevent double-navigation
 	const isNavigatingRef = useRef(false);
@@ -204,9 +208,9 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
 		);
 	}, [location.pathname, reelRoutes]);
 
-	// Get duration for current route
-	const currentRouteDuration =
-		getCurrentRouteConfig()?.duration ?? DEFAULT_REEL_DURATION;
+	// Get duration for current route — dynamic override takes priority
+	const configDuration = getCurrentRouteConfig()?.duration ?? DEFAULT_REEL_DURATION;
+	const currentRouteDuration = durationOverride ?? configDuration;
 
 	const navigateToNextRoute = useCallback(() => {
 		// Prevent double-navigation
@@ -225,6 +229,8 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
 		if (currentPathRef.current !== location.pathname) {
 			currentPathRef.current = location.pathname;
 			isNavigatingRef.current = false;
+			// Reset any duration override when navigating to a new route
+			setDurationOverride(null);
 		}
 	}, [location.pathname]);
 
@@ -294,6 +300,7 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
 				fillProgress,
 				opacity,
 				currentRouteDuration,
+				setDurationOverride,
 			}}
 		>
 			{children}

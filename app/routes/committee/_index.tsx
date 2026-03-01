@@ -6,7 +6,9 @@ import {
 	PageWrapper,
 	SplitLayout,
 } from "~/components/layout/page-layout";
-import { useLocalReel } from "~/contexts/info-reel-context";
+import { useLocalReel, useInfoReel } from "~/contexts/info-reel-context";
+
+const DURATION_PER_MEMBER = 4000; // 6 seconds per member in info reel
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -109,6 +111,15 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { members, systemLanguages } = loaderData as CommitteeLoaderData;
 	const [membersPerPage, setMembersPerPage] = useState(1);
+	const { setDurationOverride } = useInfoReel();
+
+	// Dynamically set info reel duration based on member count
+	useEffect(() => {
+		if (members.length > 0) {
+			setDurationOverride(members.length * DURATION_PER_MEMBER);
+		}
+		return () => setDurationOverride(null);
+	}, [members.length, setDurationOverride]);
 
 	useEffect(() => {
 		const computeMembersPerPage = () => {
@@ -132,16 +143,32 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 		}
 		return groups;
 	}, [members, membersPerPage]);
+
 	const {
 		isInfoReel,
 		activeIndex,
 		activeItem,
 		itemOpacity,
-		itemFillProgress,
+		itemDuration,
 	} = useLocalReel({
 		items: memberGroups,
 	});
 	const visibleMembers = activeItem ?? [];
+
+	const [focusedMemberIndex, setFocusedMemberIndex] = useState(0);
+
+	useEffect(() => {
+		if (!isInfoReel || visibleMembers.length <= 1) {
+			setFocusedMemberIndex(0);
+			return;
+		}
+		// Cycle focus between visible members equally over the group's duration
+		const interval = setInterval(() => {
+			setFocusedMemberIndex((prev) => (prev + 1) % visibleMembers.length);
+		}, itemDuration / visibleMembers.length);
+
+		return () => clearInterval(interval);
+	}, [isInfoReel, activeIndex, visibleMembers.length, itemDuration]);
 
 	return (
 		<PageWrapper>
@@ -168,22 +195,25 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 							<div
 								key={isInfoReel ? `committee-page-${activeIndex}` : "committee-grid"}
 								className={`${isInfoReel
-										? membersPerPage === 1
-											? "grid grid-cols-1"
-											: "grid grid-cols-2"
-										: "flex flex-row flex-wrap"
+									? membersPerPage === 1
+										? "grid grid-cols-1"
+										: "grid grid-cols-2"
+									: "flex flex-row flex-wrap group/list"
 									} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
 							>
-								{(isInfoReel ? visibleMembers : members).map((member) => (
-									<CommitteeMemberCard
-										key={member.id}
-										member={member}
-										noDescriptionLabel={t("committee.no_description")}
-										isInfoReel={isInfoReel}
-										itemOpacity={itemOpacity}
-										itemFillProgress={itemFillProgress}
-									/>
-								))}
+								{(isInfoReel ? visibleMembers : members).map((member, idx) => {
+									const isFocused = isInfoReel ? idx === focusedMemberIndex : false;
+									return (
+										<CommitteeMemberCard
+											key={member.id}
+											member={member}
+											noDescriptionLabel={t("committee.no_description")}
+											isInfoReel={isInfoReel}
+											itemOpacity={itemOpacity}
+											isFocused={isFocused}
+										/>
+									);
+								})}
 							</div>
 						</div>
 					)}

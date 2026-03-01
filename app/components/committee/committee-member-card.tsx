@@ -14,7 +14,7 @@ type Props = {
 	noDescriptionLabel: string;
 	isInfoReel?: boolean;
 	itemOpacity?: number;
-	itemFillProgress?: number;
+	isFocused?: boolean;
 };
 
 export function CommitteeMemberCard({
@@ -22,33 +22,32 @@ export function CommitteeMemberCard({
 	noDescriptionLabel,
 	isInfoReel = false,
 	itemOpacity = 1,
-	itemFillProgress = 0,
+	isFocused = false,
 }: Props) {
-	const cardStyle = isInfoReel ? { opacity: itemOpacity } : undefined;
-
 	return (
 		<div
 			className={cn(
 				// No overflow-hidden — allows avatar to pop out on hover
 				"group relative flex",
-				"flex-col sm:flex-row w-full sm:w-[670px] pt-6 sm:pt-8 gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left shrink-0",
+				"flex-col sm:flex-row w-full sm:w-[670px] pt-6 sm:pt-8 gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left shrink-0 pl-4 sm:pl-6",
+				// Adding hover/focus scaling effects:
+				"transition-all duration-300 ease-out",
+				// Regular view hover effects
+				!isInfoReel && [
+					"hover:scale-[1.03] hover:z-10",
+					"group-hover/list:[&:not(:hover)]:scale-[0.97] group-hover/list:[&:not(:hover)]:opacity-60",
+				],
+				// Info Reel focus effects - exactly matches hover behavior
+				isInfoReel && isFocused && "scale-[1.03] z-10",
+				isInfoReel && !isFocused && "scale-[0.97] opacity-60",
 			)}
-			style={cardStyle}
 		>
-			{/* Info reel progress bar — behind inner content (z-0) */}
-			{isInfoReel && (
-				<div
-					className="absolute inset-0 rounded-3xl bg-primary/10 pointer-events-none -z-10"
-					style={{
-						clipPath: `inset(0 ${100 - itemFillProgress}% 0 0)`,
-					}}
-				/>
-			)}
-
 			<MemberAvatar
 				name={member.name}
 				picture={member.picture}
 				roleColor={member.roles[0]?.color ?? "bg-primary"}
+				isInfoReel={isInfoReel}
+				isFocused={isFocused}
 			/>
 
 			{/* Content */}

@@ -314,33 +314,35 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 			<Navigation variant="sidebar" />
 			<div className="flex-1 flex flex-col min-w-0 h-full">
 				<div className="transition-all duration-300 shrink-0">
-					<header className="flex items-center justify-center px-4 pb-2">
-						<div className="flex items-center justify-center mt-1 sm:mt-2 md:mt-4 flex-1">
-							<span className="text-xl sm:text-3xl lg:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none pr-3 sm:pr-4 lg:pr-10">
-								{siteConfig.shortName || siteConfig.name}
-							</span>
-							<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 lg:pl-10 py-1 md:py-2">
-								{/* Info Reel: Show FI and EN */}
-								{isInfoReel && (
-									<>
-										<span className="text-sm sm:text-2xl lg:text-3xl">
-											{t("app.title", { lng: "fi" })}
-										</span>
-										<span className="opacity-90 text-[9px] sm:text-xl lg:text-2xl mt-0.5 md:mt-2">
-											{t("app.title", { lng: "en" })}
-										</span>
-									</>
-								)}
+					{(isInfoReel || location.pathname === "/") && (
+						<header className="flex items-center justify-center px-4 pb-2">
+							<div className="flex items-center justify-center mt-1 sm:mt-2 md:mt-4 flex-1">
+								<span className="text-xl sm:text-3xl lg:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none pr-3 sm:pr-4 lg:pr-10">
+									{siteConfig.shortName || siteConfig.name}
+								</span>
+								<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 lg:pl-10 py-1 md:py-2">
+									{/* Info Reel: Show FI and EN */}
+									{isInfoReel && (
+										<>
+											<span className="text-sm sm:text-2xl lg:text-3xl">
+												{t("app.title", { lng: "fi" })}
+											</span>
+											<span className="opacity-90 text-[9px] sm:text-xl lg:text-2xl mt-0.5 md:mt-2">
+												{t("app.title", { lng: "en" })}
+											</span>
+										</>
+									)}
 
-								{/* Normal Mode: Show current language */}
-								{!isInfoReel && (
-									<span className="text-sm sm:text-2xl lg:text-5xl">
-										{t("app.title")}
-									</span>
-								)}
+									{/* Normal Mode: Show current language */}
+									{!isInfoReel && (
+										<span className="text-sm sm:text-2xl lg:text-5xl">
+											{t("app.title")}
+										</span>
+									)}
+								</div>
 							</div>
-						</div>
-					</header>
+						</header>
+					)}
 
 					<div className="flex items-stretch min-h-12">
 						<div className="md:hidden w-fit shrink-0 flex items-center pl-2 pr-1 border-r border-border/50">

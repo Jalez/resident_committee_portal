@@ -58,6 +58,7 @@ type MemberAvatarProps = {
 	picture: string | null;
 	roleColor: string;
 	isInfoReel?: boolean;
+	isFocused?: boolean;
 };
 
 export function MemberAvatar({
@@ -65,6 +66,7 @@ export function MemberAvatar({
 	picture,
 	roleColor,
 	isInfoReel = false,
+	isFocused = false,
 }: MemberAvatarProps) {
 	const [imageLoadFailed, setImageLoadFailed] = useState(false);
 
@@ -99,18 +101,14 @@ export function MemberAvatar({
 		"--cb": "var(--primary)",
 	} as React.CSSProperties;
 
-	const initialsTextClass = isInfoReel
-		? "text-4xl md:text-5xl"
-		: "text-3xl md:text-4xl";
+	const initialsTextClass = "text-3xl md:text-4xl";
 
 	return (
 		<div className="relative z-10 shrink-0">
 			{hasUsablePicture && useMaskedAvatar ? (
 				<div
 					className={cn(
-						"avatar-effect avatar-pop",
-						!isInfoReel && "avatar-effect--large",
-						isInfoReel && "avatar-effect--reel",
+						"avatar-effect avatar-pop avatar-effect--large",
 					)}
 					style={avatarVars}
 				>
@@ -119,16 +117,16 @@ export function MemberAvatar({
 						crossOrigin="anonymous"
 						src={pictureUrl}
 						alt={name}
-						className="avatar-effect-portrait"
+						className={cn("avatar-effect-portrait", isInfoReel && isFocused && "focused-pop")}
 						onError={() => setImageLoadFailed(true)}
+						// Use inline style to force the pop scale
+						style={isInfoReel && isFocused ? { "--pop": "1.15" } as React.CSSProperties : undefined}
 					/>
 				</div>
 			) : hasUsablePicture ? (
 				<div
 					className={cn(
-						"avatar-effect avatar-effect--static",
-						!isInfoReel && "avatar-effect--large",
-						isInfoReel && "avatar-effect--reel",
+						"avatar-effect avatar-effect--static avatar-effect--large",
 					)}
 					style={avatarVars}
 				>
@@ -142,9 +140,7 @@ export function MemberAvatar({
 			) : (
 				<div
 					className={cn(
-						"avatar-effect avatar-effect--fallback relative",
-						!isInfoReel && "avatar-effect--large",
-						isInfoReel && "avatar-effect--reel",
+						"avatar-effect avatar-effect--fallback relative avatar-effect--large",
 					)}
 					style={avatarVars}
 				>
