@@ -48,10 +48,16 @@ function CollapsedDropdownTrigger({
 	icon,
 	label,
 	isActive = false,
+	isAnimating = false,
+	fillProgress = 0,
+	opacity = 1,
 }: {
 	icon: string;
 	label: string;
 	isActive?: boolean;
+	isAnimating?: boolean;
+	fillProgress?: number;
+	opacity?: number;
 }) {
 	return (
 		<Tooltip>
@@ -61,13 +67,30 @@ function CollapsedDropdownTrigger({
 						type="button"
 						variant="ghost"
 						className={cn(
-							"group relative flex items-center justify-center px-3 py-2 rounded-xl transition-all w-full",
+							"group relative overflow-hidden flex items-center justify-center px-3 py-2 rounded-xl transition-all w-full",
 							"hover:bg-primary/10 hover:text-primary",
-							isActive
+							!isAnimating &&
+								isActive
 								? "text-primary bg-primary/10"
 								: "text-gray-500 dark:text-gray-400",
 						)}
+						style={
+							isAnimating
+								? {
+										color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+									}
+								: undefined
+						}
 					>
+						{isAnimating && (
+							<div
+								className="absolute inset-0 bg-primary/10"
+								style={{
+									clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+									opacity,
+								}}
+							/>
+						)}
 						<span className="material-symbols-outlined text-2xl shrink-0 transition-transform duration-150 group-hover:-translate-x-1.5">
 							{icon}
 						</span>
@@ -292,7 +315,7 @@ export function Navigation({ variant }: NavigationProps) {
 		if (!showLabels) {
 			return (
 				<DropdownMenu key={id}>
-					<CollapsedDropdownTrigger icon={icon} label={label} />
+					<CollapsedDropdownTrigger icon={icon} label={label} isActive={isOpen} />
 					<DropdownMenuContent side="right" align="start" className="w-56">
 						{visibleItems.map((item) => {
 							if (item.customRender) {
@@ -479,6 +502,9 @@ export function Navigation({ variant }: NavigationProps) {
 									icon={item.icon}
 									label={label}
 									isActive={isParentActive}
+									isAnimating={isInfoReel && isParentActive}
+									fillProgress={fillProgress}
+									opacity={opacity}
 								/>
 								<DropdownMenuContent side="right" align="start" className="w-56">
 									{visibleChildren.map((child) => (

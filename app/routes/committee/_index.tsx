@@ -1,10 +1,13 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CommitteeMemberCard } from "~/components/committee/committee-member-card";
 import {
 	ContentArea,
 	PageWrapper,
+	QRPanel,
 	SplitLayout,
 } from "~/components/layout/page-layout";
+import { useLocalReel } from "~/contexts/info-reel-context";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
@@ -106,10 +109,37 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Committee({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { members, systemLanguages } = loaderData as CommitteeLoaderData;
+	const memberGroups = useMemo(() => {
+		if (members.length === 0) return [[] as CommitteeMember[]];
+		const groups: CommitteeMember[][] = [];
+		for (let i = 0; i < members.length; i += 3) {
+			groups.push(members.slice(i, i + 3));
+		}
+		return groups;
+	}, [members]);
+	const { isInfoReel, activeItem, itemOpacity } = useLocalReel({
+		items: memberGroups,
+	});
+	const visibleMembers = activeItem ?? [];
+	const rightContent = isInfoReel ? (
+		<QRPanel
+			qrUrl="/committee"
+			opacity={itemOpacity}
+			title={
+				<h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+					{t("committee.title")} <br />
+					<span className="text-lg text-gray-400 font-bold">
+						{t("common.actions.view", { lng: "en", defaultValue: "View" })}
+					</span>
+				</h2>
+			}
+		/>
+	) : undefined;
 
 	return (
 		<PageWrapper>
 			<SplitLayout
+				right={rightContent}
 				header={{
 					primary: t("committee.title", { lng: systemLanguages.primary }),
 					secondary: t("committee.title", {
@@ -129,8 +159,11 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 							</p>
 						</div>
 					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{members.map((member) => (
+						<div
+							className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-200"
+							style={isInfoReel ? { opacity: itemOpacity } : undefined}
+						>
+							{(isInfoReel ? visibleMembers : members).map((member) => (
 								<CommitteeMemberCard
 									key={member.id}
 									member={member}
