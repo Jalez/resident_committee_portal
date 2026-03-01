@@ -114,8 +114,7 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 		const computeMembersPerPage = () => {
 			const width = window.innerWidth;
 			const height = window.innerHeight;
-			// Large avatar cards need more room in info reel mode.
-			if (width >= 1750 && height >= 900) return 2;
+			if (width >= 1400 && height >= 750) return 2;
 			return 1;
 		};
 
@@ -176,7 +175,7 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 								isInfoReel
 									? membersPerPage === 1
 										? "grid-cols-1"
-										: "grid-cols-1 2xl:grid-cols-2"
+										: "grid-cols-2"
 									: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
 								} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
 							>
