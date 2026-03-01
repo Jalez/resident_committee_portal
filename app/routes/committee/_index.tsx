@@ -109,7 +109,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Committee({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
-	const { members, systemLanguages } = loaderData as CommitteeLoaderData;
+	const { members: rawMembers, systemLanguages } = loaderData as CommitteeLoaderData;
+	// Show members with avatar pictures first
+	const members = useMemo(() =>
+		[...rawMembers].sort((a, b) => (b.picture ? 1 : 0) - (a.picture ? 1 : 0)),
+		[rawMembers],
+	);
 	const [membersPerPage, setMembersPerPage] = useState(1);
 	const { setDurationOverride } = useInfoReel();
 

@@ -229,8 +229,6 @@ export function InfoReelProvider({ children }: { children: ReactNode }) {
 		if (currentPathRef.current !== location.pathname) {
 			currentPathRef.current = location.pathname;
 			isNavigatingRef.current = false;
-			// Reset any duration override when navigating to a new route
-			setDurationOverride(null);
 		}
 	}, [location.pathname]);
 
