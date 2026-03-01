@@ -30,83 +30,42 @@ export function CommitteeMemberCard({
 		<div
 			className={cn(
 				// No overflow-hidden — allows avatar to pop out on hover
-				"group",
-				isInfoReel
-					? "relative flex flex-col min-h-[320px] rounded-3xl p-[1.5px] bg-gradient-to-br from-primary/30 via-border/60 to-border/20 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-					: "contents",
+				"group relative flex",
+				"flex-col sm:flex-row w-full sm:w-[670px] pt-6 sm:pt-8 gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left shrink-0",
 			)}
 			style={cardStyle}
 		>
-			{/* Info reel progress bar — behind inner card (z-10), visible only through the 1.5px border gap */}
+			{/* Info reel progress bar — behind inner content (z-0) */}
 			{isInfoReel && (
 				<div
-					className="absolute inset-0 rounded-3xl bg-primary/50 pointer-events-none"
+					className="absolute inset-0 rounded-3xl bg-primary/10 pointer-events-none -z-10"
 					style={{
 						clipPath: `inset(0 ${100 - itemFillProgress}% 0 0)`,
 					}}
 				/>
 			)}
 
-			{/* Inner card */}
-			<div
-				className={cn(
-					"relative z-10 flex-1 flex",
-					isInfoReel
-						? "flex-col items-center rounded-[calc(var(--radius-3xl)-2px)] bg-card/95 backdrop-blur-sm border border-border/40 pt-3 pb-6 px-6"
-						: "h-[210px] md:h-[246px] w-full max-w-[670px] mx-auto flex-col items-center sm:flex-row sm:items-start gap-4 sm:gap-6 rounded-none bg-transparent border-0 px-3 py-2",
-				)}
-			>
-				{/* Subtle primary tint at the top */}
-				{isInfoReel && (
-					<div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/5 to-transparent rounded-t-[calc(var(--radius-3xl)-2px)] pointer-events-none" />
-				)}
+			<MemberAvatar
+				name={member.name}
+				picture={member.picture}
+				roleColor={member.roles[0]?.color ?? "bg-primary"}
+			/>
 
-				<MemberAvatar
-					name={member.name}
-					picture={member.picture}
-					roleColor={member.roles[0]?.color ?? "bg-primary"}
-					isInfoReel={isInfoReel}
-				/>
-
-				{/* Name & roles */}
-				<div
-					className={cn(
-						"relative z-10 flex flex-col gap-2 pt-15",
-						isInfoReel
-							? "items-center w-full mt-4"
-							: "items-center sm:items-start w-full sm:self-stretch",
-					)}
-				>
-					<div
-						className={cn(
-							"w-full",
-							isInfoReel
-								? "flex items-center gap-2"
-								: "flex items-center gap-3 flex-wrap justify-center sm:justify-start",
-						)}
-					>
-						<h3
-							className={cn(
-								"font-black",
-								isInfoReel ? "text-2xl md:text-3xl" : "text-xl md:text-2xl",
-							)}
-						>
+			{/* Content */}
+			<div className="flex flex-col flex-1 sm:pt-[calc(148px/2.9)] w-full">
+				<div className="flex flex-col gap-2 items-center sm:items-start w-full">
+					<div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+						<h3 className="font-black text-xl md:text-2xl">
 							{member.name}
 						</h3>
 						{member.roles.length > 0 && (
-							<div
-								className={cn(
-									"flex flex-wrap gap-1.5",
-									isInfoReel ? "justify-center" : "justify-end sm:justify-start",
-								)}
-							>
+							<div className="flex flex-wrap gap-1.5 justify-center sm:justify-start">
 								{member.roles.map((role) => (
 									<span
 										key={role.id}
 										className={cn(
-											"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold",
+											"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm",
 											role.color,
-											"text-white shadow-sm",
 										)}
 									>
 										{role.name}
@@ -116,36 +75,18 @@ export function CommitteeMemberCard({
 						)}
 					</div>
 
-					{!isInfoReel && (
-						<div className="flex-1 min-h-0 overflow-y-auto w-full pr-1">
-							{member.description ? (
-								<p className="text-sm md:text-base leading-relaxed text-muted-foreground sm:text-left whitespace-pre-wrap break-words">
-									{member.description}
-								</p>
-							) : (
-								<p className="text-sm text-muted-foreground/70 italic sm:text-left">
-									{noDescriptionLabel}
-								</p>
-							)}
-						</div>
-					)}
-				</div>
-
-				{/* Divider + description */}
-				{isInfoReel && (
-					<div className="relative z-10 flex-1 flex flex-col w-full mt-4">
-						<div className="border-t border-border/50" />
+					<div className="mt-2 w-full">
 						{member.description ? (
-							<p className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
+							<p className="leading-relaxed text-muted-foreground whitespace-pre-wrap break-words text-sm md:text-base text-left">
 								{member.description}
 							</p>
 						) : (
-							<p className="mt-4 text-sm text-muted-foreground/70 italic">
+							<p className="text-sm text-muted-foreground/70 italic text-left">
 								{noDescriptionLabel}
 							</p>
 						)}
 					</div>
-				)}
+				</div>
 			</div>
 		</div>
 	);

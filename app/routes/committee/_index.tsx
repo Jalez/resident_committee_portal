@@ -167,13 +167,12 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 						>
 							<div
 								key={isInfoReel ? `committee-page-${activeIndex}` : "committee-grid"}
-								className={`${
-								isInfoReel
-									? membersPerPage === 1
-										? "grid grid-cols-1 gap-6"
-										: "grid grid-cols-2 gap-6"
-									: "flex flex-row flex-wrap gap-6"
-								} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
+								className={`${isInfoReel
+										? membersPerPage === 1
+											? "grid grid-cols-1"
+											: "grid grid-cols-2"
+										: "flex flex-row flex-wrap"
+									} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
 							>
 								{(isInfoReel ? visibleMembers : members).map((member) => (
 									<CommitteeMemberCard
