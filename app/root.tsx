@@ -121,6 +121,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 		getDefaultDateLocale(),
 	]);
 
+	// Read sidebar collapsed preference from cookie (avoids client-side flash)
+	const cookieHeader = request.headers.get("Cookie") || "";
+	const sidebarCollapsed = cookieHeader
+		.split(";")
+		.some((c) => c.trim() === "sidebar-collapsed=true");
+
 	return {
 		user,
 		siteConfig: SITE_CONFIG,
@@ -131,6 +137,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		unreadMessages,
 		themePrimary,
 		dateLocale,
+		sidebarCollapsed,
 	};
 }
 

@@ -38,6 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				}
 				return {
 					allowedContentTypes: [...AVATAR_ALLOWED_MIME_TYPES],
+					allowOverwrite: true,
 				};
 			},
 		});

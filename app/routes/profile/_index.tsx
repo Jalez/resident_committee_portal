@@ -164,8 +164,16 @@ export default function Profile({
 
 	const uploadPicture = useCallback(
 		async (file: File) => {
-			const ext = file.name.split(".").pop()?.toLowerCase();
-			const allowedExtensions = FILE_TYPE_CONFIGS.avatar.extensions.map(e => e.replace(/^\./, ""));
+			const extFromMime: Record<string, string> = {
+				"image/png": "png",
+				"image/jpeg": "jpg",
+				"image/webp": "webp",
+			};
+			const extFromName = file.name.split(".").pop()?.toLowerCase();
+			const ext = extFromMime[file.type] ?? extFromName;
+			const allowedExtensions = FILE_TYPE_CONFIGS.avatar.extensions.map((e) =>
+				e.replace(/^\./, ""),
+			);
 
 			if (!ext || !allowedExtensions.includes(ext)) {
 				toast.error(t("profile.picture_invalid_type"));
@@ -219,10 +227,11 @@ export default function Profile({
 					handleUploadUrl: "/api/files/upload-token",
 					clientPayload: JSON.stringify({ entityType: "avatar" }),
 				});
+				const avatarUrlWithFormat = `${blob.url}#avatar-format=${ext}`;
 				const res = await fetch("/api/avatar/set", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ url: blob.url }),
+					body: JSON.stringify({ url: avatarUrlWithFormat }),
 				});
 				if (!res.ok) {
 					const err = await res.json().catch(() => ({}));

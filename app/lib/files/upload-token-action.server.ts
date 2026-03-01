@@ -84,6 +84,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				const config = FILE_TYPE_CONFIGS[entityType];
 				return {
 					allowedContentTypes: [...config.mimeTypes],
+					allowOverwrite: entityType === "avatar",
 				};
 			},
 		});

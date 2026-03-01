@@ -154,10 +154,6 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 				}}
 			>
 				<ContentArea>
-					<p className="mt-2 mb-8 text-sm md:text-base font-semibold uppercase tracking-wide text-muted-foreground">
-						{t("committee.members")}
-					</p>
-
 					{members.length === 0 ? (
 						<div className="text-center py-12">
 							<p className="text-muted-foreground">
@@ -171,12 +167,12 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 						>
 							<div
 								key={isInfoReel ? `committee-page-${activeIndex}` : "committee-grid"}
-								className={`grid gap-6 ${
+								className={`${
 								isInfoReel
 									? membersPerPage === 1
-										? "grid-cols-1"
-										: "grid-cols-2"
-									: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+										? "grid grid-cols-1 gap-6"
+										: "grid grid-cols-2 gap-6"
+									: "flex flex-row flex-wrap gap-6"
 								} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
 							>
 								{(isInfoReel ? visibleMembers : members).map((member) => (

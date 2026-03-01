@@ -130,31 +130,21 @@ export function Navigation({ variant }: NavigationProps) {
 			setOpenSubmenus((prev) => ({ ...prev, [parent.path]: true }));
 		}
 	}, [pathname]);
-	const [sidebarCollapsed, setSidebarCollapsedState] = useState(false);
-
-	useEffect(() => {
-		try {
-			const isCollapsed =
-				localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
-			if (isCollapsed) {
-				setSidebarCollapsedState(true);
-			}
-		} catch {
-			// ignore
-		}
-	}, []);
-	const setSidebarCollapsed = useCallback((value: boolean) => {
-		setSidebarCollapsedState(value);
-		try {
-			localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value ? "true" : "false");
-		} catch {
-			// ignore
-		}
-	}, []);
 	const { t, i18n } = useTranslation();
 	const fetcher = useFetcher();
 	const revalidator = useRevalidator();
 	const rootData = useRouteLoaderData<typeof rootLoader>("root");
+	const [sidebarCollapsed, setSidebarCollapsedState] = useState(
+		rootData?.sidebarCollapsed ?? false,
+	);
+	const setSidebarCollapsed = useCallback((value: boolean) => {
+		setSidebarCollapsedState(value);
+		try {
+			document.cookie = `${SIDEBAR_COLLAPSED_KEY}=${value}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+		} catch {
+			// ignore
+		}
+	}, []);
 	const unreadMessageCount = rootData?.unreadMessageCount || 0;
 	const unreadMessages = rootData?.unreadMessages || [];
 

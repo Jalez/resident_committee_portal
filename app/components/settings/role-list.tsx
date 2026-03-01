@@ -48,6 +48,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 	const [showNewRoleForm, setShowNewRoleForm] = useState(false);
 	const createFetcher = useFetcher();
 	const deleteFetcher = useFetcher();
+	const updateColorFetcher = useFetcher();
 
 	useEffect(() => {
 		if (createFetcher.data?.success) {
@@ -65,11 +66,21 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 			toast.success("Rooli poistettu / Role deleted", {
 				id: "role-delete-success",
 			});
-			onRoleSelect(""); // Clear selection
+			onRoleSelect("");
 		} else if (deleteFetcher.data?.error) {
 			toast.error(deleteFetcher.data.error, { id: "role-delete-error" });
 		}
 	}, [deleteFetcher.data, onRoleSelect]);
+
+	useEffect(() => {
+		if (updateColorFetcher.data?.success) {
+			toast.success("Väri päivitetty / Color updated", {
+				id: "color-update-success",
+			});
+		} else if (updateColorFetcher.data?.error) {
+			toast.error(updateColorFetcher.data.error, { id: "color-update-error" });
+		}
+	}, [updateColorFetcher.data]);
 
 	const selectedRoleData = roles.find((r) => r.id === selectedRole);
 
@@ -157,7 +168,8 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 			)}
 
 			<div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-				<div className="flex items-center justify-between gap-4 flex-wrap">
+				{/* Role selector row — items-end aligns buttons with the select input */}
+				<div className="flex items-end justify-between gap-4 flex-wrap">
 					<div className="flex-1 min-w-[200px]">
 						<div className="block text-sm font-medium mb-2">
 							{t("settings.roles.select_role") || "Select Role"}
@@ -240,6 +252,43 @@ export function RoleList({ roles, selectedRole, onRoleSelect }: RoleListProps) {
 						)}
 					</div>
 				</div>
+
+				{/* Color picker */}
+				{selectedRoleData && (
+					<updateColorFetcher.Form method="post">
+						<input type="hidden" name="_action" value="update" />
+						<input type="hidden" name="roleId" value={selectedRoleData.id} />
+						<input type="hidden" name="name" value={selectedRoleData.name} />
+						<input
+							type="hidden"
+							name="description"
+							value={selectedRoleData.description || ""}
+						/>
+						<div className="flex items-center gap-3 mt-4 pt-4 border-t border-border flex-wrap">
+							<span className="text-sm font-medium shrink-0">
+								{t("settings.roles.color_label")}
+							</span>
+							<div className="flex gap-2 flex-wrap">
+								{ROLE_COLORS.map((color) => (
+									<button
+										key={color.value}
+										type="submit"
+										name="color"
+										value={color.value}
+										title={color.label}
+										className={cn(
+											"w-7 h-7 rounded-full transition-all hover:scale-110 cursor-pointer",
+											color.class,
+											selectedRoleData.color === color.value
+												? "ring-2 ring-offset-2 ring-foreground scale-110"
+												: "opacity-60 hover:opacity-100",
+										)}
+									/>
+								))}
+							</div>
+						</div>
+					</updateColorFetcher.Form>
+				)}
 			</div>
 		</>
 	);
