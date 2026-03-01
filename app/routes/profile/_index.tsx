@@ -15,6 +15,8 @@ import { hasPermission } from "~/lib/auth.server";
 import { useFormatDate } from "~/hooks/use-format-date";
 import type { Route } from "./+types/_index";
 
+const PROFILE_DESCRIPTION_MAX = 280;
+
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{ title: `${data?.siteConfig?.name || "Portal"} - Profiili / Profile` },
@@ -99,7 +101,7 @@ export async function action({ request }: Route.ActionArgs) {
 		bankAccount: canManageReimbursementDefaults
 			? (bankAccount || null)
 			: user.bankAccount,
-		description: description || null,
+		description: description?.trim().slice(0, PROFILE_DESCRIPTION_MAX) || null,
 		localOllamaEnabled,
 		localOllamaUrl,
 	});
@@ -398,11 +400,12 @@ export default function Profile({
 								name="description"
 								defaultValue={user.description || ""}
 								placeholder={t("profile.description_placeholder")}
+								maxLength={PROFILE_DESCRIPTION_MAX}
 								rows={4}
 								className="bg-background focus-visible:ring-ring/50 w-full resize-none rounded-xl border border-border px-4 py-3 transition-all focus-visible:ring-2"
 							/>
 							<p className="text-muted-foreground mt-1 text-xs">
-								{t("committee.no_description")}
+								{t("committee.no_description")} • {PROFILE_DESCRIPTION_MAX}
 							</p>
 						</div>
 

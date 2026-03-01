@@ -20,7 +20,7 @@ type Props = {
 	noDescriptionLabel: string;
 	isInfoReel?: boolean;
 	itemOpacity?: number;
-	index?: number;
+	itemFillProgress?: number;
 };
 
 export function CommitteeMemberCard({
@@ -28,14 +28,9 @@ export function CommitteeMemberCard({
 	noDescriptionLabel,
 	isInfoReel = false,
 	itemOpacity = 1,
-	index = 0,
+	itemFillProgress = 0,
 }: Props) {
-	const cardStyle = isInfoReel
-		? {
-				opacity: itemOpacity,
-				transform: `translateY(${(1 - itemOpacity) * 10 + index * 2}px)`,
-			}
-		: undefined;
+	const cardStyle = isInfoReel ? { opacity: itemOpacity } : undefined;
 
 	return (
 		<div
@@ -46,6 +41,15 @@ export function CommitteeMemberCard({
 			)}
 			style={cardStyle}
 		>
+			{isInfoReel && (
+				<div
+					className="absolute inset-0 bg-primary/10 pointer-events-none"
+					style={{
+						clipPath: `inset(0 ${100 - itemFillProgress}% 0 0)`,
+						opacity: itemOpacity,
+					}}
+				/>
+			)}
 			<div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary/10 blur-2xl" />
 
 			<div className="relative flex items-start gap-4 mb-4">
@@ -53,17 +57,26 @@ export function CommitteeMemberCard({
 					<img
 						src={member.picture}
 						alt={member.name}
-						className="w-16 h-16 rounded-2xl object-cover shrink-0 ring-2 ring-primary/20"
+						className="w-20 h-20 rounded-full object-cover shrink-0 ring-2 ring-primary/20"
 					/>
 				) : (
-					<div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-						<span className="text-xl font-black text-primary">
+					<div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+						<span className="text-2xl font-black text-primary">
 							{getInitials(member.name)}
 						</span>
 					</div>
 				)}
 				<div className="flex-1 min-w-0">
-					<h3 className="text-lg font-black tracking-tight text-foreground truncate">
+					<h3
+						className="text-xl font-black tracking-tight truncate"
+						style={
+							isInfoReel
+								? {
+										color: `color-mix(in srgb, var(--primary) ${itemOpacity * 100}%, var(--foreground) ${(1 - itemOpacity) * 100}%)`,
+									}
+								: undefined
+						}
+					>
 						{member.name}
 					</h3>
 					<div className="mt-2 flex flex-wrap gap-1.5">
@@ -84,7 +97,16 @@ export function CommitteeMemberCard({
 			</div>
 
 			{member.description ? (
-				<p className="relative text-sm text-muted-foreground mt-auto pt-3 leading-relaxed line-clamp-5">
+				<p
+					className="relative text-base text-muted-foreground mt-auto pt-3 leading-relaxed line-clamp-4"
+					style={
+						isInfoReel
+							? {
+									color: `color-mix(in srgb, var(--muted-foreground) ${itemOpacity * 100}%, transparent ${(1 - itemOpacity) * 100}%)`,
+								}
+							: undefined
+					}
+				>
 					{member.description}
 				</p>
 			) : (

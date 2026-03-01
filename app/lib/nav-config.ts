@@ -133,6 +133,7 @@ export const NAV_ITEMS: NavItem[] = [
 		icon: "groups",
 		i18nKey: "nav.committee",
 		permission: "committee:read",
+		infoReelDuration: 24000,
 	},
 	// Auth items - shown conditionally
 	{

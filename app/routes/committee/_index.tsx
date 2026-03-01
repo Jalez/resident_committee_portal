@@ -134,7 +134,7 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 		}
 		return groups;
 	}, [members, membersPerPage]);
-	const { isInfoReel, activeItem, itemOpacity } = useLocalReel({
+	const { isInfoReel, activeItem, itemOpacity, itemFillProgress } = useLocalReel({
 		items: memberGroups,
 	});
 	const visibleMembers = activeItem ?? [];
@@ -173,14 +173,14 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 							}`}
 							style={isInfoReel ? { opacity: itemOpacity } : undefined}
 						>
-							{(isInfoReel ? visibleMembers : members).map((member, index) => (
+							{(isInfoReel ? visibleMembers : members).map((member) => (
 								<CommitteeMemberCard
 									key={member.id}
 									member={member}
 									noDescriptionLabel={t("committee.no_description")}
 									isInfoReel={isInfoReel}
 									itemOpacity={itemOpacity}
-									index={index}
+									itemFillProgress={itemFillProgress}
 								/>
 							))}
 						</div>
