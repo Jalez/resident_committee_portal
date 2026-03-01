@@ -18,38 +18,62 @@ function getInitials(name: string): string {
 type Props = {
 	member: CommitteeMemberCardMember;
 	noDescriptionLabel: string;
+	isInfoReel?: boolean;
+	itemOpacity?: number;
+	index?: number;
 };
 
-export function CommitteeMemberCard({ member, noDescriptionLabel }: Props) {
+export function CommitteeMemberCard({
+	member,
+	noDescriptionLabel,
+	isInfoReel = false,
+	itemOpacity = 1,
+	index = 0,
+}: Props) {
+	const cardStyle = isInfoReel
+		? {
+				opacity: itemOpacity,
+				transform: `translateY(${(1 - itemOpacity) * 10 + index * 2}px)`,
+			}
+		: undefined;
+
 	return (
-		<div className="p-6 flex flex-col">
-			{/* Profile Picture and Name */}
-			<div className="flex items-center gap-4 mb-4">
+		<div
+			className={cn(
+				"relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 backdrop-blur-sm p-5 flex flex-col shadow-sm transition-all duration-200",
+				"hover:shadow-md hover:border-primary/30",
+				isInfoReel && "min-h-[220px]",
+			)}
+			style={cardStyle}
+		>
+			<div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary/10 blur-2xl" />
+
+			<div className="relative flex items-start gap-4 mb-4">
 				{member.picture ? (
 					<img
 						src={member.picture}
 						alt={member.name}
-						className="w-24 h-24 rounded-full object-cover shrink-0"
+						className="w-16 h-16 rounded-2xl object-cover shrink-0 ring-2 ring-primary/20"
 					/>
 				) : (
-					<div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-						<span className="text-2xl font-bold text-primary">
+					<div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+						<span className="text-xl font-black text-primary">
 							{getInitials(member.name)}
 						</span>
 					</div>
 				)}
 				<div className="flex-1 min-w-0">
-					<h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+					<h3 className="text-lg font-black tracking-tight text-foreground truncate">
 						{member.name}
 					</h3>
-					<div className="mt-2 flex flex-wrap gap-2">
+					<div className="mt-2 flex flex-wrap gap-1.5">
 						{member.roles.map((role) => (
 							<span
 								key={role.id}
 								className={cn(
-									"inline-flex items-center px-2 py-1 rounded-md text-xs font-medium",
+									"inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold",
 									role.color,
-									"text-white",
+									"text-white shadow-sm",
 								)}
 							>
 								{role.name}
@@ -59,13 +83,12 @@ export function CommitteeMemberCard({ member, noDescriptionLabel }: Props) {
 				</div>
 			</div>
 
-			{/* Description */}
 			{member.description ? (
-				<p className="text-sm text-gray-600 dark:text-gray-300 mt-auto pt-4">
+				<p className="relative text-sm text-muted-foreground mt-auto pt-3 leading-relaxed line-clamp-5">
 					{member.description}
 				</p>
 			) : (
-				<p className="text-xs text-gray-400 dark:text-gray-500 mt-auto pt-4 italic">
+				<p className="relative text-xs text-muted-foreground/70 mt-auto pt-3 italic">
 					{noDescriptionLabel}
 				</p>
 			)}

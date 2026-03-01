@@ -1,10 +1,9 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CommitteeMemberCard } from "~/components/committee/committee-member-card";
 import {
 	ContentArea,
 	PageWrapper,
-	QRPanel,
 	SplitLayout,
 } from "~/components/layout/page-layout";
 import { useLocalReel } from "~/contexts/info-reel-context";
@@ -109,37 +108,40 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Committee({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { members, systemLanguages } = loaderData as CommitteeLoaderData;
+	const [membersPerPage, setMembersPerPage] = useState(2);
+
+	useEffect(() => {
+		const computeMembersPerPage = () => {
+			const width = window.innerWidth;
+			const height = window.innerHeight;
+			// More constrained heights or medium widths look cramped with 3 cards
+			if (width >= 1400 && height >= 900) return 3;
+			if (width >= 900) return 2;
+			return 1;
+		};
+
+		const update = () => setMembersPerPage(computeMembersPerPage());
+		update();
+		window.addEventListener("resize", update);
+		return () => window.removeEventListener("resize", update);
+	}, []);
+
 	const memberGroups = useMemo(() => {
 		if (members.length === 0) return [[] as CommitteeMember[]];
 		const groups: CommitteeMember[][] = [];
-		for (let i = 0; i < members.length; i += 3) {
-			groups.push(members.slice(i, i + 3));
+		for (let i = 0; i < members.length; i += membersPerPage) {
+			groups.push(members.slice(i, i + membersPerPage));
 		}
 		return groups;
-	}, [members]);
+	}, [members, membersPerPage]);
 	const { isInfoReel, activeItem, itemOpacity } = useLocalReel({
 		items: memberGroups,
 	});
 	const visibleMembers = activeItem ?? [];
-	const rightContent = isInfoReel ? (
-		<QRPanel
-			qrUrl="/committee"
-			opacity={itemOpacity}
-			title={
-				<h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-					{t("committee.title")} <br />
-					<span className="text-lg text-gray-400 font-bold">
-						{t("common.actions.view", { lng: "en", defaultValue: "View" })}
-					</span>
-				</h2>
-			}
-		/>
-	) : undefined;
 
 	return (
 		<PageWrapper>
 			<SplitLayout
-				right={rightContent}
 				header={{
 					primary: t("committee.title", { lng: systemLanguages.primary }),
 					secondary: t("committee.title", {
@@ -160,14 +162,25 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 						</div>
 					) : (
 						<div
-							className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-200"
+							className={`grid gap-6 transition-opacity duration-200 ${
+								isInfoReel
+									? membersPerPage === 1
+										? "grid-cols-1"
+										: membersPerPage === 2
+											? "grid-cols-1 md:grid-cols-2"
+											: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+									: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+							}`}
 							style={isInfoReel ? { opacity: itemOpacity } : undefined}
 						>
-							{(isInfoReel ? visibleMembers : members).map((member) => (
+							{(isInfoReel ? visibleMembers : members).map((member, index) => (
 								<CommitteeMemberCard
 									key={member.id}
 									member={member}
 									noDescriptionLabel={t("committee.no_description")}
+									isInfoReel={isInfoReel}
+									itemOpacity={itemOpacity}
+									index={index}
 								/>
 							))}
 						</div>
