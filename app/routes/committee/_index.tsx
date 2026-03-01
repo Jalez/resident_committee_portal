@@ -108,15 +108,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Committee({ loaderData }: Route.ComponentProps) {
 	const { t } = useTranslation();
 	const { members, systemLanguages } = loaderData as CommitteeLoaderData;
-	const [membersPerPage, setMembersPerPage] = useState(2);
+	const [membersPerPage, setMembersPerPage] = useState(1);
 
 	useEffect(() => {
 		const computeMembersPerPage = () => {
 			const width = window.innerWidth;
 			const height = window.innerHeight;
-			// More constrained heights or medium widths look cramped with 3 cards
-			if (width >= 1400 && height >= 900) return 3;
-			if (width >= 900) return 2;
+			// Large avatar cards need more room in info reel mode.
+			if (width >= 1750 && height >= 900) return 2;
 			return 1;
 		};
 
@@ -134,7 +133,13 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 		}
 		return groups;
 	}, [members, membersPerPage]);
-	const { isInfoReel, activeItem, itemOpacity, itemFillProgress } = useLocalReel({
+	const {
+		isInfoReel,
+		activeIndex,
+		activeItem,
+		itemOpacity,
+		itemFillProgress,
+	} = useLocalReel({
 		items: memberGroups,
 	});
 	const visibleMembers = activeItem ?? [];
@@ -150,39 +155,42 @@ export default function Committee({ loaderData }: Route.ComponentProps) {
 				}}
 			>
 				<ContentArea>
-					<p className="mt-2 mb-8 text-gray-600 dark:text-gray-400">
+					<p className="mt-2 mb-8 text-sm md:text-base font-semibold uppercase tracking-wide text-muted-foreground">
 						{t("committee.members")}
 					</p>
 
 					{members.length === 0 ? (
 						<div className="text-center py-12">
-							<p className="text-gray-500 dark:text-gray-400">
+							<p className="text-muted-foreground">
 								{t("committee.no_members")}
 							</p>
 						</div>
 					) : (
 						<div
-							className={`grid gap-6 transition-opacity duration-200 ${
+							className="transition-opacity duration-200"
+							style={isInfoReel ? { opacity: itemOpacity } : undefined}
+						>
+							<div
+								key={isInfoReel ? `committee-page-${activeIndex}` : "committee-grid"}
+								className={`grid gap-6 ${
 								isInfoReel
 									? membersPerPage === 1
 										? "grid-cols-1"
-										: membersPerPage === 2
-											? "grid-cols-1 md:grid-cols-2"
-											: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+										: "grid-cols-1 2xl:grid-cols-2"
 									: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-							}`}
-							style={isInfoReel ? { opacity: itemOpacity } : undefined}
-						>
-							{(isInfoReel ? visibleMembers : members).map((member) => (
-								<CommitteeMemberCard
-									key={member.id}
-									member={member}
-									noDescriptionLabel={t("committee.no_description")}
-									isInfoReel={isInfoReel}
-									itemOpacity={itemOpacity}
-									itemFillProgress={itemFillProgress}
-								/>
-							))}
+								} ${isInfoReel ? "animate-reel-fade-in" : ""}`}
+							>
+								{(isInfoReel ? visibleMembers : members).map((member) => (
+									<CommitteeMemberCard
+										key={member.id}
+										member={member}
+										noDescriptionLabel={t("committee.no_description")}
+										isInfoReel={isInfoReel}
+										itemOpacity={itemOpacity}
+										itemFillProgress={itemFillProgress}
+									/>
+								))}
+							</div>
 						</div>
 					)}
 				</ContentArea>
