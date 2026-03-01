@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
+import { useTransparentBackgroundDetection } from "~/hooks/use-transparent-background-detection";
 
 function getSurnameEdgeLetters(name: string): string {
 	const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -77,7 +78,21 @@ export function MemberAvatar({
 		!imageLoadFailed &&
 		!isGoogleProfileAvatarUrl(picture || "");
 	const pictureUrl = hasUsablePicture ? (picture ?? undefined) : undefined;
-	const useMaskedAvatar = picture ? isPngImageUrl(picture) : false;
+
+	// Check if URL suggests PNG
+	const isPng = picture ? isPngImageUrl(picture) : false;
+
+	// Programmatically check if the actual PNG pixels have a transparent background
+	// We only bother checking if it's actually a PNG.
+	const canvasDetectsTransparency = useTransparentBackgroundDetection(
+		isPng ? pictureUrl : undefined
+	);
+
+	// The effect requires the image to actually have a transparent background.
+	// We default to `false` if `canvasDetectsTransparency` is `null` (still checking)
+	// Alternatively we could fallback to `isPng` if we get a strict `false` due to CORS,
+	// but to be safe against non-cutout PNGs, we only pop if canvas confirmed it.
+	const useMaskedAvatar = isPng && canvasDetectsTransparency === true;
 
 	const avatarVars = {
 		"--c": `color-mix(in oklch, var(--color-${roleColorName}) 18%, var(--card))`,
@@ -100,6 +115,8 @@ export function MemberAvatar({
 					style={avatarVars}
 				>
 					<img
+						// crossOrigin ensures the Canvas check actually works
+						crossOrigin="anonymous"
 						src={pictureUrl}
 						alt={name}
 						className="avatar-effect-portrait"
