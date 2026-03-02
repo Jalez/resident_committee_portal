@@ -28,12 +28,9 @@ export function ContentArea({ children, className }: ContentAreaProps) {
 		<div
 			className={cn(
 				"overflow-y-auto overflow-x-hidden flex-1 w-full",
+				isInfoReel && "lg:h-[480px] lg:w-full",
 				className,
 			)}
-			style={{
-				height: isInfoReel ? CONTENT_AREA_HEIGHT : undefined,
-				width: isInfoReel ? CONTENT_AREA_WIDTH : undefined,
-			}}
 		>
 			{children}
 		</div>
@@ -137,43 +134,43 @@ export function SplitLayout({
 	const exportHref =
 		paths && canExport
 			? paths.exportPath +
-				(exportQueryParams && Object.keys(exportQueryParams).length > 0
-					? "?" + new URLSearchParams(exportQueryParams).toString()
-					: "")
+			(exportQueryParams && Object.keys(exportQueryParams).length > 0
+				? "?" + new URLSearchParams(exportQueryParams).toString()
+				: "")
 			: null;
 	const importActionUrl = paths && canImport ? paths.importPath : null;
 	const footerContent =
 		exportHref || importActionUrl || footer ? (
-		<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
-			{exportHref && (
-				<ExportButton
-					href={exportHref}
-					title={t("treasury.breakdown.export")}
-				/>
-			)}
-			{importActionUrl && (
-				<ImportButton
-					actionUrl={importActionUrl}
-					extraFields={importExtraFields}
-					title={t("treasury.breakdown.import")}
-				/>
-			)}
-			{footer}
-		</div>
-	) : footer ? (
-		<>{footer}</>
-	) : null;
+			<div className="flex flex-wrap items-center gap-2 min-h-[40px]">
+				{exportHref && (
+					<ExportButton
+						href={exportHref}
+						title={t("treasury.breakdown.export")}
+					/>
+				)}
+				{importActionUrl && (
+					<ImportButton
+						actionUrl={importActionUrl}
+						extraFields={importExtraFields}
+						title={t("treasury.breakdown.import")}
+					/>
+				)}
+				{footer}
+			</div>
+		) : footer ? (
+			<>{footer}</>
+		) : null;
 
 	// Info Reel mode: split layout with QR panel
 	if (isInfoReel && right) {
 		return (
 			<div
 				className={cn(
-					"w-full max-w-[1200px] overflow-hidden flex flex-col lg:flex-row h-auto",
+					"w-full lg:max-w-[1200px] overflow-hidden flex flex-col lg:flex-row flex-1 min-h-0",
 					className,
 				)}
 			>
-				<div className="lg:w-7/12 flex flex-col p-8 lg:p-12 relative">
+				<div className="lg:w-7/12 flex flex-col p-4 sm:p-8 lg:p-12 relative flex-1 min-h-0">
 					{header && (
 						<div
 							className="animate-reel-fade-in"
@@ -287,8 +284,8 @@ export function QRPanel({
 	return (
 		<div
 			className={cn(
-				"lg:w-5/12 p-8 lg:p-12 flex flex-col items-center justify-start text-center",
-				isInfoReel && "animate-reel-fade-in",
+				"w-full lg:w-4/12 xl:w-5/12 p-3 sm:p-4 lg:p-8 flex flex-row lg:flex-col items-center justify-between lg:justify-center text-left lg:text-center border-t border-border/50 lg:border-t-0 lg:border-l shrink-0",
+				isInfoReel && "lg:justify-around lg:py-8 animate-reel-fade-in",
 				className,
 			)}
 			style={
@@ -297,13 +294,18 @@ export function QRPanel({
 					: undefined
 			}
 		>
-			<div className="flex flex-col items-center max-w-sm mx-auto w-full">
-				{/* Title - Only visible in Info Reel mode with QR */}
-				{isInfoReel && title && <div className="mb-6">{title}</div>}
+			<div className="flex flex-row lg:flex-col items-center justify-between lg:justify-around max-w-sm lg:max-w-[280px] mx-auto w-full gap-4 lg:gap-8 min-h-0 flex-1 lg:flex-none h-full">
+				{/* Title & Description side for mobile */}
+				<div className="flex flex-col items-start lg:items-center min-w-0 flex-1 lg:flex-none">
+					{/* Title - Only visible in Info Reel mode with QR */}
+					{isInfoReel && title && <div className="mb-1 lg:mb-0">{title}</div>}
+
+					{description && <div className="mt-1 lg:mt-0 mb-1 lg:mb-0">{description}</div>}
+				</div>
 
 				{/* QR Code - Only visible in Info Reel mode */}
 				{isInfoReel && (
-					<div className="mb-0 p-4 bg-white rounded-3xl dark:bg-white/5 w-full max-w-full mx-auto aspect-square min-w-[100px]">
+					<div className="mb-0 p-2 lg:p-4 bg-white rounded-xl lg:rounded-3xl dark:bg-white/5 mx-auto shrink-0 flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-full lg:aspect-square flex-none">
 						<DynamicQR path={path} className="w-full h-full" />
 					</div>
 				)}
@@ -341,8 +343,6 @@ export function QRPanel({
 							</span>
 						</Link>
 					))}
-
-				{description && <div className="mt-6 mb-4">{description}</div>}
 
 				{children}
 			</div>

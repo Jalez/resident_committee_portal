@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext } from "react";
+import { createContext, type ReactNode, useContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouteLoaderData } from "react-router";
 import { useInfoReel } from "./info-reel-context";
@@ -46,6 +46,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 	const language = supportedLanguages.includes(currentLang)
 		? currentLang
 		: supportedLanguages[0] || "en";
+
+	// Ensure both primary and secondary languages are loaded for InfoReel mode globally
+	useEffect(() => {
+		if (isInfoReel) {
+			const langsToLoad = [primaryLanguage, secondaryLanguage].filter(
+				(l) => l && l !== "none"
+			);
+			if (langsToLoad.length > 0) {
+				i18n.loadLanguages(langsToLoad).catch(console.error);
+			}
+		}
+	}, [isInfoReel, primaryLanguage, secondaryLanguage, i18n]);
 
 	const setLanguage = (lang: Language) => {
 		i18n.changeLanguage(lang);

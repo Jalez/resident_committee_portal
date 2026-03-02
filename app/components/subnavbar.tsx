@@ -89,15 +89,15 @@ export function Subnavbar() {
 			<SheetTrigger asChild>
 				<Button
 					variant="ghost"
-					className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all h-9"
+					className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all h-9"
 				>
 					<span className="material-symbols-outlined text-xl shrink-0">
 						{menuButtonIcon}
 					</span>
-					<span className="text-sm font-bold truncate max-w-[140px]">
+					<span className="hidden sm:inline text-sm font-bold truncate max-w-[140px]">
 						{menuButtonLabel}
 					</span>
-					<span className="material-symbols-outlined text-lg opacity-60 shrink-0">
+					<span className="hidden sm:inline material-symbols-outlined text-lg opacity-60 shrink-0">
 						expand_more
 					</span>
 				</Button>
@@ -166,14 +166,14 @@ export function Subnavbar() {
 							"relative overflow-hidden flex items-center gap-2 px-2 py-2 xl:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0",
 							"hover:bg-primary/10 hover:text-primary",
 							!isAnimating &&
-								(active ? "bg-primary/10 text-primary" : "text-muted-foreground"),
+							(active ? "bg-primary/10 text-primary" : "text-muted-foreground"),
 							isAnimating && "text-muted-foreground",
 						)}
 						style={
 							isAnimating
 								? {
-										color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-									}
+									color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+								}
 								: undefined
 						}
 					>

@@ -77,8 +77,8 @@ function CollapsedDropdownTrigger({
 						style={
 							isAnimating
 								? {
-										color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
-									}
+									color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+								}
 								: undefined
 						}
 					>
@@ -264,7 +264,7 @@ export function Navigation({ variant }: NavigationProps) {
 				{showLabels && (
 					<div className="relative flex flex-col items-start leading-none min-w-0">
 						<span className="text-sm font-bold">{primaryLabel}</span>
-						{isInfoReel && (
+						{isInfoReel && secondaryLanguage && (
 							<span className="text-xs opacity-60 font-medium">
 								{secondaryLabel}
 							</span>
@@ -503,7 +503,7 @@ export function Navigation({ variant }: NavigationProps) {
 											asChild
 											className={cn(
 												isChildActive(item.path, child.path) &&
-													"bg-primary/10 text-primary",
+												"bg-primary/10 text-primary",
 											)}
 										>
 											<Link to={child.path} onClick={onNavigate} prefetch="intent">
@@ -525,56 +525,56 @@ export function Navigation({ variant }: NavigationProps) {
 							{(() => {
 								const isAnimating = isInfoReel && isParentActive;
 								return (
-							<button
-								type="button"
-								onClick={() =>
-									setOpenSubmenus((prev) => ({
-										...prev,
-										[item.path]: !prev[item.path],
-									}))
-								}
-								className={cn(
-									"flex items-center gap-3 px-2 py-2 rounded-xl transition-all relative w-full text-left overflow-hidden",
-									"hover:bg-primary/10 hover:text-primary",
-									!isAnimating &&
-									isParentActive
-										? "text-primary bg-primary/10"
-										: "text-gray-500 dark:text-gray-400",
-								)}
-								style={
-									isAnimating
-										? {
-											color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+									<button
+										type="button"
+										onClick={() =>
+											setOpenSubmenus((prev) => ({
+												...prev,
+												[item.path]: !prev[item.path],
+											}))
 										}
-										: undefined
-								}
-							>
-								{isAnimating && (
-									<div
-										className="absolute inset-0 bg-primary/10"
-										style={{
-											clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
-											opacity,
-										}}
-									/>
-								)}
-								<span className="material-symbols-outlined text-2xl shrink-0">
-									{item.icon}
-								</span>
-								<span className="text-sm font-bold flex-1">
-									{isInfoReel
-										? t(item.i18nKey, { lng: primaryLanguage })
-										: t(item.i18nKey)}
-								</span>
-								<span
-									className={cn(
-										"material-symbols-outlined text-lg transition-transform shrink-0",
-										isOpen && "rotate-90",
-									)}
-								>
-									chevron_right
-								</span>
-							</button>
+										className={cn(
+											"flex items-center gap-3 px-2 py-2 rounded-xl transition-all relative w-full text-left overflow-hidden",
+											"hover:bg-primary/10 hover:text-primary",
+											!isAnimating &&
+												isParentActive
+												? "text-primary bg-primary/10"
+												: "text-gray-500 dark:text-gray-400",
+										)}
+										style={
+											isAnimating
+												? {
+													color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+												}
+												: undefined
+										}
+									>
+										{isAnimating && (
+											<div
+												className="absolute inset-0 bg-primary/10"
+												style={{
+													clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+													opacity,
+												}}
+											/>
+										)}
+										<span className="material-symbols-outlined text-2xl shrink-0">
+											{item.icon}
+										</span>
+										<span className="text-sm font-bold flex-1">
+											{isInfoReel
+												? t(item.i18nKey, { lng: primaryLanguage })
+												: t(item.i18nKey)}
+										</span>
+										<span
+											className={cn(
+												"material-symbols-outlined text-lg transition-transform shrink-0",
+												isOpen && "rotate-90",
+											)}
+										>
+											chevron_right
+										</span>
+									</button>
 								);
 							})()}
 							{isOpen && (
@@ -848,6 +848,8 @@ export function Navigation({ variant }: NavigationProps) {
 
 	const mobileMenuIcon = isHomePage ? "menu" : currentNavItem?.icon || "menu";
 
+	const isMobileAnimating = isInfoReel && !isHomePage;
+
 	if (variant === "mobile") {
 		return (
 			<TooltipProvider delayDuration={200}>
@@ -856,13 +858,35 @@ export function Navigation({ variant }: NavigationProps) {
 						<SheetTrigger asChild>
 							<Button
 								variant="ghost"
-								className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all"
+								className={cn(
+									"relative overflow-hidden flex items-center gap-2 px-2 sm:px-4 py-2 rounded-xl transition-all",
+									"hover:bg-primary/10 hover:text-primary",
+									!isMobileAnimating
+										? "text-gray-600 dark:text-gray-300"
+										: "text-muted-foreground",
+								)}
+								style={
+									isMobileAnimating
+										? {
+											color: `color-mix(in srgb, var(--primary) ${opacity * 100}%, var(--muted-foreground) ${(1 - opacity) * 100}%)`,
+										}
+										: undefined
+								}
 							>
-								<span className="material-symbols-outlined text-2xl">
+								{isMobileAnimating && (
+									<div
+										className="absolute inset-0 bg-primary/10"
+										style={{
+											clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+											opacity,
+										}}
+									/>
+								)}
+								<span className="relative material-symbols-outlined text-2xl shrink-0">
 									{mobileMenuIcon}
 								</span>
-								<span className="text-sm font-bold">{mobileMenuLabel}</span>
-								<span className="material-symbols-outlined text-lg opacity-60">
+								<span className="relative hidden sm:inline text-sm font-bold">{mobileMenuLabel}</span>
+								<span className="relative material-symbols-outlined text-lg opacity-60 shrink-0">
 									expand_more
 								</span>
 							</Button>
@@ -872,7 +896,7 @@ export function Navigation({ variant }: NavigationProps) {
 							className="w-80 h-full flex flex-col"
 							showClose={false}
 						>
-							<SheetHeader className="shrink-0 flex flex-row items-center gap-2 space-y-0">
+							<SheetHeader className="shrink-0 flex flex-row items-center gap-2 space-y-0 relative z-10 px-1 pt-1">
 								<SheetClose className="p-1 rounded-md hover:bg-muted transition-colors">
 									<XIcon className="size-5" />
 									<span className="sr-only">Close</span>
@@ -881,9 +905,14 @@ export function Navigation({ variant }: NavigationProps) {
 									{t("nav.navigation")}
 								</SheetTitle>
 							</SheetHeader>
-							<nav className="flex flex-col gap-1 mt-4 overflow-y-auto min-h-0 flex-1 pb-8">
-								{renderMenuContent(true, () => setMobileMenuOpen(false))}
-							</nav>
+							<div className="flex flex-col flex-1 min-h-0 w-full px-1">
+								<nav className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1 py-4">
+									{renderMainNavItems(true, () => setMobileMenuOpen(false))}
+								</nav>
+								<div className="shrink-0 mb-4 px-2 space-y-1">
+									{renderBottomSection(true, () => setMobileMenuOpen(false))}
+								</div>
+							</div>
 						</SheetContent>
 					</Sheet>
 				</div>

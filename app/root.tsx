@@ -314,20 +314,22 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 			<Navigation variant="sidebar" />
 			<div className="flex-1 flex flex-col min-w-0 h-full">
 				<div className="transition-all duration-300 shrink-0">
-					{(isInfoReel || location.pathname === "/") && (
-						<header className="flex items-center justify-center px-4 pb-2">
-							<div className="flex items-center justify-center mt-1 sm:mt-2 md:mt-4 flex-1">
-								<span className="text-xl sm:text-3xl lg:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none pr-3 sm:pr-4 lg:pr-10">
-									{siteConfig.shortName || siteConfig.name}
-								</span>
-								<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-2 md:border-l-4 border-primary pl-3 sm:pl-4 lg:pl-10 py-1 md:py-2">
+					{/* Mobile Header: Single row combining Navigation, Title, and Subnavbar */}
+					<div className="md:hidden flex items-center justify-between border-b border-border/50 bg-background/50 h-12 px-1">
+						<div className="shrink-0 flex items-center pr-1 h-full">
+							<Navigation variant="mobile" />
+						</div>
+
+						{(isInfoReel || location.pathname === "/") && (
+							<div className="flex-1 flex justify-center items-center min-w-0 px-2 overflow-hidden">
+								<div className="flex flex-col items-center justify-center text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] py-1">
 									{/* Info Reel: Show FI and EN */}
 									{isInfoReel && (
 										<>
-											<span className="text-sm sm:text-2xl lg:text-3xl">
+											<span className="text-sm truncate">
 												{t("app.title", { lng: "fi" })}
 											</span>
-											<span className="opacity-90 text-[9px] sm:text-xl lg:text-2xl mt-0.5 md:mt-2">
+											<span className="opacity-90 text-[9px] mt-0.5 truncate">
 												{t("app.title", { lng: "en" })}
 											</span>
 										</>
@@ -335,21 +337,59 @@ function AppContent({ siteConfig }: { siteConfig: typeof SITE_CONFIG }) {
 
 									{/* Normal Mode: Show current language */}
 									{!isInfoReel && (
-										<span className="text-sm sm:text-2xl lg:text-5xl">
+										<span className="text-sm truncate">
 											{t("app.title")}
 										</span>
 									)}
 								</div>
 							</div>
-						</header>
-					)}
+						)}
 
-					<div className="flex items-stretch min-h-12">
-						<div className="md:hidden w-fit shrink-0 flex items-center pl-2 pr-1 border-r border-border/50">
-							<Navigation variant="mobile" />
+						{!(isInfoReel || location.pathname === "/") && (
+							<div className="flex-1" />
+						)}
+
+						<div className="shrink-0 flex items-center justify-end h-full">
+							<Subnavbar key={`mobile-${location.pathname}${location.search ?? ""}`} />
 						</div>
-						<div className="flex-1 min-w-0">
-							<Subnavbar key={`${location.pathname}${location.search ?? ""}`} />
+					</div>
+
+					{/* Desktop Header: Separate Title and Subnavbar */}
+					<div className="hidden md:block">
+						{(isInfoReel || location.pathname === "/") && (
+							<header className="flex items-center justify-center px-4 pb-2">
+								<div className="flex items-center justify-center mt-4 flex-1">
+									<span className="text-3xl lg:text-7xl font-black tracking-tighter uppercase text-gray-900 dark:text-white leading-none pr-4 lg:pr-10">
+										{siteConfig.shortName || siteConfig.name}
+									</span>
+									<div className="flex flex-col items-start justify-center h-full text-gray-900 dark:text-white uppercase font-black tracking-widest leading-[0.85] border-l-4 border-primary pl-4 lg:pl-10 py-2">
+										{/* Info Reel: Show FI and EN */}
+										{isInfoReel && (
+											<>
+												<span className="text-2xl lg:text-3xl">
+													{t("app.title", { lng: "fi" })}
+												</span>
+												<span className="opacity-90 text-xl lg:text-2xl mt-2">
+													{t("app.title", { lng: "en" })}
+												</span>
+											</>
+										)}
+
+										{/* Normal Mode: Show current language */}
+										{!isInfoReel && (
+											<span className="text-2xl lg:text-5xl">
+												{t("app.title")}
+											</span>
+										)}
+									</div>
+								</div>
+							</header>
+						)}
+
+						<div className="flex items-stretch min-h-12 border-b border-border/50 bg-background/50">
+							<div className="flex-1 min-w-0">
+								<Subnavbar key={`desktop-${location.pathname}${location.search ?? ""}`} />
+							</div>
 						</div>
 					</div>
 				</div>
