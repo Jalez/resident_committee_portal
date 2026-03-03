@@ -460,6 +460,10 @@ export const PERMISSIONS = {
 		translationKey: "common.actions.delete",
 		category: "Storage",
 	},
+	"avatars:write": {
+		translationKey: "permissions.avatars.write",
+		category: "Storage",
+	},
 
 	// Roles (meta-permission)
 	"roles:read": {

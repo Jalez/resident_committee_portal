@@ -25,6 +25,8 @@ export default [
 	route("api/analytics/questions", "routes/api/analytics/questions/_index.tsx"),
 	route("api/avatar/set", "routes/api/avatar/set/_index.tsx"),
 	route("api/avatars/delete", "routes/api/avatars/delete/_index.tsx"),
+	route("api/avatars/set", "routes/api/avatars/set/_index.tsx"),
+	route("api/avatars/upload", "routes/api/avatars/upload/_index.tsx"),
 	route("api/files/delete-temp", "routes/api/files/delete-temp/_index.tsx"),
 	route("api/files/upload-temp", "routes/api/files/upload-temp/_index.tsx"),
 	route("api/files/upload-token", "routes/api/files/upload-token/_index.tsx"),
