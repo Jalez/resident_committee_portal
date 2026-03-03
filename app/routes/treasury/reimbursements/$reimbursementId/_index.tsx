@@ -70,8 +70,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 					);
 					if (threadMessages.length > 0) {
 						threadMessageIds = new Set(threadMessages.map((m) => m.id));
+						const threadRec = await db.getCommitteeMailThreadById(mailMessage.threadId);
 						mailThread = {
 							id: mailMessage.threadId,
+							slug: threadRec?.slug || null,
 							subject: threadMessages[0].subject,
 							messageCount: threadMessages.length,
 						};
@@ -121,8 +123,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				} else {
 					// No threaded mail found, but we have subject matches
 					targetThreadId = orphanedMessages[0].threadId || orphanedMessages[0].id;
+					const threadRec = await db.getCommitteeMailThreadById(targetThreadId);
 					mailThread = {
 						id: targetThreadId,
+						slug: threadRec?.slug || null,
 						subject: orphanedMessages[0].subject,
 						messageCount: orphanedMessages.length,
 					};
@@ -171,8 +175,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 				for (const tid of linkedThreadIds) {
 					const threadMessages = await db.getCommitteeMailMessagesByThreadId(tid);
 					if (threadMessages.length > 0) {
+						const threadRec = await db.getCommitteeMailThreadById(tid);
 						mailThread = {
 							id: tid,
+							slug: threadRec?.slug || null,
 							subject: threadMessages[0].subject,
 							messageCount: threadMessages.length,
 						};
@@ -897,6 +903,7 @@ export default function ViewReimbursement({
 				linked: [
 					{
 						id: mailThread.id,
+						slug: mailThread.slug,
 						subject: mailThread.subject || "Email Thread",
 					},
 				],
