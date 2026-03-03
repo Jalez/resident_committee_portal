@@ -34,7 +34,24 @@ import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
 import type { AnyEntity } from "~/lib/entity-converters";
+import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { Route } from "./+types/_index";
+
+const relationshipTypes: RelationshipEntityType[] = [
+	"reimbursement",
+	"transaction",
+	"receipt",
+	"budget",
+	"inventory",
+	"minute",
+	"news",
+	"faq",
+	"poll",
+	"social",
+	"event",
+	"submission",
+	"message",
+];
 
 export async function action({ request, params }: Route.ActionArgs) {
 	const currentUser = await requirePermission(
@@ -362,21 +379,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 	// Use the latest message as the main anchor for relationships in this thread
 	const mainMessage = messages[messages.length - 1];
-	const relationshipTypes: RelationshipEntityType[] = [
-		"reimbursement",
-		"transaction",
-		"receipt",
-		"budget",
-		"inventory",
-		"minute",
-		"news",
-		"faq",
-		"poll",
-		"social",
-		"event",
-		"submission",
-		"message",
-	];
 
 	// Load relationships
 	let relationships = await loadRelationshipsForEntity(
@@ -784,22 +786,10 @@ export default function MailThread({
 					relationAName={threadSubject}
 					mode="edit"
 					currentPath={threadCurrentPath}
-					sections={[
-						{ type: "reimbursement", label: t("treasury.reimbursements.title") },
-						{ type: "transaction", label: t("treasury.transactions.title") },
-						{ type: "receipt", label: t("treasury.receipts.title") },
-						{ type: "budget", label: t("treasury.budgets.title") },
-						{ type: "inventory", label: t("inventory.title") },
-						{ type: "minute", label: t("minutes.title") },
-						{ type: "event", label: t("events.title") },
-						{ type: "news", label: t("news.title") },
-						{ type: "faq", label: t("faq.title") },
-						{ type: "poll", label: t("polls.title") },
-						{ type: "social", label: t("social.header") },
-						{ type: "submission", label: t("submissions.title") },
-					].flatMap(({ type, label }) => {
-						const relData = loaderData.relationships[type];
+					sections={relationshipTypes.flatMap((type: RelationshipEntityType) => {
+						const relData = (loaderData.relationships as any)[type];
 						if (!relData) return [];
+						const config = ENTITY_REGISTRY[type];
 						return [
 							{
 								relationBType: type as RelationshipEntityType,
@@ -808,7 +798,7 @@ export default function MailThread({
 									[]) as unknown as AnyEntity[],
 								canWrite: relData.canWrite ?? false,
 								createType: type,
-								label,
+								label: t(config.pluralKey),
 							},
 						];
 					})}
