@@ -373,11 +373,11 @@ export async function sendReimbursementEmail(
                 <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;"><strong>${t("email.reimbursement.receipts")}:</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">
                     ${data.receiptLinks
-											.map(
-												(r) =>
-													`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
-											)
-											.join("")}
+					.map(
+						(r) =>
+							`<span style="display: block; margin-bottom: 4px;">📄 ${r.name} <em style="color: #666;">(${t("email.reimbursement.attached")})</em></span>`,
+					)
+					.join("")}
                 </td>
                </tr>`
 				: "";
@@ -457,6 +457,9 @@ export async function sendReimbursementEmail(
 				process.env.COMMITTEE_FROM_NAME || process.env.SITE_NAME || "Committee";
 			const toJson = JSON.stringify([{ email: recipientEmail }]);
 			const threadId = computeThreadId(result.messageId || null, null, null);
+			if (threadId) {
+				await db.ensureCommitteeMailThread(threadId, subject);
+			}
 			await db.insertCommitteeMailMessage({
 				direction: "sent",
 				fromAddress: fromEmail,
