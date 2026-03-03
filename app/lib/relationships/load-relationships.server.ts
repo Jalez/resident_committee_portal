@@ -179,7 +179,7 @@ async function fetchEntityById(
 			return db.getPollById(id);
 		case "social":
 			return db.getSocialLinkById(id);
-		case "mail_thread":
+		case "mail_thread": {
 			const thread = await db.getCommitteeMailThreadById(id);
 			if (!thread) return null;
 			const drafts = await db.getMailDrafts(200);
@@ -189,6 +189,7 @@ async function fetchEntityById(
 				draftId: linkedDraft?.id,
 				status: linkedDraft ? "draft" : "active",
 			};
+		}
 		case "event":
 			return db.getEventById(id);
 		case "submission":
@@ -241,7 +242,7 @@ async function fetchAvailableEntities(
 		case "social":
 			allEntities = await db.getSocialLinks();
 			break;
-		case "mail_thread":
+		case "mail_thread": {
 			const drafts = await db.getMailDrafts(200);
 			const draftByThreadId = new Map(
 				drafts
@@ -253,6 +254,7 @@ async function fetchAvailableEntities(
 					const draftId = draftByThreadId.get(thread.threadId);
 					return {
 						id: thread.threadId,
+						slug: thread.slug,
 						subject: thread.latestMessage.subject || "Email thread",
 						createdAt: thread.latestMessage.date,
 						draftId,
@@ -261,6 +263,7 @@ async function fetchAvailableEntities(
 				},
 			);
 			break;
+		}
 		case "event":
 			allEntities = await db.getEvents();
 			break;

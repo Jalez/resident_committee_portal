@@ -154,9 +154,16 @@ export function entityToRelationItem(
 			: config.detailUrl(entity.id);
 
 	if (type === "mail_thread") {
-		const draftId = (entity as any).draftId as string | undefined;
+		const mailEntity = entity as any;
+		const draftId = mailEntity.draftId as string | undefined;
 		if (draftId) {
 			targetUrl = `/mail/drafts/${draftId}/edit`;
+		} else {
+			// Use slug if available, otherwise fall back to encoded ID
+			const slug = mailEntity.slug as string | undefined;
+			targetUrl = slug
+				? `/mail/thread/${slug}`
+				: `/mail/thread/${encodeURIComponent(entity.id)}`;
 		}
 	}
 	if (currentPath) {
@@ -224,6 +231,7 @@ export function entityToLinkableItem(
 				: undefined;
 	}
 
+	const mailSlug = type === "mail_thread" ? (entity as any).slug as string | undefined : undefined;
 	return {
 		id: entity.id,
 		title: title,
@@ -231,8 +239,12 @@ export function entityToLinkableItem(
 		amount,
 		createdAt,
 		purchaserName,
-		to: config.detailUrl(entity.id),
-		viewLink: config.detailUrl(entity.id),
+		to: mailSlug
+			? `/mail/thread/${mailSlug}`
+			: config.detailUrl(entity.id),
+		viewLink: mailSlug
+			? `/mail/thread/${mailSlug}`
+			: config.detailUrl(entity.id),
 		status: status,
 		variantMap: config.statusVariants,
 	};

@@ -89,7 +89,7 @@ export async function loadRelationsForTableColumn(
 			const tooltipSubtitle = name !== "—" ? `${name} (${shortId})` : shortId;
 			const href =
 				typedRelType === "mail_thread"
-					? `/mail/thread/${encodeURIComponent(id)}`
+					? `/mail/thread/${(record.slug as string) || encodeURIComponent(id)}`
 					: `${config.route}/${id}`;
 
 			badgeData.push({
