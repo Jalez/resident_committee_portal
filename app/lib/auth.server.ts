@@ -7,6 +7,9 @@ import { createCookie, redirect } from "react-router";
 // Get the base URL for redirects - works with Vercel preview deployments
 function getBaseUrl(): string {
 	// Use explicit env var if set
+	if (process.env.SITE_URL) {
+		return process.env.SITE_URL;
+	}
 	if (process.env.APP_URL) {
 		return process.env.APP_URL;
 	}

@@ -1405,8 +1405,16 @@
 			"reply_instruction": "Reply to this email to approve or reject the request."
 		},
 		"reimbursement_status": {
-			"approved": {},
-			"declined": {},
+			"approved": {
+				"subject": "Reimbursement Request Approved",
+				"title": "Your Reimbursement Request has been Approved",
+				"message": "Great news! Your reimbursement request has been approved and processed for payment."
+			},
+			"declined": {
+				"subject": "Reimbursement Request Declined",
+				"title": "Your Reimbursement Request has been Declined",
+				"message": "Sorry, your reimbursement request has been declined. See details and possible reasons below or in the portal."
+			},
 			"status": "Status",
 			"view_details": "View Details"
 		}
@@ -1418,8 +1426,14 @@
 		"mark_all_read": "Mark all as read",
 		"marked_as_read": "Message marked as read",
 		"view_purchase": "View Purchase",
-		"reimbursement_approved": {},
-		"reimbursement_declined": {},
+		"reimbursement_approved": {
+			"title": "Reimbursement Approved",
+			"content": "Your reimbursement request '{description}' ({amount} €) has been approved."
+		},
+		"reimbursement_declined": {
+			"title": "Reimbursement Declined",
+			"content": "Your reimbursement request '{description}' ({amount} €) has been declined."
+		},
 		"news_published": {},
 		"ai_news_translation_failed": {},
 		"ai_faq_translation_failed": {},

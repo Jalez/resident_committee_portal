@@ -23,6 +23,9 @@ function getBaseUrl(): string {
 	if (process.env.RECEIPT_STORAGE_BASE_URL) {
 		return process.env.RECEIPT_STORAGE_BASE_URL;
 	}
+	if (process.env.SITE_URL) {
+		return process.env.SITE_URL;
+	}
 	if (process.env.APP_URL) {
 		return process.env.APP_URL;
 	}

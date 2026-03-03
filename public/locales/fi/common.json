@@ -1420,8 +1420,16 @@
 			"reply_instruction": "Vastaa tähän viestiin hyväksyäksesi tai hylätäksesi pyynnön."
 		},
 		"reimbursement_status": {
-			"approved": {},
-			"declined": {},
+			"approved": {
+				"subject": "Kulukorvauspyyntö hyväksytty",
+				"title": "Kulukorvauspyyntösi on hyväksytty",
+				"message": "Hyviä uutisia! Kulukorvauspyyntösi on hyväksytty ja siirretty maksuun."
+			},
+			"declined": {
+				"subject": "Kulukorvauspyyntö hylätty",
+				"title": "Kulukorvauspyyntösi on hylätty",
+				"message": "Pahoittelut, kulukorvauspyyntösi on hylätty. Katso tarkemmat tiedot ja mahdolliset perustelut alta tai palvelusta."
+			},
 			"status": "Tila",
 			"view_details": "Näytä tiedot"
 		}
@@ -1433,8 +1441,14 @@
 		"mark_all_read": "Merkitse kaikki luetuksi",
 		"marked_as_read": "Viesti merkitty luetuksi",
 		"view_purchase": "Näytä korvausvaatimus",
-		"reimbursement_approved": {},
-		"reimbursement_declined": {},
+		"reimbursement_approved": {
+			"title": "Kulukorvaus hyväksytty",
+			"content": "Kulukorvauspyyntösi '{description}' ({amount} €) on hyväksytty."
+		},
+		"reimbursement_declined": {
+			"title": "Kulukorvaus hylätty",
+			"content": "Kulukorvauspyyntösi '{description}' ({amount} €) on hylätty."
+		},
 		"news_published": {},
 		"ai_news_translation_failed": {},
 		"ai_faq_translation_failed": {},
