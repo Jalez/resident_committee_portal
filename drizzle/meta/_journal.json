@@ -253,6 +253,13 @@
       "when": 1772199763948,
       "tag": "0035_backfill_imap_threads",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1772203200000,
+      "tag": "0036_thread_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }
