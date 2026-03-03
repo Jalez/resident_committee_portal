@@ -88,33 +88,35 @@ export async function loadRelationshipsForEntity(
 		entityId,
 	);
 
-	for (const relationBType of relationBTypes) {
-		const linkedIds = allRelationships
-			.map((rel) => {
-				const normalizedAType = normalizeRelationshipType(rel.relationAType);
-				const normalizedBType = normalizeRelationshipType(rel.relationBType);
+	await Promise.all(
+		relationBTypes.map(async (relationBType) => {
+			const linkedIds = allRelationships
+				.map((rel) => {
+					const normalizedAType = normalizeRelationshipType(rel.relationAType);
+					const normalizedBType = normalizeRelationshipType(rel.relationBType);
 
-				// Case 1: Current entity is relationA, linked entity is relationB
-				if (normalizedAType === entityType && rel.relationId === entityId) {
-					return normalizedBType === relationBType ? rel.relationBId : null;
-				}
-				// Case 2: Current entity is relationB, linked entity is relationA
-				if (normalizedBType === entityType && rel.relationBId === entityId) {
-					return normalizedAType === relationBType ? rel.relationId : null;
-				}
-				return null;
-			})
-			.filter((id): id is string => id !== null);
+					// Case 1: Current entity is relationA, linked entity is relationB
+					if (normalizedAType === entityType && rel.relationId === entityId) {
+						return normalizedBType === relationBType ? rel.relationBId : null;
+					}
+					// Case 2: Current entity is relationB, linked entity is relationA
+					if (normalizedBType === entityType && rel.relationBId === entityId) {
+						return normalizedAType === relationBType ? rel.relationId : null;
+					}
+					return null;
+				})
+				.filter((id): id is string => id !== null);
 
-		const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
+			const linked = await fetchEntitiesByType(db, relationBType, linkedIds);
 
-		const canWrite = true;
-		const available = includeAvailable
-			? await fetchAvailableEntities(db, relationBType, linkedIds)
-			: [];
+			const canWrite = true;
+			const available = includeAvailable
+				? await fetchAvailableEntities(db, relationBType, linkedIds)
+				: [];
 
-		result[relationBType] = { linked, available, canWrite };
-	}
+			result[relationBType] = { linked, available, canWrite };
+		}),
+	);
 
 	return result;
 }

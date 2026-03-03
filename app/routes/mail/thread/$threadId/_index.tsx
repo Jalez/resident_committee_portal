@@ -316,14 +316,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	// Fallback to treat threadId as raw message-ID if slug not found
 	const threadId = thread ? thread.id : decodeURIComponent(slug);
 
-	const messages = await db.getCommitteeMailMessagesByThreadId(threadId);
+	// Fetch messages and thread relationships in parallel — they're independent
+	const [messages, threadRelations] = await Promise.all([
+		db.getCommitteeMailMessagesByThreadId(threadId),
+		db.getEntityRelationships("mail_thread", threadId),
+	]);
 
 	if (messages.length === 0) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
 	const reimbursementIds = new Set<string>();
-	const threadRelations = await db.getEntityRelationships("mail_thread", threadId);
 	for (const rel of threadRelations) {
 		const isThreadA =
 			rel.relationAType === "mail_thread" && rel.relationId === threadId;
@@ -363,34 +366,21 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		}
 	}
 
+	// Keep thread loader non-blocking. AI interpretation runs via action ("run_ai_analytics"),
+	// which is auto-triggered once on the client for pending reimbursements.
 	const replyVerdicts: Record<string, "approved" | "rejected" | "unclear"> = {};
-	if (hasPendingLinkedReimbursement) {
-		const { parseReimbursementReply } = await import("~/lib/email.server");
-		const inboundMessages = messages.filter((m) => m.direction === "inbox").slice(-8);
-		for (const message of inboundMessages) {
-			const content =
-				message.bodyText?.trim() ||
-				message.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() ||
-				message.subject;
-			if (!content) continue;
-			replyVerdicts[message.id] = await parseReimbursementReply(content);
-		}
-	}
 
 	// Use the latest message as the main anchor for relationships in this thread
 	const mainMessage = messages[messages.length - 1];
 
-	// Load relationships
-	let relationships = await loadRelationshipsForEntity(
-		db,
-		"mail_thread",
-		threadId,
-		relationshipTypes,
-		{ userPermissions: currentUser.permissions },
-	);
-
-	// Get context
-	const contextValues = await getRelationshipContext(db, "mail_thread", threadId);
+	// Load relationships and context in parallel; pass preloaded relationships to avoid a duplicate query
+	const [relationships, contextValues] = await Promise.all([
+		loadRelationshipsForEntity(db, "mail_thread", threadId, relationshipTypes, {
+			userPermissions: currentUser.permissions,
+			preloadedRelationships: threadRelations,
+		}),
+		getRelationshipContext(db, "mail_thread", threadId),
+	]);
 
 	return {
 		siteConfig: SITE_CONFIG,
