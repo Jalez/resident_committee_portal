@@ -227,7 +227,10 @@ export default function Profile({
 					handleUploadUrl: "/api/files/upload-token",
 					clientPayload: JSON.stringify({ entityType: "avatar" }),
 				});
-				const avatarUrlWithFormat = `${blob.url}#avatar-format=${ext}`;
+				const avatarUrl = new URL(blob.url);
+				avatarUrl.searchParams.set("avatar-format", ext);
+				avatarUrl.searchParams.set("v", String(Date.now()));
+				const avatarUrlWithFormat = avatarUrl.toString();
 				const res = await fetch("/api/avatar/set", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },

@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useFetcher } from "react-router";
+import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -188,10 +189,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		"committee:email",
 		getDatabase,
 	);
-	const threadId = decodeURIComponent(params.threadId);
-	if (!threadId) throw new Response("Not Found", { status: 404 });
+	const slug = params.threadId;
+	if (!slug) throw new Response("Not Found", { status: 404 });
 
 	const db = getDatabase();
+	const thread = await db.getCommitteeMailThreadBySlug(slug);
+
+	// Fallback to treat threadId as raw message-ID if slug not found
+	const threadId = thread ? thread.id : decodeURIComponent(slug);
+
 	const messages = await db.getCommitteeMailMessagesByThreadId(threadId);
 
 	if (messages.length === 0) {
@@ -494,36 +500,36 @@ export default function MailThread({
 												{t("mail.sent")}
 											</span>
 										)}
-											{msg.direction === "inbox" && replyVerdicts?.[msg.id] && (
-												<Badge
-													variant={
-														replyVerdicts[msg.id] === "approved"
-															? "default"
-															: replyVerdicts[msg.id] === "rejected"
-																? "destructive"
-																: "secondary"
-													}
-												>
-													{replyVerdicts[msg.id] === "approved"
-														? t("mail.ai_verdict_approved", {
-																defaultValue: "AI: Approve",
-															})
+										{msg.direction === "inbox" && replyVerdicts?.[msg.id] && (
+											<Badge
+												variant={
+													replyVerdicts[msg.id] === "approved"
+														? "default"
 														: replyVerdicts[msg.id] === "rejected"
-															? t("mail.ai_verdict_rejected", {
-																	defaultValue: "AI: Decline",
-																})
-															: t("mail.ai_verdict_unclear", {
-																	defaultValue: "AI: Needs more info",
-																})}
-												</Badge>
-											)}
-											{msg.direction === "inbox" && isManualOverrideForMessage(msg.id) && (
-												<Badge variant="outline">
-													{t("mail.ai_verdict_manual_override", {
-														defaultValue: "Manual override",
-													})}
-												</Badge>
-											)}
+															? "destructive"
+															: "secondary"
+												}
+											>
+												{replyVerdicts[msg.id] === "approved"
+													? t("mail.ai_verdict_approved", {
+														defaultValue: "AI: Approve",
+													})
+													: replyVerdicts[msg.id] === "rejected"
+														? t("mail.ai_verdict_rejected", {
+															defaultValue: "AI: Decline",
+														})
+														: t("mail.ai_verdict_unclear", {
+															defaultValue: "AI: Needs more info",
+														})}
+											</Badge>
+										)}
+										{msg.direction === "inbox" && isManualOverrideForMessage(msg.id) && (
+											<Badge variant="outline">
+												{t("mail.ai_verdict_manual_override", {
+													defaultValue: "Manual override",
+												})}
+											</Badge>
+										)}
 									</div>
 									{!isExpanded && (
 										<p className="text-muted-foreground truncate text-xs">
@@ -578,16 +584,7 @@ export default function MailThread({
 									</div>
 
 									{/* Body */}
-									<div className="prose prose-sm dark:prose-invert text-foreground max-w-none">
-										<div
-											// Reset backgrounds and colors for injected HTML content so it behaves in dark mode
-											className="[&_*]:!bg-transparent [&_*]:text-inherit"
-											// biome-ignore lint/security/noDangerouslySetInnerHtml: email body from DB
-											dangerouslySetInnerHTML={{
-												__html: msg.bodyHtml,
-											}}
-										/>
-									</div>
+									<IsolatedEmailContent html={msg.bodyHtml} />
 
 									{/* Actions */}
 									<div className="border-border mt-4 flex items-center gap-2 border-t pt-3">
