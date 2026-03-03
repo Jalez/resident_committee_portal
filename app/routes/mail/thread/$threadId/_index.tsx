@@ -291,6 +291,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		siteConfig: SITE_CONFIG,
 		messages,
 		threadId,
+		threadSlug: thread?.slug ?? null,
 		relationships,
 		contextValues,
 		mainMessageId: mainMessage.id,
@@ -324,6 +325,10 @@ export default function MailThread({
 }: Route.ComponentProps) {
 	const { messages, threadId, mainMessageId, replyVerdicts, hasPendingLinkedReimbursement } =
 		loaderData;
+	const threadSlug = (loaderData as any).threadSlug as string | null;
+	const threadCurrentPath = threadSlug
+		? `/mail/thread/${threadSlug}`
+		: `/mail/thread/${encodeURIComponent(threadId)}`;
 	const linkedReimbursements =
 		(loaderData.linkedReimbursements as Array<{
 			id: string;
@@ -642,7 +647,7 @@ export default function MailThread({
 					relationAId={threadId}
 					relationAName={threadSubject}
 					mode="edit"
-					currentPath={`/mail/thread/${encodeURIComponent(threadId)}`}
+					currentPath={threadCurrentPath}
 					sections={[
 						{
 							type: "reimbursement",
