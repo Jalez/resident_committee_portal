@@ -785,13 +785,18 @@ export default function MailThread({
 					mode="edit"
 					currentPath={threadCurrentPath}
 					sections={[
-						{
-							type: "reimbursement",
-							label: t("treasury.reimbursements.title"),
-						},
+						{ type: "reimbursement", label: t("treasury.reimbursements.title") },
 						{ type: "transaction", label: t("treasury.transactions.title") },
-						{ type: "event", label: t("events.title") },
+						{ type: "receipt", label: t("treasury.receipts.title") },
+						{ type: "budget", label: t("treasury.budgets.title") },
+						{ type: "inventory", label: t("inventory.title") },
 						{ type: "minute", label: t("minutes.title") },
+						{ type: "event", label: t("events.title") },
+						{ type: "news", label: t("news.title") },
+						{ type: "faq", label: t("faq.title") },
+						{ type: "poll", label: t("polls.title") },
+						{ type: "social", label: t("social.header") },
+						{ type: "submission", label: t("submissions.title") },
 					].flatMap(({ type, label }) => {
 						const relData = loaderData.relationships[type];
 						if (!relData) return [];
