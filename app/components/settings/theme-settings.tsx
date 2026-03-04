@@ -1,4 +1,3 @@
-"use client";
 
 import { Check, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";

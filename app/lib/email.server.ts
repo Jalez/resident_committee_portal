@@ -19,6 +19,11 @@ import {
 } from "./mail-nodemailer.server";
 import { computeThreadId } from "./mail-threading.server";
 import { getMinuteStorage } from "./minutes/storage.server";
+import {
+	getKeywords,
+	isAIParsingEnabled,
+	parseReplyWithAI,
+} from "./openrouter.server";
 import { SETTINGS_KEYS } from "./openrouter.server";
 import { getReceiptContentBase64 } from "./receipts/server";
 import { getSystemLanguageDefaults } from "./settings.server";
@@ -237,11 +242,6 @@ export function extractPurchaseIdFromEmail(toAddress: string): string | null {
 export async function parseReimbursementReply(
 	content: string,
 ): Promise<"approved" | "rejected" | "unclear"> {
-	// Import from openrouter.server.ts
-	const { isAIParsingEnabled, parseReplyWithAI, getKeywords } = await import(
-		"./openrouter.server"
-	);
-
 	const normalizeReplyContent = (raw: string): string => {
 		const normalized = raw.replace(/\r\n/g, "\n").trim();
 		if (!normalized) return "";

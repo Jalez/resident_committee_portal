@@ -6,6 +6,7 @@ import { PageWrapper } from "~/components/layout/page-layout";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { ViewForm } from "~/components/ui/view-form";
+import { getDatabase } from "~/db/server.server";
 import {
 	buildMinutesAttachment,
 	buildReceiptAttachments,
@@ -23,6 +24,7 @@ import {
 	sendCommitteeEmail,
 } from "~/lib/mail-nodemailer.server";
 import { maskBankAccount } from "~/lib/mask-bank-account";
+import { buildReferencesForReply, computeThreadId } from "~/lib/mail-threading.server";
 import {
 	formatMissingRelationshipsMessage,
 	validateRequiredRelationships,
@@ -246,10 +248,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-	const { getDatabase } = await import("~/db/server.server");
-	const { buildReferencesForReply, computeThreadId } = await import(
-		"~/lib/mail-threading.server"
-	);
 	const db = getDatabase();
 	const formData = await request.formData();
 	const actionType = formData.get("_action") as string;

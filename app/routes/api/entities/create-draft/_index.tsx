@@ -2,6 +2,7 @@ import { data, redirect } from "react-router";
 import type { RelationshipEntityType } from "~/db";
 import { getDatabase } from "~/db/server.server";
 import { requireAnyPermission } from "~/lib/auth.server";
+import { createCalendarEvent } from "~/lib/google.server";
 import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import type { Route } from "./+types/_index";
 
@@ -179,7 +180,6 @@ export async function action({ request }: Route.ActionArgs) {
 				});
 
 				try {
-					const { createCalendarEvent } = await import("~/lib/google.server");
 					const result = await createCalendarEvent({
 						title: "Uusi tapahtuma / New event",
 						description: "#draft",

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { getDatabase } from "~/db/server.server";
 import {
 	extractPurchaseIdFromContent,
 	extractPurchaseIdFromEmail,
@@ -169,7 +170,6 @@ async function processEmailEvent(event: ResendEmailReceivedEvent) {
 	console.log(`[Resend Webhook] Found purchase ID: ${purchaseId}`);
 
 	// Fetch email content from Resend API
-	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const purchase = await db.getPurchaseById(purchaseId);
 

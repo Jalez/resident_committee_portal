@@ -28,6 +28,8 @@ import { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { hasAnyPermission, requirePermission } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { parseReimbursementReply } from "~/lib/email.server";
+import { createReimbursementStatusNotification } from "~/lib/notifications.server";
 import { loadRelationshipsForEntity } from "~/lib/relationships/load-relationships.server";
 import { getRelationshipContext } from "~/lib/relationships/relationship-context.server";
 import { saveRelationshipChanges } from "~/lib/relationships/save-relationships.server";
@@ -173,9 +175,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 		}
 
 		if (verdict === "approved" || verdict === "rejected") {
-			const { createReimbursementStatusNotification } = await import(
-				"~/lib/notifications.server"
-			);
 			await createReimbursementStatusNotification(
 				{ ...purchase, status: verdict },
 				verdict,
@@ -213,7 +212,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 		const decodedThreadId = dbThread ? dbThread.id : decodeURIComponent(threadIdParam);
 		const threadMessages = await db.getCommitteeMailMessagesByThreadId(decodedThreadId);
 
-		const { parseReimbursementReply } = await import("~/lib/email.server");
 		const inboundMessages = threadMessages.filter((m) => m.direction === "inbox").slice(-8);
 
 		let aiVerdict: "approved" | "rejected" | "unclear" = "unclear";
@@ -270,9 +268,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 				}
 			}
 
-			const { createReimbursementStatusNotification } = await import(
-				"~/lib/notifications.server"
-			);
 			await createReimbursementStatusNotification(
 				{ ...purchase, status: aiVerdict },
 				aiVerdict,

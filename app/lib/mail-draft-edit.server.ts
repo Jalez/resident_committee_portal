@@ -9,6 +9,7 @@ import {
 import { parseDraftAttachmentState } from "~/lib/mail-draft-attachments";
 import type { CommitteeMailRecipient } from "./mail-nodemailer.server";
 import { sendCommitteeEmail } from "./mail-nodemailer.server";
+import { buildReferencesForReply, computeThreadId } from "./mail-threading.server";
 
 export type ComposeMode = "new" | "reply" | "replyAll" | "forward";
 
@@ -213,9 +214,6 @@ export async function sendMailDraftAndPersist({
 	) => string;
 	htmlToText: (value: string) => string;
 }) {
-	const { buildReferencesForReply, computeThreadId } = await import(
-		"./mail-threading.server"
-	);
 	const subject = (formData.get("subject") as string)?.trim();
 	const body = (formData.get("body") as string) || "";
 	const draftAttachmentState = parseDraftAttachmentState(

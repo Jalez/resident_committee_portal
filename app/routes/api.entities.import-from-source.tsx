@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import type { DatabaseAdapter, RelationshipEntityType } from "~/db";
+import { getDatabase } from "~/db/server.server";
 import { getAuthenticatedUser } from "~/lib/auth.server";
 
 /**
@@ -18,7 +19,6 @@ import { getAuthenticatedUser } from "~/lib/auth.server";
  * 5. Returns the created entities
  */
 export async function action({ request }: ActionFunctionArgs) {
-	const { getDatabase } = await import("~/db/server.server");
 	const db = getDatabase();
 	const user = await getAuthenticatedUser(request, getDatabase);
 	if (!user) {

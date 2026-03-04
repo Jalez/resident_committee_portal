@@ -12,6 +12,8 @@ import type { ActionFunctionArgs } from "react-router";
 import { getDatabase } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db";
 import { getAuthenticatedUser } from "~/lib/auth.server";
+import { getMinuteStorage } from "~/lib/minutes/storage.server";
+import { getReceiptStorage } from "~/lib/receipts/server";
 
 interface CleanupRequest {
 	olderThanMinutes?: number;
@@ -166,8 +168,6 @@ async function deleteAssociatedFiles(
 		const receipt = await db.getReceiptById(entityId);
 		if (receipt?.pathname) {
 			try {
-				// Dynamically import to avoid circular dependencies
-				const { getReceiptStorage } = await import("~/lib/receipts/server");
 				const storage = getReceiptStorage();
 				await storage.deleteFile(receipt.pathname);
 				console.log(`[DraftCleanup] Deleted receipt file: ${receipt.pathname}`);
@@ -179,9 +179,6 @@ async function deleteAssociatedFiles(
 		const minute = await db.getMinuteById(entityId);
 		if (minute?.fileKey) {
 			try {
-				const { getMinuteStorage } = await import(
-					"~/lib/minutes/storage.server"
-				);
 				const storage = getMinuteStorage();
 				await storage.deleteFile(minute.fileKey);
 				console.log(`[DraftCleanup] Deleted minute file: ${minute.fileKey}`);

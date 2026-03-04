@@ -22,6 +22,7 @@ import {
 	requirePermission,
 } from "~/lib/auth.server";
 import { SITE_CONFIG } from "~/lib/config.server";
+import { getDraftAutoPublishStatus } from "~/lib/draft-auto-publish";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/_index";
 
@@ -105,9 +106,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 		// Auto-publish draft
 		if (currentLink && (currentLink as any).status === "draft") {
-			const { getDraftAutoPublishStatus } = await import(
-				"~/lib/draft-auto-publish"
-			);
 			const newStatus = getDraftAutoPublishStatus(
 				"social",
 				"draft",
