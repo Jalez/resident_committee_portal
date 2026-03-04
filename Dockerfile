@@ -25,6 +25,8 @@ RUN npm install -g bun
 
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts/migrate-prod-drizzle.ts ./scripts/migrate-prod-drizzle.ts
 COPY --from=builder /app/package.json ./package.json
 COPY --from=deps /app/bun.lock ./bun.lock
 
@@ -34,5 +36,5 @@ RUN rm bun.lock && bun install --production
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Start the server using npm (which uses Node.js for react-router-serve)
-CMD ["npm", "run", "start"]
+# Run pending DB migrations and start the server
+CMD ["sh", "-lc", "bun run ./scripts/migrate-prod-drizzle.ts && npm run start"]

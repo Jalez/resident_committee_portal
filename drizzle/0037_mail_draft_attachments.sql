@@ -1,2 +1,2 @@
 ALTER TABLE "mail_drafts"
-ADD COLUMN "attachments_json" text;
+ADD COLUMN IF NOT EXISTS "attachments_json" text;
