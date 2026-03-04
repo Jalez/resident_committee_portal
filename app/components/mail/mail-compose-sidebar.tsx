@@ -1,54 +1,28 @@
 import { useTranslation } from "react-i18next";
 import { MailAttachmentsPanel } from "~/components/mail/mail-attachments-panel";
-import type { RelationAttachmentItem } from "~/components/mail/mail-attachments-panel";
 import { RelationshipPicker } from "~/components/relationships/relationship-picker";
-import type { RelationshipEntityType } from "~/db/types";
-import type { DraftAttachmentState, RelationAttachmentKey } from "~/lib/mail-draft-attachments";
+import { useMailDraftCompose } from "~/contexts/mail-draft-compose-context";
 
-type RelationshipSectionData = {
-	linked: unknown[];
-	available: unknown[];
-	canWrite?: boolean;
-};
-
-export function MailComposeSidebar({
-	draftId,
-	relationAId,
-	subject,
-	relationships,
-	formData,
-	onLink,
-	onUnlink,
-	relationAttachmentItems,
-	excludedKeys,
-	attachmentState,
-	includedRelationAttachmentCount,
-	onUploadManualAttachment,
-	onIncludeRelationAttachment,
-	onExcludeRelationAttachment,
-	onRemoveManualAttachment,
-}: {
-	draftId: string;
-	relationAId: string;
-	subject: string;
-	relationships: Record<string, RelationshipSectionData | undefined>;
-	formData: Record<string, string>;
-	onLink: (
-		relationBType: RelationshipEntityType,
-		relationBId: string,
-		metadata?: Record<string, unknown>,
-	) => void;
-	onUnlink: (relationBType: RelationshipEntityType, relationBId: string) => void;
-	relationAttachmentItems: RelationAttachmentItem[];
-	excludedKeys: Set<string>;
-	attachmentState: DraftAttachmentState;
-	includedRelationAttachmentCount: number;
-	onUploadManualAttachment: (file: File | null) => void | Promise<void>;
-	onIncludeRelationAttachment: (key: RelationAttachmentKey) => void;
-	onExcludeRelationAttachment: (key: RelationAttachmentKey) => void;
-	onRemoveManualAttachment: (id: string) => Promise<void>;
-}) {
+export function MailComposeSidebar() {
 	const { t } = useTranslation();
+	const {
+		draftId,
+		relationAId,
+		subject,
+		relationships,
+		getRelationshipFormData,
+		handleLink,
+		handleUnlink,
+		relationAttachmentItems,
+		excludedKeys,
+		attachmentState,
+		includedRelationAttachmentCount,
+		uploadManualAttachment,
+		includeRelationAttachment,
+		excludeRelationAttachment,
+		removeManualAttachment,
+	} = useMailDraftCompose();
+	if (!draftId) return null;
 
 	return (
 		<div className="lg:col-span-1">
@@ -77,19 +51,19 @@ export function MailComposeSidebar({
 						},
 					];
 				})}
-				onLink={onLink}
-				onUnlink={onUnlink}
-				formData={formData}
+				onLink={handleLink}
+				onUnlink={handleUnlink}
+				formData={getRelationshipFormData()}
 			/>
 			<MailAttachmentsPanel
 				relationAttachmentItems={relationAttachmentItems}
 				excludedKeys={excludedKeys}
 				manualAttachments={attachmentState.manualAttachments}
 				includedRelationAttachmentCount={includedRelationAttachmentCount}
-				onUploadManualAttachment={onUploadManualAttachment}
-				onIncludeRelationAttachment={onIncludeRelationAttachment}
-				onExcludeRelationAttachment={onExcludeRelationAttachment}
-				onRemoveManualAttachment={onRemoveManualAttachment}
+				onUploadManualAttachment={uploadManualAttachment}
+				onIncludeRelationAttachment={includeRelationAttachment}
+				onExcludeRelationAttachment={excludeRelationAttachment}
+				onRemoveManualAttachment={removeManualAttachment}
 			/>
 		</div>
 	);

@@ -1,88 +1,63 @@
 import { useTranslation } from "react-i18next";
-import type { RecipientEntry } from "~/components/committee-recipient-field";
 import { RecipientField } from "~/components/committee-recipient-field";
 import { Input } from "~/components/ui/input";
 import { RichTextEditor } from "~/components/ui/rich-text-editor";
+import { useMailDraftCompose } from "~/contexts/mail-draft-compose-context";
 
-type RecipientCandidate = { id: string; name: string; email: string };
-type RoleOption = { id: string; name: string };
-
-export function MailComposeMainFields({
-	toRecipients,
-	ccRecipients,
-	bccRecipients,
-	onAddToRecipients,
-	onAddCcRecipients,
-	onAddBccRecipients,
-	onRemoveToRecipient,
-	onRemoveCcRecipient,
-	onRemoveBccRecipient,
-	roles,
-	recipientCandidates,
-	onGetRecipientsForRole,
-	subject,
-	onSubjectChange,
-	body,
-	onBodyChange,
-	lastSavedAt,
-}: {
-	toRecipients: RecipientEntry[];
-	ccRecipients: RecipientEntry[];
-	bccRecipients: RecipientEntry[];
-	onAddToRecipients: (entries: { email: string; name?: string }[]) => void;
-	onAddCcRecipients: (entries: { email: string; name?: string }[]) => void;
-	onAddBccRecipients: (entries: { email: string; name?: string }[]) => void;
-	onRemoveToRecipient: (id: string) => void;
-	onRemoveCcRecipient: (id: string) => void;
-	onRemoveBccRecipient: (id: string) => void;
-	roles: RoleOption[];
-	recipientCandidates: RecipientCandidate[];
-	onGetRecipientsForRole: (
-		roleId: string,
-		field: "to" | "cc" | "bcc",
-	) => void;
-	subject: string;
-	onSubjectChange: (value: string) => void;
-	body: string;
-	onBodyChange: (value: string) => void;
-	lastSavedAt: Date | null;
-}) {
+export function MailComposeMainFields() {
 	const { t } = useTranslation();
+	const {
+		toRecipients,
+		ccRecipients,
+		bccRecipients,
+		addToRecipients,
+		addCcRecipients,
+		addBccRecipients,
+		removeToRecipient,
+		removeCcRecipient,
+		removeBccRecipient,
+		roles,
+		recipientCandidates,
+		getRecipientsForRole,
+		subject,
+		setSubject,
+		body,
+		setBody,
+		lastSavedAt,
+	} = useMailDraftCompose();
 
 	return (
 		<div className="flex flex-col gap-4 lg:col-span-2">
 			<RecipientField
 				field="to"
 				recipients={toRecipients}
-				onAdd={onAddToRecipients}
-				onRemove={onRemoveToRecipient}
+				onAdd={addToRecipients}
+				onRemove={removeToRecipient}
 				roles={roles}
 				recipientCandidates={recipientCandidates}
-				onGetRecipientsForRole={(roleId) => onGetRecipientsForRole(roleId, "to")}
+				onGetRecipientsForRole={(roleId) => getRecipientsForRole(roleId, "to")}
 				listId="compose-to-list"
 				label={t("committee.mail.to")}
 			/>
 			<RecipientField
 				field="cc"
 				recipients={ccRecipients}
-				onAdd={onAddCcRecipients}
-				onRemove={onRemoveCcRecipient}
+				onAdd={addCcRecipients}
+				onRemove={removeCcRecipient}
 				roles={roles}
 				recipientCandidates={recipientCandidates}
-				onGetRecipientsForRole={(roleId) => onGetRecipientsForRole(roleId, "cc")}
+				onGetRecipientsForRole={(roleId) => getRecipientsForRole(roleId, "cc")}
 				listId="compose-cc-list"
 				label={t("committee.mail.cc")}
 			/>
 			<RecipientField
 				field="bcc"
 				recipients={bccRecipients}
-				onAdd={onAddBccRecipients}
-				onRemove={onRemoveBccRecipient}
+				onAdd={addBccRecipients}
+				onRemove={removeBccRecipient}
 				roles={roles}
 				recipientCandidates={recipientCandidates}
-				onGetRecipientsForRole={(roleId) =>
-					onGetRecipientsForRole(roleId, "bcc")
-				}
+				onGetRecipientsForRole={(roleId) => getRecipientsForRole(roleId, "bcc")}
 				listId="compose-bcc-list"
 				label={t("committee.mail.bcc")}
 			/>
@@ -96,7 +71,7 @@ export function MailComposeMainFields({
 					type="text"
 					required
 					value={subject}
-					onChange={(e) => onSubjectChange(e.target.value)}
+					onChange={(e) => setSubject(e.target.value)}
 					className="h-8 flex-1 text-sm"
 					placeholder={t("committee.mail.subject_placeholder")}
 				/>
@@ -105,7 +80,7 @@ export function MailComposeMainFields({
 			<div className="flex flex-col gap-1">
 				<RichTextEditor
 					value={body}
-					onChange={onBodyChange}
+					onChange={setBody}
 					placeholder={t("committee.mail.body_placeholder")}
 				/>
 				{lastSavedAt && (

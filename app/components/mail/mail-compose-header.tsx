@@ -3,39 +3,34 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { SmartAutofillButton } from "~/components/smart-autofill-button";
 import { Button } from "~/components/ui/button";
+import { useMailDraftCompose } from "~/contexts/mail-draft-compose-context";
 
-type Props = {
-	composeTitleKey: string;
-	draftId: string | null;
-	relationAId: string;
-	subject: string;
-	body: string;
-	canSubmit: boolean;
-	isSubmitting: boolean;
-	missingRequiredReimbursementAttachments: boolean;
-	saveDisabled: boolean;
-	onSaveDraft: () => void;
-	onDeleteDraft: () => void;
-	onAutofillSuggestions: (suggestions: Record<string, string | number | null>) => void;
-	getRelationshipFormData: () => Record<string, string>;
-};
-
-export function MailComposeHeader({
-	composeTitleKey,
-	draftId,
-	relationAId,
-	subject,
-	body,
-	canSubmit,
-	isSubmitting,
-	missingRequiredReimbursementAttachments,
-	saveDisabled,
-	onSaveDraft,
-	onDeleteDraft,
-	onAutofillSuggestions,
-	getRelationshipFormData,
-}: Props) {
+export function MailComposeHeader() {
 	const { t } = useTranslation();
+	const {
+		composeMode,
+		draftId,
+		relationAId,
+		subject,
+		body,
+		canSubmit,
+		isSubmitting,
+		missingRequiredReimbursementAttachments,
+		saveDisabled,
+		handleManualSave,
+		handleDeleteDraft,
+		handleAutofillSuggestions,
+		getRelationshipFormData,
+	} = useMailDraftCompose();
+
+	const composeTitleKey =
+		composeMode === "reply"
+			? "mail.compose_reply"
+			: composeMode === "replyAll"
+				? "mail.compose_reply_all"
+				: composeMode === "forward"
+					? "mail.compose_forward"
+					: "mail.compose_new";
 
 	return (
 		<>
@@ -59,7 +54,7 @@ export function MailComposeHeader({
 							entityId={relationAId}
 							getCurrentValues={() => ({ subject, body })}
 							getExtraFormData={getRelationshipFormData}
-							onSuggestions={onAutofillSuggestions}
+							onSuggestions={handleAutofillSuggestions}
 						/>
 					)}
 					{draftId && (
@@ -67,7 +62,7 @@ export function MailComposeHeader({
 							type="button"
 							variant="outline"
 							size="sm"
-							onClick={onSaveDraft}
+							onClick={handleManualSave}
 							disabled={saveDisabled}
 						>
 							<Save className="mr-1 size-4" />
@@ -80,7 +75,7 @@ export function MailComposeHeader({
 							size="sm"
 							type="button"
 							className="text-destructive hover:text-destructive hover:bg-destructive/10"
-							onClick={onDeleteDraft}
+							onClick={handleDeleteDraft}
 						>
 							<Trash2 className="mr-1 size-4" />
 							{t("mail.delete_draft", { defaultValue: "Delete draft" })}
