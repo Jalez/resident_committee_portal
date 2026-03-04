@@ -10,16 +10,11 @@ import {
 	useSearchParams,
 } from "react-router";
 import { toast } from "sonner";
-import {
-	type RecipientEntry,
-	RecipientField,
-} from "~/components/committee-recipient-field";
-import { MailAttachmentsPanel } from "~/components/mail/mail-attachments-panel";
+import { type RecipientEntry } from "~/components/committee-recipient-field";
 import { MailComposeHeader } from "~/components/mail/mail-compose-header";
+import { MailComposeMainFields } from "~/components/mail/mail-compose-main-fields";
+import { MailComposeSidebar } from "~/components/mail/mail-compose-sidebar";
 import { MailOriginalMessagePreview } from "~/components/mail/mail-original-message-preview";
-import { RelationshipPicker } from "~/components/relationships/relationship-picker";
-import { Input } from "~/components/ui/input";
-import { RichTextEditor } from "~/components/ui/rich-text-editor";
 import { useUser } from "~/contexts/user-context";
 import { type CommitteeMailMessage, getDatabase, type MailDraft } from "~/db/server.server";
 import { useMailDraftAttachments } from "~/hooks/use-mail-draft-attachments";
@@ -836,130 +831,50 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 				getRelationshipFormData={() => relationshipPicker.toFormData()}
 			/>
 
-			{/* Compose form fields + relationships */}
 			<div className="grid gap-6 lg:grid-cols-3">
-				<div className="flex flex-col gap-4 lg:col-span-2">
-					<RecipientField
-						field="to"
-						recipients={toRecipients}
-						onAdd={addToRecipients}
-						onRemove={(id) =>
-							setToRecipients((prev) => prev.filter((r) => r.id !== id))
-						}
-						roles={roles}
-						recipientCandidates={recipientCandidates}
-						onGetRecipientsForRole={(roleId) =>
-							getRecipientsForRoleBound(roleId, "to")
-						}
-						listId="compose-to-list"
-						label={t("committee.mail.to")}
-					/>
-					<RecipientField
-						field="cc"
-						recipients={ccRecipients}
-						onAdd={addCcRecipients}
-						onRemove={(id) =>
-							setCcRecipients((prev) => prev.filter((r) => r.id !== id))
-						}
-						roles={roles}
-						recipientCandidates={recipientCandidates}
-						onGetRecipientsForRole={(roleId) =>
-							getRecipientsForRoleBound(roleId, "cc")
-						}
-						listId="compose-cc-list"
-						label={t("committee.mail.cc")}
-					/>
-					<RecipientField
-						field="bcc"
-						recipients={bccRecipients}
-						onAdd={addBccRecipients}
-						onRemove={(id) =>
-							setBccRecipients((prev) => prev.filter((r) => r.id !== id))
-						}
-						roles={roles}
-						recipientCandidates={recipientCandidates}
-						onGetRecipientsForRole={(roleId) =>
-							getRecipientsForRoleBound(roleId, "bcc")
-						}
-						listId="compose-bcc-list"
-						label={t("committee.mail.bcc")}
-					/>
-
-					<div className="flex items-center gap-2">
-						<span className="w-48 shrink-0 truncate text-sm font-medium">
-							{t("committee.mail.subject")}:
-						</span>
-						<Input
-							name="subject"
-							type="text"
-							required
-							value={subject}
-							onChange={(e) => setSubject(e.target.value)}
-							className="h-8 flex-1 text-sm"
-							placeholder={t("committee.mail.subject_placeholder")}
-						/>
-					</div>
-
-					<div className="flex flex-col gap-1">
-						<RichTextEditor
-							value={body}
-							onChange={setBody}
-							placeholder={t("committee.mail.body_placeholder")}
-						/>
-						{lastSavedAt && (
-							<p className="text-muted-foreground text-sm">
-								{t("mail.draft_saved_at", {
-									time: lastSavedAt.toLocaleTimeString(undefined, {
-										hour: "2-digit",
-										minute: "2-digit",
-									}),
-								})}
-							</p>
-						)}
-					</div>
-				</div>
+				<MailComposeMainFields
+					toRecipients={toRecipients}
+					ccRecipients={ccRecipients}
+					bccRecipients={bccRecipients}
+					onAddToRecipients={addToRecipients}
+					onAddCcRecipients={addCcRecipients}
+					onAddBccRecipients={addBccRecipients}
+					onRemoveToRecipient={(id) =>
+						setToRecipients((prev) => prev.filter((r) => r.id !== id))
+					}
+					onRemoveCcRecipient={(id) =>
+						setCcRecipients((prev) => prev.filter((r) => r.id !== id))
+					}
+					onRemoveBccRecipient={(id) =>
+						setBccRecipients((prev) => prev.filter((r) => r.id !== id))
+					}
+					roles={roles}
+					recipientCandidates={recipientCandidates}
+					onGetRecipientsForRole={getRecipientsForRoleBound}
+					subject={subject}
+					onSubjectChange={setSubject}
+					body={body}
+					onBodyChange={setBody}
+					lastSavedAt={lastSavedAt}
+				/>
 				{draftId && (
-					<div className="lg:col-span-1">
-						<RelationshipPicker
-							relationAType="mail_thread"
-							relationAId={relationAId}
-							relationAName={subject || t("mail.no_subject")}
-							mode="edit"
-							currentPath={`/mail/drafts/${draftId}/edit`}
-							sections={[
-								{ type: "receipt" as const },
-								{ type: "reimbursement" as const, maxItems: 1 },
-								{ type: "transaction" as const, maxItems: 1 },
-								{ type: "event" as const, maxItems: 1 },
-								{ type: "minute" as const, maxItems: 1 },
-							].flatMap(({ type, maxItems }) => {
-								const relData = relationships[type];
-								if (!relData) return [];
-								return [
-									{
-										relationBType: type,
-										linkedEntities: (relData.linked ?? []) as any[],
-										availableEntities: (relData.available ?? []) as any[],
-										canWrite: relData.canWrite ?? false,
-										maxItems,
-									},
-								];
-							})}
-							onLink={relationshipPicker.handleLink}
-							onUnlink={relationshipPicker.handleUnlink}
-							formData={relationshipPicker.toFormData()}
-						/>
-						<MailAttachmentsPanel
-							relationAttachmentItems={relationAttachmentItems}
-							excludedKeys={excludedKeys}
-							manualAttachments={attachmentState.manualAttachments}
-							includedRelationAttachmentCount={includedRelationAttachmentCount}
-							onUploadManualAttachment={uploadManualAttachment}
-							onIncludeRelationAttachment={includeRelationAttachment}
-							onExcludeRelationAttachment={excludeRelationAttachment}
-							onRemoveManualAttachment={removeManualAttachment}
-						/>
-					</div>
+					<MailComposeSidebar
+						draftId={draftId}
+						relationAId={relationAId}
+						subject={subject}
+						relationships={relationships as Record<string, any>}
+						formData={relationshipPicker.toFormData()}
+						onLink={relationshipPicker.handleLink}
+						onUnlink={relationshipPicker.handleUnlink}
+						relationAttachmentItems={relationAttachmentItems}
+						excludedKeys={excludedKeys}
+						attachmentState={attachmentState}
+						includedRelationAttachmentCount={includedRelationAttachmentCount}
+						onUploadManualAttachment={uploadManualAttachment}
+						onIncludeRelationAttachment={includeRelationAttachment}
+						onExcludeRelationAttachment={excludeRelationAttachment}
+						onRemoveManualAttachment={removeManualAttachment}
+					/>
 				)}
 			</div>
 			<MailOriginalMessagePreview

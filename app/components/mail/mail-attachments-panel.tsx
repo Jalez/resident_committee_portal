@@ -2,7 +2,7 @@ import { Paperclip, X } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import type { DraftManualAttachment } from "~/lib/mail-draft-attachments";
 
-type RelationAttachmentItem = {
+export type RelationAttachmentItem = {
 	key: `minute:${string}` | `receipt:${string}`;
 	name: string;
 	type: "minute" | "receipt";
