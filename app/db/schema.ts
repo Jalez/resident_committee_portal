@@ -495,6 +495,7 @@ export const mailDrafts = pgTable("mail_drafts", {
 	bccJson: text("bcc_json"),
 	subject: text("subject"),
 	body: text("body"),
+	attachmentsJson: text("attachments_json"),
 	replyToMessageId: text("reply_to_message_id"), // DB id of message being replied to
 	forwardFromMessageId: text("forward_from_message_id"), // DB id of message being forwarded
 	threadId: text("thread_id"), // thread root message-ID linking draft to a conversation

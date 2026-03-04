@@ -344,6 +344,7 @@ export interface MailDraft {
 	bccJson: string | null;
 	subject: string | null;
 	body: string | null;
+	attachmentsJson: string | null;
 	replyToMessageId: string | null;
 	forwardFromMessageId: string | null;
 	threadId: string | null;

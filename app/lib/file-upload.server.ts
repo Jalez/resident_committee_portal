@@ -26,6 +26,8 @@ export function getStorageAdapter(entityType: FileEntityType) {
 			return getReceiptStorage();
 		case "minute":
 			return getMinuteStorage();
+		case "mail_attachment":
+			return getReceiptStorage();
 		case "avatar":
 			return null;
 		default:
@@ -39,6 +41,8 @@ export function getEntityPrefix(entityType: FileEntityType): string {
 			return "receipts/";
 		case "minute":
 			return "minutes/";
+		case "mail_attachment":
+			return "mail/attachments/";
 		case "avatar":
 			return getAvatarsPrefix();
 		default:
@@ -58,6 +62,8 @@ export function buildEntityPath(
 			return buildReceiptPath(year, filename, description || "kuitti", date);
 		case "minute":
 			return buildMinutePath(year, filename, description, date);
+		case "mail_attachment":
+			return `mail/attachments/${year}/${filename}`;
 		case "avatar":
 			throw new Error("Avatar paths should be built directly with userId");
 		default:

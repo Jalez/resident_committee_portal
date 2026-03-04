@@ -8,6 +8,7 @@ const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
 	avatar: ["profile:write:own"],
+	mail_attachment: ["committee:email"],
 };
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -15,26 +16,29 @@ export async function action({ request }: ActionFunctionArgs) {
 		return Response.json({ error: "Method not allowed" }, { status: 405 });
 	}
 
-	const formData = await request.formData();
-	const pathname = formData.get("pathname") as string | null;
-	const entityType = formData.get("entityType") as FileEntityType | null;
-
-	if (!pathname) {
-		return Response.json({ error: "Pathname is required" }, { status: 400 });
+	let body: { entityType?: FileEntityType; pathname?: string } = {};
+	try {
+		body = await request.json();
+	} catch {
+		return Response.json({ error: "Invalid JSON" }, { status: 400 });
 	}
 
-	if (!entityType || !["receipt", "minute", "avatar"].includes(entityType)) {
-		return Response.json({ error: "Valid entityType is required" }, { status: 400 });
+	const entityType = body.entityType;
+	const pathname = body.pathname;
+	if (!entityType || !pathname) {
+		return Response.json(
+			{ error: "entityType and pathname are required" },
+			{ status: 400 },
+		);
+	}
+	if (!(entityType in PERMISSION_MAP)) {
+		return Response.json({ error: "Invalid entityType" }, { status: 400 });
 	}
 
-	const permissions = PERMISSION_MAP[entityType];
-	await requireAnyPermission(request, permissions, getDatabase);
-
+	await requireAnyPermission(request, PERMISSION_MAP[entityType], getDatabase);
 	const result = await deleteTempFile(pathname, entityType);
-
 	if (!result.success) {
-		return Response.json({ error: result.error }, { status: 400 });
+		return Response.json({ error: result.error || "Delete failed" }, { status: 400 });
 	}
-
 	return Response.json({ success: true });
 }

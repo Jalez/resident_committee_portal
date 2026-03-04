@@ -1,4 +1,4 @@
-export type FileEntityType = "receipt" | "minute" | "avatar";
+export type FileEntityType = "receipt" | "minute" | "avatar" | "mail_attachment";
 
 export interface FileTypeConfig {
 	extensions: readonly string[];
@@ -31,6 +31,19 @@ export const FILE_TYPE_CONFIGS: Record<FileEntityType, FileTypeConfig> = {
 		extensions: [".jpg", ".jpeg", ".png", ".webp"],
 		mimeTypes: ["image/jpeg", "image/png", "image/webp"],
 		maxSizeMB: 5,
+	},
+	mail_attachment: {
+		extensions: [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".txt", ".doc", ".docx"],
+		mimeTypes: [
+			"application/pdf",
+			"image/jpeg",
+			"image/png",
+			"image/webp",
+			"text/plain",
+			"application/msword",
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		],
+		maxSizeMB: 20,
 	},
 } as const;
 

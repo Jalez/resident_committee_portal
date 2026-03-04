@@ -11,6 +11,7 @@ const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
 	avatar: ["profile:write:own"],
+	mail_attachment: ["committee:email"],
 };
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -27,7 +28,10 @@ export async function action({ request }: ActionFunctionArgs) {
 		return Response.json({ error: "File is required" }, { status: 400 });
 	}
 
-	if (!entityType || !["receipt", "minute", "avatar"].includes(entityType)) {
+	if (
+		!entityType ||
+		!["receipt", "minute", "avatar", "mail_attachment"].includes(entityType)
+	) {
 		return Response.json({ error: "Valid entityType is required" }, { status: 400 });
 	}
 

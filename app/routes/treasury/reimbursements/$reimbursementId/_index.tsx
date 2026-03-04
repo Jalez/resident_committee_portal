@@ -12,6 +12,12 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
+import { plaintextToHtml } from "~/lib/mail-draft-body.server";
+import {
+	cleanupManualDraftAttachments,
+	resolveMailDraftAttachments,
+} from "~/lib/mail-draft-attachments.server";
+import { parseDraftAttachmentState } from "~/lib/mail-draft-attachments";
 import {
 	type CommitteeMailRecipient,
 	sendCommitteeEmail,
@@ -288,12 +294,12 @@ export async function action({ request, params }: Route.ActionArgs) {
 			}
 
 			const subject = linkedMailDraft.subject?.trim();
-			const body = linkedMailDraft.body?.trim();
+			const body = linkedMailDraft.body || "";
 			const toRecipients = parseRecipientsJson(linkedMailDraft.toJson);
 			const ccRecipients = parseRecipientsJson(linkedMailDraft.ccJson);
 			const bccRecipients = parseRecipientsJson(linkedMailDraft.bccJson);
 
-			if (!subject || !body) {
+			if (!subject || !body.trim()) {
 				return {
 					success: false,
 					error: "The linked mail draft is missing subject or body.",
@@ -333,59 +339,33 @@ export async function action({ request, params }: Route.ActionArgs) {
 				};
 			}
 
-			try {
-				const minuteAttachments = (
-					await Promise.all(
-						linkedMinutes.map((minute) =>
-							buildMinutesAttachment(
-								String(minute.id),
-								typeof minute.title === "string" ? minute.title : null,
-							),
-						),
-					)
-				).filter((attachment): attachment is NonNullable<typeof attachment> =>
-					Boolean(attachment),
-				);
-
-				const requestOrigin = new URL(request.url).origin;
-				const receiptLinks = linkedReceipts
-					.filter((receipt) => typeof receipt.id === "string")
-					.map((receipt) => ({
-						id: String(receipt.id),
-						name:
-							(typeof receipt.name === "string" && receipt.name) ||
-							(typeof receipt.description === "string" && receipt.description) ||
-							`receipt-${String(receipt.id).slice(0, 8)}`,
-						url:
-							(typeof receipt.url === "string" && receipt.url) ||
-							(typeof receipt.fileUrl === "string" && receipt.fileUrl) ||
-							(typeof receipt.pathname === "string" && receipt.pathname
-								? `${requestOrigin}${receipt.pathname.startsWith("/") ? receipt.pathname : `/${receipt.pathname}`}`
-								: "") ||
-							"",
-					}));
-				const receiptAttachments = await buildReceiptAttachments(receiptLinks);
-
-				const reimbursementAttachments = linkedReimbursements.map(
-					(reimbursement) => {
-						const id = String(reimbursement.id || "");
-						const details = [
-							`Reimbursement ID: ${id}`,
-							`Description: ${String(reimbursement.description || "")}`,
-							`Amount: ${String(reimbursement.amount || "")}`,
-							`Purchaser: ${String(reimbursement.purchaserName || "")}`,
-							`Bank account: ${String(reimbursement.bankAccount || "")}`,
-							`Status: ${String(reimbursement.status || "")}`,
-							`Year: ${String(reimbursement.year || "")}`,
-							`Notes: ${String(reimbursement.notes || "")}`,
-						].join("\n");
+				try {
+					const requestOrigin = new URL(request.url).origin;
+					const draftAttachmentState = parseDraftAttachmentState(
+						linkedMailDraft.attachmentsJson,
+					);
+					const resolvedAttachments = await resolveMailDraftAttachments({
+						db,
+						requestOrigin,
+						linkedMinutes,
+						linkedReceipts,
+						draftAttachmentState,
+					});
+					const hasIncludedMinute =
+						resolvedAttachments.includedRelationAttachmentKeys.some((key) =>
+							key.startsWith("minute:"),
+						);
+					const hasIncludedReceipt =
+						resolvedAttachments.includedRelationAttachmentKeys.some((key) =>
+							key.startsWith("receipt:"),
+						);
+					if (linkedReimbursements.length > 0 && (!hasIncludedMinute || !hasIncludedReceipt)) {
 						return {
-							filename: `reimbursement-${id.slice(0, 8)}.txt`,
-							content: Buffer.from(details, "utf-8").toString("base64"),
-							contentType: "text/plain; charset=utf-8",
+							success: false,
+							error:
+								"The linked mail draft cannot be sent: reimbursement mail requires at least one included minutes and receipt attachment.",
 						};
-					},
-				);
+					}
 
 				const composeMode =
 					(linkedMailDraft.draftType as
@@ -417,7 +397,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 					}
 				}
 
-				const bodyHtml = body.replace(/\n/g, "<br>\n");
+					const bodyHtml = /<[^>]+>/.test(body)
+						? body
+						: plaintextToHtml(body);
 				let quotedReply:
 					| {
 						date: string;
@@ -461,20 +443,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 					html,
 					inReplyTo: inReplyToHeader,
 					references: referencesHeader,
-					attachments: [
-						...minuteAttachments.map((attachment) => ({
-							filename: attachment.name,
-							content: attachment.content,
-							contentType: attachment.type,
-						})),
-						...receiptAttachments.map((attachment) => ({
-							filename: attachment.name,
-							content: attachment.content,
-							contentType: attachment.type,
-						})),
-						...reimbursementAttachments,
-					],
-				});
+						attachments: resolvedAttachments.attachments.length
+							? resolvedAttachments.attachments
+							: undefined,
+					});
 				if (!result.success) {
 					await db.updatePurchase(purchase.id, {
 						emailError: result.error || "Email sending failed",
@@ -485,7 +457,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 					};
 				}
 
-				await db.deleteMailDraft(linkedMailDraft.id);
+					await db.deleteMailDraft(linkedMailDraft.id);
+					await cleanupManualDraftAttachments(draftAttachmentState);
 
 				const fromEmail = process.env.COMMITTEE_FROM_EMAIL || "";
 				const fromName =

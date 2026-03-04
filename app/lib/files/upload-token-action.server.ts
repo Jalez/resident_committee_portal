@@ -6,12 +6,18 @@ import { getEntityPrefix } from "~/lib/file-upload.server";
 import type { FileEntityType } from "~/lib/file-upload-types";
 import { FILE_TYPE_CONFIGS } from "~/lib/file-upload-types";
 
-const VALID_ENTITY_TYPES: FileEntityType[] = ["receipt", "minute", "avatar"];
+const VALID_ENTITY_TYPES: FileEntityType[] = [
+	"receipt",
+	"minute",
+	"avatar",
+	"mail_attachment",
+];
 
 const PERMISSION_MAP: Record<FileEntityType, string[]> = {
 	receipt: ["treasury:receipts:write", "treasury:receipts:update"],
 	minute: ["minutes:write", "minutes:update"],
 	avatar: ["profile:write:own"],
+	mail_attachment: ["committee:email"],
 };
 
 function isValidPathname(pathname: string, entityType: FileEntityType, userId?: string): boolean {
