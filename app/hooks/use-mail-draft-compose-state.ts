@@ -16,7 +16,7 @@ import type { CommitteeMailMessage, MailDraft } from "~/db/server.server";
 import type { RelationshipEntityType } from "~/db/types";
 import { useMailDraftAttachments } from "~/hooks/use-mail-draft-attachments";
 import { useRelationshipPicker } from "~/hooks/use-relationship-picker";
-import { buildSignature, ensureSignedHtmlBody } from "~/lib/mail-draft-body.server";
+import { buildSignature, ensureSignedHtmlBody } from "~/lib/mail-draft-body";
 import {
 	parseDraftAttachmentState,
 	type RelationAttachmentKey,

@@ -3,7 +3,7 @@ import {
 	buildSignature,
 	ensureSignedHtmlBody,
 	plaintextToHtml,
-} from "~/lib/mail-draft-body.server";
+} from "~/lib/mail-draft-body";
 
 describe("mail draft body helpers", () => {
 	it("builds signature from name", () => {

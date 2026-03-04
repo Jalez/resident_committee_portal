@@ -31,7 +31,7 @@ import {
 import {
 	ensureSignedHtmlBody,
 	plaintextToHtml,
-} from "~/lib/mail-draft-body.server";
+} from "~/lib/mail-draft-body";
 import {
 	isCommitteeMailConfigured,
 } from "~/lib/mail-nodemailer.server";

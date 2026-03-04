@@ -12,7 +12,7 @@ import {
 	isEmailConfigured,
 	sendReimbursementEmail,
 } from "~/lib/email.server";
-import { plaintextToHtml } from "~/lib/mail-draft-body.server";
+import { plaintextToHtml } from "~/lib/mail-draft-body";
 import {
 	cleanupManualDraftAttachments,
 	resolveMailDraftAttachments,
