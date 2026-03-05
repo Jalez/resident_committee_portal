@@ -20,6 +20,11 @@ export interface EntityWithFile {
 	pathname?: string | null;
 }
 
+function hasSelectedFile(file: File | null): file is File {
+	// Browser multipart forms may submit an empty File object when no file is picked.
+	return !!file && file.name.trim().length > 0 && file.size > 0;
+}
+
 export function getStorageAdapter(entityType: FileEntityType) {
 	switch (entityType) {
 		case "receipt":
@@ -93,7 +98,8 @@ export async function handleFileUpload(options: {
 	const { formData, entityType, entity, name, year, customFileName, date } =
 		options;
 
-	const file = formData.get("file") as File | null;
+	const rawFile = formData.get("file") as File | null;
+	const file = hasSelectedFile(rawFile) ? rawFile : null;
 	const tempUrl = formData.get("tempUrl") as string | null;
 	const tempPathname = formData.get("tempPathname") as string | null;
 
@@ -150,7 +156,7 @@ export async function handleFileUpload(options: {
 				allowedTypes: getAllowedExtensionsString(entityType),
 			};
 		}
-		if (!isAllowedMimeType(entityType, file.type)) {
+		if (file.type && !isAllowedMimeType(entityType, file.type)) {
 			return {
 				error: "invalid_file_type",
 				allowedTypes: getAllowedExtensionsString(entityType),
@@ -226,7 +232,7 @@ export function validateFile(
 		};
 	}
 
-	if (!isAllowedMimeType(entityType, file.type)) {
+	if (file.type && !isAllowedMimeType(entityType, file.type)) {
 		return {
 			error: "invalid_file_type",
 			allowedTypes: getAllowedExtensionsString(entityType),

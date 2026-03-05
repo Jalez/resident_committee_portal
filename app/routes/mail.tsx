@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PageWrapper } from "~/components/layout/page-layout";
 import { getDatabase } from "~/db/server.server";
 import { requirePermission } from "~/lib/auth.server";
+import { getLiveRelations } from "~/lib/mail-delete-guard.server";
 import { SITE_CONFIG } from "~/lib/config.server";
 import { isCommitteeMailConfigured } from "~/lib/mail-nodemailer.server";
 import type { Route } from "./+types/mail";
@@ -42,8 +43,8 @@ export async function action({ request }: Route.ActionArgs) {
 		const message = await db.getCommitteeMailMessageById(messageId);
 		if (!message) return { deleted: false, error: "Message not found" };
 		if (message.threadId) {
-			const relations = await db.getEntityRelationships("mail_thread", message.threadId);
-			if (relations.length > 0) {
+			const liveRelations = await getLiveRelations(db, message.threadId);
+			if (liveRelations.length > 0) {
 				return { deleted: false, error: "Cannot delete: this thread has linked relations. Remove links first." };
 			}
 		}
@@ -60,8 +61,8 @@ export async function action({ request }: Route.ActionArgs) {
 		const draft = await db.getMailDraftById(draftId);
 		if (!draft) return { deleted: false, error: "Draft not found" };
 		if (draft.threadId) {
-			const relations = await db.getEntityRelationships("mail_thread", draft.threadId);
-			if (relations.length > 0) {
+			const liveRelations = await getLiveRelations(db, draft.threadId);
+			if (liveRelations.length > 0) {
 				return { deleted: false, error: "Cannot delete: this thread has linked relations. Remove links first." };
 			}
 		}
