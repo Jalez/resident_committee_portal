@@ -357,6 +357,8 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 											hiddenFields: {},
 											confirmMessage: t("submissions.delete_confirm"),
 											title: t("common.actions.delete"),
+											disabled: (relationsMap.get(submission.id) ?? []).length > 0,
+											disabledTitle: t("common.actions.delete_blocked_has_relations", { defaultValue: "Remove all linked relations first" }),
 										}
 										: undefined
 								}

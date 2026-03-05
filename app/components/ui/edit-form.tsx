@@ -126,6 +126,13 @@ export function EditForm({
 		return null;
 	}, [deleteUrl, entityType, entityId]);
 
+	const hasLinkedRelationships = React.useMemo(() => {
+		if (!relationships) return false;
+		return Object.values(relationships).some(
+			(rel) => rel && Array.isArray(rel.linked) && rel.linked.length > 0,
+		);
+	}, [relationships]);
+
 	// Local model state management
 	const [localModel, setLocalModel] = React.useState<string | null>(() => {
 		if (typeof window !== "undefined") {
@@ -405,7 +412,7 @@ export function EditForm({
 									action={resolvedDeleteUrl}
 									method="post"
 									onSubmit={(e) => {
-										if (!confirm(t("common.actions.delete_confirm"))) {
+										if (hasLinkedRelationships || !confirm(t("common.actions.delete_confirm"))) {
 											e.preventDefault();
 										}
 									}}
@@ -415,6 +422,8 @@ export function EditForm({
 										variant="destructive"
 										type="submit"
 										size="sm"
+										disabled={hasLinkedRelationships}
+										title={hasLinkedRelationships ? t("common.actions.delete_blocked_has_relations", { defaultValue: "Remove all linked relations first" }) : undefined}
 										className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
 									>
 										<Trash2 className="size-4 sm:mr-1.5" />

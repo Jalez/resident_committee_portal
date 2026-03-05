@@ -364,47 +364,27 @@ function RelationshipSectionComponent({
 		// Call onUnlink to track the removal for form submission
 		onUnlink?.(section.relationBType, id);
 
-		// For drafts, immediately delete from database via API
+		// Always unlink the relationship first
+		const fd = new FormData();
+		fd.append("relationAType", relationAType);
+		fd.append("relationAId", relationAId);
+		fd.append("relationBType", section.relationBType);
+		fd.append("relationBId", id);
+		unlinkFetcher.submit(fd, {
+			method: "POST",
+			action: "/api/entities/unlink",
+		});
+
+		// For drafts, also try to delete the entity itself (best-effort)
 		if (isDraft) {
 			try {
-				const response = await fetch(
+				await fetch(
 					`/api/entities/${section.relationBType}/${id}`,
 					{ method: "DELETE" },
 				);
-				const result = await response.json();
-
-				if (response.ok && result.success) {
-					toast.success(
-						t("common.relationships.draft_removed", {
-							defaultValue: "Draft removed",
-						}),
-					);
-					revalidator.revalidate();
-				} else {
-					toast.error(
-						t("common.relationships.remove_failed", {
-							defaultValue: "Failed to remove draft",
-						}),
-					);
-				}
-			} catch (err) {
-				console.error("[RelationshipPicker] Failed to delete draft:", err);
-				toast.error(
-					t("common.relationships.remove_failed", {
-						defaultValue: "Failed to remove draft",
-					}),
-				);
+			} catch {
+				// Entity may already be gone — that's fine
 			}
-		} else {
-			const fd = new FormData();
-			fd.append("relationAType", relationAType);
-			fd.append("relationAId", relationAId);
-			fd.append("relationBType", section.relationBType);
-			fd.append("relationBId", id);
-			unlinkFetcher.submit(fd, {
-				method: "POST",
-				action: "/api/entities/unlink",
-			});
 		}
 	};
 

@@ -24,6 +24,8 @@ interface TreasuryActionCellProps {
 		hiddenFields: Record<string, string>;
 		confirmMessage: string;
 		title: string;
+		disabled?: boolean;
+		disabledTitle?: string;
 	};
 }
 
@@ -100,9 +102,9 @@ export function TreasuryActionCell({
 						variant="ghost"
 						size="icon"
 						onClick={() => setShowDeleteConfirm(true)}
-						disabled={deleteFetcher.state !== "idle"}
+						disabled={deleteFetcher.state !== "idle" || deleteProps.disabled}
 						className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 h-8 w-8"
-						title={deleteProps.title}
+						title={deleteProps.disabled ? deleteProps.disabledTitle : deleteProps.title}
 					>
 						<span className={ICON_CLASS}>delete</span>
 					</Button>

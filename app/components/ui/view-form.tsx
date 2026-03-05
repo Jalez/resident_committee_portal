@@ -127,6 +127,13 @@ export function ViewForm({
 	const definition = ENTITY_DEFINITIONS[entityType];
 	const registry = ENTITY_REGISTRY[entityType];
 
+	const hasLinkedRelationships = React.useMemo(() => {
+		if (!relationships) return false;
+		return Object.values(relationships).some(
+			(rel) => rel && Array.isArray(rel.linked) && rel.linked.length > 0,
+		);
+	}, [relationships]);
+
 	const resolvedEditUrl =
 		editUrl || (registry ? registry.editUrl(entityId) : undefined);
 	const resolvedDeleteUrl =
@@ -444,7 +451,8 @@ export function ViewForm({
 									size="sm"
 									className="h-10 w-10 p-0 sm:h-8 sm:w-auto sm:px-3 sm:max-w-[7.5rem] md:max-w-[9rem] lg:max-w-[10.5rem] xl:max-w-none overflow-hidden sm:shrink sm:min-w-0"
 									onClick={() => setShowDeleteConfirm(true)}
-									disabled={deleteFetcher.state !== "idle"}
+									disabled={deleteFetcher.state !== "idle" || hasLinkedRelationships}
+									title={hasLinkedRelationships ? t("common.actions.delete_blocked_has_relations", { defaultValue: "Remove all linked relations first" }) : undefined}
 								>
 									<span className="material-symbols-outlined text-base sm:mr-1.5">
 										delete
