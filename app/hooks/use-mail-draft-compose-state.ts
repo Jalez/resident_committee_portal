@@ -177,7 +177,7 @@ export function useMailDraftComposeState({
 		recipients?: { id: string; name: string; email: string }[];
 		field?: "to" | "cc" | "bcc";
 	}>();
-	const deleteFetcher = useFetcher();
+	const deleteFetcher = useFetcher<{ deleted?: boolean; error?: string }>();
 
 	const [toRecipients, setToRecipients] = useState<RecipientEntry[]>(getInitialTo);
 	const [ccRecipients, setCcRecipients] = useState<RecipientEntry[]>(getInitialCc);
@@ -350,6 +350,12 @@ export function useMailDraftComposeState({
 			);
 		}
 	}, [saveDraftFetcher.data, t]);
+
+	useEffect(() => {
+		if (deleteFetcher.state === "idle" && deleteFetcher.data?.error) {
+			toast.error(deleteFetcher.data.error);
+		}
+	}, [deleteFetcher.state, deleteFetcher.data]);
 
 	const signature = useMemo(
 		() => buildSignature(user?.name, signatureRegards),

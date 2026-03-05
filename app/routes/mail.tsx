@@ -39,6 +39,14 @@ export async function action({ request }: Route.ActionArgs) {
 	if (intent === "deleteMessage") {
 		const messageId = formData.get("messageId") as string;
 		if (!messageId) return { deleted: false, error: "Missing messageId" };
+		const message = await db.getCommitteeMailMessageById(messageId);
+		if (!message) return { deleted: false, error: "Message not found" };
+		if (message.threadId) {
+			const relations = await db.getEntityRelationships("mail_thread", message.threadId);
+			if (relations.length > 0) {
+				return { deleted: false, error: "Cannot delete: this thread has linked relations. Remove links first." };
+			}
+		}
 		const ok = await db.deleteCommitteeMailMessage(messageId);
 		if (!ok) return { deleted: false, error: "Message not found" };
 		const direction = formData.get("direction") as string;
@@ -49,6 +57,14 @@ export async function action({ request }: Route.ActionArgs) {
 	if (intent === "deleteDraft") {
 		const draftId = formData.get("draftId") as string;
 		if (!draftId) return { deleted: false, error: "Missing draftId" };
+		const draft = await db.getMailDraftById(draftId);
+		if (!draft) return { deleted: false, error: "Draft not found" };
+		if (draft.threadId) {
+			const relations = await db.getEntityRelationships("mail_thread", draft.threadId);
+			if (relations.length > 0) {
+				return { deleted: false, error: "Cannot delete: this thread has linked relations. Remove links first." };
+			}
+		}
 		const ok = await db.deleteMailDraft(draftId);
 		if (!ok) return { deleted: false, error: "Draft not found" };
 		return { deleted: true, redirect: "/mail/drafts" };

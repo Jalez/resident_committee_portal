@@ -1,7 +1,8 @@
 import { Forward, Reply, ReplyAll, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, redirect, useFetcher } from "react-router";
+import { toast } from "sonner";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -71,7 +72,14 @@ export default function MailMessage({ loaderData }: Route.ComponentProps) {
 	const { message } = loaderData;
 	const { t } = useTranslation();
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const deleteFetcher = useFetcher();
+	const deleteFetcher = useFetcher<{ deleted?: boolean; error?: string }>();
+
+	useEffect(() => {
+		if (deleteFetcher.state === "idle" && deleteFetcher.data) {
+			if (deleteFetcher.data.deleted) toast.success(t("mail.delete_success"));
+			else if (deleteFetcher.data.error) toast.error(deleteFetcher.data.error);
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, t]);
 
 	const handleConfirmDelete = () => {
 		const formData = new FormData();

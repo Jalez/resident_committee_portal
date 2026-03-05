@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useFetcher } from "react-router";
+import { toast } from "sonner";
 import { IsolatedEmailContent } from "~/components/isolated-email-content";
 import {
 	AlertDialog,
@@ -430,8 +431,15 @@ export default function MailThread({
 		(loaderData as any).canUpdateReimbursementVerdict,
 	);
 	const { t } = useTranslation();
-	const deleteFetcher = useFetcher();
+	const deleteFetcher = useFetcher<{ deleted?: boolean; error?: string }>();
 	const analyticsFetcher = useFetcher();
+
+	useEffect(() => {
+		if (deleteFetcher.state === "idle" && deleteFetcher.data) {
+			if (deleteFetcher.data.deleted) toast.success(t("mail.delete_success"));
+			else if (deleteFetcher.data.error) toast.error(deleteFetcher.data.error);
+		}
+	}, [deleteFetcher.state, deleteFetcher.data, t]);
 
 	// Auto-run analytics if there's a pending reimbursement that hasn't received any email replies yet
 	useEffect(() => {

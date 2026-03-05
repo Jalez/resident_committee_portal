@@ -116,11 +116,27 @@ function toNonEmptyString(value: unknown): string {
 	return typeof value === "string" ? value.trim() : "";
 }
 
+function stripHtmlTags(html: string): string {
+	return html
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<\/p>\s*<p[^>]*>/gi, "\n")
+		.replace(/<[^>]+>/g, "")
+		.replace(/&nbsp;/gi, " ")
+		.replace(/&amp;/gi, "&")
+		.replace(/&lt;/gi, "<")
+		.replace(/&gt;/gi, ">")
+		.trim();
+}
+
 function stripKnownSignature(body: string): string {
 	const trimmed = body.trim();
 	if (!trimmed) return "";
 
-	const normalized = trimmed.replace(/\r\n/g, "\n");
+	// Strip HTML tags so we can match plain-text signature patterns
+	const plain = stripHtmlTags(trimmed);
+	if (!plain) return "";
+
+	const normalized = plain.replace(/\r\n/g, "\n");
 	const signatureOnlyPattern =
 		/^Best regards,\s*\n+[\s\S]*$/i;
 
@@ -128,7 +144,7 @@ function stripKnownSignature(body: string): string {
 		return "";
 	}
 
-	return trimmed;
+	return plain;
 }
 
 function normalizeLanguageTag(lang: string): string {
