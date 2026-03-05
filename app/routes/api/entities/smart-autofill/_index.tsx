@@ -497,16 +497,15 @@ export async function action({ request }: Route.ActionArgs) {
 	// include links added in the current unsaved edit state.
 	if (entityType === "mail_thread") {
 		const mailDraft = await db.getMailDraftById(entityId);
-		if (mailDraft?.threadId) {
-			await saveRelationshipChanges(
-				db,
-				"mail_thread",
-				mailDraft.threadId,
-				formData,
-				authUser.userId || null,
-				authUser.permissions,
-			);
-		}
+		const relEntityId = mailDraft?.threadId || entityId;
+		await saveRelationshipChanges(
+			db,
+			"mail_thread",
+			relEntityId,
+			formData,
+			authUser.userId || null,
+			authUser.permissions,
+		);
 	}
 
 	// Global smart-autofill behavior: optionally expand one-hop relationships

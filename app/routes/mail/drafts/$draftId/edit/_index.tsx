@@ -294,6 +294,7 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 			{compose.draftId && (
 				<input type="hidden" name="draftId" value={compose.draftId} />
 			)}
+			<input type="hidden" name="relationAId" value={compose.relationAId} />
 			{originalMessage &&
 				(compose.composeMode === "reply" ||
 					compose.composeMode === "replyAll") && (
@@ -325,6 +326,9 @@ export default function MailCompose({ loaderData }: Route.ComponentProps) {
 				name="attachments_json"
 				value={JSON.stringify(compose.attachmentState)}
 			/>
+			{Object.entries(compose.getRelationshipFormData()).map(([key, value]) => (
+				<input key={key} type="hidden" name={key} value={value} />
+			))}
 
 			<MailComposeHeader />
 
