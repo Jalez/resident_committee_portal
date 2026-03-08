@@ -174,7 +174,7 @@ export default function AdminStorageReceipts() {
 				</p>
 
 				<ContentArea>
-					<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+					<div className="bg-card rounded-2xl shadow-sm border border-border overflow-x-hidden">
 						{items.length === 0 ? (
 							<EmptyState
 								message={t("admin.storage.receipts.empty", {
