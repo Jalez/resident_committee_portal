@@ -1,8 +1,12 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLoaderData, useRevalidator } from "react-router";
+import { Link, useLoaderData, useRevalidator } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
@@ -14,6 +18,21 @@ import { SITE_CONFIG } from "~/lib/config.server";
 import { getReceiptStorage } from "~/lib/receipts/server";
 import { getSystemLanguageDefaults } from "~/lib/settings.server";
 import type { Route } from "./+types/_index";
+
+function normalizeReceiptPath(value: string | null | undefined): string | null {
+	if (!value) return null;
+
+	try {
+		if (value.startsWith("http://") || value.startsWith("https://")) {
+			const pathname = new URL(value).pathname.replace(/^\/+/, "");
+			return pathname || null;
+		}
+	} catch {
+		// Fall through to string normalization below.
+	}
+
+	return value.replace(/^\/+/, "") || null;
+}
 
 export function meta({ data }: Route.MetaArgs) {
 	return [
@@ -30,31 +49,44 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const storage = getReceiptStorage();
 	const receiptsByYear = await storage.listReceiptsByYear();
 	const allFiles = receiptsByYear.flatMap((r) =>
-		r.files.map((f) => ({ pathname: f.id, url: f.url, name: f.name })),
+		r.files.map((f) => ({
+			pathname: normalizeReceiptPath(f.id) || f.id,
+			url: f.url,
+			name: f.name,
+		})),
 	);
 
 	const db = getDatabase();
 	const dbReceipts = await db.getReceipts();
-	const dbByPathname = new Map(dbReceipts.map((r) => [r.pathname, r]));
+	const dbByPathname = new Map<string, (typeof dbReceipts)[number]>();
+	for (const receipt of dbReceipts) {
+		const normalizedPath = normalizeReceiptPath(receipt.pathname);
+		if (normalizedPath) {
+			dbByPathname.set(normalizedPath, receipt);
+		}
+		const normalizedUrlPath = normalizeReceiptPath(receipt.url);
+		if (normalizedUrlPath) {
+			dbByPathname.set(normalizedUrlPath, receipt);
+		}
+	}
 
-	// Check relationships for each receipt to determine if linked
 	const items = await Promise.all(
 		allFiles.map(async (file) => {
 			const receipt = dbByPathname.get(file.pathname);
-			// Check if receipt has any entity relationships (linked to reimbursement/transaction)
-			let isLinked = false;
+			let hasEntityLinks = false;
 			if (receipt) {
 				const relationships = await db.getEntityRelationships(
 					"receipt",
 					receipt.id,
 				);
-				isLinked = relationships.length > 0;
+				hasEntityLinks = relationships.length > 0;
 			}
 			return {
 				pathname: file.pathname,
 				url: file.url,
 				name: file.name,
-				isLinked,
+				isLinked: !!receipt,
+				hasEntityLinks,
 				receiptId: receipt?.id ?? null,
 			};
 		}),
@@ -141,93 +173,116 @@ export default function AdminStorageReceipts() {
 					})}
 				</p>
 
-				<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-					{items.length === 0 ? (
-						<EmptyState
-							message={t("admin.storage.receipts.empty", {
-								defaultValue: "No receipts",
-							})}
-							icon="receipt_long"
-						/>
-					) : (
-						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-							{items.map((item) => (
-								<li
-									key={item.pathname}
-									className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
-								>
-									<div className="relative aspect-[4/3] bg-muted flex items-center justify-center p-2">
-										{item.url.toLowerCase().endsWith(".pdf") ? (
-											<a
-												href={item.url}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="flex flex-col items-center justify-center w-full h-full text-muted-foreground hover:text-foreground"
-											>
-												<span className="material-symbols-outlined text-5xl mb-2">
-													picture_as_pdf
-												</span>
-												<span className="text-xs">
-													{t("admin.storage.receipts.open_pdf")}
-												</span>
-											</a>
-										) : (
-											<Thumbnail
-												src={item.url}
-												alt={item.name}
-												objectFit="contain"
-												imgClassName="rounded-lg"
-											/>
-										)}
-										{item.isLinked ? (
-											<Badge
-												variant="secondary"
-												className="absolute top-2 right-2"
-											>
-												{t("admin.storage.receipts.linked", {
-													defaultValue: "Linked",
-												})}
-											</Badge>
-										) : (
-											<>
+				<ContentArea>
+					<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+						{items.length === 0 ? (
+							<EmptyState
+								message={t("admin.storage.receipts.empty", {
+									defaultValue: "No receipts",
+								})}
+								icon="receipt_long"
+							/>
+						) : (
+							<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+								{items.map((item) => (
+									<li
+										key={item.pathname}
+										className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
+									>
+										<div className="relative aspect-[4/3] bg-muted flex items-center justify-center p-2">
+											{item.url.toLowerCase().endsWith(".pdf") ? (
+												<a
+													href={item.url}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="flex flex-col items-center justify-center w-full h-full text-muted-foreground hover:text-foreground"
+												>
+													<span className="material-symbols-outlined text-5xl mb-2">
+														picture_as_pdf
+													</span>
+													<span className="text-xs">
+														{t("admin.storage.receipts.open_pdf")}
+													</span>
+												</a>
+											) : (
+												<Thumbnail
+													src={item.url}
+													alt={item.name}
+													objectFit="contain"
+													imgClassName="rounded-lg"
+												/>
+											)}
+											{item.isLinked ? (
 												<Badge
-													variant="outline"
+													variant="secondary"
 													className="absolute top-2 right-2"
 												>
-													{t("admin.storage.receipts.unlinked", {
-														defaultValue: "Unlinked",
+													{t("admin.storage.receipts.linked", {
+														defaultValue: "Linked",
 													})}
 												</Badge>
-												<Button
-													type="button"
-													variant="destructive"
-													size="sm"
-													className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-													disabled={deletingPathname === item.pathname}
-													onClick={() => handleDeleteClick(item.pathname)}
-												>
-													{deletingPathname === item.pathname
-														? t("common.actions.loading", {
-																defaultValue: "...",
-															})
-														: t("receipts.delete")}
-												</Button>
-											</>
-										)}
-									</div>
-									<div className="p-2 space-y-1">
-										<p
-											className="text-xs font-mono text-muted-foreground truncate"
-											title={item.pathname}
-										>
-											{item.name}
-										</p>
-									</div>
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
+											) : (
+												<>
+													<Badge
+														variant="outline"
+														className="absolute top-2 right-2"
+													>
+														{t("admin.storage.receipts.unlinked", {
+															defaultValue: "Unlinked",
+														})}
+													</Badge>
+													<Button
+														type="button"
+														variant="destructive"
+														size="sm"
+														className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+														disabled={deletingPathname === item.pathname}
+														onClick={() => handleDeleteClick(item.pathname)}
+													>
+														{deletingPathname === item.pathname
+															? t("common.actions.loading", {
+																	defaultValue: "...",
+																})
+															: t("receipts.delete")}
+													</Button>
+												</>
+											)}
+										</div>
+										<div className="p-2 space-y-1">
+											<p
+												className="text-xs font-mono text-muted-foreground truncate"
+												title={item.pathname}
+											>
+												{item.name}
+											</p>
+											{item.isLinked && item.receiptId && (
+												<div className="text-xs space-y-1">
+													<Link
+														to={`/treasury/receipts/${item.receiptId}`}
+														className="text-blue-600 hover:underline"
+													>
+														{t("common.actions.view", {
+															defaultValue: "View",
+														})}{" "}
+														&rarr;
+													</Link>
+													{!item.hasEntityLinks && (
+														<p className="text-muted-foreground">
+															{t("admin.storage.receipts.linked_record_only", {
+																defaultValue:
+																	"Linked to a receipt record, not yet attached elsewhere.",
+															})}
+														</p>
+													)}
+												</div>
+											)}
+										</div>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);
