@@ -431,6 +431,24 @@ export const PERMISSIONS = {
 		category: "Polls",
 	},
 
+	// Messages
+	"messages:read": {
+		translationKey: "permissions.messages.read",
+		category: "Messages",
+	},
+	"messages:write": {
+		translationKey: "permissions.messages.write",
+		category: "Messages",
+	},
+	"messages:update": {
+		translationKey: "common.actions.edit",
+		category: "Messages",
+	},
+	"messages:delete": {
+		translationKey: "common.actions.delete",
+		category: "Messages",
+	},
+
 	// Profile
 	"profile:read:own": {
 		translationKey: "permissions.profile.read.own",

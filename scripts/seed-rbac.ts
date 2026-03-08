@@ -136,6 +136,10 @@ const DEFAULT_ROLES = [
 			"polls:write",
 			"polls:update",
 			"polls:delete",
+			"messages:read",
+			"messages:write",
+			"messages:update",
+			"messages:delete",
 		],
 	},
 	{

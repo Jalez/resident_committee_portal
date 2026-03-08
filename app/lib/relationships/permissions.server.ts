@@ -31,6 +31,16 @@ export function getReadPermissionsForType(
 	if (entityType === "mail_thread") {
 		return ["committee:email"];
 	}
+	if (entityType === "message") {
+		return [
+			"messages:read",
+			"messages:write",
+			"messages:update",
+			"messages:delete",
+			"messages:*",
+			"committee:email",
+		];
+	}
 
 	const definition = ENTITY_DEFINITIONS[entityType];
 	if (!definition) return [];
@@ -61,6 +71,15 @@ export function getWritePermissionsForType(
 ): string[] {
 	if (entityType === "mail_thread") {
 		return ["committee:email"];
+	}
+	if (entityType === "message") {
+		return [
+			"messages:write",
+			"messages:update",
+			"messages:delete",
+			"messages:*",
+			"committee:email",
+		];
 	}
 
 	const definition = ENTITY_DEFINITIONS[entityType];
