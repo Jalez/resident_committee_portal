@@ -364,8 +364,9 @@ export function useMailDraftComposeState({
 
 	useEffect(() => {
 		if (!signature) return;
+		if (composeMode === "new" && htmlToText(body).length === 0) return;
 		setBody((prev) => ensureSignedHtmlBody(prev, user?.name, signatureRegards));
-	}, [signature, signatureRegards, user?.name]);
+	}, [body, composeMode, htmlToText, signature, signatureRegards, user?.name]);
 
 	const addUniqueRecipients = useCallback(
 		(

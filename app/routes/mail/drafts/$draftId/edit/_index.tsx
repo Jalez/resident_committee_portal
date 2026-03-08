@@ -60,6 +60,10 @@ function htmlToText(value: string): string {
 		.trim();
 }
 
+function hasMeaningfulBodyContent(value: string | null | undefined): boolean {
+	return value != null && htmlToText(value).length > 0;
+}
+
 export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
@@ -168,7 +172,9 @@ export async function action({ request }: Route.ActionArgs) {
 		if (!draftId) return { saved: false, error: "Missing draftId" };
 		const fields = parseDraftMutationFields(formData);
 		const body = fields.body;
-		const normalizedBody = body ? ensureHtmlBody(body) : body;
+		const normalizedBody = hasMeaningfulBodyContent(body)
+			? ensureHtmlBody(body as string)
+			: null;
 		const signedBody = normalizedBody
 			? ensureSignedHtmlBody(
 					normalizedBody,
