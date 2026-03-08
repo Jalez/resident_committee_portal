@@ -98,6 +98,7 @@ const eventSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
 	location: z.string().optional(),
+	status: z.enum(["draft", "active", "cancelled", "completed"]).optional(),
 	isAllDay: z.string().optional().transform((val) => val === "on"),
 	startDate: z.string().min(1, "Start date is required"),
 	startTime: z.string().optional(),
@@ -120,6 +121,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 				title,
 				description,
 				location,
+				status,
 				isAllDay,
 				startDate,
 				startTime,
@@ -196,6 +198,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 				title,
 				description,
 				location,
+				status,
 				isAllDay,
 				startDate: startDateTime,
 				endDate: endDateTime,
@@ -265,6 +268,10 @@ export default function EventsEdit({ loaderData }: Route.ComponentProps) {
 		},
 		description: event.description || "",
 		location: event.location || "",
+		status: {
+			label: t("common.fields.status"),
+			value: event.status || "draft",
+		},
 		isAllDay: {
 			value: isAllDay,
 			render: (field, value, onChange) => (

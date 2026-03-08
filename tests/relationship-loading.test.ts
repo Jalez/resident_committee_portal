@@ -154,4 +154,26 @@ describe("Relationship Loading Logic", () => {
 			expect(linkedBudgets).toEqual([budgetId]);
 		});
 	});
+
+	describe("same-type relationships", () => {
+		it("should find another mail thread linked to the current mail thread", () => {
+			const threadAId = "thread-a";
+			const threadBId = "thread-b";
+			const threadRelationship: EntityRelationship = {
+				relationAType: "mail_thread",
+				relationId: threadAId,
+				relationBType: "mail_thread",
+				relationBId: threadBId,
+			};
+
+			const linkedThreads = extractLinkedIds(
+				[threadRelationship],
+				"mail_thread",
+				threadAId,
+				"mail_thread",
+			);
+
+			expect(linkedThreads).toEqual([threadBId]);
+		});
+	});
 });

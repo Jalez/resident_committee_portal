@@ -332,6 +332,15 @@ export const ENTITY_DEFINITIONS: Record<
 			title: { type: "text", required: true },
 			description: { type: "textarea" },
 			location: { type: "text" },
+			status: {
+				type: "select",
+				options: [
+					{ value: "draft", label: "Draft" },
+					{ value: "active", label: "Active" },
+					{ value: "cancelled", label: "Cancelled" },
+					{ value: "completed", label: "Completed" },
+				],
+			},
 			isAllDay: { type: "checkbox" },
 			startDate: { type: "date", required: true },
 			startTime: { type: "time" },
@@ -393,6 +402,7 @@ export const ENTITY_DEFINITIONS: Record<
 		requiredFields: [],
 		defaultRedirect: "/mail",
 		relationships: {
+			mail_thread: {},
 			receipt: {},
 			transaction: {},
 			reimbursement: {},

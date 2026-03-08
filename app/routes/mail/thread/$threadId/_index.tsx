@@ -40,6 +40,7 @@ import { ENTITY_REGISTRY } from "~/lib/entity-registry";
 import type { Route } from "./+types/_index";
 
 const relationshipTypes: RelationshipEntityType[] = [
+	"mail_thread",
 	"reimbursement",
 	"transaction",
 	"receipt",
@@ -775,12 +776,17 @@ export default function MailThread({
 						const relData = (loaderData.relationships as any)[type];
 						if (!relData) return [];
 						const config = ENTITY_REGISTRY[type];
+						const availableEntities =
+							type === "mail_thread"
+								? ((relData.available || []) as AnyEntity[]).filter(
+										(entity) => entity.id !== threadId,
+									)
+								: ((relData.available || []) as AnyEntity[]);
 						return [
 							{
 								relationBType: type as RelationshipEntityType,
 								linkedEntities: (relData.linked || []) as unknown as AnyEntity[],
-								availableEntities: (relData.available ||
-									[]) as unknown as AnyEntity[],
+								availableEntities,
 								canWrite: relData.canWrite ?? false,
 								createType: type,
 								label: t(config.pluralKey),
