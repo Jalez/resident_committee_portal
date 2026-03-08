@@ -12,7 +12,7 @@ import {
 	extractPurchaseIdFromSubject,
 	parseReimbursementReply,
 } from "./email.server";
-import { computeThreadId } from "./mail-threading.server";
+import { resolveThreadIdFromKnownMessages } from "./mail-threading.server";
 import { createReimbursementStatusNotification } from "./notifications.server";
 
 const config = {
@@ -293,7 +293,13 @@ export async function syncCommitteeMail(
 						: null;
 					const subject = envelope?.subject?.trim() || "(No subject)";
 					const date = envelope?.date || new Date();
-					const threadId = computeThreadId(messageId, inReplyTo, references);
+					const threadId = await resolveThreadIdFromKnownMessages(
+						messageId,
+						inReplyTo,
+						references,
+						(knownMessageId) =>
+							db.getCommitteeMailMessageByMessageId(knownMessageId),
+					);
 
 					if (threadId) {
 						await db.ensureCommitteeMailThread(threadId, subject);

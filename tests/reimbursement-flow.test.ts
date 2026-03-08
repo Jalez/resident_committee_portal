@@ -12,7 +12,10 @@ import {
 	parseReimbursementReply,
 } from "../app/lib/email.server";
 import { ENTITY_DEFINITIONS } from "../app/lib/entity-definitions";
-import { computeThreadId } from "../app/lib/mail-threading.server";
+import {
+	computeThreadId,
+	resolveThreadIdFromKnownMessages,
+} from "../app/lib/mail-threading.server";
 import { validateRequiredRelationships } from "../app/lib/required-relationships";
 
 vi.mock("../app/lib/openrouter.server", () => ({
@@ -970,6 +973,35 @@ describe("Reimbursement Request Flow", () => {
 			// Should use the first reference (parent), not the reply's own ID
 			expect(threadId).toBe(parentMessageId);
 			expect(threadId).not.toBe(replyMessageId);
+		});
+
+		it("should prefer a known local parent thread over an arbitrary references root", async () => {
+			await db.insertCommitteeMailMessage({
+				direction: "sent",
+				messageId: "known-parent@example.com",
+				threadId: "real-thread@example.com",
+				subject: "Kulukorvaus pyynto",
+			});
+
+			const resolvedThreadId = await resolveThreadIdFromKnownMessages(
+				"reply@example.com",
+				"known-parent@example.com",
+				["external-root@example.com", "known-parent@example.com"],
+				(messageId) => db.getCommitteeMailMessageByMessageId(messageId),
+			);
+
+			expect(resolvedThreadId).toBe("real-thread@example.com");
+		});
+
+		it("should fall back to the message id when references are unknown locally", async () => {
+			const resolvedThreadId = await resolveThreadIdFromKnownMessages(
+				"new-message@example.com",
+				null,
+				["unknown-root@example.com"],
+				(messageId) => db.getCommitteeMailMessageByMessageId(messageId),
+			);
+
+			expect(resolvedThreadId).toBe("new-message@example.com");
 		});
 
 		it("should find orphaned messages by subject pattern", async () => {

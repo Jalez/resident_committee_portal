@@ -20,6 +20,39 @@ export function computeThreadId(
 }
 
 /**
+ * Resolve a thread ID using locally known messages first.
+ *
+ * Some clients include unrelated or oversized References chains. For the portal's
+ * internal grouping, prefer headers that point to messages we already know about.
+ * If no known message is found, fall back conservatively instead of trusting an
+ * arbitrary external reference root.
+ */
+export async function resolveThreadIdFromKnownMessages(
+	messageId: string | null,
+	inReplyTo: string | null,
+	references: string[] | null,
+	findKnownMessage: (
+		messageId: string,
+	) => Promise<{ threadId: string | null; messageId: string | null } | null>,
+): Promise<string | null> {
+	if (inReplyTo) {
+		const parent = await findKnownMessage(inReplyTo);
+		if (parent?.threadId) return parent.threadId;
+		if (parent?.messageId) return parent.messageId;
+	}
+
+	if (references) {
+		for (const ref of references) {
+			const known = await findKnownMessage(ref);
+			if (known?.threadId) return known.threadId;
+			if (known?.messageId) return known.messageId;
+		}
+	}
+
+	return computeThreadId(messageId, inReplyTo, null);
+}
+
+/**
  * Build the References header for a reply.
  * Per RFC 5322: References = parent's References + parent's Message-ID
  */
