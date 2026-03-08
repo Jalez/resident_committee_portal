@@ -1,8 +1,7 @@
 import {
 	EventsPage,
-	eventsPageAction,
-	loadEventsPageData,
 } from "./events-page";
+import { eventsPageAction, loadEventsPageData } from "./events-page.server";
 import type { Route } from "./+types/_index";
 
 export function meta({ data }: Route.MetaArgs) {
