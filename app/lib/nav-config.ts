@@ -28,6 +28,19 @@ export const NAV_ITEMS: NavItem[] = [
 		icon: ENTITY_REGISTRY.event.icon,
 		i18nKey: "nav.events",
 		permission: "events:read",
+		children: [
+			{
+				path: "/events",
+				icon: "calendar_month",
+				i18nKey: "events.upcoming",
+			},
+			{
+				path: "/events/all",
+				icon: "table",
+				i18nKey: "events.view_all",
+				permission: "events:write",
+			},
+		],
 	},
 	{
 		path: "/treasury",

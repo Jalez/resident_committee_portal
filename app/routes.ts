@@ -154,6 +154,7 @@ export default [
 	route("committee/mail", "routes/committee/mail/_index.tsx"),
 	route("contact", "routes/contact/_index.tsx"),
 	route("events", "routes/events/_index.tsx"),
+	route("events/all", "routes/events/all/_index.tsx"),
 	route("events/:eventId/delete", "routes/events/$eventId/delete/_index.tsx"),
 	route("events/:eventId/edit", "routes/events/$eventId/edit/_index.tsx"),
 	route("events/new", "routes/events/new/_index.tsx"),
