@@ -4,7 +4,11 @@ import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
@@ -279,7 +283,7 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 				}}
 				footer={footerContent}
 			>
-				<div className="space-y-6">
+				<ContentArea className="space-y-6">
 					<ViewScopeDisclaimer canReadAll={canReadAll} itemType="receipts" />
 					<TreasuryTable<Receipt>
 						data={receipts}
@@ -312,7 +316,7 @@ export default function TreasuryReceipts({ loaderData }: Route.ComponentProps) {
 							title: t("treasury.receipts.no_receipts"),
 						}}
 					/>
-				</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

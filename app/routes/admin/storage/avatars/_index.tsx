@@ -4,7 +4,11 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLoaderData, useRevalidator } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
@@ -315,35 +319,37 @@ export default function AdminStorageAvatars() {
 					}),
 				}}
 			>
-				<p className="text-muted-foreground mb-6 -mt-6">
-					{t("admin.storage.avatars.description", {
-						defaultValue: "All user avatar images stored in the system.",
-					})}
-				</p>
+				<ContentArea>
+					<p className="text-muted-foreground mb-6 -mt-6">
+						{t("admin.storage.avatars.description", {
+							defaultValue: "All user avatar images stored in the system.",
+						})}
+					</p>
 
-				<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-					{items.length === 0 ? (
-						<EmptyState
-							message={t("admin.storage.avatars.empty", {
-								defaultValue: "No avatars",
-							})}
-							icon="account_circle"
-						/>
-					) : (
-						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-							{items.map((item) => (
-								<AvatarCard
-									key={item.pathname}
-									item={item}
-									onDelete={handleDeleteClick}
-									onReplace={doReplace}
-									isDeleting={deletingPathname === item.pathname}
-									isReplacing={replacingPathname === item.pathname}
-								/>
-							))}
-						</ul>
-					)}
-				</div>
+					<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+						{items.length === 0 ? (
+							<EmptyState
+								message={t("admin.storage.avatars.empty", {
+									defaultValue: "No avatars",
+								})}
+								icon="account_circle"
+							/>
+						) : (
+							<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+								{items.map((item) => (
+									<AvatarCard
+										key={item.pathname}
+										item={item}
+										onDelete={handleDeleteClick}
+										onReplace={doReplace}
+										isDeleting={deletingPathname === item.pathname}
+										isReplacing={replacingPathname === item.pathname}
+									/>
+								))}
+							</ul>
+						)}
+					</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

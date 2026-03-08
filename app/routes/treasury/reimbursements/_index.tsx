@@ -10,7 +10,11 @@ import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
 import { TREASURY_PURCHASE_STATUS_VARIANTS } from "~/components/colored-status-link-badge";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
@@ -443,7 +447,7 @@ export default function BudgetReimbursements({
 					}),
 				}}
 			>
-				<div className="space-y-6">
+				<ContentArea className="space-y-6">
 					<ViewScopeDisclaimer
 						canReadAll={canReadAll}
 						itemType="reimbursements"
@@ -519,7 +523,7 @@ export default function BudgetReimbursements({
 							formatCurrency,
 						}}
 					/>
-				</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

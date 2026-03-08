@@ -2,7 +2,11 @@ import { useTranslation } from "react-i18next";
 import { Form, Link } from "react-router";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
@@ -334,7 +338,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 				}}
 				footer={footerContent}
 			>
-				<div className="space-y-6">
+				<ContentArea className="space-y-6">
 					<TreasuryTable<Submission>
 						data={submissions}
 						columns={columns}
@@ -368,7 +372,7 @@ export default function Submissions({ loaderData }: Route.ComponentProps) {
 							title: t("submissions.no_submissions"),
 						}}
 					/>
-				</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

@@ -8,7 +8,11 @@ import {
 	TREASURY_TRANSACTION_STATUS_VARIANTS,
 	TREASURY_TRANSACTION_TYPE_VARIANTS,
 } from "~/components/colored-status-link-badge";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { type SearchField, SearchMenu } from "~/components/search-menu";
 import { TreasuryActionCell } from "~/components/treasury/treasury-action-cell";
@@ -367,7 +371,7 @@ export default function TreasuryTransactions({
 				importExtraFields={{ year: String(year) }}
 				footer={footerContent}
 			>
-				<div className="space-y-6">
+				<ContentArea className="space-y-6">
 					<ViewScopeDisclaimer
 						canReadAll={canReadAll}
 						itemType="transactions"
@@ -417,7 +421,7 @@ export default function TreasuryTransactions({
 							formatCurrency,
 						}}
 					/>
-				</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

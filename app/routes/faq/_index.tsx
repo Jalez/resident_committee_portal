@@ -4,7 +4,11 @@ import { Link, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { useFormatDate } from "~/hooks/use-format-date";
 import { AddItemButton } from "~/components/add-item-button";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { RelationsColumn } from "~/components/relations-column";
 import { SearchMenu } from "~/components/search-menu";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
@@ -160,7 +164,7 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 					</div>
 				}
 			>
-				<div className="space-y-6 pb-12">
+				<ContentArea className="space-y-6 pb-12">
 					{items.length === 0 ? (
 						<EmptyState
 							message={searchQ ? t("faq.no_results") : t("faq.empty")}
@@ -239,7 +243,7 @@ export default function Faq({ loaderData }: Route.ComponentProps) {
 							})}
 						</div>
 					)}
-				</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);

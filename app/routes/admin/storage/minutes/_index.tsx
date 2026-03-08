@@ -2,7 +2,11 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLoaderData, useRevalidator } from "react-router";
 import { toast } from "sonner";
-import { PageWrapper, SplitLayout } from "~/components/layout/page-layout";
+import {
+	ContentArea,
+	PageWrapper,
+	SplitLayout,
+} from "~/components/layout/page-layout";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
@@ -162,26 +166,27 @@ export default function AdminStorageMinutes() {
 					secondary: "Pöytäkirjagalleria",
 				}}
 			>
-				<p className="text-muted-foreground mb-6 -mt-6">
-					{t(
-						"admin.storage.minutes.description",
-						"Manage uploaded minute files. Linked files correspond to existing minute entries.",
-					)}
-				</p>
+				<ContentArea>
+					<p className="text-muted-foreground mb-6 -mt-6">
+						{t(
+							"admin.storage.minutes.description",
+							"Manage uploaded minute files. Linked files correspond to existing minute entries.",
+						)}
+					</p>
 
-				<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-					{items.length === 0 ? (
-						<EmptyState
-							message={t("admin.storage.minutes.empty", "No minutes found")}
-							icon="description"
-						/>
-					) : (
-						<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-							{items.map((item) => (
-								<li
-									key={item.pathname}
-									className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
-								>
+					<div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+						{items.length === 0 ? (
+							<EmptyState
+								message={t("admin.storage.minutes.empty", "No minutes found")}
+								icon="description"
+							/>
+						) : (
+							<ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+								{items.map((item) => (
+									<li
+										key={item.pathname}
+										className="group flex flex-col rounded-xl border border-border overflow-hidden bg-card/50"
+									>
 									<div className="relative aspect-[4/3] bg-muted flex items-center justify-center p-2">
 										{item.url.toLowerCase().endsWith(".pdf") ? (
 											<a
@@ -259,11 +264,12 @@ export default function AdminStorageMinutes() {
 											</div>
 										)}
 									</div>
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</ContentArea>
 			</SplitLayout>
 		</PageWrapper>
 	);
