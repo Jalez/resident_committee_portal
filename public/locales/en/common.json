@@ -738,6 +738,7 @@
 			"location": "Location",
 			"category": "Category",
 			"description": "Description",
+			"status": "Status",
 			"value": "Unit Value",
 			"purchasedAt": "Purchase Date",
 			"purchasedAt_placeholder": "Purchase date",
@@ -753,7 +754,13 @@
 			"description_placeholder": "Item details",
 			"value_placeholder": "0.00",
 			"purchased_at_label": "Purchase Date",
-			"example": "E.g. {{example}}"
+			"example": "E.g. {{example}}",
+			"statuses": {
+				"draft": "Draft",
+				"active": "Active",
+				"removed": "Removed",
+				"legacy": "Legacy"
+			}
 		},
 		"new": {},
 		"modals": {

@@ -761,6 +761,7 @@
 			"location": "Sijainti",
 			"category": "Kategoria",
 			"description": "Kuvaus",
+			"status": "Tila",
 			"value": "Kpl-arvo",
 			"purchasedAt": "Hankintapäivä",
 			"purchasedAt_placeholder": "Hankintapäivä",
@@ -776,7 +777,13 @@
 			"description_placeholder": "Lisätietoja tavarasta",
 			"value_placeholder": "0.00",
 			"purchased_at_label": "Hankintapäivä",
-			"example": "Esim. {{example}}"
+			"example": "Esim. {{example}}",
+			"statuses": {
+				"draft": "Luonnos",
+				"active": "Aktiivinen",
+				"removed": "Poistettu",
+				"legacy": "Legacy"
+			}
 		},
 		"new": {},
 		"modals": {

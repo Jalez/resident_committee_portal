@@ -226,8 +226,13 @@ export function ViewForm({
 				const option = options.find(
 					(o: any) => (typeof o === "string" ? o : o.value) === value,
 				);
-				const label =
+				const rawLabel =
 					typeof option === "string" ? option : option?.label || value;
+				const optionValue =
+					typeof option === "string" ? option : option?.value || value;
+				const label = translationNamespace
+					? t(`${translationNamespace}.${name}es.${optionValue}`, rawLabel)
+					: rawLabel;
 				const statusVariants = registry?.statusVariants || {};
 				if (statusVariants[value]) {
 					return (
