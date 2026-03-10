@@ -762,6 +762,7 @@
 			"category": "Kategoria",
 			"description": "Kuvaus",
 			"status": "Tila",
+			"status_placeholder": "Valitse tila",
 			"value": "Kpl-arvo",
 			"purchasedAt": "Hankintapäivä",
 			"purchasedAt_placeholder": "Hankintapäivä",

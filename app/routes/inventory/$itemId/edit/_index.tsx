@@ -63,6 +63,7 @@ const inventorySchema = z.object({
 	location: z.string().optional(),
 	category: z.string().optional(),
 	description: z.string().optional(),
+	status: z.enum(["draft", "active", "removed", "legacy"]).optional(),
 	purchasedAt: z.string().optional(),
 	showInInfoReel: z.preprocess(
 		(val) => val === "true" || val === "on",
@@ -114,6 +115,7 @@ export default function EditInventoryItem({
 					? contextValues.category
 					: item.category || "",
 			description: item.description || "",
+			status: item.status || "draft",
 			purchasedAt:
 				isDraft && !item.purchasedAt && contextValues?.date
 					? new Date(contextValues.date).toISOString().split("T")[0]
@@ -183,6 +185,7 @@ export default function EditInventoryItem({
 				),
 			},
 			description: initialValues.description,
+			status: initialValues.status,
 			purchasedAt: initialValues.purchasedAt,
 			showInInfoReel: initialValues.showInInfoReel,
 		};

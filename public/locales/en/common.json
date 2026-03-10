@@ -739,6 +739,7 @@
 			"category": "Category",
 			"description": "Description",
 			"status": "Status",
+			"status_placeholder": "Select status",
 			"value": "Unit Value",
 			"purchasedAt": "Purchase Date",
 			"purchasedAt_placeholder": "Purchase date",
